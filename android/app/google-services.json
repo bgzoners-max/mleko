@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "863024576523",
+    "project_id": "mleko-686eb",
+    "storage_bucket": "mleko-686eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:863024576523:android:fa19dcb85e138a34c7af0e",
+        "android_client_info": {
+          "package_name": "com.mleko.mleko"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqC6zoGW8Y_r6Mtz-qDG1YADiVR9Q9XF4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

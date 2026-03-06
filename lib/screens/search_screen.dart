@@ -1,0 +1,353 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/constants.dart';
+import '../core/responsive.dart';
+import '../models/product_model.dart';
+import '../services/products_service.dart';
+import '../providers/app_state.dart';
+import '../providers/categories_provider.dart';
+import '../providers/favorites_provider.dart';
+import '../services/search_history_service.dart';
+import '../widgets/product_card.dart';
+import '../widgets/skeleton.dart';
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key, this.initialCategory});
+
+  final String? initialCategory;
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  final _searchHistoryService = SearchHistoryService();
+  final _productsService = ProductsService();
+  String? _category;
+  String? _region;
+  bool? _availableNow;
+  ProductSort _sort = ProductSort.dateDesc;
+  Map<String, int> _salesCounts = {}; // iz getProductsPage, merge pri paginaciji
+
+  List<ProductModel> _products = [];
+  int _offset = 0;
+  bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  late final Future<List<String>> _historyFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _category = widget.initialCategory;
+    _historyFuture = _searchHistoryService.getHistory();
+    _loadFirstPage();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(SearchScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialCategory != widget.initialCategory) {
+      _category = widget.initialCategory;
+      _loadFirstPage();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    context.read<CategoriesProvider>().load();
+    final user = context.read<AppState>().user;
+    final favorites = context.read<FavoritesProvider>();
+    if (user != null && !user.isGuest && !favorites.isLoaded) {
+      favorites.load(user.id);
+    }
+  }
+
+  void _onScroll() {
+    if (_loadingMore || !_hasMore) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadFirstPage() async {
+    setState(() {
+      _loading = true;
+      _products = [];
+      _offset = 0;
+      _hasMore = true;
+    });
+    final result = await _productsService.getProductsPage(
+      category: _category,
+      region: _region,
+      availableNow: _availableNow,
+      searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
+      sort: _sort,
+      limit: productsPageSize,
+      offset: 0,
+    );
+    if (mounted) {
+      setState(() {
+        _products = result.items;
+        _salesCounts = result.salesCounts;
+        _offset = result.items.length;
+        _hasMore = result.hasMore;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _loading) return;
+    setState(() => _loadingMore = true);
+    final result = await _productsService.getProductsPage(
+      category: _category,
+      region: _region,
+      availableNow: _availableNow,
+      searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
+      sort: _sort,
+      limit: productsPageSize,
+      offset: _offset,
+    );
+    if (mounted) {
+      setState(() {
+        _products = [..._products, ...result.items];
+        _salesCounts = {..._salesCounts, ...result.salesCounts};
+        _offset += result.items.length;
+        _hasMore = result.hasMore;
+        _loadingMore = false;
+      });
+    }
+  }
+
+  Timer? _debounceTimer;
+  static const _debounceDuration = Duration(milliseconds: 350);
+  String _debouncedQuery = '';
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () {
+      if (mounted) {
+        setState(() => _debouncedQuery = value.trim().toLowerCase());
+        _loadFirstPage();
+      }
+    });
+  }
+
+  void _applySearchImmediate(String query) {
+    _debounceTimer?.cancel();
+    _debouncedQuery = query.trim().toLowerCase();
+    if (mounted) {
+      setState(() {});
+      _loadFirstPage();
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    await _loadFirstPage();
+    await Future.delayed(const Duration(milliseconds: 400));
+  }
+
+  void _onFilterChanged() {
+    _loadFirstPage();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<AppState>().user;
+    final favorites = context.watch<FavoritesProvider>();
+    final categoryList = context.watch<CategoriesProvider>().categoryNames;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pretraga'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: 'Traži sir, kačkavalj…',
+                prefixIcon: Icon(Icons.search),
+                isDense: true,
+              ),
+              onChanged: (v) => _onSearchChanged(v),
+              onSubmitted: (q) {
+                _searchHistoryService.addToHistory(q);
+                _applySearchImmediate(q);
+              },
+            ),
+          ),
+        ),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
+          child: Column(
+            children: [
+          FutureBuilder<List<String>>(
+            future: _historyFuture,
+            builder: (context, snap) {
+              final history = snap.data ?? [];
+              if (history.isEmpty) return const SizedBox.shrink();
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  children: [
+                    Text('Istorija:', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    const SizedBox(width: 8),
+                    ...history.take(5).map((h) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ActionChip(
+                        label: Text(h, style: const TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          _searchController.text = h;
+                          _applySearchImmediate(h);
+                        },
+                      ),
+                    )),
+                  ],
+                ),
+              );
+            },
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: 'Sortiraj',
+                  value: _sort.label,
+                  options: ProductSort.values.map((s) => s.label).toList(),
+                  onSelected: (v) {
+                    final idx = ProductSort.values.indexWhere((s) => s.label == v);
+                    if (idx >= 0) {
+                      setState(() {
+                        _sort = ProductSort.values[idx];
+                        _onFilterChanged();
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'Kategorija',
+                  value: _category,
+                  options: categoryList,
+                  onSelected: (v) {
+                    setState(() => _category = v);
+                    _onFilterChanged();
+                  },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'Region',
+                  value: _region,
+                  options: AppConstants.regions,
+                  onSelected: (v) {
+                    setState(() => _region = v);
+                    _onFilterChanged();
+                  },
+                ),
+                const SizedBox(width: 8),
+                ActionChip(
+                  label: const Text('Dostupno sada'),
+                  onPressed: () {
+                    setState(() => _availableNow = _availableNow == true ? null : true);
+                    _onFilterChanged();
+                  },
+                  backgroundColor: _availableNow == true ? Theme.of(context).colorScheme.primaryContainer : null,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const ProductListSkeleton()
+                : Builder(
+                    builder: (context) {
+                      if (_products.isEmpty) {
+                        return Center(
+                          child: Text('Nema rezultata.', style: TextStyle(color: Colors.grey.shade600)),
+                        );
+                      }
+                      return RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _products.length + (_loadingMore ? 1 : 0),
+                          itemBuilder: (_, i) {
+                            if (i == _products.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                child: Center(child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )),
+                              );
+                            }
+                            final p = _products[i];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: ProductCard(
+                                product: p,
+                                isFavorite: user != null && !user.isGuest ? favorites.isFavorite(p.id) : null,
+                                onFavoriteToggle: user != null && !user.isGuest ? () => favorites.toggle(user.id, p.id) : null,
+                                isPopular: (_salesCounts[p.id] ?? 0) >= AppConstants.popularProductMinSales,
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final String? value;
+  final List<String> options;
+  final ValueChanged<String?> onSelected;
+
+  const _FilterChip({required this.label, required this.value, required this.options, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String?>(
+      onSelected: onSelected,
+      tooltip: label,
+      child: Chip(
+        label: Text(value ?? label),
+        avatar: value != null ? const Icon(Icons.close, size: 18, color: Colors.white) : null,
+        onDeleted: value != null ? () => onSelected(null) : null,
+      ),
+      itemBuilder: (_) => options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
+    );
+  }
+}

@@ -1,0 +1,104 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/router.dart';
+import 'core/theme.dart';
+import 'providers/app_state.dart';
+import 'services/push_service.dart';
+import 'services/logger_service.dart';
+import 'services/error_handler_service.dart';
+import 'services/connectivity_service.dart';
+import 'providers/cart_provider.dart';
+import 'providers/categories_provider.dart';
+import 'providers/favorites_provider.dart';
+import 'widgets/offline_indicator.dart';
+import 'supabase_config.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      await PushService.initialize();
+    } catch (e) {
+      // Firebase nije konfigurisan – push notifikacije neće raditi
+      LoggerService.warning(
+        'Firebase initialization failed - push notifications disabled',
+        extra: {'error': e.toString()},
+      );
+    }
+  }
+
+  await initializeDateFormatting('sr', null);
+
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  const supabaseAnonKey =
+      String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+
+  final url = supabaseUrl.isNotEmpty ? supabaseUrl : SupabaseConfig.url;
+  final anonKey =
+      supabaseAnonKey.isNotEmpty ? supabaseAnonKey : SupabaseConfig.anonKey;
+
+  await Supabase.initialize(url: url, anonKey: anonKey);
+
+  final appState = AppState();
+  final cartProvider = CartProvider();
+  final categoriesProvider = CategoriesProvider();
+  final favoritesProvider = FavoritesProvider();
+  final router = createRouter(appState);
+
+  try {
+    final pushService = PushService();
+    void navigateFromNotification(Map<String, dynamic> data) {
+      final type = data['type'] as String?;
+      if (type == 'new_order' || type == 'order_status') {
+        router.go('/orders');
+      } else if (type == 'new_message') {
+        router.go('/conversations');
+      }
+    }
+
+    PushService.setOnNotificationTapped(navigateFromNotification);
+    pushService.setForegroundHandler((_) {});
+    pushService
+        .setMessageOpenedHandler((msg) => navigateFromNotification(msg.data));
+    Future.microtask(() async {
+      try {
+        final initialMsg = await pushService.getInitialMessage();
+        if (initialMsg != null) {
+          navigateFromNotification(initialMsg.data);
+        }
+      } catch (e) {
+        LoggerService.debug('Initial notification check failed',
+            extra: {'error': e.toString()});
+      }
+    });
+  } catch (e) {
+    LoggerService.warning('Push notification setup failed',
+        extra: {'error': e.toString()});
+  }
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AppState>.value(value: appState),
+        ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
+        ChangeNotifierProvider<CategoriesProvider>.value(
+            value: categoriesProvider),
+        ChangeNotifierProvider<FavoritesProvider>.value(
+            value: favoritesProvider),
+      ],
+      child: OfflineIndicator(
+        child: MaterialApp.router(
+          title: 'Naše Selo',
+          theme: appTheme,
+          routerConfig: router,
+        ),
+      ),
+    ),
+  );
+}
