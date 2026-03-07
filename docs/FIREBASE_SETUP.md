@@ -116,7 +116,7 @@ Supabase očekuje `NAME=VALUE`. Za JSON koristi **base64**:
 
 ```powershell
 # Windows (PowerShell)
-$json = [System.IO.File]::ReadAllText("D:\mleko\mleko-686eb-firebase-adminsdk-fbsvc-a320b8c869.json")
+$json = [System.IO.File]::ReadAllText("C:\path\to\service-account.json")
 $b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json))
 supabase secrets set "FCM_SERVICE_ACCOUNT_JSON=$b64"
 ```
