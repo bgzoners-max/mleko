@@ -1,6 +1,21 @@
 # Naše mleko – MVP (B2C)
 
+[![CI](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml)
+
 Marketplace za domaće mlečne proizvode (kupuj direktno od proizvođača).
+
+## CI
+
+GitHub Actions workflow `.github/workflows/ci.yml` pokreće:
+
+- `flutter-checks`: `flutter analyze` + `flutter test`
+- `db-integration-checks`: lokalni Supabase stack + reset migracija + SQL integration provere
+
+DB integration skripta:
+
+- `supabase/tests/order_status_flow_integration.sql`
+
+Ove provere pokrivaju ključne delove status flow-a: tranzicije, trigger-e, audit log i ručno arhiviranje.
 
 ## Šta je urađeno (MVP ekrani)
 

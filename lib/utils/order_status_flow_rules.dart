@@ -1,0 +1,99 @@
+class OrderStatusNotificationTemplate {
+  final String recipientRole;
+  final String title;
+  final String body;
+
+  const OrderStatusNotificationTemplate({
+    required this.recipientRole,
+    required this.title,
+    required this.body,
+  });
+}
+
+class OrderStatusFlowRules {
+  const OrderStatusFlowRules._();
+
+  static bool isAllowedTransition({
+    required String oldStatus,
+    required String newStatus,
+  }) {
+    if (oldStatus == newStatus) {
+      return true;
+    }
+
+    switch (oldStatus) {
+      case 'sent':
+        return newStatus == 'accepted' || newStatus == 'rejected';
+      case 'accepted':
+        return newStatus == 'shipped' || newStatus == 'cancelled_by_seller';
+      case 'shipped':
+        return newStatus == 'delivered' || newStatus == 'cancelled_by_seller';
+      case 'rejected':
+      case 'cancelled_by_seller':
+      case 'delivered':
+        return newStatus == 'arhivirano';
+      case 'arhivirano':
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  static OrderStatusNotificationTemplate? notificationForNewStatus(
+      String newStatus) {
+    switch (newStatus) {
+      case 'accepted':
+        return const OrderStatusNotificationTemplate(
+          recipientRole: 'buyer',
+          title: 'Porudzbina prihvacena',
+          body: 'Prodavac je prihvatio vasu porudzbinu.',
+        );
+      case 'shipped':
+        return const OrderStatusNotificationTemplate(
+          recipientRole: 'buyer',
+          title: 'Porudzbina poslata',
+          body: 'Prodavac je oznacio porudzbinu kao poslatu.',
+        );
+      case 'rejected':
+        return const OrderStatusNotificationTemplate(
+          recipientRole: 'buyer',
+          title: 'Porudzbina odbijena',
+          body: 'Prodavac je odbio vasu porudzbinu.',
+        );
+      case 'cancelled_by_seller':
+        return const OrderStatusNotificationTemplate(
+          recipientRole: 'buyer',
+          title: 'Porudzbina otkazana',
+          body: 'Prodavac je otkazao porudzbinu.',
+        );
+      case 'delivered':
+        return const OrderStatusNotificationTemplate(
+          recipientRole: 'seller',
+          title: 'Kupac potvrdio prijem',
+          body: 'Kupac je potvrdio da je primio porudzbinu.',
+        );
+      default:
+        return null;
+    }
+  }
+
+  static bool canBuyerManuallyArchive(String status) {
+    return status == 'delivered' ||
+        status == 'rejected' ||
+        status == 'cancelled_by_seller';
+  }
+
+  static String actorRoleForStatusChange({
+    required String? actorUserId,
+    required String buyerId,
+    required String sellerId,
+  }) {
+    if (actorUserId != null && actorUserId == buyerId) {
+      return 'buyer';
+    }
+    if (actorUserId != null && actorUserId == sellerId) {
+      return 'seller';
+    }
+    return 'system';
+  }
+}
