@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../services/favorites_service.dart';
-import '../services/logger_service.dart';
+import 'package:mleko/services/services.dart';
 
 class FavoritesProvider extends ChangeNotifier {
   final FavoritesService _service = FavoritesService();
@@ -55,3 +54,4 @@ class FavoritesProvider extends ChangeNotifier {
 
   bool isFavorite(String productId) => _ids.contains(productId);
 }
+

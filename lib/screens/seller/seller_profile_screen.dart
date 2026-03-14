@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/product_model.dart';
 import '../../models/review_model.dart';
 import '../../models/seller_stats_model.dart';
@@ -10,13 +12,12 @@ import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/favorites_provider.dart';
-import '../../services/chat_service.dart';
-import '../../services/favorite_sellers_service.dart';
-import '../../services/products_service.dart';
-import '../../services/reviews_service.dart';
-import '../../services/users_service.dart';
+import 'package:mleko/services/services.dart';
+
+import '../../core/haptic.dart';
 import '../../core/responsive.dart';
 import '../../widgets/add_review_dialog.dart';
+import '../../widgets/app_empty_state.dart';
 import '../../widgets/product_grid_tile.dart';
 
 class SellerProfileScreen extends StatefulWidget {
@@ -29,14 +30,49 @@ class SellerProfileScreen extends StatefulWidget {
 }
 
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
-  late final Future<UserModel?> _userFuture =
-      UsersService().getUser(widget.sellerId);
+  Future<UserModel?> _loadUser() => UsersService().getUser(widget.sellerId);
+  late Future<UserModel?> _userFuture = _loadUser();
+
+  void _retry() => setState(() => _userFuture = _loadUser());
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<UserModel?>(
       future: _userFuture,
       builder: (context, userSnap) {
+        if (userSnap.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Proizvođač')),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Greška pri učitavanju profila.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      userSnap.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: _retry,
+                      child: const Text('Pokušaj ponovo'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
         if (!userSnap.hasData) {
           return Scaffold(
             appBar: AppBar(title: const Text('Proizvođač')),
@@ -66,6 +102,7 @@ class _SellerProfileContent extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final draftCount = cart.getSellerDraft(seller.id).length;
     final sellerName = seller.farmName ?? 'Proizvođač';
+    final isWide = Breakpoints.isDesktop(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(sellerName),
@@ -82,42 +119,117 @@ class _SellerProfileContent extends StatelessWidget {
             ),
         ],
       ),
-      bottomNavigationBar: _SellerOrderDraftBar(sellerId: seller.id),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _ProfileHeader(seller: seller),
-            _ChatButton(sellerId: seller.id),
-            if (seller.sellerTags.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _SellerTagsRow(tags: seller.sellerTags),
-            ],
-            if (seller.sellerStory != null && seller.sellerStory!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _SellerStorySection(story: seller.sellerStory!),
-            ],
-            if (seller.farmGalleryUrls.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _FarmGallerySection(urls: seller.farmGalleryUrls),
-            ],
-            const SizedBox(height: 16),
-            _ReviewsSection(sellerId: seller.id),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Mini prodavnica',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+      bottomNavigationBar: _SellerOrderDraftBar(sellerId: seller.id, seller: seller),
+      body: Material(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: LayoutBuilder(
+        builder: (context, constraints) {
+          final minHeight = constraints.maxHeight;
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: Breakpoints.maxContentWidth(context),
+                minHeight: minHeight > 0 ? minHeight : 400,
               ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                // HEADER / PROFIL
+                _ProfileHeader(seller: seller),
+                if (seller.sellerTags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _SellerTagsRow(tags: seller.sellerTags),
+                ],
+
+                // STATS (ugled / poverenje)
+                const SizedBox(height: 8),
+                _SellerSafetyStrip(seller: seller),
+
+                if (isWide) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (seller.farmGalleryUrls.isNotEmpty) ...[
+                              _FarmGallerySection(urls: seller.farmGalleryUrls),
+                              const SizedBox(height: 16),
+                            ],
+                            if (seller.sellerStory != null &&
+                                seller.sellerStory!.isNotEmpty) ...[
+                              _SellerStorySection(story: seller.sellerStory!),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _ReviewsSection(sellerId: seller.id),
+                            const SizedBox(height: 16),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'Mini prodavnica',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _ProductGrid(sellerId: seller.id),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 100),
+                ] else ...[
+                  // Mobilni / tablet – postojeći stacked layout
+                  if (seller.farmGalleryUrls.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _FarmGallerySection(urls: seller.farmGalleryUrls),
+                  ],
+                  if (seller.sellerStory != null &&
+                      seller.sellerStory!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _SellerStorySection(story: seller.sellerStory!),
+                  ],
+                  const SizedBox(height: 16),
+                  _ReviewsSection(sellerId: seller.id),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'Mini prodavnica',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _ProductGrid(sellerId: seller.id),
+                  const SizedBox(height: 100),
+                ],
+              ],
             ),
-            const SizedBox(height: 8),
-            _ProductGrid(sellerId: seller.id),
-            const SizedBox(height: 100),
-          ],
-        ),
+          ),
+        );
+        },
+      ),
       ),
     );
   }
@@ -171,95 +283,168 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
       margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: seller.profileImageUrl != null
-                  ? CachedNetworkImageProvider(seller.profileImageUrl!)
-                  : null,
-              child: seller.profileImageUrl == null
-                  ? Icon(Icons.store, size: 40, color: Colors.grey.shade600)
-                  : null,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          seller.farmName ?? 'Gazdinstvo',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    seller.farmName ?? 'Gazdinstvo',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                      ),
-                      if (seller.isVerified) ...[
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message: 'Proveren prodavac',
-                          child: Icon(Icons.verified, color: Theme.of(context).colorScheme.primary, size: 20),
-                        ),
-                      ],
-                    ],
                   ),
-                  if (seller.createdAt != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(seller.createdAt!)}',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                    ),
-                  ],
-                  if (seller.location != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(seller.location!, style: TextStyle(color: Colors.grey.shade700)),
-                      ],
-                    ),
-                  ],
-                  // Broj pratilaca — vidljiv kupcima
-                  FutureBuilder<int>(
-                    future: _followersFuture,
-                    builder: (_, snap) {
-                      final count = snap.data ?? 0;
-                      if (count == 0) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Row(
-                          children: [
-                            Icon(Icons.people_outline, size: 14, color: Colors.grey.shade500),
-                            const SizedBox(width: 4),
-                            Text(
-                              '$count pratilac${count == 1 ? '' : 'a'}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                ),
+                if (seller.isVerified) ...[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Proveren prodavac',
+                    child: Icon(Icons.verified, color: Theme.of(context).colorScheme.primary, size: 20),
                   ),
                 ],
-              ),
+              ],
             ),
-            if (_checked) ...[
-              const SizedBox(width: 8),
-              FilledButton.tonal(
-                onPressed: _loading ? null : _toggleFollow,
-                child: _loading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_isFollowing ? 'Ne prati' : 'Prati'),
-              ),
-            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: seller.profileImageUrl != null
+                      ? CachedNetworkImageProvider(seller.profileImageUrl!)
+                      : null,
+                  child: seller.profileImageUrl == null
+                      ? Icon(Icons.store, size: 40, color: Colors.grey.shade600)
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (seller.createdAt != null) ...[
+                        Text(
+                          'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(seller.createdAt!)}',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                        ),
+                      ],
+                      if (seller.location != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                            const SizedBox(width: 4),
+                            Text(seller.location!, style: TextStyle(color: Colors.grey.shade700)),
+                          ],
+                        ),
+                      ],
+                      FutureBuilder<SellerStatsModel>(
+                        future: ReviewsService().getSellerStats(seller.id),
+                        builder: (context, snap) {
+                          final stats = snap.data;
+                          if (stats == null) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final response = stats.responseLabel;
+                          final orders = stats.ordersCount;
+
+                          String? deliveredLabel() {
+                            final n = orders;
+                            if (n <= 0) return null;
+                            if (n == 1) return '1 isporuka';
+                            if (n >= 2 && n <= 4) return '$n isporuke';
+                            return '$n isporuka';
+                          }
+
+                          if ((response == null || response.isEmpty) &&
+                              (deliveredLabel() == null)) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final delivered = deliveredLabel();
+
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (response != null && response.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        response,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (delivered != null) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.local_shipping_outlined,
+                                          size: 14, color: Colors.grey.shade600),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        delivered,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      // Broj pratilaca — vidljiv kupcima
+                      FutureBuilder<int>(
+                        future: _followersFuture,
+                        builder: (_, snap) {
+                          final count = snap.data ?? 0;
+                          if (count == 0) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people_outline, size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$count pratilac${count == 1 ? '' : 'a'}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                if (_checked) ...[
+                  const SizedBox(width: 8),
+                  FilledButton.tonal(
+                    onPressed: _loading ? null : _toggleFollow,
+                    child: _loading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(_isFollowing ? 'Ne prati' : 'Prati'),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
@@ -267,34 +452,240 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
   }
 }
 
-class _ChatButton extends StatelessWidget {
-  final String sellerId;
+class _SellerLoyaltyStats {
+  final int repeatOrders;
+  final int repeatBuyers;
 
-  const _ChatButton({required this.sellerId});
+  const _SellerLoyaltyStats({
+    required this.repeatOrders,
+    required this.repeatBuyers,
+  });
+
+  factory _SellerLoyaltyStats.fromJson(Map<String, dynamic> json) {
+    return _SellerLoyaltyStats(
+      repeatOrders: (json['repeat_orders'] as num?)?.toInt() ?? 0,
+      repeatBuyers: (json['repeat_buyers'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  bool get hasAnyLoyalty => repeatOrders > 0 && repeatBuyers > 0;
+}
+
+class _SellerSafetyStrip extends StatefulWidget {
+  final UserModel seller;
+
+  const _SellerSafetyStrip({required this.seller});
+
+  @override
+  State<_SellerSafetyStrip> createState() => _SellerSafetyStripState();
+}
+
+class _SellerSafetyStripState extends State<_SellerSafetyStrip> {
+  late final Future<_SellerLoyaltyStats> _loyaltyFuture = _loadLoyalty();
+
+  Future<_SellerLoyaltyStats> _loadLoyalty() async {
+    try {
+      final client = Supabase.instance.client;
+      final result = await client.rpc(
+        'get_seller_loyalty_stats',
+        params: {'p_seller_id': widget.seller.id},
+      );
+      if (result == null) {
+        return const _SellerLoyaltyStats(repeatOrders: 0, repeatBuyers: 0);
+      }
+      final map = result is Map<String, dynamic>
+          ? result
+          : Map<String, dynamic>.from(result as Map);
+      return _SellerLoyaltyStats.fromJson(map);
+    } catch (_) {
+      return const _SellerLoyaltyStats(repeatOrders: 0, repeatBuyers: 0);
+    }
+  }
+
+  static String? _repeatLabel(_SellerLoyaltyStats stats) {
+    if (!stats.hasAnyLoyalty) return null;
+    final n = stats.repeatOrders;
+    if (n == 1) return '1 ponovljena kupovina od istih kupaca';
+    if (n >= 2 && n <= 4) return '$n ponovljene kupovine od istih kupaca';
+    return '$n ponovljenih kupovina od istih kupaca';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
-    if (user == null || user.isGuest || user.id == sellerId) return const SizedBox.shrink();
+    final seller = widget.seller;
+    final isVerified = seller.isVerified;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: OutlinedButton.icon(
-        onPressed: () async {
-          try {
-            final convId = await ChatService().getOrCreateConversation(user.id, sellerId);
-            if (context.mounted) context.push('/chat/$convId');
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
-              );
-            }
-          }
-        },
-        icon: const Icon(Icons.chat),
-        label: const Text('Pošalji poruku'),
+    return FutureBuilder<_SellerLoyaltyStats>(
+      future: _loyaltyFuture,
+      builder: (context, snap) {
+        final stats = snap.data;
+        final repeat = stats != null ? _repeatLabel(stats) : null;
+
+        if (!isVerified && repeat == null) {
+          return const SizedBox.shrink();
+        }
+
+        final children = <Widget>[];
+
+        if (isVerified) {
+          children.add(
+            _ReputationItem(
+              icon: Icons.verified,
+              iconColor: Theme.of(context).colorScheme.primary,
+              title: 'Provereno gazdinstvo',
+              value: 'Dokumenta i podaci su provereni',
+            ),
+          );
+        }
+
+        if (repeat != null) {
+          children.add(
+            _ReputationItem(
+              icon: Icons.repeat_outlined,
+              iconColor: Colors.green.shade700,
+              title: 'Lojalni kupci',
+              value: repeat,
+            ),
+          );
+        }
+
+        if (children.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: children
+                  .map(
+                    (w) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: w,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReputationItem extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String value;
+
+  const _ReputationItem({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: iconColor),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+Future<void> _launchCall(BuildContext context, String? phone) async {
+  final rawPhone = phone?.trim() ?? '';
+  if (rawPhone.isEmpty) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Broj telefona nije dostupan.')),
+      );
+    }
+    return;
+  }
+  final normalized = rawPhone.replaceAll(RegExp(r'[^0-9+]'), '');
+  if (normalized.isEmpty) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Broj telefona nije validan.')),
+      );
+    }
+    return;
+  }
+  final uri = Uri(scheme: 'tel', path: normalized);
+  try {
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pozivanje nije podržano na ovom uređaju.')),
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nije moguće pokrenuti poziv.')),
+      );
+    }
+  }
+}
+
+class _CallButton extends StatelessWidget {
+  final UserModel seller;
+
+  const _CallButton({required this.seller});
+
+  @override
+  Widget build(BuildContext context) {
+    final phone = seller.phone?.trim();
+    if (phone == null || phone.isEmpty) return const SizedBox.shrink();
+
+    return FilledButton.tonalIcon(
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        minimumSize: const Size(48, 48),
+      ),
+      onPressed: () => _launchCall(context, seller.phone),
+      icon: const Icon(Icons.phone, size: 18),
+      label: const Text('Pozovi'),
     );
   }
 }
@@ -377,6 +768,7 @@ class _ReviewsSection extends StatefulWidget {
 
 class _ReviewsSectionState extends State<_ReviewsSection> {
   int _refreshKey = 0;
+  bool _expanded = true;
 
   void _refresh() => setState(() => _refreshKey++);
 
@@ -385,6 +777,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     final user = context.watch<AppState>().user;
     final canReview = user != null && !user.isGuest && user.id != widget.sellerId;
     final isSeller = user != null && !user.isGuest && user.id == widget.sellerId;
+    final isWide = Breakpoints.isDesktop(context);
 
     return FutureBuilder<Map<String, dynamic>>(
       key: ValueKey(_refreshKey),
@@ -402,20 +795,13 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         final stats = snap.data!['stats'] as SellerStatsModel;
         final reviews = snap.data!['reviews'] as List<ReviewModel>;
         final reviewable = snap.data!['reviewable'] as ({String orderId, String productId, String productName})?;
-        if (!stats.hasAnyData && reviews.isEmpty && reviewable == null) return const SizedBox.shrink();
         return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (stats.hasAnyData) ...[
-                  _SellerTrustRow(stats: stats),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                ],
                 Row(
                   children: [
                     Text('Recenzije', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
@@ -425,41 +811,54 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                       Text(stats.avgRating!.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
                       Text(' (${stats.reviewCount})', style: TextStyle(color: Colors.grey.shade600)),
                     ],
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(
+                        _expanded ? Icons.expand_less : Icons.expand_more,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _expanded = !_expanded;
+                        });
+                      },
+                    ),
                   ],
                 ),
-                if (reviewable != null) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonalIcon(
-                      icon: const Icon(Icons.star_outline, size: 20),
-                      label: const Text('Oceni prodavca'),
-                      onPressed: () => _showReviewDialog(context, user, reviewable),
-                    ),
-                  ),
-                ],
-                if (reviews.isEmpty && reviewable == null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('Nema recenzija.', style: TextStyle(color: Colors.grey.shade600)),
-                  )
-                else if (reviews.isNotEmpty) ...[
-                  ...reviews.take(5).map((r) => Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: _ReviewItem(
-                      review: r,
-                      isSeller: isSeller,
-                      onRefresh: _refresh,
-                    ),
-                  )),
-                  if (reviews.length > 5) ...[
-                    const SizedBox(height: 4),
-                    Center(
-                      child: TextButton(
-                        onPressed: () => _showAllReviews(context, reviews, isSeller),
-                        child: Text('Prikaži sve (${reviews.length})'),
+                if (_expanded) ...[
+                  if (reviewable != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        icon: const Icon(Icons.star_outline, size: 20),
+                        label: const Text('Oceni prodavca'),
+                        onPressed: () => _showReviewDialog(context, user, reviewable),
                       ),
                     ),
+                  ],
+                  if (reviews.isEmpty && reviewable == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text('Još nema recenzija.', style: TextStyle(color: Colors.grey.shade600)),
+                    )
+                  else if (reviews.isNotEmpty) ...[
+                    ...reviews.take(5).map((r) => Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: _ReviewItem(
+                        review: r,
+                        isSeller: isSeller,
+                        onRefresh: _refresh,
+                      ),
+                    )),
+                    if (reviews.length > 5) ...[
+                      const SizedBox(height: 4),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => _showAllReviews(context, reviews, isSeller),
+                          child: Text('Prikaži sve (${reviews.length})'),
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               ],
@@ -955,111 +1354,32 @@ class _SellerReplyDialogState extends State<_SellerReplyDialog> {
   }
 }
 
-class _SellerTrustRow extends StatelessWidget {
-  final SellerStatsModel stats;
-
-  const _SellerTrustRow({required this.stats});
-
-  String? _deliveredLabel() {
-    final n = stats.ordersCount;
-    if (n <= 0) return null;
-    if (n == 1) return '1 uspešno isporučena porudžbina';
-    if (n >= 2 && n <= 4) return '$n uspešno isporučene porudžbine';
-    return '$n uspešno isporučenih porudžbina';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <_TrustChip>[];
-
-    if (stats.avgRating != null) {
-      chips.add(_TrustChip(
-        icon: Icons.star_rounded,
-        iconColor: Colors.amber.shade700,
-        label: stats.avgRating!.toStringAsFixed(1),
-      ));
-    }
-
-    if (stats.responseLabel != null) {
-      chips.add(_TrustChip(
-        icon: Icons.schedule,
-        label: stats.responseLabel!,
-      ));
-    }
-
-    final delivered = _deliveredLabel();
-    if (delivered == null && chips.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (delivered != null) ...[
-          Row(
-            children: [
-              Icon(Icons.local_shipping_outlined, size: 16, color: Colors.green.shade700),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  delivered,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green.shade800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (chips.isNotEmpty) const SizedBox(height: 8),
-        ],
-        if (chips.isNotEmpty)
-          Wrap(
-            spacing: 16,
-            runSpacing: 8,
-            children: chips,
-          ),
-      ],
-    );
-  }
-}
-
-class _TrustChip extends StatelessWidget {
-  final IconData icon;
-  final Color? iconColor;
-  final String label;
-
-  const _TrustChip({required this.icon, required this.label, this.iconColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = iconColor ?? Theme.of(context).colorScheme.primary;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProductGrid extends StatelessWidget {
+class _ProductGrid extends StatefulWidget {
   final String sellerId;
 
   const _ProductGrid({required this.sellerId});
 
   @override
+  State<_ProductGrid> createState() => _ProductGridState();
+}
+
+class _ProductGridState extends State<_ProductGrid> {
+  Stream<List<ProductModel>>? _productsStream;
+  String? _lastSellerId;
+  late final Future<Map<String, ({double avg, int count})>> _ratingsFuture =
+      ProductsService().getProductRatings();
+
+  void _ensureStream(String sellerId) {
+    if (_lastSellerId == sellerId) return;
+    _lastSellerId = sellerId;
+    _productsStream = ProductsService().getProductsBySeller(sellerId);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    _ensureStream(widget.sellerId);
     return StreamBuilder<List<ProductModel>>(
-      stream: ProductsService().getProductsBySeller(sellerId),
+      stream: _productsStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -1070,69 +1390,101 @@ class _ProductGrid extends StatelessWidget {
         final list = snap.data ?? [];
         if (list.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.all(32),
-            child: Center(
-              child: Text(
-                'Nema proizvoda.',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
+            padding: const EdgeInsets.all(16),
+            child: AppEmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'Ovaj prodavac još nema proizvoda',
+              subtitle: 'Pogledajte druge proizvođače ili se vratite kasnije.',
+              ctaLabel: 'Pretraži proizvode',
+              ctaIcon: Icons.search,
+              onCtaPressed: () => context.go('/'),
             ),
           );
         }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final crossAxisCount = Breakpoints.productGridColumns(context);
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: list.length,
-                itemBuilder: (ctx, i) {
-                  final p = list[i];
-                  final user = ctx.watch<AppState>().user;
-                  final favorites = ctx.watch<FavoritesProvider>();
-                  final canFavorite = user != null && !user.isGuest;
-                  final canAddToOrder = user != null && !user.isGuest && user.id != sellerId && p.isAvailable;
-                  return ProductGridTile(
-                    product: p,
-                    isFavorite: canFavorite ? favorites.isFavorite(p.id) : null,
-                    onFavoriteToggle: canFavorite ? () => favorites.toggle(user.id, p.id) : null,
-                    onAddToOrder: canAddToOrder
-                        ? () {
-                            showModalBottomSheet<void>(
-                              context: ctx,
-                              builder: (sheetContext) => _AddToOrderSheet(
-                                product: p,
-                                sellerId: sellerId,
-                                cart: ctx.read<CartProvider>(),
-                                onAdded: () {
-                                  if (!ctx.mounted) return;
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Proizvod je dodat u porudžbinu.'),
-                                      action: SnackBarAction(
-                                        label: 'Pregled',
-                                        onPressed: () => ctx.push('/checkout-seller/$sellerId'),
+        return FutureBuilder<
+            Map<String, ({double avg, int count})>>(
+          future: _ratingsFuture,
+          builder: (context, ratingsSnap) {
+            final ratings = ratingsSnap.data ?? {};
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final crossAxisCount =
+                      Breakpoints.productGridColumns(context);
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.58,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: list.length,
+                    itemBuilder: (ctx, i) {
+                      final p = list[i];
+                      final canAddToOrder = () {
+                        final u = ctx.read<AppState>().user;
+                        return u != null &&
+                            !u.isGuest &&
+                            u.id != widget.sellerId &&
+                            p.isAvailable;
+                      }();
+                      final ratingStats = ratings[p.id];
+                      return Selector<FavoritesProvider, bool>(
+                        selector: (_, fav) => fav.isFavorite(p.id),
+                        builder: (_, isFavorite, __) {
+                          final user = ctx.read<AppState>().user;
+                          final canFavorite =
+                              user != null && !user.isGuest;
+                          final favorites =
+                              ctx.read<FavoritesProvider>();
+                          return ProductGridTile(
+                            product: p,
+                            isFavorite: canFavorite ? isFavorite : null,
+                            onFavoriteToggle: canFavorite
+                                ? () => favorites.toggle(user.id, p.id)
+                                : null,
+                            onAddToOrder: canAddToOrder
+                                ? () {
+                                    showModalBottomSheet<void>(
+                                      context: ctx,
+                                      builder: (sheetContext) =>
+                                          _AddToOrderSheet(
+                                        product: p,
+                                        sellerId: widget.sellerId,
+                                        cart: ctx.read<CartProvider>(),
+                                        onAdded: () {
+                                          if (!ctx.mounted) return;
+                                          ScaffoldMessenger.of(ctx)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: const Text(
+                                                  'Proizvod je dodat u porudžbinu.'),
+                                              action: SnackBarAction(
+                                                label: 'Pregled',
+                                                onPressed: () => ctx.push(
+                                                    '/checkout-seller/${widget.sellerId}'),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          }
-                        : null,
+                                    );
+                                  }
+                                : null,
+                            avgRating: ratingStats?.avg,
+                            reviewCount: ratingStats?.count,
+                          );
+                        },
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1216,7 +1568,7 @@ class _AddToOrderSheetState extends State<_AddToOrderSheet> {
           ),
           const SizedBox(height: 24),
           FilledButton(
-            onPressed: () {
+            onPressed: () => withHaptic(() {
               widget.cart.addForSeller(
                 sellerId: widget.sellerId,
                 productId: p.id,
@@ -1224,7 +1576,7 @@ class _AddToOrderSheetState extends State<_AddToOrderSheet> {
               );
               Navigator.of(context).pop();
               widget.onAdded();
-            },
+            }),
             child: const Text('Dodaj u porudžbinu'),
           ),
         ],
@@ -1235,17 +1587,20 @@ class _AddToOrderSheetState extends State<_AddToOrderSheet> {
 
 class _SellerOrderDraftBar extends StatelessWidget {
   final String sellerId;
+  final UserModel seller;
 
-  const _SellerOrderDraftBar({required this.sellerId});
+  const _SellerOrderDraftBar({required this.sellerId, required this.seller});
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    if (user == null || user.isGuest || user.id == sellerId) return const SizedBox.shrink();
+    final canContact = user != null && !user.isGuest && user.id != sellerId;
 
     final cart = context.watch<CartProvider>();
     final draft = cart.getSellerDraft(sellerId);
-    if (draft.isEmpty) return const SizedBox.shrink();
+    final hasDraft = draft.isNotEmpty;
+
+    if (!canContact && !hasDraft) return const SizedBox.shrink();
 
     return SafeArea(
       top: false,
@@ -1260,35 +1615,77 @@ class _SellerOrderDraftBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              '${draft.length} proizvoda u porudžbini kod ovog prodavca',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            FutureBuilder<List<({ProductModel product, double quantity})>>(
-              future: cart.getProductsBySeller(sellerId),
-              builder: (_, snap) {
-                final items = snap.data ?? [];
-                if (items.isEmpty) return const SizedBox.shrink();
-                final preview = items.take(3).map((e) => e.product.name).join(', ');
-                final suffix = items.length > 3 ? ' +${items.length - 3}' : '';
-                return Text(
-                  '$preview$suffix',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey.shade700),
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: () => context.push('/checkout-seller/$sellerId'),
-              icon: const Icon(Icons.send),
-              label: const Text('Nastavi porudžbinu'),
-            ),
+            if (hasDraft) ...[
+              Text(
+                '${draft.length} proizvoda u porudžbini kod ovog prodavca',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              FutureBuilder<List<({ProductModel product, double quantity})>>(
+                future: cart.getProductsBySeller(sellerId),
+                builder: (_, snap) {
+                  final items = snap.data ?? [];
+                  if (items.isEmpty) return const SizedBox.shrink();
+                  final preview = items.take(3).map((e) => e.product.name).join(', ');
+                  final suffix = items.length > 3 ? ' +${items.length - 3}' : '';
+                  return Text(
+                    '$preview$suffix',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              FilledButton.icon(
+                onPressed: () => context.push('/checkout-seller/$sellerId'),
+                icon: const Icon(Icons.send),
+                label: const Text('Nastavi porudžbinu'),
+              ),
+              if (canContact) const SizedBox(height: 8),
+            ],
+            if (canContact)
+              Builder(
+                builder: (context) {
+                  final hasPhone = seller.phone?.trim().isNotEmpty == true;
+                  final chatButton = OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      try {
+                        final convId = await ChatService().getOrCreateConversation(user.id, sellerId);
+                        if (context.mounted) context.push('/chat/$convId');
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.chat_outlined),
+                    label: const Text('Pošalji poruku'),
+                  );
+                  if (hasPhone) {
+                    return Row(
+                      children: [
+                        Expanded(child: _CallButton(seller: seller)),
+                        const SizedBox(width: 8),
+                        Expanded(child: chatButton),
+                      ],
+                    );
+                  }
+                  return chatButton;
+                },
+              ),
           ],
         ),
       ),
     );
   }
 }
+

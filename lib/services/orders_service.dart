@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/order_item_model.dart';
 import '../models/order_model.dart';
+import '../models/order_status_audit_log_model.dart';
 import '../models/product_model.dart';
 import 'logger_service.dart';
 
@@ -42,7 +43,12 @@ class OrdersService {
   }) async {
     var query = _client.from('orders').select().eq('buyer_id', buyerId);
     if (statusFilter != null && statusFilter.isNotEmpty) {
-      query = query.eq('status', statusFilter);
+      if (statusFilter == 'sent') {
+        // "Aktivne" = sve koje kupac nije rucno arhivirao.
+        query = query.neq('status', 'arhivirano');
+      } else {
+        query = query.eq('status', statusFilter);
+      }
     }
     final list = await query
         .order('created_at', ascending: false)
@@ -61,7 +67,11 @@ class OrdersService {
   }) async {
     var query = _client.from('orders').select().eq('seller_id', sellerId);
     if (statusFilter != null && statusFilter.isNotEmpty) {
-      query = query.eq('status', statusFilter);
+      if (statusFilter == 'sent') {
+        query = query.neq('status', 'arhivirano');
+      } else {
+        query = query.eq('status', statusFilter);
+      }
     }
     final list = await query
         .order('created_at', ascending: false)
@@ -276,6 +286,32 @@ class OrdersService {
     }).eq('id', orderId);
   }
 
+  Future<void> archiveOrderByBuyer(String buyerId, String orderId) async {
+    await _client
+        .from('orders')
+        .update({
+          'status': OrderStatus.archived.dbValue,
+          'archived_at': DateTime.now().toUtc().toIso8601String(),
+          // Retention krece od trenutka arhiviranja od strane kupca.
+          'expires_at': DateTime.now()
+              .toUtc()
+              .add(const Duration(days: 365))
+              .toIso8601String(),
+        })
+        .eq('id', orderId)
+        .eq('buyer_id', buyerId);
+  }
+
+  Future<void> confirmOrderReceivedByBuyer(String orderId) async {
+    final result = await _client.rpc(
+      'buyer_confirm_order_received',
+      params: {'p_order_id': orderId},
+    );
+    if (result != true) {
+      throw Exception('Nije moguce potvrditi prijem za ovu porudzbinu.');
+    }
+  }
+
   // ─── Pojedinačne porudžbine ───────────────────────────────────────────────
 
   Future<OrderModel?> getOrderById(String orderId) async {
@@ -290,6 +326,19 @@ class OrdersService {
         await _client.from('order_items').select().eq('order_id', orderId);
     return (list as List)
         .map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<OrderStatusAuditLogModel>> getOrderStatusAuditLogs(
+      String orderId) async {
+    final list = await _client
+        .from('order_status_audit_logs')
+        .select()
+        .eq('order_id', orderId)
+        .order('changed_at', ascending: false);
+    return (list as List)
+        .map(
+            (e) => OrderStatusAuditLogModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 

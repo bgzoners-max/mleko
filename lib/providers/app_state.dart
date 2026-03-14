@@ -2,12 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
-import '../services/auth_service.dart';
-import '../services/push_service.dart';
-import '../services/connectivity_service.dart';
-import '../services/order_queue_service.dart';
-import '../services/orders_service.dart';
-import '../services/sync_manager.dart';
+import 'package:mleko/services/services.dart';
+
 
 class AppState extends ChangeNotifier {
   final AuthService _auth = AuthService();
@@ -17,7 +13,7 @@ class AppState extends ChangeNotifier {
   late final SyncManager _syncManager;
 
   StreamSubscription? _authSubscription;
-  StreamSubscription? _connectivitySubscription;
+  late final VoidCallback _connectivityListener;
 
   UserModel? _user;
   bool _authChecked = false;
@@ -60,15 +56,16 @@ class AppState extends ChangeNotifier {
   }
 
   void _initConnectivity() {
-    _connectivitySubscription = _connectivity.addListener(() {
+    _connectivityListener = () {
       notifyListeners();
-    });
+    };
+    _connectivity.addListener(_connectivityListener);
   }
 
   @override
   void dispose() {
     _authSubscription?.cancel();
-    _connectivitySubscription?.cancel();
+    _connectivity.removeListener(_connectivityListener);
     _connectivity.dispose();
     _syncManager.dispose();
     super.dispose();
@@ -84,3 +81,4 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 }
+

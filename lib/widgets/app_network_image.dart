@@ -11,6 +11,8 @@ class AppNetworkImage extends StatelessWidget {
   final int? memCacheHeight;
   final Widget? placeholder;
   final Widget? errorWidget;
+  /// Za brži scroll na listama – isključi fade-in animaciju.
+  final Duration? fadeInDuration;
 
   const AppNetworkImage({
     super.key,
@@ -22,9 +24,10 @@ class AppNetworkImage extends StatelessWidget {
     this.memCacheHeight,
     this.placeholder,
     this.errorWidget,
+    this.fadeInDuration,
   });
 
-  /// Za thumbnails u gridu (400x250)
+  /// Za thumbnails u gridu (400x250), bez fade-in za brži scroll.
   factory AppNetworkImage.thumbnail({
     Key? key,
     required String imageUrl,
@@ -40,9 +43,10 @@ class AppNetworkImage extends StatelessWidget {
         fit: fit,
         memCacheWidth: 400,
         memCacheHeight: 250,
+        fadeInDuration: Duration.zero,
       );
 
-  /// Za male ikone (120x120)
+  /// Za male ikone (120x120), bez fade-in za brži scroll u listama.
   factory AppNetworkImage.icon({
     Key? key,
     required String imageUrl,
@@ -56,6 +60,7 @@ class AppNetworkImage extends StatelessWidget {
         height: height,
         memCacheWidth: 120,
         memCacheHeight: 120,
+        fadeInDuration: Duration.zero,
       );
 
   static Widget _defaultPlaceholder() => ColoredBox(
@@ -83,6 +88,7 @@ class AppNetworkImage extends StatelessWidget {
       fit: fit,
       memCacheWidth: memCacheWidth,
       memCacheHeight: memCacheHeight,
+      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 500),
       placeholder: (_, __) => placeholder ?? _defaultPlaceholder(),
       errorWidget: (_, __, ___) => errorWidget ?? _defaultError(),
     );

@@ -3,16 +3,21 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
+import '../models/user_model.dart';
+import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
-import '../services/orders_service.dart';
-import '../services/products_service.dart';
+import '../providers/location_provider.dart';
+import 'package:mleko/services/services.dart';
+
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/skeleton.dart';
@@ -31,11 +36,37 @@ class _HomeScreenState extends State<HomeScreen> {
   final _refreshController = StreamController<void>.broadcast();
   final _productsService = ProductsService();
   final _ordersService = OrdersService();
+  Stream<
+      ({
+        List<ProductModel> products,
+        Map<String, int> salesCounts,
+        Map<String, ({double avg, int count})> ratings
+      })>? _homeProductsStream;
   _CarouselFilter _carouselFilter = _CarouselFilter.najnovije;
   Future<SellerStats>? _sellerStatsFuture;
   Future<List<({ProductModel product, int salesCount})>>?
       _popularProductsFuture;
   String? _lastSellerId;
+  final Set<String> _preloadedCarouselImages = <String>{};
+
+  void _warmupCarouselImages(List<ProductModel> products) {
+    final urls = products
+        .map((p) => p.imageUrls.isNotEmpty ? p.imageUrls.first : null)
+        .whereType<String>()
+        .where((u) => u.isNotEmpty)
+        .take(4)
+        .toList();
+    if (urls.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final url in urls) {
+        if (_preloadedCarouselImages.add(url)) {
+          precacheImage(CachedNetworkImageProvider(url), context);
+        }
+      }
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -48,6 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _popularProductsFuture =
           _ordersService.getSellerPopularProducts(user.id, limit: 5);
     }
+    final loc = context.read<LocationProvider>();
+    _homeProductsStream ??= _productsService.getHomeProducts(
+        regionNotifier: loc.regionNotifier,
+        refreshTrigger: _refreshController.stream,
+      );
   }
 
   @override
@@ -65,16 +101,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locationProvider = context.watch<LocationProvider>();
     final categoriesProvider = context.watch<CategoriesProvider>();
     final topCategories = categoriesProvider.topCategories.take(8).toList();
     final isSeller = context.watch<AppState>().user?.isSeller ?? false;
+    final isWide = Breakpoints.isDesktop(context);
+    final stream = _homeProductsStream;
+    if (stream == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text(AppConstants.appName)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
         actions: [
-          IconButton(
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: IconButton(
               icon: const Icon(Icons.location_on),
-              onPressed: () => _showLocationPicker(context)),
+              tooltip: locationProvider.selectedRegion ?? 'Izaberi lokaciju',
+              onPressed: () => _showLocationPicker(context),
+            ),
+          ),
         ],
       ),
       body: Center(
@@ -85,59 +135,60 @@ class _HomeScreenState extends State<HomeScreen> {
             onRefresh: _onRefresh,
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
+              cacheExtent: 400,
               slivers: [
+                SliverPersistentHeader(
+                  pinned: isWide,
+                  delegate: _StickySearchHeaderDelegate(
+                    isWide: isWide,
+                    onTapSearch: () => _openSearch(context),
+                  ),
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Direktno sa gazdinstva do vašeg stola',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Pronađi domaće proizvode iz svog kraja i naruči direktno od proizvođača.',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(color: Colors.grey.shade700),
-                        ),
-                        if (isSeller) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            'Kao prodavac, ovde vidiš i kratak pregled svojih porudžbina.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: Colors.grey.shade600),
+                    child: isWide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: _HeroCard(
+                                  isSeller: isSeller,
+                                  isWide: isWide,
+                                  onSearchTap: () => _openSearch(context),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 2,
+                                child: _HomeSidePanel(
+                                  homeProductsStream: stream,
+                                  isSeller: isSeller,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              _HeroCard(
+                                isSeller: isSeller,
+                                isWide: isWide,
+                                onSearchTap: () => _openSearch(context),
+                              ),
+                              const SizedBox(height: 16),
+                              _HomeSidePanel(
+                                homeProductsStream: stream,
+                                isSeller: isSeller,
+                              ),
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
                   ),
                 ),
                 if (isSeller)
                   _SellerDashboardSliver(
                       statsFuture: _sellerStatsFuture,
                       popularFuture: _popularProductsFuture),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: TextField(
-                      readOnly: true,
-                      onTap: () => _openSearch(context),
-                      decoration: const InputDecoration(
-                        hintText: 'Traži sir, kačkavalj…',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                    ),
-                  ),
-                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -162,10 +213,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         GridView.count(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.85,
+                          crossAxisCount: isWide ? 5 : 4,
+                          mainAxisSpacing: isWide ? 8 : 8,
+                          crossAxisSpacing: isWide ? 8 : 8,
+                          childAspectRatio: isWide ? 1.0 : 0.9,
                           children: topCategories
                               .map((cat) => InkWell(
                                     onTap: () => context.push(
@@ -176,19 +227,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        buildCategoryIcon(cat.icon,
-                                            size: 32,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary),
-                                        const SizedBox(height: 6),
-                                        Text(cat.name,
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelSmall),
+                                        buildCategoryIcon(
+                                          cat.icon,
+                                          size: isWide ? 40 : 36,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          cat.name,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall,
+                                        ),
                                       ],
                                     ),
                                   ))
@@ -198,19 +253,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                SliverToBoxAdapter(
-                  child: CacheStatusIndicator(
-                    onRefresh: () => _refreshController.add(null),
-                  ),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 12)),
                 StreamBuilder<
                     ({
                       List<ProductModel> products,
-                      Map<String, int> salesCounts
+                      Map<String, int> salesCounts,
+                      Map<String, ({double avg, int count})> ratings
                     })>(
-                  stream: _productsService.getHomeProducts(
-                      refreshTrigger: _refreshController.stream),
+                  stream: stream,
                   builder: (context, snap) {
                     if (snap.hasError) {
                       return SliverToBoxAdapter(
@@ -231,6 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                     final list = snap.data?.products ?? [];
                     final salesCounts = snap.data?.salesCounts ?? {};
+                    final ratings = snap.data?.ratings ?? {};
                     final newProducts = list
                         .where((p) =>
                             DateTime.now().difference(p.createdAt).inDays <
@@ -245,49 +296,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             _CarouselFilter.najnovije
                         ? (newProducts.isNotEmpty ? newProducts : list)
                         : (popularProducts.isNotEmpty ? popularProducts : list);
-
-                    if (list.isEmpty) {
-                      return SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 16),
-                          child: Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Trenutno nema proizvoda u ponudi.',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Probaj da osvežiš listu ili se vrati kasnije – novi proizvodi se često dodaju.',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: Colors.grey.shade600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }
+                    _warmupCarouselImages(displayList);
                     final user = context.watch<AppState>().user;
-                    final favorites = context.watch<FavoritesProvider>();
                     final canFavorite = user != null && !user.isGuest;
                     return SliverToBoxAdapter(
                       child: Column(
@@ -316,32 +326,47 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 12),
                           CarouselSlider(
                             items: displayList
-                                .map((product) => Builder(
-                                      builder: (context) => Container(
-                                        width:
-                                            MediaQuery.of(context).size.width,
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 5),
-                                        child: _PopularProductCard(
-                                          product: product,
-                                          isNew: DateTime.now()
-                                                  .difference(product.createdAt)
-                                                  .inDays <
-                                              AppConstants.newProductDays,
-                                          isPopular:
-                                              (salesCounts[product.id] ?? 0) >=
-                                                  AppConstants
-                                                      .popularProductMinSales,
-                                          isFavorite: canFavorite
-                                              ? favorites.isFavorite(product.id)
-                                              : null,
-                                          onFavoriteToggle: canFavorite
-                                              ? () => favorites.toggle(
-                                                  user.id, product.id)
-                                              : null,
+                                .map((product) {
+                                  final rating = ratings[product.id];
+                                  return Builder(
+                                    builder: (context) {
+                                      return Selector<FavoritesProvider, bool>(
+                                        selector: (_, fav) =>
+                                            fav.isFavorite(product.id),
+                                        builder: (_, isFavorite, __) =>
+                                            Container(
+                                          width:
+                                              MediaQuery.of(context).size.width,
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 5),
+                                          child: _PopularProductCard(
+                                            product: product,
+                                            isNew: DateTime.now()
+                                                    .difference(
+                                                        product.createdAt)
+                                                    .inDays <
+                                                AppConstants.newProductDays,
+                                            isPopular:
+                                                (salesCounts[product.id] ?? 0) >=
+                                                    AppConstants
+                                                        .popularProductMinSales,
+                                            isFavorite: canFavorite
+                                                ? isFavorite
+                                                : null,
+                                            onFavoriteToggle: canFavorite
+                                                ? () => context
+                                                    .read<FavoritesProvider>()
+                                                    .toggle(
+                                                        user.id, product.id)
+                                                : null,
+                                            avgRating: rating?.avg,
+                                            reviewCount: rating?.count,
+                                          ),
                                         ),
-                                      ),
-                                    ))
+                                      );
+                                    },
+                                  );
+                                })
                                 .toList(),
                             options: CarouselOptions(
                               height: 220,
@@ -360,8 +385,18 @@ class _HomeScreenState extends State<HomeScreen> {
                               scrollDirection: Axis.horizontal,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          if (locationProvider.selectedRegion != null) ...[
+                            const SizedBox(height: 20),
+                            _SellersNearYouSection(
+                                region: locationProvider.selectedRegion!),
+                          ],
+                          const SizedBox(height: 16),
                           _MapCard(),
+                          const SizedBox(height: 8),
+                          CacheStatusIndicator(
+                            onRefresh: () => _refreshController.add(null),
+                          ),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     );
@@ -375,23 +410,327 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showLocationPicker(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _showLocationPicker(BuildContext context) async {
+    final loc = context.read<LocationProvider>();
+    if (!loc.gpsTried) {
+      final detected = await loc.tryDetectFromGps();
+      if (detected && context.mounted) {
+        Navigator.of(context).pop();
+        return;
+      }
+    }
+    if (!context.mounted) return;
+    final chosen = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ...AppConstants.regions.map((r) =>
-                ListTile(title: Text(r), onTap: () => Navigator.pop(ctx, r))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                'Izaberi region',
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.location_off, color: Theme.of(ctx).colorScheme.outline),
+              title: const Text('Prikaži sve regione'),
+              subtitle: const Text('Bez filtera po lokaciji'),
+              onTap: () => Navigator.pop(ctx, ''),
+            ),
+            const Divider(height: 1),
+            ...AppConstants.regions.map((r) => ListTile(
+                  title: Text(r),
+                  trailing: loc.selectedRegion == r
+                      ? Icon(Icons.check, color: Theme.of(ctx).colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.pop(ctx, r),
+                )),
           ],
         ),
       ),
     );
+    if (chosen != null && context.mounted) {
+      if (chosen.isEmpty) {
+        loc.clearRegion();
+      } else {
+        await loc.setRegion(chosen);
+      }
+    }
   }
 
   void _openSearch(BuildContext context) {
     context.go('/search');
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  final bool isSeller;
+  final bool isWide;
+  final VoidCallback onSearchTap;
+
+  const _HeroCard({
+    required this.isSeller,
+    required this.isWide,
+    required this.onSearchTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      ),
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              'Direktno sa gazdinstva do vašeg stola',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pronađi domaće proizvode iz svog kraja i naruči direktno od proizvođača.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          if (isSeller) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Kao prodavac, ovde vidiš i kratak pregled svojih porudžbina.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isWide ? 480 : double.infinity,
+              ),
+              child: TextField(
+                readOnly: true,
+                onTap: onSearchTap,
+                decoration: const InputDecoration(
+                  hintText: 'Traži sir, kačkavalj…',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeSidePanel extends StatefulWidget {
+  final Stream<
+      ({
+        List<ProductModel> products,
+        Map<String, int> salesCounts,
+        Map<String, ({double avg, int count})> ratings
+      })> homeProductsStream;
+  final bool isSeller;
+
+  const _HomeSidePanel({
+    required this.homeProductsStream,
+    required this.isSeller,
+  });
+
+  @override
+  State<_HomeSidePanel> createState() => _HomeSidePanelState();
+}
+
+class _HomeSidePanelState extends State<_HomeSidePanel>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final animationsEnabled = context.watch<AppSettingsProvider>().animationsEnabled;
+    final children = [
+      _TopProductsList(homeProductsStream: widget.homeProductsStream),
+      const _FavoriteFarmsPlaceholder(),
+    ];
+    return Card(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TabBar(
+            controller: _tabController,
+            onTap: (_) => HapticFeedback.selectionClick(),
+            tabs: const [
+              Tab(text: 'Najprodavaniji proizvodi'),
+              Tab(text: 'Omiljena gazdinstva'),
+            ],
+          ),
+          SizedBox(
+            height: 260,
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: animationsEnabled ? 250 : 0),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.easeOut,
+              child: KeyedSubtree(
+                key: ValueKey<int>(_tabController.index),
+                child: children[_tabController.index],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopProductsList extends StatelessWidget {
+  final Stream<
+      ({
+        List<ProductModel> products,
+        Map<String, int> salesCounts,
+        Map<String, ({double avg, int count})> ratings
+      })> homeProductsStream;
+
+  const _TopProductsList({required this.homeProductsStream});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<
+        ({
+          List<ProductModel> products,
+          Map<String, int> salesCounts,
+          Map<String, ({double avg, int count})> ratings
+        })>(
+      stream: homeProductsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Greška pri učitavanju proizvoda.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.red),
+            ),
+          );
+        }
+        final data = snapshot.data;
+        final list = data?.products ?? [];
+        final salesCounts = data?.salesCounts ?? {};
+        if (list.isEmpty) {
+          return AppEmptyState(
+            icon: Icons.shopping_basket_outlined,
+            title: 'Još nema proizvoda u katalogu',
+            subtitle: 'Proverite ponovo kasnije ili pretražite po kategorijama.',
+            ctaLabel: 'Pretraži proizvode',
+            ctaIcon: Icons.search,
+            onCtaPressed: () => context.push('/search'),
+          );
+        }
+
+        final sorted = [...list];
+        sorted.sort((a, b) {
+          final sa = salesCounts[a.id] ?? 0;
+          final sb = salesCounts[b.id] ?? 0;
+          return sb.compareTo(sa);
+        });
+        final top = sorted.take(5).toList();
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(12),
+          itemCount: top.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final p = top[index];
+            final count = salesCounts[p.id] ?? 0;
+            return ListTile(
+              onTap: () => context.push('/product/${p.id}'),
+              leading: p.imageUrls.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: p.imageUrls.first,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        fadeInDuration: Duration.zero,
+                      ),
+                    )
+                  : const Icon(Icons.shopping_basket),
+              title: Text(
+                p.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text('$count prodaja'),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _FavoriteFarmsPlaceholder extends StatelessWidget {
+  const _FavoriteFarmsPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Omiljena gazdinstva će uskoro biti prikazana ovde kao brze prečice.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => context.push('/favorite-sellers'),
+            child: const Text('Otvori listu omiljenih'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -541,6 +880,7 @@ class _SellerPopularProductChip extends StatelessWidget {
                     fit: BoxFit.cover,
                     memCacheWidth: 120,
                     memCacheHeight: 120,
+                    fadeInDuration: Duration.zero,
                   ),
                 )
               else
@@ -576,6 +916,95 @@ class _SellerPopularProductChip extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Sekcija „Prodavci u tvom okruženju” – prikazuje prodavce u izabranom regionu.
+class _SellersNearYouSection extends StatelessWidget {
+  final String region;
+
+  const _SellersNearYouSection({required this.region});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Prodavci u tvom okruženju',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          FutureBuilder<List<UserModel>>(
+            future: ProductsService().getSellersInRegion(region),
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const SizedBox(
+                  height: 80,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final sellers = snap.data ?? <UserModel>[];
+              if (sellers.isEmpty) {
+                return Text(
+                  'Nema prodavaca sa proizvodima u $region.',
+                  style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14),
+                );
+              }
+              return SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: sellers.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (_, i) {
+                    final seller = sellers[i];
+                    final name = seller.farmName ?? seller.displayName ?? 'Prodavac';
+                    final subtitle = seller.location ?? seller.city ?? region;
+                    return SizedBox(
+                      width: 160,
+                      child: Card(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.grey.shade300,
+                            backgroundImage: seller.profileImageUrl != null
+                                ? NetworkImage(seller.profileImageUrl!)
+                                : null,
+                            child: seller.profileImageUrl == null
+                                ? Icon(Icons.store, color: Colors.grey.shade700)
+                                : null,
+                          ),
+                          title: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          subtitle: Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          ),
+                          onTap: () => context.push('/seller/${seller.id}'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -664,12 +1093,67 @@ class _MapCard extends StatelessWidget {
   }
 }
 
+class _StickySearchHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final bool isWide;
+  final VoidCallback onTapSearch;
+
+  _StickySearchHeaderDelegate({
+    required this.isWide,
+    required this.onTapSearch,
+  });
+
+  @override
+  double get minExtent => isWide ? 60 : 0;
+
+  @override
+  double get maxExtent => isWide ? 72 : 0;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    if (!isWide) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      elevation: overlapsContent ? 2 : 0,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.maxContentWidth(context),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: TextField(
+              readOnly: true,
+              onTap: onTapSearch,
+              decoration: const InputDecoration(
+                hintText: 'Traži sir, kačkavalj…',
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickySearchHeaderDelegate oldDelegate) {
+    return isWide != oldDelegate.isWide;
+  }
+}
+
 class _PopularProductCard extends StatelessWidget {
   final ProductModel product;
   final bool isNew;
   final bool isPopular;
   final bool? isFavorite;
   final VoidCallback? onFavoriteToggle;
+  final double? avgRating;
+  final int? reviewCount;
 
   const _PopularProductCard({
     required this.product,
@@ -677,6 +1161,8 @@ class _PopularProductCard extends StatelessWidget {
     this.isPopular = false,
     this.isFavorite,
     this.onFavoriteToggle,
+    this.avgRating,
+    this.reviewCount,
   });
 
   @override
@@ -703,6 +1189,7 @@ class _PopularProductCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           memCacheWidth: 400,
                           memCacheHeight: 250,
+                          fadeInDuration: Duration.zero,
                           errorWidget: (_, __, ___) => ColoredBox(
                             color: Colors.grey.shade200,
                             child: const Icon(Icons.broken_image, size: 32),
@@ -779,11 +1266,47 @@ class _PopularProductCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    product.priceFormatted,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        product.priceFormatted,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      if (avgRating != null && (reviewCount ?? 0) > 0) ...[
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () => context.push('/product/${product.id}?reviews=1'),
+                          borderRadius: BorderRadius.circular(4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, size: 12, color: Colors.amber),
+                              const SizedBox(width: 2),
+                              Text(
+                                avgRating!.toStringAsFixed(1),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      Icon(Icons.location_on,
+                          size: 12, color: Colors.grey.shade500),
+                      const SizedBox(width: 2),
+                      Flexible(
+                        child: Text(
+                          product.location,
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.grey.shade600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -794,3 +1317,4 @@ class _PopularProductCard extends StatelessWidget {
     );
   }
 }
+

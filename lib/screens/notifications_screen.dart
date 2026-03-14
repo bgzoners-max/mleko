@@ -7,8 +7,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../models/notification_model.dart';
 import '../providers/app_state.dart';
-import '../services/notifications_service.dart';
-import '../services/push_service.dart';
+import 'package:mleko/services/services.dart';
+
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -191,16 +192,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               children: [
                 if (settingsCard != null) settingsCard,
                 if (permissionBanner != null) permissionBanner,
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.notifications_none, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text('Nemate obaveštenja', style: TextStyle(color: Colors.grey.shade600)),
-                      ],
-                    ),
+                const Expanded(
+                  child: AppEmptyState(
+                    icon: Icons.notifications_none,
+                    title: 'Nemate obaveštenja',
+                    subtitle:
+                        'Ovde će se prikazivati porudžbine, poruke i ostala obaveštenja.',
                   ),
                 ),
               ],
@@ -275,3 +272,4 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 }
+

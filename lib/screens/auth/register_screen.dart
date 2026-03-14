@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/error_dialog.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});

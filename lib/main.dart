@@ -6,14 +6,14 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'providers/app_settings_provider.dart';
 import 'providers/app_state.dart';
 import 'services/push_service.dart';
 import 'services/logger_service.dart';
-import 'services/error_handler_service.dart';
-import 'services/connectivity_service.dart';
 import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
+import 'providers/location_provider.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
 
@@ -46,9 +46,11 @@ void main() async {
   await Supabase.initialize(url: url, anonKey: anonKey);
 
   final appState = AppState();
+  final appSettings = AppSettingsProvider();
   final cartProvider = CartProvider();
   final categoriesProvider = CategoriesProvider();
   final favoritesProvider = FavoritesProvider();
+  final locationProvider = LocationProvider();
   final router = createRouter(appState);
 
   try {
@@ -86,17 +88,32 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AppState>.value(value: appState),
+        ChangeNotifierProvider<AppSettingsProvider>.value(value: appSettings),
         ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
         ChangeNotifierProvider<CategoriesProvider>.value(
             value: categoriesProvider),
         ChangeNotifierProvider<FavoritesProvider>.value(
             value: favoritesProvider),
+        ChangeNotifierProvider<LocationProvider>.value(
+            value: locationProvider),
       ],
       child: OfflineIndicator(
-        child: MaterialApp.router(
-          title: 'Naše Selo',
-          theme: appTheme,
-          routerConfig: router,
+        child: Consumer<AppSettingsProvider>(
+          builder: (_, settings, __) => MaterialApp.router(
+            title: 'Naše Selo',
+            theme: appTheme,
+            darkTheme: appDarkTheme,
+            themeMode: settings.themeMode,
+            routerConfig: router,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(settings.fontScale),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+          ),
         ),
       ),
     ),

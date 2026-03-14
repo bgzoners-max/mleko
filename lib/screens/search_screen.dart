@@ -5,11 +5,11 @@ import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
-import '../services/products_service.dart';
+import 'package:mleko/services/services.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
-import '../services/search_history_service.dart';
+import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton.dart';
 
@@ -31,7 +31,8 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _region;
   bool? _availableNow;
   ProductSort _sort = ProductSort.dateDesc;
-  Map<String, int> _salesCounts = {}; // iz getProductsPage, merge pri paginaciji
+  Map<String, int> _salesCounts = {};
+  Map<String, ({double avg, int count})> _ratings = {};
 
   List<ProductModel> _products = [];
   int _offset = 0;
@@ -97,6 +98,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         _products = result.items;
         _salesCounts = result.salesCounts;
+        _ratings = result.ratings;
         _offset = result.items.length;
         _hasMore = result.hasMore;
         _loading = false;
@@ -120,6 +122,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         _products = [..._products, ...result.items];
         _salesCounts = {..._salesCounts, ...result.salesCounts};
+        _ratings = {..._ratings, ...result.ratings};
         _offset += result.items.length;
         _hasMore = result.hasMore;
         _loadingMore = false;
@@ -170,7 +173,6 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    final favorites = context.watch<FavoritesProvider>();
     final categoryList = context.watch<CategoriesProvider>().categoryNames;
     return Scaffold(
       appBar: AppBar(
@@ -197,130 +199,179 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
+          constraints:
+              BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
           child: Column(
             children: [
-          FutureBuilder<List<String>>(
-            future: _historyFuture,
-            builder: (context, snap) {
-              final history = snap.data ?? [];
-              if (history.isEmpty) return const SizedBox.shrink();
-              return SingleChildScrollView(
+              FutureBuilder<List<String>>(
+                future: _historyFuture,
+                builder: (context, snap) {
+                  final history = snap.data ?? [];
+                  if (history.isEmpty) return const SizedBox.shrink();
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Text('Istorija:',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade600)),
+                        const SizedBox(width: 8),
+                        ...history.take(5).map((h) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ActionChip(
+                                label: Text(h,
+                                    style: const TextStyle(fontSize: 12)),
+                                onPressed: () {
+                                  _searchController.text = h;
+                                  _applySearchImmediate(h);
+                                },
+                              ),
+                            )),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    Text('Istorija:', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    _FilterChip(
+                      label: 'Sortiraj',
+                      value: _sort.label,
+                      options: ProductSort.values.map((s) => s.label).toList(),
+                      onSelected: (v) {
+                        final idx =
+                            ProductSort.values.indexWhere((s) => s.label == v);
+                        if (idx >= 0) {
+                          setState(() {
+                            _sort = ProductSort.values[idx];
+                            _onFilterChanged();
+                          });
+                        }
+                      },
+                    ),
                     const SizedBox(width: 8),
-                    ...history.take(5).map((h) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ActionChip(
-                        label: Text(h, style: const TextStyle(fontSize: 12)),
-                        onPressed: () {
-                          _searchController.text = h;
-                          _applySearchImmediate(h);
-                        },
-                      ),
-                    )),
+                    _FilterChip(
+                      label: 'Kategorija',
+                      value: _category,
+                      options: categoryList,
+                      onSelected: (v) {
+                        setState(() => _category = v);
+                        _onFilterChanged();
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'Region',
+                      value: _region,
+                      options: AppConstants.regions,
+                      onSelected: (v) {
+                        setState(() => _region = v);
+                        _onFilterChanged();
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ActionChip(
+                      label: const Text('Dostupno sada'),
+                      onPressed: () {
+                        setState(() => _availableNow =
+                            _availableNow == true ? null : true);
+                        _onFilterChanged();
+                      },
+                      backgroundColor: _availableNow == true
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : null,
+                    ),
                   ],
                 ),
-              );
-            },
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                _FilterChip(
-                  label: 'Sortiraj',
-                  value: _sort.label,
-                  options: ProductSort.values.map((s) => s.label).toList(),
-                  onSelected: (v) {
-                    final idx = ProductSort.values.indexWhere((s) => s.label == v);
-                    if (idx >= 0) {
-                      setState(() {
-                        _sort = ProductSort.values[idx];
-                        _onFilterChanged();
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Kategorija',
-                  value: _category,
-                  options: categoryList,
-                  onSelected: (v) {
-                    setState(() => _category = v);
-                    _onFilterChanged();
-                  },
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Region',
-                  value: _region,
-                  options: AppConstants.regions,
-                  onSelected: (v) {
-                    setState(() => _region = v);
-                    _onFilterChanged();
-                  },
-                ),
-                const SizedBox(width: 8),
-                ActionChip(
-                  label: const Text('Dostupno sada'),
-                  onPressed: () {
-                    setState(() => _availableNow = _availableNow == true ? null : true);
-                    _onFilterChanged();
-                  },
-                  backgroundColor: _availableNow == true ? Theme.of(context).colorScheme.primaryContainer : null,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: _loading
-                ? const ProductListSkeleton()
-                : Builder(
-                    builder: (context) {
-                      if (_products.isEmpty) {
-                        return Center(
-                          child: Text('Nema rezultata.', style: TextStyle(color: Colors.grey.shade600)),
-                        );
-                      }
-                      return RefreshIndicator(
-                        onRefresh: _onRefresh,
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _products.length + (_loadingMore ? 1 : 0),
-                          itemBuilder: (_, i) {
-                            if (i == _products.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Center(child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )),
-                              );
-                            }
-                            final p = _products[i];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: ProductCard(
-                                product: p,
-                                isFavorite: user != null && !user.isGuest ? favorites.isFavorite(p.id) : null,
-                                onFavoriteToggle: user != null && !user.isGuest ? () => favorites.toggle(user.id, p.id) : null,
-                                isPopular: (_salesCounts[p.id] ?? 0) >= AppConstants.popularProductMinSales,
-                              ),
+              ),
+              Expanded(
+                child: _loading
+                    ? const ProductListSkeleton()
+                    : Builder(
+                        builder: (context) {
+                          if (_products.isEmpty) {
+                            return AppEmptyState(
+                              icon: Icons.search_off,
+                              title: 'Nema rezultata za ovu pretragu',
+                              subtitle: 'Probajte drugi pojam, kategoriju ili pogledajte sve proizvode.',
+                              ctaLabel: 'Pogledaj sve proizvode',
+                              ctaIcon: Icons.list,
+                              onCtaPressed: () {
+                                _searchController.clear();
+                                _category = null;
+                                _region = null;
+                                setState(() {});
+                                _loadFirstPage();
+                              },
                             );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-          ),
+                          }
+                          return RefreshIndicator(
+                            onRefresh: _onRefresh,
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(16),
+                              itemCount:
+                                  _products.length + (_loadingMore ? 1 : 0),
+                              itemBuilder: (_, i) {
+                                if (i == _products.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Center(
+                                        child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    )),
+                                  );
+                                }
+                                final p = _products[i];
+                                final rating = _ratings[p.id];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: user != null && !user.isGuest
+                                      ? Selector<FavoritesProvider, bool>(
+                                          selector: (_, fav) =>
+                                              fav.isFavorite(p.id),
+                                          builder: (_, isFavorite, __) {
+                                            final favorites =
+                                                context.read<FavoritesProvider>();
+                                            return ProductCard(
+                                              product: p,
+                                              isFavorite: isFavorite,
+                                              onFavoriteToggle: () =>
+                                                  favorites.toggle(user.id, p.id),
+                                              isPopular: (_salesCounts[p.id] ??
+                                                          0) >=
+                                                  AppConstants
+                                                      .popularProductMinSales,
+                                              avgRating: rating?.avg,
+                                              reviewCount: rating?.count,
+                                            );
+                                          },
+                                        )
+                                      : ProductCard(
+                                          product: p,
+                                          isFavorite: null,
+                                          onFavoriteToggle: null,
+                                          isPopular: (_salesCounts[p.id] ?? 0) >=
+                                              AppConstants.popularProductMinSales,
+                                          avgRating: rating?.avg,
+                                          reviewCount: rating?.count,
+                                        ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
             ],
           ),
         ),
@@ -335,7 +386,11 @@ class _FilterChip extends StatelessWidget {
   final List<String> options;
   final ValueChanged<String?> onSelected;
 
-  const _FilterChip({required this.label, required this.value, required this.options, required this.onSelected});
+  const _FilterChip(
+      {required this.label,
+      required this.value,
+      required this.options,
+      required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -344,10 +399,13 @@ class _FilterChip extends StatelessWidget {
       tooltip: label,
       child: Chip(
         label: Text(value ?? label),
-        avatar: value != null ? const Icon(Icons.close, size: 18, color: Colors.white) : null,
+        avatar: value != null
+            ? const Icon(Icons.close, size: 18, color: Colors.white)
+            : null,
         onDeleted: value != null ? () => onSelected(null) : null,
       ),
-      itemBuilder: (_) => options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
+      itemBuilder: (_) =>
+          options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
     );
   }
 }

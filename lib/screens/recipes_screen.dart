@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/recipe_model.dart';
-import '../services/recipes_service.dart';
+import 'package:mleko/services/services.dart';
 import '../widgets/app_error_retry.dart';
 
 class RecipesScreen extends StatefulWidget {
@@ -106,3 +106,4 @@ class _RecipesScreenState extends State<RecipesScreen> {
     );
   }
 }
+

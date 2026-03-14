@@ -4,8 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/order_item_model.dart';
 import '../models/product_model.dart';
-import '../services/products_service.dart';
-import '../services/logger_service.dart';
+import 'package:mleko/services/services.dart';
 
 class CartProvider extends ChangeNotifier {
   final Map<String, Map<String, double>> _sellerItems = {};
@@ -148,6 +147,7 @@ class CartProvider extends ChangeNotifier {
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     sellerDraft[productId] = quantity;
     await _save();
+    _invalidateCache(sellerId);
     notifyListeners();
   }
 
@@ -195,6 +195,7 @@ class CartProvider extends ChangeNotifier {
   Future<void> clear() async {
     _sellerItems.clear();
     await _save();
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -260,3 +261,4 @@ class CartProvider extends ChangeNotifier {
     }();
   }
 }
+

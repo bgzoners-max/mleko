@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/product_model.dart';
@@ -49,7 +48,8 @@ class ProductsService {
       ({
         List<ProductModel> items,
         bool hasMore,
-        Map<String, int> salesCounts
+        Map<String, int> salesCounts,
+        Map<String, ({double avg, int count})> ratings
       })> getProductsPage({
     String? category,
     double? minPrice,
@@ -63,13 +63,21 @@ class ProductsService {
   }) async {
     const table = 'products_with_ratings';
     var query = _client.from(table).select();
-    if (category != null && category.isNotEmpty)
+    if (category != null && category.isNotEmpty) {
       query = query.eq('category', category);
-    if (region != null && region.isNotEmpty)
+    }
+    if (region != null && region.isNotEmpty) {
       query = query.eq('location', region);
-    if (availableNow == true) query = query.eq('available_now', true);
-    if (minPrice != null) query = query.gte('price_per_kg', minPrice);
-    if (maxPrice != null) query = query.lte('price_per_kg', maxPrice);
+    }
+    if (availableNow == true) {
+      query = query.eq('available_now', true);
+    }
+    if (minPrice != null) {
+      query = query.gte('price_per_kg', minPrice);
+    }
+    if (maxPrice != null) {
+      query = query.lte('price_per_kg', maxPrice);
+    }
     if (searchQuery != null && searchQuery.isNotEmpty) {
       final pattern = '*$searchQuery*';
       query = query.or('name.ilike.$pattern,category.ilike.$pattern');
@@ -84,23 +92,32 @@ class ProductsService {
       ProductSort.ratingDesc => ('avg_rating', false),
     };
     var ordered = query.order(orderColumn, ascending: orderAsc);
-    if (sort == ProductSort.ratingDesc)
+    if (sort == ProductSort.ratingDesc) {
       ordered = ordered.order('created_at', ascending: false);
+    }
     final list = await ordered.range(offset, offset + limit - 1);
     final rows = list as List;
     final products = rows
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
         .toList();
     final salesCounts = <String, int>{};
+    final ratings = <String, ({double avg, int count})>{};
     for (final row in rows) {
       final id = (row as Map)['id']?.toString();
-      if (id != null)
+      if (id != null) {
         salesCounts[id] = ((row['order_count'] as num?)?.toInt()) ?? 0;
+        final avgRating = (row['avg_rating'] as num?)?.toDouble();
+        final reviewCount = (row['review_count'] as num?)?.toInt() ?? 0;
+        if (avgRating != null && reviewCount > 0) {
+          ratings[id] = (avg: avgRating, count: reviewCount);
+        }
+      }
     }
     return (
       items: products,
       hasMore: products.length >= limit,
-      salesCounts: salesCounts
+      salesCounts: salesCounts,
+      ratings: ratings
     );
   }
 
@@ -114,13 +131,21 @@ class ProductsService {
   }) async {
     const table = 'products_with_ratings';
     var query = _client.from(table).select();
-    if (category != null && category.isNotEmpty)
+    if (category != null && category.isNotEmpty) {
       query = query.eq('category', category);
-    if (region != null && region.isNotEmpty)
+    }
+    if (region != null && region.isNotEmpty) {
       query = query.eq('location', region);
-    if (availableNow == true) query = query.eq('available_now', true);
-    if (minPrice != null) query = query.gte('price_per_kg', minPrice);
-    if (maxPrice != null) query = query.lte('price_per_kg', maxPrice);
+    }
+    if (availableNow == true) {
+      query = query.eq('available_now', true);
+    }
+    if (minPrice != null) {
+      query = query.gte('price_per_kg', minPrice);
+    }
+    if (maxPrice != null) {
+      query = query.lte('price_per_kg', maxPrice);
+    }
 
     final (orderColumn, orderAsc) = switch (sort) {
       ProductSort.dateDesc => ('created_at', false),
@@ -131,8 +156,9 @@ class ProductsService {
       ProductSort.ratingDesc => ('avg_rating', false),
     };
     var ordered = query.order(orderColumn, ascending: orderAsc);
-    if (sort == ProductSort.ratingDesc)
+    if (sort == ProductSort.ratingDesc) {
       ordered = ordered.order('created_at', ascending: false);
+    }
     final list = await ordered;
     return (list as List)
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
@@ -175,7 +201,9 @@ class ProductsService {
         // Cache filtered products
         await cache.cacheProducts(cacheKey, list);
 
-        if (!controller.isClosed) controller.add(list);
+        if (!controller.isClosed) {
+          controller.add(list);
+        }
       } catch (e, st) {
         LoggerService.error('Failed to refetch products', e, stackTrace: st);
 
@@ -183,7 +211,9 @@ class ProductsService {
         final cachedList = await cache.getCachedProducts(cacheKey);
         if (cachedList != null && cachedList.isNotEmpty) {
           LoggerService.info('Using cached filtered products as fallback');
-          if (!controller.isClosed) controller.add(cachedList);
+          if (!controller.isClosed) {
+            controller.add(cachedList);
+          }
         }
       }
     }
@@ -191,7 +221,9 @@ class ProductsService {
     // Prvo emituj cache, zatim refetch
     cache.getCachedProducts(cacheKey).then((cachedList) {
       if (cachedList != null && cachedList.isNotEmpty) {
-        if (!controller.isClosed) controller.add(cachedList);
+        if (!controller.isClosed) {
+          controller.add(cachedList);
+        }
       }
       refetch();
     }).catchError((e) {
@@ -218,8 +250,8 @@ class ProductsService {
     return controller.stream;
   }
 
-  /// Home ekran – jedan RPC (products + order_count), limit 50, Realtime osvežavanje
-  Stream<({List<ProductModel> products, Map<String, int> salesCounts})>
+  /// Home ekran – jedan RPC (products + order_count + rating), limit 50, Realtime osvežavanje
+  Stream<({List<ProductModel> products, Map<String, int> salesCounts, Map<String, ({double avg, int count})> ratings})>
       getHomeProducts({
     String? region,
     String? category,
@@ -229,7 +261,8 @@ class ProductsService {
     final controller = StreamController<
         ({
           List<ProductModel> products,
-          Map<String, int> salesCounts
+          Map<String, int> salesCounts,
+          Map<String, ({double avg, int count})> ratings
         })>.broadcast();
     final cache = ProductCacheService();
     StreamSubscription? refreshSub;
@@ -249,18 +282,26 @@ class ProductsService {
             .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
             .toList();
         final salesCounts = <String, int>{};
+        final ratings = <String, ({double avg, int count})>{};
         for (final row in list) {
           final id = (row as Map)['id']?.toString();
-          if (id != null)
+          if (id != null) {
             salesCounts[id] = ((row['order_count'] as num?)?.toInt()) ?? 0;
+            final avgRating = (row['avg_rating'] as num?)?.toDouble();
+            final reviewCount = (row['review_count'] as num?)?.toInt() ?? 0;
+            if (avgRating != null && reviewCount > 0) {
+              ratings[id] = (avg: avgRating, count: reviewCount);
+            }
+          }
         }
 
         // Cache novo učitane proizvode
         await cache.cacheProducts(
             ProductCacheService.homeProductsKey, products);
 
-        if (!controller.isClosed)
-          controller.add((products: products, salesCounts: salesCounts));
+        if (!controller.isClosed) {
+          controller.add((products: products, salesCounts: salesCounts, ratings: ratings));
+        }
       } catch (e, st) {
         LoggerService.error('Failed to load home products', e, stackTrace: st);
 
@@ -269,10 +310,11 @@ class ProductsService {
             await cache.getCachedProducts(ProductCacheService.homeProductsKey);
         if (cachedProducts != null && cachedProducts.isNotEmpty) {
           LoggerService.info('Using cached home products as fallback');
-          if (!controller.isClosed)
-            controller.add((products: cachedProducts, salesCounts: {}));
+          if (!controller.isClosed) {
+            controller.add((products: cachedProducts, salesCounts: {}, ratings: {}));
+          }
         } else if (!controller.isClosed) {
-          controller.add((products: [], salesCounts: {}));
+          controller.add((products: [], salesCounts: {}, ratings: {}));
         }
       }
     }
@@ -282,8 +324,9 @@ class ProductsService {
         .getCachedProducts(ProductCacheService.homeProductsKey)
         .then((cachedProducts) {
       if (cachedProducts != null && cachedProducts.isNotEmpty) {
-        if (!controller.isClosed)
-          controller.add((products: cachedProducts, salesCounts: {}));
+        if (!controller.isClosed) {
+          controller.add((products: cachedProducts, salesCounts: {}, ratings: {}));
+        }
       }
       // Zatim fetch sa servera
       refetch();
@@ -355,7 +398,9 @@ class ProductsService {
         await cache.cacheProducts(
             ProductCacheService.sellerKey(sellerId), products);
 
-        if (!controller.isClosed) controller.add(products);
+        if (!controller.isClosed) {
+          controller.add(products);
+        }
       } catch (e, st) {
         LoggerService.error('Failed to refetch seller products', e,
             stackTrace: st, extra: {'sellerId': sellerId});
@@ -365,7 +410,9 @@ class ProductsService {
             .getCachedProducts(ProductCacheService.sellerKey(sellerId));
         if (cachedProducts != null && cachedProducts.isNotEmpty) {
           LoggerService.info('Using cached seller products as fallback');
-          if (!controller.isClosed) controller.add(cachedProducts);
+          if (!controller.isClosed) {
+            controller.add(cachedProducts);
+          }
         }
       }
     }
@@ -375,7 +422,9 @@ class ProductsService {
         .getCachedProducts(ProductCacheService.sellerKey(sellerId))
         .then((cachedProducts) {
       if (cachedProducts != null && cachedProducts.isNotEmpty) {
-        if (!controller.isClosed) controller.add(cachedProducts);
+        if (!controller.isClosed) {
+          controller.add(cachedProducts);
+        }
       }
       refetch();
     }).catchError((e) {
@@ -412,7 +461,9 @@ class ProductsService {
     try {
       final res =
           await _client.from('products').select().eq('id', id).maybeSingle();
-      if (res == null) return null;
+      if (res == null) {
+        return null;
+      }
       final product = ProductModel.fromJson(res);
       // Cache product
       await cache.cacheProduct(product);

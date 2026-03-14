@@ -3,12 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/buyer_review_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
-import '../services/chat_service.dart';
-import '../services/reviews_service.dart';
-import '../services/users_service.dart';
+import 'package:mleko/services/services.dart';
+
 import '../widgets/app_error_retry.dart';
 
 /// Profil kupca — vidi prodavac kada klikne na kupca u poruci ili porudžbini.
@@ -36,12 +36,21 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
     final results = await Future.wait([
       UsersService().getUser(buyerId),
       ReviewsService().getReviewsByBuyer(buyerId),
+      ReviewsService().getReviewsForBuyer(buyerId),
       _loadDeliveredOrdersCount(buyerId),
     ]);
-    final reviews = results[1] as List<ReviewModel>;
+    final reviewsLeftByBuyer = results[1] as List<ReviewModel>;
+    final reviewsForBuyer = results[2] as List<BuyerReviewModel>;
+    final avgBuyerRating = reviewsForBuyer.isEmpty
+        ? null
+        : reviewsForBuyer.fold<double>(0, (sum, r) => sum + r.rating) /
+            reviewsForBuyer.length;
 
     // Batch-load seller names — jedan upit umesto N FutureBuilder poziva
-    final sellerIds = reviews.map((r) => r.sellerId).toSet().toList();
+    final sellerIds = <String>{
+      ...reviewsLeftByBuyer.map((r) => r.sellerId),
+      ...reviewsForBuyer.map((r) => r.sellerId),
+    }.toList();
     final Map<String, String> sellerNames = {};
     if (sellerIds.isNotEmpty) {
       final profiles = await Supabase.instance.client
@@ -56,9 +65,11 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
 
     return {
       'user': results[0],
-      'reviews': reviews,
+      'reviewsLeftByBuyer': reviewsLeftByBuyer,
+      'reviewsForBuyer': reviewsForBuyer,
+      'avgBuyerRating': avgBuyerRating,
       'sellerNames': sellerNames,
-      'ordersCount': results[2] as int,
+      'ordersCount': results[3] as int,
     };
   }
 
@@ -93,7 +104,11 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
           );
         }
         final user = snap.data!['user'] as UserModel?;
-        final reviews = snap.data!['reviews'] as List<ReviewModel>;
+        final reviewsLeftByBuyer =
+            snap.data!['reviewsLeftByBuyer'] as List<ReviewModel>;
+        final reviewsForBuyer =
+            snap.data!['reviewsForBuyer'] as List<BuyerReviewModel>;
+        final avgBuyerRating = snap.data!['avgBuyerRating'] as double?;
         final sellerNames = snap.data!['sellerNames'] as Map<String, String>;
         final ordersCount = snap.data!['ordersCount'] as int;
         final displayName = user?.displayName ?? user?.farmName ?? 'Kupac';
@@ -108,33 +123,77 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                 displayName: displayName,
                 ordersCount: ordersCount,
                 buyerId: widget.buyerId,
+                avgBuyerRating: avgBuyerRating,
+                buyerReviewCount: reviewsForBuyer.length,
               ),
               const SizedBox(height: 16),
-              Text(
-                'Ocene kao kupac',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              if (reviews.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Center(
-                      child: Text(
-                        'Kupac još nije ostavio recenzije.',
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                    ),
+              Card(
+                child: ExpansionTile(
+                  initiallyExpanded: true,
+                  title: Text(
+                    'Ocene kupca',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                )
-              else
-                ...reviews.map((r) => _ReviewTile(
-                      review: r,
-                      sellerName: sellerNames[r.sellerId] ?? 'Prodavac',
-                    )),
+                  childrenPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  children: [
+                    if (reviewsForBuyer.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                          child: Text(
+                            'Kupac jos nema primljene recenzije.',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ),
+                      )
+                    else
+                      ...reviewsForBuyer.map(
+                        (r) => _BuyerReviewTile(
+                          review: r,
+                          sellerName: sellerNames[r.sellerId] ?? 'Prodavac',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: ExpansionTile(
+                  initiallyExpanded: false,
+                  title: Text(
+                    'Ocene kao kupac',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  childrenPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  children: [
+                    if (reviewsLeftByBuyer.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                          child: Text(
+                            'Kupac još nije ostavio recenzije.',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ),
+                      )
+                    else
+                      ...reviewsLeftByBuyer.map(
+                        (r) => _ReviewTile(
+                          review: r,
+                          sellerName: sellerNames[r.sellerId] ?? 'Prodavac',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         );
@@ -150,12 +209,16 @@ class _BuyerHeaderCard extends StatelessWidget {
   final String displayName;
   final int ordersCount;
   final String buyerId;
+  final double? avgBuyerRating;
+  final int buyerReviewCount;
 
   const _BuyerHeaderCard({
     required this.user,
     required this.displayName,
     required this.ordersCount,
     required this.buyerId,
+    required this.avgBuyerRating,
+    required this.buyerReviewCount,
   });
 
   @override
@@ -165,11 +228,23 @@ class _BuyerHeaderCard extends StatelessWidget {
         !currentUser.isGuest &&
         currentUser.id != buyerId;
 
+    final hasStats = ordersCount > 0 || avgBuyerRating != null;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            if (hasStats) ...[
+              _BuyerReputationStrip(
+                ordersCount: ordersCount,
+                avgBuyerRating: avgBuyerRating,
+                buyerReviewCount: buyerReviewCount,
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+            ],
             Row(
               children: [
                 CircleAvatar(
@@ -179,28 +254,34 @@ class _BuyerHeaderCard extends StatelessWidget {
                       ? NetworkImage(user!.profileImageUrl!)
                       : null,
                   child: user?.profileImageUrl == null
-                      ? Icon(Icons.person, size: 32, color: Colors.grey.shade600)
+                      ? Icon(Icons.person,
+                          size: 32, color: Colors.grey.shade600)
                       : null,
                 ),
                 const SizedBox(width: 16),
-                        } catch (e, st) {
-                          setState(() {
-                            _loading = false;
-                            _error = 'Greška pri učitavanju profila.';
-                          });
-                          final error = AppError.from(e, stackTrace: st, userMessage: 'Greška pri učitavanju profila.');
-                          await ErrorDialog.show(context, error: error, onRetry: _loadProfile);
-                        }
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       if (user?.location != null) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                            Icon(Icons.location_on,
+                                size: 14, color: Colors.grey.shade600),
                             const SizedBox(width: 2),
-                            Text(user!.location!,
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                            Text(
+                              user!.location!,
+                              style: TextStyle(
+                                  color: Colors.grey.shade600, fontSize: 13),
+                            ),
                           ],
                         ),
                       ],
@@ -208,7 +289,8 @@ class _BuyerHeaderCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Član od ${DateFormat('MMM yyyy.', 'sr').format(user!.createdAt!)}',
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                          style: TextStyle(
+                              color: Colors.grey.shade500, fontSize: 12),
                         ),
                       ],
                     ],
@@ -216,27 +298,6 @@ class _BuyerHeaderCard extends StatelessWidget {
                 ),
               ],
             ),
-            // Statistika kupca
-            if (ordersCount > 0) ...[
-              const SizedBox(height: 12),
-              const Divider(height: 1),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline, size: 16, color: Colors.green.shade600),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$ordersCount isporučen${ordersCount == 1 ? 'a' : 'ih'} porudžbin${ordersCount == 1 ? 'a' : 'a'}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
             // Kontakt dugme — vidljivo prodavcima i svima koji nisu taj kupac
             if (canContact) ...[
               const SizedBox(height: 12),
@@ -248,6 +309,107 @@ class _BuyerHeaderCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BuyerReputationStrip extends StatelessWidget {
+  final int ordersCount;
+  final double? avgBuyerRating;
+  final int buyerReviewCount;
+
+  const _BuyerReputationStrip({
+    required this.ordersCount,
+    required this.avgBuyerRating,
+    required this.buyerReviewCount,
+  });
+
+  String? _deliveredLabel() {
+    final n = ordersCount;
+    if (n <= 0) return null;
+    if (n == 1) return '1 uspešno isporučena porudžbina';
+    if (n >= 2 && n <= 4) return '$n uspešno isporučene porudžbine';
+    return '$n uspešno isporučenih porudžbina';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final delivered = _deliveredLabel();
+    final rating = avgBuyerRating;
+
+    if (delivered == null && rating == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        if (rating != null)
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.star_rounded,
+                    size: 18, color: Colors.amber.shade700),
+                const SizedBox(width: 6),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Prosečna ocena',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${rating.toStringAsFixed(1)} ($buyerReviewCount)',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        if (delivered != null)
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.check_circle_outline,
+                    size: 18, color: Colors.green.shade700),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Uspešne porudžbine',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        delivered,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -265,9 +427,21 @@ class _ContactBuyerButtonState extends State<_ContactBuyerButton> {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
+    return FilledButton.icon(
+      style: FilledButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        minimumSize: const Size(48, 48),
+      ),
       icon: _loading
-          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2))
           : const Icon(Icons.chat_outlined, size: 18),
       label: const Text('Pošalji poruku'),
       onPressed: _loading ? null : _openChat,
@@ -354,3 +528,61 @@ class _ReviewTile extends StatelessWidget {
     );
   }
 }
+
+class _BuyerReviewTile extends StatelessWidget {
+  final BuyerReviewModel review;
+  final String sellerName;
+
+  const _BuyerReviewTile({required this.review, required this.sellerName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    sellerName,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Text(
+                  DateFormat('d. MMM yyyy.', 'sr').format(review.createdAt),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: List.generate(
+                5,
+                (i) => Icon(
+                  i < review.rating ? Icons.star : Icons.star_border,
+                  size: 18,
+                  color: Colors.amber.shade700,
+                ),
+              ),
+            ),
+            if (review.comment.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                review.comment,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+

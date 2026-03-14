@@ -20,6 +20,7 @@ class UserModel {
   final List<String> farmGalleryUrls;
   final List<String> sellerTags;
   final DateTime? createdAt;
+
   /// Sopstveni šabloni brzih odgovora (samo za prodavce).
   final List<String> sellerQuickReplies;
 
@@ -48,26 +49,42 @@ class UserModel {
   bool get isSeller => role == UserRole.seller;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final role = json['role'] == 'seller' ? UserRole.seller : UserRole.buyer;
+    final location = json['location'] as String?;
+    final address = (json['address'] as String?) ??
+        (role == UserRole.buyer ? location : null);
+
     return UserModel(
       id: json['id'] as String,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       displayName: json['display_name'] as String?,
       city: json['city'] as String?,
-      address: json['address'] as String?,
-      role: json['role'] == 'seller' ? UserRole.seller : UserRole.buyer,
+      address: address,
+      role: role,
       isGuest: json['is_guest'] as bool? ?? false,
       farmName: json['farm_name'] as String?,
-      location: json['location'] as String?,
+      location: location,
       profileImageUrl: json['profile_image_url'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
       isVerified: json['is_verified'] as bool? ?? false,
       sellerStory: json['seller_story'] as String?,
-      farmGalleryUrls: (json['farm_gallery_urls'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      sellerTags: (json['seller_tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
-      sellerQuickReplies: (json['seller_quick_replies'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      farmGalleryUrls: (json['farm_gallery_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      sellerTags: (json['seller_tags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
+      sellerQuickReplies: (json['seller_quick_replies'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 
@@ -77,13 +94,14 @@ class UserModel {
       if (phone != null) 'phone': phone,
       if (displayName != null) 'display_name': displayName,
       if (city != null) 'city': city,
-      if (address != null) 'address': address,
+      if (address != null && role == UserRole.buyer) 'location': address,
       'role': role == UserRole.seller ? 'seller' : 'buyer',
       'is_guest': isGuest,
       if (farmName != null) 'farm_name': farmName,
       if (location != null) 'location': location,
       if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
-      if (sellerQuickReplies.isNotEmpty) 'seller_quick_replies': sellerQuickReplies,
+      if (sellerQuickReplies.isNotEmpty)
+        'seller_quick_replies': sellerQuickReplies,
     };
   }
 

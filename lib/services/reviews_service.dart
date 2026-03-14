@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/buyer_review_model.dart';
 import '../models/review_model.dart';
 import '../models/seller_stats_model.dart';
 
@@ -11,7 +12,9 @@ class ReviewsService {
         .select()
         .eq('seller_id', sellerId)
         .order('created_at', ascending: false);
-    return (list as List).map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList();
+    return (list as List)
+        .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Recenzije koje je kupac ostavio prodavcima (ocene kao kupac)
@@ -21,7 +24,9 @@ class ReviewsService {
         .select()
         .eq('buyer_id', buyerId)
         .order('created_at', ascending: false);
-    return (list as List).map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList();
+    return (list as List)
+        .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<ReviewModel>> getReviewsForProduct(String productId) async {
@@ -30,7 +35,9 @@ class ReviewsService {
         .select()
         .eq('product_id', productId)
         .order('created_at', ascending: false);
-    return (list as List).map((e) => ReviewModel.fromJson(e as Map<String, dynamic>)).toList();
+    return (list as List)
+        .map((e) => ReviewModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Jedan DB round-trip: COUNT(delivered orders) + AVG(rating) + AVG(response time).
@@ -40,8 +47,12 @@ class ReviewsService {
       'get_seller_stats',
       params: {'p_seller_id': sellerId},
     );
-    if (result == null) return const SellerStatsModel(ordersCount: 0, reviewCount: 0);
-    final json = result is Map<String, dynamic> ? result : Map<String, dynamic>.from(result as Map);
+    if (result == null) {
+      return const SellerStatsModel(ordersCount: 0, reviewCount: 0);
+    }
+    final json = result is Map<String, dynamic>
+        ? result
+        : Map<String, dynamic>.from(result as Map);
     return SellerStatsModel.fromJson(json);
   }
 
@@ -51,7 +62,8 @@ class ReviewsService {
         .select('rating')
         .eq('seller_id', sellerId);
     if ((list as List).isEmpty) return null;
-    final sum = (list as List).fold<double>(0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
+    final sum = (list as List).fold<double>(
+        0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
     return sum / list.length;
   }
 
@@ -61,8 +73,45 @@ class ReviewsService {
         .select('rating')
         .eq('product_id', productId);
     if ((list as List).isEmpty) return null;
-    final sum = (list as List).fold<double>(0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
+    final sum = (list as List).fold<double>(
+        0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
     return sum / list.length;
+  }
+
+  Future<List<BuyerReviewModel>> getReviewsForBuyer(String buyerId) async {
+    try {
+      final list = await _client
+          .from('buyer_reviews')
+          .select()
+          .eq('buyer_id', buyerId)
+          .order('created_at', ascending: false);
+      return (list as List)
+          .map((e) => BuyerReviewModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01') {
+        return const [];
+      }
+      rethrow;
+    }
+  }
+
+  Future<double?> getAverageRatingForBuyer(String buyerId) async {
+    try {
+      final list = await _client
+          .from('buyer_reviews')
+          .select('rating')
+          .eq('buyer_id', buyerId);
+      if ((list as List).isEmpty) return null;
+      final sum = (list as List).fold<double>(
+          0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
+      return sum / list.length;
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01') {
+        return null;
+      }
+      rethrow;
+    }
   }
 
   Future<bool> canReviewOrder(String buyerId, String orderId) async {
@@ -78,7 +127,8 @@ class ReviewsService {
   /// Vraća prvu isporučenu nerecenziranu porudžbinu za kupca i prodavca.
   /// Koristi get_reviewable_order RPC — jedan upit sa NOT EXISTS,
   /// umesto prethodnog N+1 loopa (canReviewOrder po svakoj porudžbini).
-  Future<({String orderId, String productId, String productName})?> getReviewableOrder(
+  Future<({String orderId, String productId, String productName})?>
+      getReviewableOrder(
     String buyerId,
     String sellerId,
   ) async {
@@ -86,14 +136,18 @@ class ReviewsService {
       'p_buyer_id': buyerId,
       'p_seller_id': sellerId,
     });
-    if (result == null) return null;
+    if (result == null) {
+      return null;
+    }
     final json = result is Map<String, dynamic>
         ? result
         : Map<String, dynamic>.from(result as Map);
     final orderId = json['order_id'] as String?;
     final productId = json['product_id'] as String?;
     final productName = json['product_name'] as String?;
-    if (orderId == null || productId == null || productName == null) return null;
+    if (orderId == null || productId == null || productName == null) {
+      return null;
+    }
     return (orderId: orderId, productId: productId, productName: productName);
   }
 
@@ -110,6 +164,53 @@ class ReviewsService {
       'seller_id': sellerId,
       'order_id': orderId,
       'product_id': productId,
+      'rating': rating,
+      'comment': comment,
+    });
+  }
+
+  Future<bool> canSellerReviewBuyer(String sellerId, String orderId) async {
+    final order = await _client
+        .from('orders')
+        .select('id, status')
+        .eq('id', orderId)
+        .eq('seller_id', sellerId)
+        .maybeSingle();
+    if (order == null) {
+      return false;
+    }
+    final status = order['status'] as String?;
+    if (status != 'delivered' && status != 'arhivirano') {
+      return false;
+    }
+
+    try {
+      final existing = await _client
+          .from('buyer_reviews')
+          .select('id')
+          .eq('seller_id', sellerId)
+          .eq('order_id', orderId)
+          .maybeSingle();
+      return existing == null;
+    } on PostgrestException catch (e) {
+      if (e.code == '42P01') {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> addBuyerReview({
+    required String sellerId,
+    required String buyerId,
+    required String orderId,
+    required int rating,
+    String comment = '',
+  }) async {
+    await _client.from('buyer_reviews').insert({
+      'seller_id': sellerId,
+      'buyer_id': buyerId,
+      'order_id': orderId,
       'rating': rating,
       'comment': comment,
     });

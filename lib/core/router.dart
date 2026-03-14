@@ -21,6 +21,7 @@ import '../screens/seller/seller_settings_screen.dart';
 import '../screens/seller/map_picker_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/notifications_screen.dart';
+import '../screens/settings_screen.dart';
 import '../screens/recipes_screen.dart';
 import '../screens/recipe_detail_screen.dart';
 import '../screens/favorite_sellers_screen.dart';
@@ -66,6 +67,7 @@ GoRouter createRouter(AppState appState) {
             loc.startsWith('/orders') ||
             loc.startsWith('/becoming-seller') ||
             loc.startsWith('/seller-settings') ||
+            loc.startsWith('/settings') ||
             loc.startsWith('/add-product') ||
             loc.startsWith('/product/edit') ||
             loc.startsWith('/favorites') ||
@@ -122,7 +124,11 @@ GoRouter createRouter(AppState appState) {
         path: '/product/:id',
         builder: (_, state) {
           final id = state.pathParameters['id']!;
-          return ProductDetailScreen(productId: id);
+          final scrollToReviews = state.uri.queryParameters['reviews'] == '1';
+          return ProductDetailScreen(
+            productId: id,
+            scrollToReviews: scrollToReviews,
+          );
         },
       ),
       GoRoute(
@@ -153,6 +159,7 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/seller/:sellerId',
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (_, state) {
           final id = state.pathParameters['sellerId']!;
           return SellerProfileScreen(sellerId: id);
@@ -176,6 +183,10 @@ GoRouter createRouter(AppState appState) {
       GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, __) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/recipes',

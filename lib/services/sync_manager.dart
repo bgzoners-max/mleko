@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../services/order_queue_service.dart';
-import '../services/orders_service.dart';
-import '../services/connectivity_service.dart';
-import '../services/logger_service.dart';
+import '../models/order_item_model.dart';
+import 'package:mleko/services/services.dart';
+
 
 /// Sinhronizuje pending orders kada se internet vrati
 class SyncManager extends ChangeNotifier {
@@ -93,16 +92,22 @@ class SyncManager extends ChangeNotifier {
   }
 
   Future<void> _sendOrderToServer(PendingOrder order) async {
-    // TODO: Implementiraj actual server send sa OrdersService
-    // Za sada, simuliraj sa delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // U budućnosti:
-    // await _ordersService.createOrder(
-    //   buyerId: order.buyerId,
-    //   sellerId: order.sellerId,
-    //   ...
-    // );
+    await _ordersService.createOrderWithItems(
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      items: [
+        OrderItemModel(
+          productId: order.productId,
+          productName: order.productName,
+          quantityKg: order.quantityKg,
+          unitType: order.unitType,
+        ),
+      ],
+      note: order.note ?? '',
+      buyerCity: order.buyerCity,
+      buyerPhone: order.buyerPhone,
+      buyerAddress: order.buyerAddress,
+    );
   }
 
   @override
@@ -111,3 +116,4 @@ class SyncManager extends ChangeNotifier {
     super.dispose();
   }
 }
+

@@ -6,9 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
-import '../services/favorite_sellers_service.dart';
-import '../services/storage_service.dart';
-import '../services/users_service.dart';
+import 'package:mleko/services/services.dart';
 
 const _kSellerTags = [
   'Bio sertifikat',
@@ -42,6 +40,13 @@ class ProfileScreen extends StatelessWidget {
           if (user.isSeller) _SellerGallerySection(user: user),
           _ProfileDataCard(user: user),
           const SizedBox(height: 16),
+          ListTile(
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Podešavanja'),
+            subtitle: const Text('Obaveštenja, prodavac, podrška'),
+            onTap: () => context.push('/settings'),
+          ),
+          const Divider(height: 1),
           if (user.isSeller) ...[
             if (!user.isGuest)
               ListTile(
@@ -687,3 +692,4 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
     );
   }
 }
+

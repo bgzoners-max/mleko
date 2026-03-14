@@ -5,11 +5,8 @@ import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
-import '../services/chat_service.dart';
-import '../services/orders_service.dart';
-import '../services/products_service.dart';
-import '../services/users_service.dart';
-import '../services/order_queue_service.dart';
+import 'package:mleko/services/services.dart';
+
 import '../widgets/app_error_retry.dart';
 import '../widgets/offline_indicator.dart';
 
@@ -47,14 +44,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           );
         }
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
+        }
         final product = snap.data;
-        if (product == null)
+        if (product == null) {
           return Scaffold(
               appBar: AppBar(),
               body: const Center(child: Text('Proizvod nije pronađen.')));
+        }
         return _CheckoutForm(
             product: product, initialQuantity: widget.initialQuantity);
       },
@@ -151,7 +150,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         final orderId = await OrdersService().createOrder(order);
         if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
           await UsersService().updatePhone(user.id, phone);
-          await context.read<AppState>().refreshUser();
+          await appState.refreshUser();
         }
         await ChatService().getOrCreateConversation(
             user.id, widget.product.sellerId,
@@ -319,3 +318,4 @@ class _CheckoutFormState extends State<_CheckoutForm> {
     );
   }
 }
+

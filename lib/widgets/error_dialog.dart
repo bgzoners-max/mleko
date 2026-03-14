@@ -130,7 +130,7 @@ class ErrorDialog extends StatelessWidget {
       ErrorType.forbidden => Icons.block,
       ErrorType.notFound => Icons.search_off,
       ErrorType.validation => Icons.warning,
-      ErrorType.conflict => Icons.clash,
+      ErrorType.conflict => Icons.close,
       _ => Icons.error,
     };
   }

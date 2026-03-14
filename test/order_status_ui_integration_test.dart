@@ -41,7 +41,7 @@ void main() {
         home: Scaffold(
           body: ListView(
             children: [
-              OrderStatusTimeline(status: OrderStatus.shipped),
+              const OrderStatusTimeline(status: OrderStatus.shipped),
               OrderStatusAuditLogSection(
                 orderId: 'ord-1',
                 logsLoader: fakeLoader,

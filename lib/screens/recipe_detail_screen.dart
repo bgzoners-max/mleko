@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/recipe_model.dart';
-import '../services/recipes_service.dart';
+import 'package:mleko/services/services.dart';
 import '../widgets/app_error_retry.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
@@ -92,3 +92,4 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 }
+

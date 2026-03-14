@@ -6,7 +6,8 @@ class UsersService {
   final _client = Supabase.instance.client;
 
   Future<UserModel?> getUser(String userId) async {
-    final res = await _client.from('profiles').select().eq('id', userId).maybeSingle();
+    final res =
+        await _client.from('profiles').select().eq('id', userId).maybeSingle();
     if (res == null) return null;
     return UserModel.fromJson(res);
   }
@@ -34,7 +35,7 @@ class UsersService {
     if (displayName != null) data['display_name'] = displayName;
     if (phone != null) data['phone'] = phone;
     if (city != null) data['city'] = city;
-    if (address != null) data['address'] = address;
+    if (address != null) data['location'] = address;
     if (role != null) data['role'] = role;
     if (isGuest != null) data['is_guest'] = isGuest;
     if (farmName != null) data['farm_name'] = farmName;
@@ -45,7 +46,8 @@ class UsersService {
     await _client.from('profiles').upsert(data);
   }
 
-  Future<void> updateSellerLocation(String userId, double lat, double lng) async {
+  Future<void> updateSellerLocation(
+      String userId, double lat, double lng) async {
     await _client.from('profiles').update({
       'lat': lat,
       'lng': lng,
@@ -89,8 +91,10 @@ class UsersService {
     }).eq('id', userId);
   }
 
-  Future<void> updateSellerQuickReplies(String userId, List<String> replies) async {
-    final cleaned = replies.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+  Future<void> updateSellerQuickReplies(
+      String userId, List<String> replies) async {
+    final cleaned =
+        replies.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     await _client.from('profiles').update({
       'seller_quick_replies': cleaned,
       'updated_at': DateTime.now().toIso8601String(),

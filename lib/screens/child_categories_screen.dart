@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/category.dart';
-import '../services/supabase_service.dart';
+import 'package:mleko/services/services.dart';
 import '../widgets/category_icon.dart';
 
 class ChildCategoriesScreen extends StatefulWidget {
@@ -154,3 +154,4 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
     );
   }
 }
+

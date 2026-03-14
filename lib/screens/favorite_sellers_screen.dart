@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
-import '../services/favorite_sellers_service.dart';
+import 'package:mleko/services/services.dart';
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 
 class FavoriteSellersScreen extends StatefulWidget {
@@ -64,17 +65,13 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
           }
           final list = snap.data ?? [];
           if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text('Ne pratite nijedno gazdinstvo', style: TextStyle(color: Colors.grey.shade600)),
-                  const SizedBox(height: 8),
-                  Text('Kliknite "Pratim" na profilu prodavca', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                ],
-              ),
+            return AppEmptyState(
+              icon: Icons.people_outline,
+              title: 'Ne pratite nijedno gazdinstvo',
+              subtitle: 'Kliknite „Pratim” na profilu prodavca da ga dodate ovde.',
+              ctaLabel: 'Pretraži proizvode',
+              ctaIcon: Icons.search,
+              onCtaPressed: () => context.go('/'),
             );
           }
           return ListView.builder(
@@ -111,3 +108,4 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
     );
   }
 }
+

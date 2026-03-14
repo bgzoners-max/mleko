@@ -24,7 +24,6 @@ class CachedProductList {
       };
 
   factory CachedProductList.fromJson(Map<String, dynamic> json) {
-    final now = DateTime.now();
     final expiresAt = DateTime.parse(json['expires_at'] as String);
     return CachedProductList(
       products: (json['products'] as List)
@@ -72,7 +71,7 @@ class ProductCacheService {
         'expiresAt': cachedList.expiresAt.toString(),
       });
     } catch (e, st) {
-      LoggerService.error('Failed to cache products', error: e, stackTrace: st);
+      LoggerService.error('Failed to cache products', e, stackTrace: st);
     }
   }
 
@@ -100,7 +99,7 @@ class ProductCacheService {
       });
       return cached.products;
     } catch (e, st) {
-      LoggerService.error('Failed to read cache', error: e, stackTrace: st);
+      LoggerService.error('Failed to read cache', e, stackTrace: st);
       return null;
     }
   }
@@ -128,7 +127,7 @@ class ProductCacheService {
       LoggerService.info('Cleared all product cache',
           extra: {'count': keys.length});
     } catch (e, st) {
-      LoggerService.error('Failed to clear cache', error: e, stackTrace: st);
+      LoggerService.error('Failed to clear cache', e, stackTrace: st);
     }
   }
 
@@ -139,8 +138,7 @@ class ProductCacheService {
       await prefs.remove(key);
       LoggerService.info('Cleared cache', extra: {'key': key});
     } catch (e, st) {
-      LoggerService.error('Failed to clear cache key',
-          error: e, stackTrace: st);
+      LoggerService.error('Failed to clear cache key', e, stackTrace: st);
     }
   }
 

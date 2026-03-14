@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../models/product_model.dart';
 import '../providers/app_state.dart';
 import '../providers/favorites_provider.dart';
-import '../services/favorites_service.dart';
+import 'package:mleko/services/services.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -19,6 +21,19 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final _favoritesService = FavoritesService();
   final _refreshController = StreamController<void>.broadcast();
+
+  /// Stream keširan da se na svakom rebuild-u ne kreira novi i ne ponovo učitavaju omiljeni.
+  Stream<List<ProductModel>>? _favoritesStream;
+  String? _streamUserId;
+
+  void _initStream(String userId) {
+    if (_streamUserId == userId) return;
+    _streamUserId = userId;
+    _favoritesStream = _favoritesService.streamFavoriteProducts(
+      userId,
+      refreshTrigger: _refreshController.stream,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -65,10 +80,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       );
     }
 
+    _initStream(user.id);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Omiljeni proizvodi')),
-      body: StreamBuilder(
-        stream: _favoritesService.streamFavoriteProducts(user.id, refreshTrigger: _refreshController.stream),
+      body: StreamBuilder<List<ProductModel>>(
+        stream: _favoritesStream,
         builder: (context, snap) {
           if (snap.hasError) {
             return AppErrorRetry(
@@ -88,17 +105,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height - 200,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.favorite_border, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text('Nemate omiljenih proizvoda', style: TextStyle(color: Colors.grey.shade600)),
-                        const SizedBox(height: 8),
-                        Text('Dodajte srcem na karticama proizvoda', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                      ],
-                    ),
+                  child: AppEmptyState(
+                    icon: Icons.favorite_border,
+                    title: 'Nemate omiljenih proizvoda',
+                    subtitle: 'Dodajte srcem na karticama proizvoda da ih nađete brzo ovde.',
+                    ctaLabel: 'Pretraži proizvode',
+                    ctaIcon: Icons.search,
+                    onCtaPressed: () => context.go('/'),
                   ),
                 ),
               ),
@@ -112,15 +125,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               itemCount: list.length,
               itemBuilder: (_, i) {
                 final p = list[i];
-                final user = context.watch<AppState>().user;
-                final favorites = context.watch<FavoritesProvider>();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: ProductCard(
-                    product: p,
-                    isFavorite: true,
-                    onFavoriteToggle: () => favorites.toggle(user!.id, p.id),
-                  ),
+                return Selector<FavoritesProvider, bool>(
+                  selector: (_, fav) => fav.isFavorite(p.id),
+                  builder: (_, isFavorite, __) {
+                    final user = context.watch<AppState>().user;
+                    final favorites = context.read<FavoritesProvider>();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: ProductCard(
+                        product: p,
+                        isFavorite: isFavorite,
+                        onFavoriteToggle: user != null && !user.isGuest
+                            ? () => favorites.toggle(user.id, p.id)
+                            : null,
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -130,3 +150,4 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 }
+

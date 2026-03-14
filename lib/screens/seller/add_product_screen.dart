@@ -12,8 +12,7 @@ import '../../utils/product_helpers.dart';
 import '../../widgets/grouped_category_dropdown.dart';
 import '../../providers/app_state.dart';
 import '../../providers/categories_provider.dart';
-import '../../services/products_service.dart';
-import '../../services/storage_service.dart';
+import 'package:mleko/services/services.dart';
 
 /// Ekran za dodavanje novog proizvoda. Samostalan, koristi go() za navigaciju.
 class AddProductScreen extends StatefulWidget {
@@ -448,3 +447,4 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 }
+

@@ -11,7 +11,12 @@ import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/chat_service.dart';
 import '../../services/orders_service.dart';
+import '../../services/reviews_service.dart';
+import '../../widgets/add_buyer_review_dialog.dart';
+import '../../widgets/app_empty_state.dart';
 import '../../widgets/cancel_order_dialog.dart';
+import '../../widgets/order_status_audit_log_section.dart';
+import '../../widgets/order_status_timeline.dart';
 import '../../widgets/skeleton.dart';
 
 /// Posebna sekcija Porudžbine za prodavca – pregledna lista sa svim detaljima
@@ -97,13 +102,20 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     _initStream(user.id);
 
     return Scaffold(
-      appBar: widget.showAppBar ? AppBar(title: const Text('Porudžbine')) : null,
+      appBar:
+          widget.showAppBar ? AppBar(title: const Text('Porudžbine')) : null,
       body: Column(
         children: [
           SegmentedButton<int>(
             segments: const [
-              ButtonSegment(value: 0, label: Text('Aktivne'), icon: Icon(Icons.receipt_long)),
-              ButtonSegment(value: 1, label: Text('Arhiva'), icon: Icon(Icons.archive_outlined)),
+              ButtonSegment(
+                  value: 0,
+                  label: Text('Aktivne'),
+                  icon: Icon(Icons.receipt_long)),
+              ButtonSegment(
+                  value: 1,
+                  label: Text('Arhiva'),
+                  icon: Icon(Icons.archive_outlined)),
             ],
             selected: {_segmentIndex},
             onSelectionChanged: (s) => setState(() {
@@ -127,18 +139,17 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: SizedBox(
                         height: MediaQuery.of(context).size.height - 260,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade400),
-                              const SizedBox(height: 16),
-                              Text(
-                                _isArchive ? 'Nema arhiviranih porudžbina.' : 'Nemate porudžbina.',
-                                style: TextStyle(color: Colors.grey.shade600),
-                              ),
-                            ],
-                          ),
+                        child: AppEmptyState(
+                          icon: Icons.receipt_long_outlined,
+                          title: _isArchive
+                              ? 'Nema arhiviranih porudžbina'
+                              : 'Nemate porudžbina',
+                          subtitle: _isArchive
+                              ? 'Kada arhivirate porudžbinu, pojaviće se ovde.'
+                              : 'Kada kupci pošalju upit, porudžbine će se pojaviti ovde.',
+                          ctaLabel: _isArchive ? null : 'Pregledaj proizvode',
+                          ctaIcon: Icons.storefront_outlined,
+                          onCtaPressed: _isArchive ? null : () => context.go('/'),
                         ),
                       ),
                     ),
@@ -154,17 +165,20 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                       top: 8,
                       bottom: 16 + MediaQuery.of(context).padding.bottom,
                     ),
-                    itemCount: (_isArchive ? 1 : 0) + orders.length + (_hasMore ? 1 : 0),
+                    itemCount: (_isArchive ? 1 : 0) +
+                        orders.length +
+                        (_hasMore ? 1 : 0),
                     itemBuilder: (_, i) {
                       if (_isArchive && i == 0) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Text(
                             'Porudžbine starije od 30 dana automatski se premeštaju u arhivu.\nPorudžbine se brišu nakon 12 meseci.',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                              fontStyle: FontStyle.italic,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey.shade600,
+                                      fontStyle: FontStyle.italic,
+                                    ),
                           ),
                         );
                       }
@@ -176,7 +190,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                             child: _loadingMore
                                 ? const CircularProgressIndicator()
                                 : OutlinedButton(
-                                    onPressed: () => _loadMore(user.id, recent.length),
+                                    onPressed: () =>
+                                        _loadMore(user.id, recent.length),
                                     child: const Text('Učitaj starije'),
                                   ),
                           ),
@@ -210,19 +225,51 @@ class _SellerOrderCard extends StatelessWidget {
     required this.onRefresh,
   });
 
-  Future<void> _launchCall(String? phone) async {
-    if (phone == null || phone.isEmpty) return;
-    final uri = Uri.parse('tel:${phone.replaceAll(RegExp(r'\s'), '')}');
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  Future<void> _launchCall(BuildContext context, String? phone) async {
+    final rawPhone = phone?.trim() ?? '';
+    if (rawPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Broj telefona nije dostupan.')),
+      );
+      return;
+    }
+
+    final normalized = rawPhone.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (normalized.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Broj telefona nije validan.')),
+      );
+      return;
+    }
+
+    final uri = Uri(scheme: 'tel', path: normalized);
+    try {
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Pozivanje nije podržano na ovom uređaju.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ne mogu da pokrenem poziv.')),
+        );
+      }
+    }
   }
 
-  Future<void> _updateStatus(BuildContext context, String orderId, OrderStatus status) async {
+  Future<void> _updateStatus(
+      BuildContext context, String orderId, OrderStatus status) async {
     await OrdersService().updateOrderStatus(orderId, status);
     onRefresh();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Status: ${status == OrderStatus.accepted ? 'Prihvaćeno' : status == OrderStatus.rejected ? 'Odbijeno' : status == OrderStatus.cancelledBySeller ? 'Otkazano' : 'Isporučeno'}.'),
+          content: Text(
+              'Status: ${status == OrderStatus.accepted ? 'Prihvaćeno' : status == OrderStatus.shipped ? 'Poslato' : status == OrderStatus.rejected ? 'Odbijeno' : status == OrderStatus.cancelledBySeller ? 'Otkazano' : 'Isporučeno'}.'),
         ),
       );
     }
@@ -234,7 +281,8 @@ class _SellerOrderCard extends StatelessWidget {
     await OrdersService().cancelOrderBySeller(orderId, reason);
     onRefresh();
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Porudžbina je otkazana.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Porudžbina je otkazana.')));
     }
   }
 
@@ -265,10 +313,17 @@ class _SellerOrderCard extends StatelessWidget {
                       children: [
                         Text(
                           buyerName,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary),
                         ),
                         const SizedBox(width: 4),
-                        Icon(Icons.person_outline, size: 16, color: Theme.of(context).colorScheme.primary),
+                        Icon(Icons.person_outline,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary),
                       ],
                     ),
                   ),
@@ -276,11 +331,53 @@ class _SellerOrderCard extends StatelessWidget {
                 _statusChip(context, o.statusLabel),
               ],
             ),
-            if (o.status == OrderStatus.accepted || o.status == OrderStatus.delivered)
+            const SizedBox(height: 10),
+            OrderStatusTimeline(status: o.status),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    switch (o.status) {
+                      OrderStatus.sent =>
+                        'Porudžbina je poslata – na vama je da je prihvatite ili odbijete.',
+                      OrderStatus.accepted =>
+                        'Prihvatili ste porudžbinu – pošaljite je kupcu kada bude spremna.',
+                      OrderStatus.shipped =>
+                        'Označili ste porudžbinu kao poslatu – čeka se potvrda kupca.',
+                      OrderStatus.delivered =>
+                        'Kupac je potvrdio prijem – možete ostaviti recenziju kupca.',
+                      OrderStatus.rejected =>
+                        'Odbili ste ovu porudžbinu.',
+                      OrderStatus.cancelledBySeller =>
+                        'Otkazali ste ovu porudžbinu.',
+                      OrderStatus.archived =>
+                        'Porudžbina je u arhivi.',
+                    },
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            OrderStatusAuditLogSection(orderId: o.id),
+            if (o.status == OrderStatus.accepted ||
+                o.status == OrderStatus.shipped ||
+                o.status == OrderStatus.delivered)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -288,10 +385,15 @@ class _SellerOrderCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
+                      Icon(Icons.check_circle,
+                          color: Colors.green.shade700, size: 24),
                       const SizedBox(width: 8),
                       Text(
-                        o.status == OrderStatus.delivered ? 'Isporučeno' : 'Potvrđeno',
+                        o.status == OrderStatus.delivered
+                            ? 'Isporučeno'
+                            : o.status == OrderStatus.shipped
+                                ? 'Poslato kupcu - ceka potvrdu kupca'
+                                : 'Potvrđeno',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.green.shade800,
@@ -307,10 +409,19 @@ class _SellerOrderCard extends StatelessWidget {
             if (o.hasMultipleItems)
               _SellerOrderItemsSection(orderId: o.id)
             else ...[
-              _DetailRow(icon: Icons.inventory_2, label: 'Proizvod', value: o.productName ?? ''),
-              _DetailRow(icon: Icons.scale, label: 'Količina', value: ProductModel.formatQuantityWithUnit(o.quantityKg ?? 0, o.unitType ?? ProductModel.unitKg)),
+              _DetailRow(
+                  icon: Icons.inventory_2,
+                  label: 'Proizvod',
+                  value: o.productName ?? ''),
+              _DetailRow(
+                  icon: Icons.scale,
+                  label: 'Količina',
+                  value: ProductModel.formatQuantityWithUnit(
+                      o.quantityKg ?? 0, o.unitType ?? ProductModel.unitKg)),
             ],
-            if (o.buyerCity.isNotEmpty) _DetailRow(icon: Icons.location_on, label: 'Grad', value: o.buyerCity),
+            if (o.buyerCity.isNotEmpty)
+              _DetailRow(
+                  icon: Icons.location_on, label: 'Grad', value: o.buyerCity),
             if (o.buyerPhone.isNotEmpty)
               _DetailRow(
                 icon: Icons.phone,
@@ -318,7 +429,7 @@ class _SellerOrderCard extends StatelessWidget {
                 value: o.buyerPhone,
                 trailing: IconButton(
                   icon: const Icon(Icons.call, color: Colors.green),
-                  onPressed: () => _launchCall(o.buyerPhone),
+                  onPressed: () => _launchCall(context, o.buyerPhone),
                   tooltip: 'Pozovi',
                 ),
               ),
@@ -337,9 +448,14 @@ class _SellerOrderCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Napomena', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                              Text('Napomena',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600)),
                               const SizedBox(height: 2),
-                              Text(o.note, style: const TextStyle(fontStyle: FontStyle.italic)),
+                              Text(o.note,
+                                  style: const TextStyle(
+                                      fontStyle: FontStyle.italic)),
                             ],
                           ),
                         ),
@@ -355,13 +471,16 @@ class _SellerOrderCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   FilledButton.tonal(
-                    onPressed: o.buyerPhone.isNotEmpty ? () => _launchCall(o.buyerPhone) : null,
+                    onPressed: o.buyerPhone.isNotEmpty
+                        ? () => _launchCall(context, o.buyerPhone)
+                        : null,
                     child: const Text('Pozovi'),
                   ),
                   OutlinedButton.icon(
                     onPressed: () async {
                       try {
-                        final convId = await ChatService().getOrCreateConversation(
+                        final convId =
+                            await ChatService().getOrCreateConversation(
                           o.buyerId,
                           user.id,
                           orderId: o.id,
@@ -370,7 +489,9 @@ class _SellerOrderCard extends StatelessWidget {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+                            SnackBar(
+                                content: Text('Greška: $e'),
+                                backgroundColor: Colors.red),
                           );
                         }
                       }
@@ -380,7 +501,8 @@ class _SellerOrderCard extends StatelessWidget {
                   ),
                   if (o.status == OrderStatus.sent) ...[
                     FilledButton(
-                      onPressed: () => _updateStatus(context, o.id, OrderStatus.accepted),
+                      onPressed: () =>
+                          _updateStatus(context, o.id, OrderStatus.accepted),
                       child: const Text('Prihvati'),
                     ),
                     OutlinedButton(
@@ -389,7 +511,8 @@ class _SellerOrderCard extends StatelessWidget {
                           context: context,
                           builder: (ctx) => AlertDialog(
                             title: const Text('Odbij porudžbinu?'),
-                            content: const Text('Kupac će biti obavešten da ste odbili porudžbinu.'),
+                            content: const Text(
+                                'Kupac će biti obavešten da ste odbili porudžbinu.'),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(ctx, false),
@@ -397,29 +520,58 @@ class _SellerOrderCard extends StatelessWidget {
                               ),
                               FilledButton(
                                 onPressed: () => Navigator.pop(ctx, true),
-                                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                                style: FilledButton.styleFrom(
+                                    backgroundColor: Colors.red),
                                 child: const Text('Odbij'),
                               ),
                             ],
                           ),
                         );
                         if (ok == true && context.mounted) {
-                          await _updateStatus(context, o.id, OrderStatus.rejected);
+                          await _updateStatus(
+                              context, o.id, OrderStatus.rejected);
                         }
                       },
                       child: const Text('Odbij'),
                     ),
                   ],
                   if (o.status == OrderStatus.accepted) ...[
-                    FilledButton(
-                      onPressed: () => _updateStatus(context, o.id, OrderStatus.delivered),
-                      child: const Text('Isporučeno'),
+                    FilledButton.tonal(
+                      onPressed: () =>
+                          _updateStatus(context, o.id, OrderStatus.shipped),
+                      child: const Text('Poslato'),
                     ),
                     OutlinedButton(
                       onPressed: () => _cancelOrder(context, o.id),
                       child: const Text('Otkaži'),
                     ),
                   ],
+                  if (o.status == OrderStatus.shipped) ...[
+                    const Chip(
+                      label: Text('Ceka potvrdu kupca'),
+                      avatar: Icon(Icons.schedule, size: 16),
+                    ),
+                    OutlinedButton(
+                      onPressed: () => _cancelOrder(context, o.id),
+                      child: const Text('Otkaži'),
+                    ),
+                  ],
+                  if (o.status == OrderStatus.delivered)
+                    _CanSellerReviewBuyerButton(
+                      key: ValueKey('canreviewbuyer-${o.id}'),
+                      sellerId: user.id,
+                      order: o,
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (ctx) => AddBuyerReviewDialog(
+                          sellerId: user.id,
+                          buyerId: o.buyerId,
+                          orderId: o.id,
+                          buyerName: buyerName,
+                          onSubmitted: onRefresh,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -431,7 +583,8 @@ class _SellerOrderCard extends StatelessWidget {
 
   Widget _statusChip(BuildContext context, String label) {
     final color = switch (label) {
-      'Poslato' => Colors.orange,
+      'Na čekanju' => Colors.orange,
+      'Poslato' => Colors.teal,
       'Prihvaćeno' => Colors.blue,
       'Odbijeno' => Colors.red,
       'Isporučeno' => Colors.green,
@@ -469,9 +622,9 @@ class _SellerOrderItemsSection extends StatelessWidget {
                 child: Text(
                   totalLabel,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
                 ),
               ),
             ],
@@ -481,14 +634,20 @@ class _SellerOrderItemsSection extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.inventory_2, size: 18, color: Colors.grey.shade600),
+                    Icon(Icons.inventory_2,
+                        size: 18, color: Colors.grey.shade600),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item.productName, style: Theme.of(context).textTheme.bodyMedium),
-                          Text(ProductModel.formatQuantityWithUnit(item.quantityKg, item.unitType), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          Text(item.productName,
+                              style: Theme.of(context).textTheme.bodyMedium),
+                          Text(
+                              ProductModel.formatQuantityWithUnit(
+                                  item.quantityKg, item.unitType),
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade600)),
                         ],
                       ),
                     ),
@@ -528,7 +687,9 @@ class _DetailRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Text(label,
+                    style:
+                        TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 Text(value, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
@@ -536,6 +697,44 @@ class _DetailRow extends StatelessWidget {
           if (trailing != null) trailing!,
         ],
       ),
+    );
+  }
+}
+
+class _CanSellerReviewBuyerButton extends StatefulWidget {
+  final String sellerId;
+  final OrderModel order;
+  final VoidCallback onPressed;
+
+  const _CanSellerReviewBuyerButton({
+    super.key,
+    required this.sellerId,
+    required this.order,
+    required this.onPressed,
+  });
+
+  @override
+  State<_CanSellerReviewBuyerButton> createState() =>
+      _CanSellerReviewBuyerButtonState();
+}
+
+class _CanSellerReviewBuyerButtonState
+    extends State<_CanSellerReviewBuyerButton> {
+  late final Future<bool> _canReviewFuture =
+      ReviewsService().canSellerReviewBuyer(widget.sellerId, widget.order.id);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _canReviewFuture,
+      builder: (ctx, snap) {
+        if (snap.data != true) return const SizedBox.shrink();
+        return FilledButton.tonalIcon(
+          icon: const Icon(Icons.star_outline, size: 18),
+          label: const Text('Oceni kupca'),
+          onPressed: widget.onPressed,
+        );
+      },
     );
   }
 }

@@ -5,6 +5,7 @@ import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
 
 class CartScreen extends StatefulWidget {
@@ -54,17 +55,13 @@ class _CartScreenState extends State<CartScreen> {
         ],
       ),
       body: cart.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text('Nema dodatih proizvoda', style: TextStyle(color: Colors.grey.shade600)),
-                  const SizedBox(height: 8),
-                  Text('Dodajte proizvode sa stranice prodavca ili detalja proizvoda', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                ],
-              ),
+          ? AppEmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: 'Korpa je prazna',
+              subtitle: 'Dodajte proizvode sa stranice prodavca ili sa detalja proizvoda, pa pošaljite upit.',
+              ctaLabel: 'Pretraži proizvode',
+              ctaIcon: Icons.search,
+              onCtaPressed: () => context.go('/'),
             )
           : FutureBuilder<Map<String, List<({dynamic product, double quantity})>>>(
               future: cart.getProductsGroupedBySeller(),
@@ -242,12 +239,24 @@ class _CartItemCardState extends State<_CartItemCard> {
             Builder(
               builder: (ctx) {
                 final user = ctx.watch<AppState>().user;
-                final favorites = ctx.watch<FavoritesProvider>();
                 final canFavorite = user != null && !user.isGuest;
-                return ProductCard(
-                  product: p,
-                  isFavorite: canFavorite ? favorites.isFavorite(p.id) : null,
-                  onFavoriteToggle: canFavorite ? () => favorites.toggle(user.id, p.id) : null,
+                if (!canFavorite) {
+                  return ProductCard(
+                    product: p,
+                    isFavorite: null,
+                    onFavoriteToggle: null,
+                  );
+                }
+                return Selector<FavoritesProvider, bool>(
+                  selector: (_, fav) => fav.isFavorite(p.id),
+                  builder: (_, isFavorite, __) {
+                    final favorites = ctx.read<FavoritesProvider>();
+                    return ProductCard(
+                      product: p,
+                      isFavorite: isFavorite,
+                      onFavoriteToggle: () => favorites.toggle(user.id, p.id),
+                    );
+                  },
                 );
               },
             ),

@@ -1,7 +1,7 @@
 name: mleko
 description: "Naše Selo – marketplace za domaće proizvode iz sela."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.6+16
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -17,6 +17,7 @@ dependencies:
   firebase_messaging: ^16.1.1
   flutter_local_notifications: ^18.0.1
   permission_handler: ^12.0.1
+  geolocator: ^13.0.2
 
   # Connectivity
   connectivity_plus: ^5.0.0
@@ -35,6 +36,7 @@ dependencies:
   share_plus: ^12.0.1
   shimmer: ^3.0.0
   shared_preferences: ^2.2.2
+  workmanager: ^0.7.0
   flutter_map: ^8.2.2
   latlong2: ^0.9.0
 

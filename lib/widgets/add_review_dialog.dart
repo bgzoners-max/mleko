@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/reviews_service.dart';
-
+import 'package:mleko/services/services.dart';
 /// Dijalog za ocenjivanje prodavca (1–5 zvezdica + komentar).
 /// Prikazuje se kupcima koji su imali isporučenu porudžbinu.
 class AddReviewDialog extends StatefulWidget {
@@ -96,3 +95,4 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
     );
   }
 }
+

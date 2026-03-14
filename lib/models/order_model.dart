@@ -1,4 +1,12 @@
-enum OrderStatus { sent, accepted, rejected, delivered, cancelledBySeller, archived }
+enum OrderStatus {
+  sent,
+  accepted,
+  shipped,
+  rejected,
+  delivered,
+  cancelledBySeller,
+  archived
+}
 
 extension OrderStatusX on OrderStatus {
   String get dbValue => switch (this) {
@@ -15,6 +23,7 @@ class OrderModel {
   final String? productId;
   final String? productName;
   final double? quantityKg;
+
   /// Jedinica količine: 'kg' ili 'L' (za prikaz)
   final String? unitType;
   final String note;
@@ -26,6 +35,7 @@ class OrderModel {
   final String? cancellationReason;
   final DateTime? archivedAt;
   final DateTime? expiresAt;
+
   /// Ukupna suma porudžbine (iz order_items ili legacy); null za stare porudžbine.
   final double? totalAmount;
 
@@ -59,9 +69,11 @@ class OrderModel {
   String get statusLabel {
     switch (status) {
       case OrderStatus.sent:
-        return 'Poslato';
+        return 'Na čekanju';
       case OrderStatus.accepted:
         return 'Prihvaćeno';
+      case OrderStatus.shipped:
+        return 'Poslato';
       case OrderStatus.rejected:
         return 'Odbijeno';
       case OrderStatus.delivered:
@@ -96,14 +108,18 @@ class OrderModel {
     if (archivedAtVal != null) {
       if (archivedAtVal is String) {
         archivedAt = DateTime.tryParse(archivedAtVal);
-      } else if (archivedAtVal is DateTime) archivedAt = archivedAtVal;
+      } else if (archivedAtVal is DateTime) {
+        archivedAt = archivedAtVal;
+      }
     }
     DateTime? expiresAt;
     final expiresAtVal = json['expires_at'];
     if (expiresAtVal != null) {
       if (expiresAtVal is String) {
         expiresAt = DateTime.tryParse(expiresAtVal);
-      } else if (expiresAtVal is DateTime) expiresAt = expiresAtVal;
+      } else if (expiresAtVal is DateTime) {
+        expiresAt = expiresAtVal;
+      }
     }
     return OrderModel(
       id: json['id'] as String,

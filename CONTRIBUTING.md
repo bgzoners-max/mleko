@@ -1,0 +1,68 @@
+# Contributing
+
+Hvala na doprinosu projektu `mleko`.
+
+## Brzi start
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+```
+
+## Service Layer konvencije
+
+Service kod je grupisan po domenima u `lib/services/`:
+
+- `auth/`
+- `catalog/`
+- `communication/`
+- `content/`
+- `core/`
+- `media/`
+- `orders/`
+- `social/`
+
+Koristi domen barrel import-e kad god je moguce, npr:
+
+```dart
+import '../services/catalog/catalog_services.dart';
+```
+
+Dozvoljen je i umbrella barrel:
+
+```dart
+import '../services/services.dart';
+```
+
+Nemoj koristiti legacy root import putanje tipa:
+
+```dart
+import '../services/products_service.dart';
+import '../services/orders_service.dart';
+```
+
+## Import guard (obavezno)
+
+Pokreni checker pre push-a:
+
+```bash
+dart run tool/check_service_imports.dart
+```
+
+Ako checker prijavi gresku, prepravi import-e na domain barrel ili `services.dart`.
+
+## Pre-PR checklist
+
+- [ ] `dart run tool/check_service_imports.dart` prolazi
+- [ ] `flutter analyze` prolazi bez gresaka
+- [ ] Relevantni testovi prolaze (`flutter test`)
+- [ ] Nema novih legacy import-a iz `lib/services/*.dart` root nivoa
+
+## Napomena
+
+CI (`.github/workflows/ci.yml`) vec proverava:
+
+- service import policy
+- static analysis
+- test suite

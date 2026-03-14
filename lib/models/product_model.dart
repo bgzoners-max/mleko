@@ -10,7 +10,9 @@ class ProductModel {
   final String name;
   final double pricePerKg;
   final double minOrderKg;
+  final double? orderStep;
   final double availableKg;
+
   /// Jedinica: 'kg' ili 'L'. Za L su cena/min/available u litrima (0.75 = 750 ml).
   final String unitType;
   final String description;
@@ -28,6 +30,7 @@ class ProductModel {
     required this.name,
     required this.pricePerKg,
     required this.minOrderKg,
+    this.orderStep,
     required this.availableKg,
     this.unitType = 'kg',
     required this.description,
@@ -81,6 +84,7 @@ class ProductModel {
         return 'kg';
     }
   }
+
   String get minOrderFormatted => formatQuantity(minOrderKg);
   String get availableFormatted => formatQuantity(availableKg);
 
@@ -89,6 +93,15 @@ class ProductModel {
 
   /// Korak kojim se menja količina u UI-u (step), nezavisno od minimalne količine.
   double get quantityStep {
+    final explicitStep = orderStep;
+    if (explicitStep != null && explicitStep > 0) {
+      return explicitStep;
+    }
+
+    if (minOrderKg > 0) {
+      return minOrderKg;
+    }
+
     switch (unitType) {
       case unitL:
         // Tečnosti (mleko, sok) – osnovni korak 1L; specijalni slučajevi (0.5L) mogu se rešiti kasnije po kategoriji.
@@ -124,13 +137,22 @@ class ProductModel {
       unitPiece => unitPiece,
       _ => unitKg,
     };
+    final minOrder = (json['min_order_kg'] as num?)?.toDouble() ?? 1;
+    final parsedOrderStep = (json['order_step'] as num?)?.toDouble();
+    final normalizedOrderStep = (parsedOrderStep != null && parsedOrderStep > 0)
+        ? parsedOrderStep
+        : minOrder;
+
+    final id = json['id'];
+
     return ProductModel(
-      id: json['id'] as String,
+      id: id is String ? id : (id?.toString() ?? ''),
       sellerId: json['seller_id'] as String? ?? '',
       category: json['category'] as String? ?? '',
       name: json['name'] as String? ?? '',
       pricePerKg: (json['price_per_kg'] as num?)?.toDouble() ?? 0,
-      minOrderKg: (json['min_order_kg'] as num?)?.toDouble() ?? 1,
+      minOrderKg: minOrder,
+      orderStep: normalizedOrderStep,
       availableKg: (json['available_kg'] as num?)?.toDouble() ?? 0,
       unitType: unitType,
       description: json['description'] as String? ?? '',
@@ -177,11 +199,13 @@ class ProductModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'seller_id': sellerId,
       'category': category,
       'name': name,
       'price_per_kg': pricePerKg,
       'min_order_kg': minOrderKg,
+      if (orderStep != null) 'order_step': orderStep,
       'available_kg': availableKg,
       'unit_type': unitType,
       'description': description,

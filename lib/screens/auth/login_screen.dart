@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/responsive.dart';
+import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/error_dialog.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -116,70 +119,80 @@ class _LoginFormState extends State<_LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 24),
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Email'),
-          onSubmitted: (_) => _submit(),
+    final isTabletOrLarger = Breakpoints.isTabletOrLarger(context);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: isTabletOrLarger ? 420 : double.infinity,
         ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _password,
-          obscureText: _obscure,
-          decoration: InputDecoration(
-            labelText: 'Lozinka',
-            suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-              onPressed: () => setState(() => _obscure = !_obscure),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 24),
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+              onSubmitted: (_) => _submit(),
             ),
-          ),
-          onSubmitted: (_) => _submit(),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _password,
+              obscureText: _obscure,
+              decoration: InputDecoration(
+                labelText: 'Lozinka',
+                suffixIcon: IconButton(
+                  icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton(onPressed: _submit, child: const Text('Prijavi se')),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => context.push('/register'),
+              child: const Text('Nemaš nalog? Registruj se'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _guestLoading ? null : _guest,
+              child: _guestLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Nastavi kao gost (samo pregled proizvoda)'),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                if (_email.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unesite email za reset lozinke')),
+                  );
+                  return;
+                }
+                context
+                    .read<AppState>()
+                    .authService
+                    .sendPasswordReset(_email.text.trim());
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Link za reset je poslat na email')),
+                );
+              },
+              child: const Text('Zaboravljena lozinka'),
+            ),
+          ],
         ),
-        if (_error != null) ...[
-          const SizedBox(height: 12),
-          Text(_error!, style: const TextStyle(color: Colors.red)),
-        ],
-        const SizedBox(height: 24),
-        ElevatedButton(onPressed: _submit, child: const Text('Prijavi se')),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: () => context.push('/register'),
-          child: const Text('Nemaš nalog? Registruj se'),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton(
-          onPressed: _guestLoading ? null : _guest,
-          child: _guestLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Nastavi kao gost (samo pregled proizvoda)'),
-        ),
-        const SizedBox(height: 16),
-        TextButton(
-          onPressed: () {
-            if (_email.text.trim().isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Unesite email za reset lozinke')),
-              );
-              return;
-            }
-            context
-                .read<AppState>()
-                .authService
-                .sendPasswordReset(_email.text.trim());
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Link za reset je poslat na email')),
-            );
-          },
-          child: const Text('Zaboravljena lozinka'),
-        ),
-      ],
+      ),
     );
   }
 }

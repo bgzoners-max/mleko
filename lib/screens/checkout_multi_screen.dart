@@ -5,12 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order_item_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
-import '../services/chat_service.dart';
+import 'package:mleko/services/services.dart';
 import '../models/product_model.dart';
-import '../services/orders_service.dart';
-import '../services/products_service.dart';
-import '../services/users_service.dart';
-import '../services/order_queue_service.dart';
+
 import '../widgets/offline_indicator.dart';
 
 /// Checkout više proizvoda od istog prodavca
@@ -103,8 +100,9 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
         _items = items;
         _sellerName = sellerName;
         _loading = false;
-        if (items.isEmpty)
+        if (items.isEmpty) {
           _error = 'Nema stavki. Dodaj proizvode kod prodavca.';
+        }
       });
     }
   }
@@ -175,7 +173,6 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
   final _cityController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final Map<String, String> _itemNotes = {};
   bool _sending = false;
   String? _error;
   bool _savePhoneToProfile = false;
@@ -281,22 +278,6 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     return 'Ukupno količina: ${parts.join(' + ')}';
   }
 
-  String _buildCombinedNote() {
-    final parts = <String>[];
-    for (final e in _items) {
-      final pid = e.product.id;
-      final note = _itemNotes[pid]?.trim();
-      if (note != null && note.isNotEmpty) {
-        parts.add('[${e.product.name}]: $note');
-      }
-    }
-    final globalNote = _noteController.text.trim();
-    if (globalNote.isNotEmpty) {
-      parts.add(globalNote);
-    }
-    return parts.join('\n');
-  }
-
   Future<void> _submit() async {
     if (_phoneController.text.trim().isEmpty) {
       setState(() => _error = 'Kontakt telefon je obavezan.');
@@ -315,67 +296,80 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
       if (item.quantity < item.product.minOrderKg) {
         setState(() => _error =
             '${item.product.name}: minimalno ${item.product.minOrderFormatted}');
-          if (isOnline) {
-            // Online mode: Send order to server
-            final orderItems = _items
-                .map((e) => OrderItemModel(
-                      productId: e.product.id,
-                      productName: e.product.name,
-                      quantityKg: e.quantity,
-                      unitType: e.product.unitType,
-                      unitPrice: e.product.pricePerKg,
-                    ))
-                .toList();
-            final orderId = await OrdersService().createOrderWithItems(
-              buyerId: user.id,
-              sellerId: widget.sellerId,
-              items: orderItems,
-              note: combinedNote,
-              buyerCity: buyerCity,
-              buyerPhone: phone,
-              buyerAddress: buyerAddress,
-            );
-            await ChatService().getOrCreateConversation(user.id, widget.sellerId,
-                orderId: orderId);
-            if (!mounted) return;
-            if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
-              await UsersService().updatePhone(user.id, phone);
-              await context.read<AppState>().refreshUser();
-            }
-            final cart = context.read<CartProvider>();
-            await cart.clearSeller(widget.sellerId);
-            if (!mounted) return;
-            await ErrorDialog.show(context, error: AppError.from(e, stackTrace: st, userMessage: 'Porudžbina je poslata.'));
-          } else {
-            // Offline mode: Queue each product as separate order for later sync
-            for (final item in _items) {
-              final itemNote = _itemNotes[item.product.id]?.trim() ?? '';
-              final pendingOrder = PendingOrder(
-                id: 'pending_${DateTime.now().millisecondsSinceEpoch}_${item.product.id}',
-                buyerId: user.id,
-                sellerId: widget.sellerId,
-                productId: item.product.id,
-                productName: item.product.name,
-                quantityKg: item.quantity,
-                unitType: item.product.unitType,
-                note: itemNote,
-                buyerCity: buyerCity,
-                buyerAddress: buyerAddress,
-                buyerPhone: phone,
-                preferCall: false,
-                pickupOptions: [],
-                createdAt: DateTime.now(),
-              );
-              await appState.orderQueue.addPendingOrder(pendingOrder);
-            }
-            if (!mounted) return;
-            final cart = context.read<CartProvider>();
-            await cart.clearSeller(widget.sellerId);
-            if (!mounted) return;
-            await ErrorDialog.show(context, error: AppError.from(e, stackTrace: st, userMessage: 'Porudžbine su sačuvane. Biće poslane kada je dostupan Internet.'));
-          }
+        return;
+      }
+    }
+
+    setState(() {
+      _error = null;
+      _sending = true;
+    });
+
+    try {
+      final appState = context.read<AppState>();
+      final isOnline = appState.isOnline;
+      final note = _noteController.text.trim();
+      final buyerCity = _cityController.text.trim();
+      final buyerAddress = _addressController.text.trim();
+      final phone = _phoneController.text.trim();
+
+      if (isOnline) {
+        final orderItems = _items
+            .map((e) => OrderItemModel(
+                  productId: e.product.id,
+                  productName: e.product.name,
+                  quantityKg: e.quantity,
+                  unitType: e.product.unitType,
+                  unitPrice: e.product.pricePerKg,
+                ))
+            .toList();
+
+        final orderId = await OrdersService().createOrderWithItems(
+          buyerId: user.id,
+          sellerId: widget.sellerId,
+          items: orderItems,
+          note: note,
+          buyerCity: buyerCity,
+          buyerPhone: phone,
+          buyerAddress: buyerAddress,
+        );
+
+        await ChatService().getOrCreateConversation(user.id, widget.sellerId,
+            orderId: orderId);
+
+        if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
+          await UsersService().updatePhone(user.id, phone);
+          await appState.refreshUser();
+        }
+
+        if (!mounted) return;
+        final cart = context.read<CartProvider>();
+        await cart.clearSeller(widget.sellerId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Porudžbina je poslata prodavcu.')),
+        );
+      } else {
+        for (final item in _items) {
+          final pendingOrder = PendingOrder(
+            id: 'pending_${DateTime.now().millisecondsSinceEpoch}_${item.product.id}',
+            buyerId: user.id,
+            sellerId: widget.sellerId,
+            productId: item.product.id,
+            productName: item.product.name,
+            quantityKg: item.quantity,
+            unitType: item.product.unitType,
+            note: note,
+            buyerCity: buyerCity,
+            buyerAddress: buyerAddress,
+            buyerPhone: phone,
+            preferCall: false,
+            pickupOptions: [],
+            createdAt: DateTime.now(),
+          );
           await appState.orderQueue.addPendingOrder(pendingOrder);
         }
+
         if (!mounted) return;
         final cart = context.read<CartProvider>();
         await cart.clearSeller(widget.sellerId);
@@ -389,6 +383,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
           ),
         );
       }
+
       if (!mounted) return;
       context.go('/orders');
     } catch (e) {
@@ -411,16 +406,73 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     final theme = Theme.of(context);
     final totalRsd = _totalAmount.toStringAsFixed(0);
     final isOffline = context.watch<AppState>().isOffline;
+    final canSubmit = !_sending &&
+        _items.isNotEmpty &&
+        !_items.any((i) => !i.product.isAvailable);
+
     return Scaffold(
       appBar: AppBar(title: Text('Porudžbina kod: ${widget.sellerName}')),
+      bottomNavigationBar: _items.isEmpty
+          ? null
+          : SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 6,
+                        offset: Offset(0, -2))
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Ukupno:',
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        Text(
+                          '$totalRsd RSD',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      onPressed: canSubmit ? _submit : null,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _sending
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : Text(_items.any((i) => !i.product.isAvailable)
+                              ? 'Nedostupno'
+                              : 'Pošalji porudžbinu'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: 24 + MediaQuery.of(context).padding.bottom,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -457,122 +509,121 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                     ],
                   ),
                 )
-              else
+              else ...[
                 ...List.generate(_items.length, (i) {
                   final e = _items[i];
                   final p = e.product;
                   final step = p.quantityStep;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  final itemTotal = (p.pricePerKg * e.quantity).toStringAsFixed(0);
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  style: theme.textTheme.bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${p.formatQuantity(e.quantity)} × ${p.priceFormatted} = $itemTotal RSD',
+                                  style: TextStyle(
+                                      color: Colors.grey.shade600, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                p.name,
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w500),
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline),
+                                onPressed: e.quantity <= p.minOrderKg
+                                    ? null
+                                    : () => _setQuantity(i, e.quantity - step),
+                                style: IconButton.styleFrom(
+                                  minimumSize: const Size(40, 40),
+                                  padding: EdgeInsets.zero,
+                                ),
                               ),
-                              Text(
-                                '${p.formatQuantity(e.quantity)} · ${p.priceFormatted}',
-                                style: TextStyle(
-                                    color: Colors.grey.shade600, fontSize: 12),
+                              SizedBox(
+                                width: 48,
+                                child: Text(
+                                  p.formatQuantity(e.quantity),
+                                  style: theme.textTheme.bodyMedium,
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
-                              const SizedBox(height: 4),
-                              TextFormField(
-                                initialValue: _itemNotes[p.id] ?? '',
-                                onChanged: (value) {
-                                  _itemNotes[p.id] = value.trim();
-                                },
-                                maxLines: 2,
-                                decoration: const InputDecoration(
-                                  labelText:
-                                      'Napomena za ovaj proizvod (opciono)',
-                                  isDense: true,
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline),
+                                onPressed: () =>
+                                    _setQuantity(i, e.quantity + step),
+                                style: IconButton.styleFrom(
+                                  minimumSize: const Size(40, 40),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline,
+                                    color: Colors.red.shade400),
+                                onPressed: () => _remove(i),
+                                style: IconButton.styleFrom(
+                                  minimumSize: const Size(40, 40),
+                                  padding: EdgeInsets.zero,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove),
-                              onPressed: e.quantity <= p.minOrderKg
-                                  ? null
-                                  : () => _setQuantity(i, e.quantity - step),
-                              style: IconButton.styleFrom(
-                                minimumSize: const Size(36, 36),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                            Text(p.formatQuantity(e.quantity),
-                                style: theme.textTheme.bodyMedium),
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () =>
-                                  _setQuantity(i, e.quantity + step),
-                              style: IconButton.styleFrom(
-                                minimumSize: const Size(36, 36),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _remove(i),
-                              style: IconButton.styleFrom(
-                                minimumSize: const Size(36, 36),
-                                padding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 }),
+                const SizedBox(height: 8),
+                if (_totalQuantityLabel.isNotEmpty)
+                  Text(
+                    _totalQuantityLabel,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: Colors.grey.shade700),
+                  ),
+                Text(
+                  'Napomena: Cena dostave se dogovara sa domaćinom.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: Colors.grey.shade600),
+                ),
+              ],
               const SizedBox(height: 16),
               Text(
-                'Ukupno za proizvode: $totalRsd RSD',
-                style: theme.textTheme.titleSmall
+                'Podaci za dostavu',
+                style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 4),
-              if (_totalQuantityLabel.isNotEmpty)
-                Text(
-                  _totalQuantityLabel,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: Colors.grey.shade700),
-                ),
-              const SizedBox(height: 8),
-              Text(
-                'Napomena: Cena dostave se dogovara sa domaćinom.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               TextField(
                 controller: _noteController,
                 maxLines: 2,
                 decoration: const InputDecoration(
                     labelText: 'Napomena (npr. Treba za subotu)'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextField(
                 controller: _cityController,
                 decoration: const InputDecoration(labelText: 'Grad kupca'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextField(
                 controller: _addressController,
                 decoration:
                     const InputDecoration(labelText: 'Adresa (ulica i broj)'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
@@ -620,22 +671,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                   ),
                 ),
               ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: (_sending ||
-                        _items.isEmpty ||
-                        _items.any((i) => !i.product.isAvailable))
-                    ? null
-                    : _submit,
-                child: _sending
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(_items.any((i) => !i.product.isAvailable)
-                        ? 'Nedostupno'
-                        : 'Pošalji porudžbinu prodavcu'),
-              ),
+              const SizedBox(height: 80),
             ],
           ),
         ),

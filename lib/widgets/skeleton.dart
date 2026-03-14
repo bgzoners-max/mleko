@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+/// Boje shimmer-a usklađene sa temom (zelene nijanse)
+const Color _shimmerBaseColor = Color(0xFFC8E6C9); // green 100
+const Color _shimmerHighlightColor = Color(0xFFE8F5E9); // green 50
+
 /// Skeleton za listu proizvoda (ProductCard stil)
 class ProductListSkeleton extends StatelessWidget {
   const ProductListSkeleton({super.key, this.itemCount = 6});
@@ -9,8 +13,8 @@ class ProductListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Colors.grey.shade300;
-    final highlightColor = Colors.grey.shade100;
+    const baseColor = _shimmerBaseColor;
+    const highlightColor = _shimmerHighlightColor;
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: itemCount,
@@ -24,7 +28,7 @@ class ProductListSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
+                const AspectRatio(
                   aspectRatio: 16 / 10,
                   child: ColoredBox(color: baseColor),
                 ),
@@ -68,8 +72,8 @@ class SellerProductListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Colors.grey.shade300;
-    final highlightColor = Colors.grey.shade100;
+    const baseColor = _shimmerBaseColor;
+    const highlightColor = _shimmerHighlightColor;
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: itemCount,
@@ -117,8 +121,8 @@ class OrderListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Colors.grey.shade300;
-    final highlightColor = Colors.grey.shade100;
+    const baseColor = _shimmerBaseColor;
+    const highlightColor = _shimmerHighlightColor;
     return ListView.builder(
       padding: EdgeInsets.only(
         left: 16,
@@ -143,7 +147,7 @@ class OrderListSkeleton extends StatelessWidget {
                       Container(
                         width: 40,
                         height: 40,
-                        decoration: BoxDecoration(color: baseColor, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(color: baseColor, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -183,8 +187,8 @@ class ProductCarouselSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Colors.grey.shade300;
-    final highlightColor = Colors.grey.shade100;
+    const baseColor = _shimmerBaseColor;
+    const highlightColor = _shimmerHighlightColor;
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
@@ -221,9 +225,9 @@ class ProductCarouselSkeleton extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: baseColor,
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                         ),
                       ),
                     ),
@@ -255,8 +259,8 @@ class ProductDetailSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Colors.grey.shade300;
-    final highlightColor = Colors.grey.shade100;
+    const baseColor = _shimmerBaseColor;
+    const highlightColor = _shimmerHighlightColor;
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
@@ -268,9 +272,9 @@ class ProductDetailSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
+                const SizedBox(
                   height: 220,
-                  child: ColoredBox(color: baseColor),
+                  child: ColoredBox(color: _shimmerBaseColor),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),

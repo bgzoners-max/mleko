@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/scheduler.dart';
 import '../models/category.dart';
-import '../services/supabase_service.dart';
-import '../services/logger_service.dart';
+import 'package:mleko/services/services.dart';
 
 /// Keš kategorija – učitavanje jednom pri startu, deljenje između ekrana.
 class CategoriesProvider extends ChangeNotifier {
@@ -102,3 +101,4 @@ class CategoriesProvider extends ChangeNotifier {
     await load();
   }
 }
+

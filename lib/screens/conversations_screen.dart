@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/conversation_model.dart';
 import '../providers/app_state.dart';
-import '../services/chat_service.dart';
+import 'package:mleko/services/services.dart';
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 
 String _formatConvTime(DateTime? dt) {
@@ -82,26 +83,13 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height - 200,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text('Nema poruka', style: TextStyle(color: Colors.grey.shade600)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Poruke sa prodavcima će se pojaviti ovde',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.tonal(
-                          onPressed: () => context.go('/home'),
-                          child: const Text('Pregledaj prodavce'),
-                        ),
-                      ],
-                    ),
+                  child: AppEmptyState(
+                    icon: Icons.chat_bubble_outline,
+                    title: 'Nema poruka',
+                    subtitle: 'Poruke sa prodavcima će se pojaviti ovde kada im pošaljete upit.',
+                    ctaLabel: 'Pretraži proizvode',
+                    ctaIcon: Icons.search,
+                    onCtaPressed: () => context.go('/'),
                   ),
                 ),
               ),
@@ -177,3 +165,4 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     );
   }
 }
+
