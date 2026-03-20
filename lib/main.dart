@@ -10,7 +10,7 @@ import 'core/router.dart';
 import 'core/theme.dart';
 import 'providers/app_settings_provider.dart';
 import 'providers/app_state.dart';
-import 'services/push_service.dart';
+import 'services/communication/communication_services.dart';
 import 'services/core/logger_service.dart';
 import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';

@@ -12,8 +12,8 @@ import '../../widgets/grouped_category_dropdown.dart';
 import '../../providers/categories_provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
-import '../../services/products_service.dart';
-import '../../services/storage_service.dart';
+import '../../services/catalog/catalog_services.dart';
+import '../../services/media/media_services.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   final String? productId;
