@@ -115,11 +115,12 @@ class ProductGridTile extends StatelessWidget {
             Expanded(
               flex: 3,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                // Manji vertikalni padding da tile sadržaj ne pređe zadatu visinu
+                // (posebno na Flutter Web-u gde često dobijamo strožije constraints).
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Text(
                       product.name,
@@ -127,7 +128,7 @@ class ProductGridTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       product.priceFormatted,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -135,14 +136,19 @@ class ProductGridTile extends StatelessWidget {
                           ),
                     ),
                     if (onAddToOrder != null) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       FilledButton.tonal(
                         onPressed: onAddToOrder != null ? () => withHaptic(onAddToOrder!) : null,
                         style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                           minimumSize: Size.zero,
                         ),
-                        child: const Text('Dodaj u porudžbinu'),
+                        child: const Text(
+                          'Dodaj u porudžbinu',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ],
                   ],
