@@ -68,6 +68,10 @@ Ako checker prijavi gresku, prepravi import-e na domain barrel ili `services.dar
 
 Kratko uputstvo: [docs/MIGRATIONS_SOLO.md](docs/MIGRATIONS_SOLO.md).
 
+## Supabase RPC (SECURITY DEFINER)
+
+Novi ili izmenjeni RPC-ovi: vidi [docs/SECURITY_DEFINER_RPC.md](docs/SECURITY_DEFINER_RPC.md) — `DEFINER` zaobilazi RLS; parametri moraju da se poklope sa `auth.uid()` gde podaci nisu javni.
+
 ## Napomena
 
 CI (`.github/workflows/ci.yml`) vec proverava:
