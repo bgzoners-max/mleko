@@ -28,6 +28,57 @@
 2. Ako mora `DEFINER`: eksplicitno `SET search_path = public` i provera **`auth.uid()`** za sve „scope“ parametre.
 3. Ne izlaži admin/audit funkcije `anon` (vidi `REVOKE` u migracijama oko `audit_product_ordering`).
 
+## Appendix: inventar (stanje repoa)
+
+Grupisano po ulozi. Poslednja definicija funkcije pobedi u lancu migracija.
+
+### Trigger / interni (nije direktan RPC sa klijenta)
+
+| Funkcija | Napomena |
+|----------|----------|
+| `notify_new_order` | Posle INSERT na `orders` |
+| `notify_order_status_change` | Posle UPDATE statusa; više migracija menja telo |
+| `notify_new_message` | Poruke |
+| `invoke_send_push` | Posle INSERT na `notifications` |
+| `log_order_status_change_audit` | Audit zapis statusa |
+| `enforce_order_status_transition` | BEFORE UPDATE (validacija) |
+| `touch_message_reaction_updated_at` | BEFORE UPDATE na reakcijama |
+
+### Cron / samo zakazani zadaci
+
+`handle_order_retention`, `archive_and_expire_orders` — poziv iz `pg_cron` (vidi migracije sa `cron.schedule`), ne treba `GRANT` klijentima.
+
+### DEFINER RPC — javni ili agregat
+
+| Funkcija | Pristup |
+|----------|---------|
+| `get_home_products` | Katalog |
+| `get_product_sales_counts` | Agregat prodaje |
+| `get_product_ratings` | Agregat ocena |
+| `get_seller_stats` | Javni profil prodavca |
+| `get_seller_loyalty_stats` | Javni agregat lojalnosti |
+
+### DEFINER RPC — provera u telu (`auth.uid()` / uloga)
+
+| Funkcija | Napomena |
+|----------|----------|
+| `create_order_with_items` | `p_buyer_id` mora biti `auth.uid()` |
+| `add_seller_reply` | Prodavac mora biti učesnik |
+| `buyer_confirm_order_received` | Samo kupac porudžbine |
+| `get_my_product_listing_autoflags` | `WHERE seller_id = auth.uid()` |
+| `get_my_product_listing_autoflag_summary` | Isto |
+
+### DEFINER RPC — zaštićeno param ↔ JWT (migracija `20260321160000`)
+
+`get_conversations_for_user`, `get_seller_stats_dashboard`, `get_seller_inbox`, `get_reviewable_order` — vidi tabelu na vrhu dokumenta.
+
+### Nisu `SECURITY DEFINER` (podrazumevano INVOKER + RLS)
+
+Korisnički parametri ovde se oslanjaju na **RLS** i politike:
+
+- `get_products_from_favorite_sellers`, `get_favorite_sellers_with_profiles`
+- `get_seller_response_time_stats` — agregat vremena odgovora; ako rezultat deluje prazan sa tuđeg profila, uzrok može biti RLS nad `messages` (očekivano za privatnost).
+
 ## Reference
 
 - [Supabase — Database Functions, security](https://supabase.com/docs/guides/database/functions)
