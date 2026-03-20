@@ -104,8 +104,9 @@ BEGIN
 END $$;
 
 -- ========== PROIZVODI (prodavac 1–5) ==========
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Sir', 'Domaći kravlji sir', 1200, 0.5, 50,
+-- order_step mora biti <= min_order_kg (constraint products_order_step_lte_min_order); ne oslanjati se na DEFAULT 1.
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Sir', 'Domaći kravlji sir', 1200, 0.5, 0.5, 50,
   'Tradicionalni sir od svežeg mleka, bez aditiva.',
   ARRAY['https://images.unsplash.com/photo-1618164436241-4473940d1f5c?w=400'],
   ARRAY['Preuzimanje na farmi', 'Dostava u gradu'],
@@ -118,116 +119,116 @@ SELECT p.id, 'Kobasice', 'Domaće dimljene kobasice', 1500, 0.5, 30,
   ARRAY['Preuzimanje na farmi'], 'Beograd, Zemun', true, true
 FROM public.profiles p WHERE p.email = 'prodavac1@test.rs' AND p.role = 'seller'
 UNION ALL
-SELECT p.id, 'Šunke i pršute', 'Pršut dimljen', 3500, 0.2, 15,
+SELECT p.id, 'Šunke i pršute', 'Pršut dimljen', 3500, 0.2, 0.2, 15,
   'Suva dimljena šunka, tradicionalna receptura.',
   ARRAY['https://images.unsplash.com/photo-1558030006-450675393462?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Beograd, Zemun', true, true
 FROM public.profiles p WHERE p.email = 'prodavac1@test.rs' AND p.role = 'seller';
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Mleko', 'Sveže kravlje mleko', 180, 1, 100,
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Mleko', 'Sveže kravlje mleko', 180, 1, 1, 100,
   'Sveža dnevna dostava, nepasterizovano.',
   ARRAY['https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Novi Sad, Petrovaradin', true, true
 FROM public.profiles p WHERE p.email = 'prodavac2@test.rs' AND p.role = 'seller'
 UNION ALL
-SELECT p.id, 'Džemovi', 'Džem od šljiva', 450, 0.2, 40,
+SELECT p.id, 'Džemovi', 'Džem od šljiva', 450, 0.2, 0.2, 40,
   'Domaći džem bez šećera, prirodna slatkoća voća.',
   ARRAY['https://images.unsplash.com/photo-1595855759920-86582396756a?w=400'],
   ARRAY['Preuzimanje na farmi', 'Dostava'], 'Novi Sad, Petrovaradin', true, true
 FROM public.profiles p WHERE p.email = 'prodavac2@test.rs' AND p.role = 'seller';
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Med', 'Med od bagrema', 2000, 0.25, 25,
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Med', 'Med od bagrema', 2000, 0.25, 0.25, 25,
   'Čist med, bez dodataka, iz sopstvenih košnica.',
   ARRAY['https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Kragujevac, centar', true, true
 FROM public.profiles p WHERE p.email = 'prodavac3@test.rs' AND p.role = 'seller'
 UNION ALL
-SELECT p.id, 'Kajmak', 'Domaći kajmak', 1400, 0.2, 20,
+SELECT p.id, 'Kajmak', 'Domaći kajmak', 1400, 0.2, 0.2, 20,
   'Tradicionalni kajmak od svežeg mleka.',
   ARRAY['https://images.unsplash.com/photo-1628088062853-00fc69fd4c38?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Kragujevac, centar', true, true
 FROM public.profiles p WHERE p.email = 'prodavac3@test.rs' AND p.role = 'seller';
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Slanina i panceta', 'Domaća slanina', 1800, 0.3, 20,
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Slanina i panceta', 'Domaća slanina', 1800, 0.3, 0.3, 20,
   'Suhomesnata slanina, dimljena na tradicionalan način.',
   ARRAY['https://images.unsplash.com/photo-1542838132-92c53300491e?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Niš, Palilula', true, true
 FROM public.profiles p WHERE p.email = 'prodavac4@test.rs' AND p.role = 'seller'
 UNION ALL
-SELECT p.id, 'Jogurt i kiselo mleko', 'Domaći jogurt', 350, 0.5, 60,
+SELECT p.id, 'Jogurt i kiselo mleko', 'Domaći jogurt', 350, 0.5, 0.5, 60,
   'Prirodni jogurt bez aditiva, kremast.',
   ARRAY['https://images.unsplash.com/photo-1571212515416-ffe4b2d2b6a8?w=400'],
   ARRAY['Preuzimanje na farmi', 'Dostava'], 'Niš, Palilula', true, true
 FROM public.profiles p WHERE p.email = 'prodavac4@test.rs' AND p.role = 'seller';
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Sveže voće', 'Organska jabuka', 120, 2, 80,
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Sveže voće', 'Organska jabuka', 120, 2, 1, 80,
   'Voće iz organske proizvodnje, sezonsko.',
   ARRAY['https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Subotica, Palić', true, true
 FROM public.profiles p WHERE p.email = 'prodavac5@test.rs' AND p.role = 'seller'
 UNION ALL
-SELECT p.id, 'Sir', 'Kačkavalj', 1300, 0.3, 35,
+SELECT p.id, 'Sir', 'Kačkavalj', 1300, 0.3, 0.1, 35,
   'Domaći dimljeni kačkavalj, vrhunski kvalitet.',
   ARRAY['https://images.unsplash.com/photo-1452195100486-9cc805987862?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Subotica, Palić', true, true
 FROM public.profiles p WHERE p.email = 'prodavac5@test.rs' AND p.role = 'seller';
 
 -- ========== PROIZVODI (prodavac 6–10) ==========
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Brašno', 'Organsko brašno', 180, 1, 40, 'Mleveno na kamenu, puno vrednosti.',
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Brašno', 'Organsko brašno', 180, 1, 1, 40, 'Mleveno na kamenu, puno vrednosti.',
   ARRAY['https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400'], ARRAY['Preuzimanje na farmi'], 'Kraljevo, centar', true, true
 FROM public.profiles p WHERE p.email = 'prodavac6@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1)
 UNION ALL
-SELECT p.id, 'Ajvar i ljutenica', 'Domaći ajvar', 800, 0.5, 30, 'Prženi ajvar, bez boja.',
+SELECT p.id, 'Ajvar i ljutenica', 'Domaći ajvar', 800, 0.5, 0.5, 30, 'Prženi ajvar, bez boja.',
   ARRAY['https://images.unsplash.com/photo-1547592180-85f173990554?w=400'], ARRAY['Preuzimanje na farmi'], 'Kraljevo, centar', true, true
 FROM public.profiles p WHERE p.email = 'prodavac6@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1);
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Pečenice i vrat', 'Dimljena pečenica', 2200, 0.3, 25, 'Tradicionalna dimljena pečenica.',
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Pečenice i vrat', 'Dimljena pečenica', 2200, 0.3, 0.3, 25, 'Tradicionalna dimljena pečenica.',
   ARRAY['https://images.unsplash.com/photo-1558030006-450675393462?w=400'], ARRAY['Preuzimanje na farmi'], 'Leskovac, okolina', true, true
 FROM public.profiles p WHERE p.email = 'prodavac7@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1)
 UNION ALL
-SELECT p.id, 'Čvarci', 'Domaći čvarci', 2500, 0.2, 15, 'Čisti svinjski čvarci.',
+SELECT p.id, 'Čvarci', 'Domaći čvarci', 2500, 0.2, 0.2, 15, 'Čisti svinjski čvarci.',
   ARRAY['https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400'], ARRAY['Preuzimanje na farmi'], 'Leskovac, okolina', true, true
 FROM public.profiles p WHERE p.email = 'prodavac7@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1);
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Sveže povrće', 'Sveže šargarepa', 100, 1, 50, 'Organska šargarepa iz sopstvene proizvodnje.',
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Sveže povrće', 'Sveže šargarepa', 100, 1, 1, 50, 'Organska šargarepa iz sopstvene proizvodnje.',
   ARRAY['https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400'], ARRAY['Preuzimanje na farmi'], 'Čačak, centar', true, true
 FROM public.profiles p WHERE p.email = 'prodavac8@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1)
 UNION ALL
-SELECT p.id, 'Hleb i pečiva', 'Domaći hleb', 120, 0.5, 20, 'Hleb pečen u tradicionalnoj peći.',
+SELECT p.id, 'Hleb i pečiva', 'Domaći hleb', 120, 0.5, 0.5, 20, 'Hleb pečen u tradicionalnoj peći.',
   ARRAY['https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400'], ARRAY['Preuzimanje na farmi'], 'Čačak, centar', true, true
 FROM public.profiles p WHERE p.email = 'prodavac8@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1);
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Prirodni sokovi', 'Sok od grožđa', 350, 1, 60, 'Prirodan sok, bez šećera.',
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Prirodni sokovi', 'Sok od grožđa', 350, 1, 1, 60, 'Prirodan sok, bez šećera.',
   ARRAY['https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400'], ARRAY['Preuzimanje na farmi'], 'Smederevo, vinogradi', true, true
 FROM public.profiles p WHERE p.email = 'prodavac9@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1)
 UNION ALL
-SELECT p.id, 'Lekovito bilje', 'Sušeno bilje', 400, 0.1, 25, 'Lekovite biljke za čaj.',
+SELECT p.id, 'Lekovito bilje', 'Sušeno bilje', 400, 0.1, 0.1, 25, 'Lekovite biljke za čaj.',
   ARRAY['https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=400'], ARRAY['Preuzimanje na farmi'], 'Smederevo, vinogradi', true, true
 FROM public.profiles p WHERE p.email = 'prodavac9@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1);
 
-INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Kokošija jaja', 'Seloška jaja', 280, 0.5, 80, 'Jaja od kokošaka iz slobodnog uzgoja.',
+INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
+SELECT p.id, 'Kokošija jaja', 'Seloška jaja', 280, 0.5, 0.5, 80, 'Jaja od kokošaka iz slobodnog uzgoja.',
   ARRAY['https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400'], ARRAY['Preuzimanje na farmi'], 'Valjevo, Kolubara', true, true
 FROM public.profiles p WHERE p.email = 'prodavac10@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1)
 UNION ALL
-SELECT p.id, 'Pavlaka i namazi', 'Pavlaka domaća', 950, 0.2, 35, 'Sveža pavlaka od svežeg mleka.',
+SELECT p.id, 'Pavlaka i namazi', 'Pavlaka domaća', 950, 0.2, 0.2, 35, 'Sveža pavlaka od svežeg mleka.',
   ARRAY['https://images.unsplash.com/photo-1628088062853-00fc69fd4c38?w=400'], ARRAY['Preuzimanje na farmi'], 'Valjevo, Kolubara', true, true
 FROM public.profiles p WHERE p.email = 'prodavac10@test.rs' AND p.role = 'seller'
 AND NOT EXISTS (SELECT 1 FROM public.products WHERE seller_id = p.id LIMIT 1);

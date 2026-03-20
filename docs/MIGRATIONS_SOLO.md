@@ -15,6 +15,7 @@ Ne pokretaj `repair` naslepo ako ne znaš koje su migracije zaista primenjene na
 ## Test podaci (`@test.rs`)
 
 - **Ne** očekuj da `supabase db push` puni test korisnike – seed migracije `20260227120000` i `20260227130000` su no-op; test podaci idu samo kroz **`supabase/seed.sql`** pri **`supabase db reset`** (lokalno, sa Docker-om za lokalni stack).
+- U `products` važi **`order_step <= min_order_kg`** (`products_order_step_lte_min_order`). U seed-u uvek eksplicitno postavi **`order_step`** pri INSERT-u — default kolone `1` lomi seed ako je `min_order_kg` manji od 1.
 
 ## Nova migracija: uklanjanje `recipes`
 
