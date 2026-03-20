@@ -4,8 +4,7 @@ final _directiveRegex =
   RegExp("^\\s*(import|export)\\s+['\\\"]([^'\\\"]+)['\\\"]");
 
 void main() {
-  final libDir = Directory('lib');
-  if (!libDir.existsSync()) {
+  if (!Directory('lib').existsSync()) {
     stderr.writeln('ERROR: lib/ directory not found.');
     exitCode = 2;
     return;
@@ -13,12 +12,19 @@ void main() {
 
   final violations = <String>[];
 
-  final files = libDir
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'));
+  final dartFiles = <File>[];
+  for (final root in const ['lib', 'test', 'integration_test']) {
+    final dir = Directory(root);
+    if (!dir.existsSync()) continue;
+    dartFiles.addAll(
+      dir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart')),
+    );
+  }
 
-  for (final file in files) {
+  for (final file in dartFiles) {
     final relativePath = file.path.replaceAll('\\', '/');
     final lines = file.readAsLinesSync();
 

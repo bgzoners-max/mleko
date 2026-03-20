@@ -59,6 +59,11 @@ dart run tool/scan_security_definer_migrations.dart
 
 Ako checker prijavi gresku, prepravi import-e na domain barrel ili `services.dart`.
 
+Checker skenira `lib/`, `test/` i `integration_test/` (ako postoje).
+
+**CI na GitHubu pade na `import guard`, a lokalno prolazi?**  
+Verovatno grana nema poslednji `master` — uradi `git fetch` i `git merge origin/master` (ili rebase), pa push. Na `master` je ispravka legacy importa u commitu `6390255` i novijim.
+
 ## Pre-PR checklist
 
 - [ ] `dart run tool/check_service_imports.dart` prolazi
