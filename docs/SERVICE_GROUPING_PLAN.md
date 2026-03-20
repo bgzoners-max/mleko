@@ -10,7 +10,6 @@ There are 24 files under `lib/services/`.
 - `lib/services/auth/auth_services.dart`
 - `lib/services/catalog/catalog_services.dart`
 - `lib/services/communication/communication_services.dart`
-- `lib/services/content/content_services.dart`
 - `lib/services/core/core_services.dart`
 - `lib/services/media/media_services.dart`
 - `lib/services/orders/order_services.dart`
@@ -21,7 +20,6 @@ There are 24 files under `lib/services/`.
 - Auth: auth, users
 - Catalog: products, product cache, search history, supabase queries
 - Communication: chat, notifications, push, seller inbox
-- Content: recipes
 - Core: logger, connectivity, error handling
 - Media: storage
 - Orders: orders, queue, sync, background sync, analytics

@@ -1,6 +1,10 @@
-/// Supabase konfiguracija za Storage (slike proizvoda).
-/// Kreiraj projekat na https://supabase.com
-/// Dashboard → Settings → API → Project URL i anon public key
+/// Supabase konfiguracija (fallback kada nema `--dart-define`).
+///
+/// Za produkciju/staging preporučeno:
+/// `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+/// (vidi `.env.example`).
+///
+/// Kreiraj projekat na https://supabase.com — Dashboard → Settings → API.
 class SupabaseConfig {
   SupabaseConfig._();
 

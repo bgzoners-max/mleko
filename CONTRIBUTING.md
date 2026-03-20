@@ -17,7 +17,6 @@ Service kod je grupisan po domenima u `lib/services/`:
 - `auth/`
 - `catalog/`
 - `communication/`
-- `content/`
 - `core/`
 - `media/`
 - `orders/`
@@ -58,6 +57,16 @@ Ako checker prijavi gresku, prepravi import-e na domain barrel ili `services.dar
 - [ ] `flutter analyze` prolazi bez gresaka
 - [ ] Relevantni testovi prolaze (`flutter test`)
 - [ ] Nema novih legacy import-a iz `lib/services/*.dart` root nivoa
+
+## Supabase (URL i anon ključ)
+
+- U kodu postoji fallback u `lib/supabase_config.dart`.
+- Za build bez hardkodovanih vrednosti koristi `.env.example` kao šablon i:
+  - `flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+
+## Migracije (solo, drift, bez Docker-a)
+
+Kratko uputstvo: [docs/MIGRATIONS_SOLO.md](docs/MIGRATIONS_SOLO.md).
 
 ## Napomena
 

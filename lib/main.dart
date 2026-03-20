@@ -1,5 +1,7 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +11,7 @@ import 'core/theme.dart';
 import 'providers/app_settings_provider.dart';
 import 'providers/app_state.dart';
 import 'services/push_service.dart';
-import 'services/logger_service.dart';
+import 'services/core/logger_service.dart';
 import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
@@ -19,6 +21,22 @@ import 'supabase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Bolje logovanje na uređaju (adb logcat / DevTools) kad nešto pukne pre UI-a.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    if (kDebugMode) {
+      debugPrint('FlutterError: ${details.exceptionAsString()}');
+      debugPrintStack(stackTrace: details.stack);
+    }
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    if (kDebugMode) {
+      debugPrint('Uncaught async error: $error');
+      debugPrintStack(stackTrace: stack);
+    }
+    return true;
+  };
 
   if (!kIsWeb) {
     try {
@@ -110,7 +128,14 @@ void main() async {
                 data: MediaQuery.of(context).copyWith(
                   textScaler: TextScaler.linear(settings.fontScale),
                 ),
-                child: child ?? const SizedBox.shrink(),
+                // GoRouter ponekad prosleđuje `null` child tokom prvog frejma / refresh-a.
+                // `SizedBox.shrink()` daje potpuno prazan ekran (često pogrešno shvaćen kao “beli ekran”).
+                child: child ??
+                    const Scaffold(
+                      body: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
               );
             },
           ),

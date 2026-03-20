@@ -91,11 +91,6 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => context.push('/conversations'),
             ),
           ListTile(
-            leading: const Icon(Icons.menu_book),
-            title: const Text('Recepti'),
-            onTap: () => context.push('/recipes'),
-          ),
-          ListTile(
             leading: const Icon(Icons.map),
             title: const Text('Prodavci na mapi'),
             onTap: () => context.push('/sellers-map'),

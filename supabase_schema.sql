@@ -214,32 +214,7 @@ CREATE POLICY "Users see own notifications"
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
--- 7. Recepti
-CREATE TABLE IF NOT EXISTS public.recipes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  ingredients TEXT DEFAULT '',
-  instructions TEXT DEFAULT '',
-  image_url TEXT,
-  category TEXT DEFAULT 'Sir',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.recipes ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Recipes are public read" ON public.recipes;
-CREATE POLICY "Recipes are public read"
-  ON public.recipes FOR SELECT
-  TO public
-  USING (true);
-
--- Primeri recepta – pokreni jednom (ručno dodaj ako želiš)
--- INSERT INTO public.recipes (title, description, ingredients, instructions, category) VALUES
---   ('Suvirana pita sa sirom', 'Klasična pita sa domaćim sirom', '400g brasna, 200ml mleka, 300g sira, 2 jajeta', 'Zamesiti testo. Pomešati sir sa jajima. Nameniti pitu.', 'Sir'),
---   ('Kačkavalj na žaru', 'Pečen kačkavalj kao predjelo', '200g kačkavalja, maslinovo ulje, biber', 'Iseckati kačkavalj, peći na žaru 2-3 min.', 'Kačkavalj'),
---   ('Kajmak za doručak', 'Kajmak sa svežim hlebom', '100g kajmaka, hleb, šargarepa', 'Servirati kajmak sa toplim hlebom.', 'Kajmak');
-
--- 8. Koordinate za mapu (opciono u profiles)
+-- 7. Koordinate za mapu (opciono u profiles)
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS lat NUMERIC;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS lng NUMERIC;
 

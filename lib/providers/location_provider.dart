@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants.dart';
 import '../core/location_utils.dart';
-import '../services/logger_service.dart';
+import '../services/core/logger_service.dart';
 
 const String _keyRegion = 'mleko_selected_region';
 

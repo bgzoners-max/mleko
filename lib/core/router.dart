@@ -22,8 +22,6 @@ import '../screens/seller/map_picker_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/settings_screen.dart';
-import '../screens/recipes_screen.dart';
-import '../screens/recipe_detail_screen.dart';
 import '../screens/favorite_sellers_screen.dart';
 import '../screens/sellers_map_screen.dart';
 import '../screens/conversations_screen.dart';
@@ -187,14 +185,6 @@ GoRouter createRouter(AppState appState) {
       GoRoute(
         path: '/settings',
         builder: (_, __) => const SettingsScreen(),
-      ),
-      GoRoute(
-        path: '/recipes',
-        builder: (_, __) => const RecipesScreen(),
-      ),
-      GoRoute(
-        path: '/recipe/:id',
-        builder: (_, state) => RecipeDetailScreen(recipeId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/favorite-sellers',
