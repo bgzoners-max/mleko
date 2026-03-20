@@ -5,20 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../models/app_error.dart';
 import '../../models/order_model.dart';
 import '../../models/product_model.dart';
 import '../../models/seller_inbox_item.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
-import '../../services/chat_service.dart';
-import '../../services/orders_service.dart';
-import '../../services/seller_inbox_service.dart';
+import 'package:mleko/services/services.dart';
+import '../../core/ui_strings.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/cancel_order_dialog.dart';
 import '../../widgets/order_status_audit_log_section.dart';
 import '../../widgets/order_status_timeline.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/error_dialog.dart';
 
 /// Jedinstveni inbox za prodavca – porudžbine i razgovori u jednoj listi
 class SellerInboxScreen extends StatefulWidget {
@@ -35,6 +36,9 @@ class SellerInboxScreen extends StatefulWidget {
 
 class _SellerInboxScreenState extends State<SellerInboxScreen> {
   final _refreshController = StreamController<void>.broadcast();
+  final SellerInboxService _sellerInboxService = SellerInboxService();
+  Stream<List<SellerInboxItem>>? _inboxStream;
+  String? _inboxUserId;
 
   @override
   void dispose() {
@@ -51,16 +55,37 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
     if (user == null || !user.isSeller) {
+      _inboxStream = null;
+      _inboxUserId = null;
       return Scaffold(
         appBar: AppBar(title: const Text('Inbox')),
-        body: const Center(child: Text('Samo za prodavce.')),
+        body: AppEmptyState(
+          icon: Icons.store_mall_directory_outlined,
+          title: 'Samo za prodavce.',
+          subtitle: user == null
+              ? 'Prijavite se i aktivirajte prodavca da biste koristili inbox.'
+              : 'Ova sekcija je dostupna samo prodavcima.',
+          ctaLabel: user == null ? 'Prijavi se' : null,
+          ctaIcon: Icons.login,
+          onCtaPressed: user == null ? () => context.go('/login') : null,
+        ),
       );
     }
+
+    // Stream mora biti stabilan kroz rebuild-ove, da ne bi stalno
+    // otvarali/pravili nove realtime pretplate.
+    if (_inboxStream == null || _inboxUserId != user.id) {
+      _inboxUserId = user.id;
+      _inboxStream = _sellerInboxService.watchInbox(
+        user.id,
+        refreshTrigger: _refreshController.stream,
+      );
+    }
+
     return Scaffold(
       appBar: widget.showAppBar ? AppBar(title: const Text('Razgovori')) : null,
       body: StreamBuilder<List<SellerInboxItem>>(
-        stream: SellerInboxService()
-            .watchInbox(user.id, refreshTrigger: _refreshController.stream),
+        stream: _inboxStream,
         builder: (context, snap) {
           if (snap.hasError) {
             return AppErrorRetry(
@@ -115,7 +140,10 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
                         user: user,
                         onRefresh: () => _refreshController.add(null),
                       )
-                    : _ConversationInboxCard(item: item);
+                    : _ConversationInboxCard(
+                        item: item,
+                        onRefresh: () => _refreshController.add(null),
+                      );
               },
             ),
           );
@@ -129,6 +157,8 @@ class _OrderInboxCard extends StatelessWidget {
   final SellerInboxItem item;
   final UserModel user;
   final VoidCallback onRefresh;
+  static final OrdersService _ordersService = OrdersService();
+  static final ChatService _chatService = ChatService();
 
   const _OrderInboxCard(
       {required this.item, required this.user, required this.onRefresh});
@@ -171,7 +201,7 @@ class _OrderInboxCard extends StatelessWidget {
 
   Future<void> _updateStatus(
       BuildContext context, String orderId, OrderStatus status) async {
-    await OrdersService().updateOrderStatus(orderId, status);
+    await _ordersService.updateOrderStatus(orderId, status);
     onRefresh();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -185,7 +215,7 @@ class _OrderInboxCard extends StatelessWidget {
   Future<void> _cancelOrder(BuildContext context, String orderId) async {
     final reason = await CancelOrderDialog.show(context);
     if (reason == null || !context.mounted) return;
-    await OrdersService().cancelOrderBySeller(orderId, reason);
+    await _ordersService.cancelOrderBySeller(orderId, reason);
     onRefresh();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -206,14 +236,16 @@ class _OrderInboxCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.grey.shade300,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
                   backgroundImage: o.otherPartyImageUrl != null &&
                           o.otherPartyImageUrl!.isNotEmpty
                       ? CachedNetworkImageProvider(o.otherPartyImageUrl!)
                       : null,
                   child: o.otherPartyImageUrl == null ||
                           o.otherPartyImageUrl!.isEmpty
-                      ? Icon(Icons.person, color: Colors.grey.shade600)
+                      ? Icon(Icons.person,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -266,19 +298,23 @@ class _OrderInboxCard extends StatelessWidget {
                       if (o.buyerCity != null && o.buyerCity!.isNotEmpty)
                         Text(o.buyerCity!,
                             style: TextStyle(
-                                fontSize: 13, color: Colors.grey.shade600)),
+                                fontSize: 13,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)),
                       if (o.note != null && o.note!.isNotEmpty)
                         Text('Napomena: ${o.note}',
                             style: TextStyle(
                                 fontSize: 13,
                                 fontStyle: FontStyle.italic,
-                                color: Colors.grey.shade700),
+                                color: Theme.of(context).colorScheme.onSurface),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
                       if (o.buyerPhone != null && o.buyerPhone!.isNotEmpty)
                         Row(children: [
                           Icon(Icons.phone,
-                              size: 14, color: Colors.green.shade700),
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 4),
                           Text(o.buyerPhone!,
                               style: const TextStyle(fontSize: 13))
@@ -286,7 +322,7 @@ class _OrderInboxCard extends StatelessWidget {
                       Text('Status: ${o.statusLabel}',
                           style: TextStyle(
                               fontWeight: FontWeight.w500,
-                              color: _statusColor(o.statusLabel))),
+                              color: _statusColor(context, o.statusLabel))),
                       if (o.statusLabel != null) ...[
                         const SizedBox(height: 8),
                         OrderStatusTimeline(
@@ -317,7 +353,7 @@ class _OrderInboxCard extends StatelessWidget {
                       : () async {
                           try {
                             final convId =
-                                await ChatService().getOrCreateConversation(
+                                await _chatService.getOrCreateConversation(
                               o.buyerId!,
                               user.id,
                               orderId: o.orderId,
@@ -325,16 +361,19 @@ class _OrderInboxCard extends StatelessWidget {
                             if (context.mounted) context.push('/chat/$convId');
                           } catch (e) {
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text('Greška: $e'),
-                                    backgroundColor: Colors.red),
+                              ErrorSnackBar.show(
+                                context,
+                                error: AppError.from(
+                                  e,
+                                  userMessage:
+                                      UiStrings.errorOpenConversationFailed,
+                                ),
                               );
                             }
                           }
                         },
                   icon: const Icon(Icons.chat, size: 18),
-                  label: const Text('Poruka'),
+                  label: const Text(UiStrings.actionMessage),
                 ),
                 if (_isPending(o.statusLabel)) ...[
                   FilledButton(
@@ -353,7 +392,7 @@ class _OrderInboxCard extends StatelessWidget {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Odustani'),
+                              child: const Text(UiStrings.actionCancel),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.pop(ctx, true),
@@ -426,7 +465,8 @@ class _OrderInboxCard extends StatelessWidget {
     }
   }
 
-  Color _statusColor(String? s) {
+  Color _statusColor(BuildContext context, String? s) {
+    final scheme = Theme.of(context).colorScheme;
     switch (s) {
       case 'Na čekanju':
         return Colors.orange;
@@ -437,106 +477,254 @@ class _OrderInboxCard extends StatelessWidget {
       case 'Odbijeno':
         return Colors.red;
       case 'Isporučeno':
-        return Colors.green;
+        return scheme.primary;
       case 'Otkazano':
-        return Colors.grey;
+        return scheme.outline;
       default:
-        return Colors.grey;
+        return scheme.outline;
     }
   }
 }
 
 class _ConversationInboxCard extends StatelessWidget {
   final SellerInboxItem item;
+  final VoidCallback onRefresh;
 
-  const _ConversationInboxCard({required this.item});
+  const _ConversationInboxCard({
+    required this.item,
+    required this.onRefresh,
+  });
+
+  static final ChatService _chat = ChatService();
+
+  Future<void> _confirmHide(BuildContext context) async {
+    final cid = item.conversationId;
+    if (cid == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ukloni sa liste?'),
+        content: const Text(
+          'Razgovor neće biti prikazan u inbox-u. Istorija ostaje — ponovo će se pojaviti kada otvoriš chat.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Otkaži'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ukloni'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    try {
+      await _chat.setConversationUserPrefs(cid, hidden: true);
+      onRefresh();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Razgovor je uklonjen sa liste.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = item;
+    final cid = c.conversationId;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.grey.shade300,
-          backgroundImage:
-              c.otherPartyImageUrl != null && c.otherPartyImageUrl!.isNotEmpty
-                  ? CachedNetworkImageProvider(c.otherPartyImageUrl!)
-                  : null,
-          child: c.otherPartyImageUrl == null || c.otherPartyImageUrl!.isEmpty
-              ? Icon(Icons.person, color: Colors.grey.shade600)
-              : null,
-        ),
-        title: Row(
-          children: [
-            Icon(Icons.chat,
-                size: 16, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 4),
-            Expanded(
-              child: c.buyerId != null
-                  ? InkWell(
-                      onTap: () => context.push('/buyer/${c.buyerId}'),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            c.otherPartyName ?? 'Kupac',
-                            style: TextStyle(
-                              fontWeight: c.unreadCount > 0
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+      child: InkWell(
+        onTap: () {
+          if (cid != null) context.push('/chat/$cid');
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                backgroundImage: c.otherPartyImageUrl != null &&
+                        c.otherPartyImageUrl!.isNotEmpty
+                    ? CachedNetworkImageProvider(c.otherPartyImageUrl!)
+                    : null,
+                child: c.otherPartyImageUrl == null ||
+                        c.otherPartyImageUrl!.isEmpty
+                    ? Icon(Icons.person,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.chat,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 4),
+                        if (c.isFavorite)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(Icons.star,
+                                size: 14, color: Colors.amber.shade700),
                           ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.person_outline,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary),
-                        ],
+                        Expanded(
+                          child: c.buyerId != null
+                              ? InkWell(
+                                  onTap: () =>
+                                      context.push('/buyer/${c.buyerId}'),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          c.otherPartyName ?? 'Kupac',
+                                          style: TextStyle(
+                                            fontWeight: c.unreadCount > 0
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(Icons.person_outline,
+                                          size: 16,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary),
+                                    ],
+                                  ),
+                                )
+                              : Text(
+                                  c.otherPartyName ?? 'Kupac',
+                                  style: TextStyle(
+                                    fontWeight: c.unreadCount > 0
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
+                    if (c.productName != null)
+                      Text(
+                        '${c.productName}${c.quantityKg != null ? ' · ${ProductModel.formatQuantityWithUnit(c.quantityKg!, c.unitType ?? ProductModel.unitKg)}' : ''}',
                       ),
-                    )
-                  : Text(
-                      c.otherPartyName ?? 'Kupac',
+                    Text(
+                      c.lastMessageBody ?? 'Nema poruka',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight: c.unreadCount > 0
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                        color: c.unreadCount > 0
+                            ? Theme.of(context).colorScheme.onSurface
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (c.productName != null)
-              Text(
-                  '${c.productName}${c.quantityKg != null ? ' · ${ProductModel.formatQuantityWithUnit(c.quantityKg!, c.unitType ?? ProductModel.unitKg)}' : ''}'),
-            Text(
-              c.lastMessageBody ?? 'Nema poruka',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color:
-                    c.unreadCount > 0 ? Colors.black87 : Colors.grey.shade600,
+                    if (c.statusLabel != null)
+                      Text(
+                        c.statusLabel!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            if (c.statusLabel != null)
-              Text(c.statusLabel!,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          ],
+              if (cid != null) ...[
+                IconButton(
+                  tooltip: c.isFavorite ? 'Ukloni iz omiljenih' : 'Omiljeni',
+                  icon: Icon(
+                    c.isFavorite ? Icons.star : Icons.star_outline,
+                    color: c.isFavorite ? Colors.amber.shade700 : null,
+                  ),
+                  onPressed: () async {
+                    try {
+                      await _chat.setConversationUserPrefs(
+                        cid,
+                        isFavorite: !c.isFavorite,
+                      );
+                      onRefresh();
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Greška: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (v) async {
+                    if (v == 'fav') {
+                      try {
+                        await _chat.setConversationUserPrefs(
+                          cid,
+                          isFavorite: !c.isFavorite,
+                        );
+                        onRefresh();
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Greška: $e')),
+                          );
+                        }
+                      }
+                    } else if (v == 'hide') {
+                      await _confirmHide(context);
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    PopupMenuItem(
+                      value: 'fav',
+                      child: Text(
+                        c.isFavorite
+                            ? 'Ukloni iz omiljenih'
+                            : 'Označi kao omiljeni',
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'hide',
+                      child: Text('Ukloni sa liste'),
+                    ),
+                  ],
+                ),
+              ],
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (c.unreadCount > 0)
+                    Badge(
+                      label: Text('${c.unreadCount}'),
+                      child: const Icon(Icons.chevron_right, size: 20),
+                    )
+                  else
+                    const Icon(Icons.chevron_right),
+                ],
+              ),
+            ],
+          ),
         ),
-        trailing: c.unreadCount > 0
-            ? Badge(
-                label: Text('${c.unreadCount}'),
-                child: const Icon(Icons.chevron_right, size: 20),
-              )
-            : const Icon(Icons.chevron_right),
-        onTap: () {
-          if (c.conversationId != null) {
-            context.push('/chat/${c.conversationId}');
-          }
-        },
       ),
     );
   }

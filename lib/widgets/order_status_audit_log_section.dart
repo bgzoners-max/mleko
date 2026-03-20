@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../models/order_status_audit_log_model.dart';
-import '../services/orders_service.dart';
+import 'package:mleko/models/order_status_audit_log_model.dart';
+import '../core/ui_strings.dart';
+import 'package:mleko/domain/usecases/get_order_status_audit_logs.dart';
+import 'app_error_retry.dart';
 
-class OrderStatusAuditLogSection extends StatelessWidget {
+class OrderStatusAuditLogSection extends StatefulWidget {
   final String orderId;
   final String title;
   final Future<List<OrderStatusAuditLogModel>> Function(String orderId)?
@@ -18,10 +20,50 @@ class OrderStatusAuditLogSection extends StatelessWidget {
   });
 
   @override
+  State<OrderStatusAuditLogSection> createState() =>
+      _OrderStatusAuditLogSectionState();
+}
+
+class _OrderStatusAuditLogSectionState
+    extends State<OrderStatusAuditLogSection> {
+  late Future<List<OrderStatusAuditLogModel>> _future;
+
+  Future<List<OrderStatusAuditLogModel>> _resolveFuture() {
+    final loader = widget.logsLoader;
+    if (loader != null) {
+      return loader(widget.orderId);
+    }
+    return GetOrderStatusAuditLogsUseCase().call(widget.orderId);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _resolveFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant OrderStatusAuditLogSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.orderId != widget.orderId ||
+        oldWidget.logsLoader != widget.logsLoader) {
+      _future = _resolveFuture();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<OrderStatusAuditLogModel>>(
-      future: (logsLoader ?? OrdersService().getOrderStatusAuditLogs)(orderId),
+      future: _future,
       builder: (context, snap) {
+        if (snap.hasError) {
+          return AppErrorRetry(
+            message: 'Greška pri učitavanju istorije statusa.',
+            detail: snap.error?.toString(),
+            onRetry: () => setState(() => _future = _resolveFuture()),
+          );
+        }
+
         if (!snap.hasData) {
           return const SizedBox.shrink();
         }
@@ -33,15 +75,17 @@ class OrderStatusAuditLogSection extends StatelessWidget {
         final dateFormat = DateFormat('dd.MM.yyyy. HH:mm', 'sr');
         return Container(
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: Theme.of(context).colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: ExpansionTile(
             tilePadding: const EdgeInsets.symmetric(horizontal: 12),
             childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             title: Text(
-              title,
+              widget.title,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -57,8 +101,11 @@ class OrderStatusAuditLogSection extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.history,
-                          size: 16, color: Colors.grey.shade600),
+                      Icon(
+                        Icons.history,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -78,7 +125,9 @@ class OrderStatusAuditLogSection extends StatelessWidget {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: Colors.grey.shade700,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                             ),
                           ],
@@ -97,30 +146,30 @@ class OrderStatusAuditLogSection extends StatelessWidget {
   String _actorLabel(String role) {
     switch (role) {
       case 'buyer':
-        return 'Kupac';
+        return UiStrings.orderRoleBuyer;
       case 'seller':
-        return 'Prodavac';
+        return UiStrings.orderRoleSeller;
       default:
-        return 'Sistem';
+        return UiStrings.orderRoleSystem;
     }
   }
 
   String _statusLabel(String status) {
     switch (status) {
       case 'sent':
-        return 'Na cekanju';
+        return UiStrings.orderStatusSent;
       case 'accepted':
-        return 'Prihvaceno';
+        return UiStrings.orderStatusAccepted;
       case 'shipped':
-        return 'Poslato';
+        return UiStrings.orderStatusShipped;
       case 'delivered':
-        return 'Isporuceno';
+        return UiStrings.orderStatusDelivered;
       case 'rejected':
-        return 'Odbijeno';
+        return UiStrings.orderStatusRejected;
       case 'cancelled_by_seller':
-        return 'Otkazano';
+        return UiStrings.orderStatusCancelledBySeller;
       case 'arhivirano':
-        return 'Arhivirano';
+        return UiStrings.orderStatusArchived;
       default:
         return status;
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
@@ -101,6 +102,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class PushService {
   final _client = Supabase.instance.client;
 
+  // Ovi listener-i moraju imati životni ciklus, da ne dođe do duplih listen-ova
+  // (npr. pri login/logout-u) i registracije tokena za pogrešan korisnika.
+  static StreamSubscription<String>? _onTokenRefreshSub;
+  static StreamSubscription<RemoteMessage>? _onMessageSub;
+  static StreamSubscription<RemoteMessage>? _onMessageOpenedSub;
+
+  static void Function(RemoteMessage)? _foregroundHandler;
+  static void Function(RemoteMessage)? _messageOpenedHandler;
+
+  static Future<void> _cancelSub<T>(StreamSubscription<T>? sub) async {
+    await sub?.cancel();
+  }
+
   static Future<void> initialize() async {
     if (kIsWeb) return;
     try {
@@ -194,8 +208,18 @@ class PushService {
       final data = jsonDecode(response.payload!) as Map<String, dynamic>;
       _onNotificationTappedCallback?.call(data);
     } catch (e, st) {
-      LoggerService.error('Failed to parse notification payload', e,
-          stackTrace: st, extra: {'payload': response.payload});
+      final payload = response.payload!;
+      LoggerService.error(
+        'Failed to parse notification payload',
+        e,
+        stackTrace: st,
+        // Ne loguj ceo payload (može sadržati PII/metadata).
+        extra: {
+          'payload_len': payload.length,
+          'payload_sample':
+              payload.length > 200 ? payload.substring(0, 200) : payload,
+        },
+      );
     }
   }
 
@@ -228,7 +252,10 @@ class PushService {
         onConflict: 'user_id,token',
       );
 
-      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      // Jedan aktivan refresh listener važi za aktuelnog korisnika.
+      await _cancelSub(_onTokenRefreshSub);
+      _onTokenRefreshSub =
+          FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
         await _client.from('user_push_tokens').upsert(
           {'user_id': userId, 'token': newToken, 'platform': platform},
           onConflict: 'user_id,token',
@@ -243,6 +270,10 @@ class PushService {
   Future<void> unregisterToken(String userId) async {
     if (kIsWeb) return;
     try {
+      // Prekini refresh upite pre brisanja tokena.
+      await _cancelSub(_onTokenRefreshSub);
+      _onTokenRefreshSub = null;
+
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         await _client
@@ -259,7 +290,9 @@ class PushService {
   /// Postavi callback za poruke kada je app u foregroundu
   void setForegroundHandler(void Function(RemoteMessage) handler) {
     if (kIsWeb) return;
-    FirebaseMessaging.onMessage.listen((message) {
+    _foregroundHandler = handler;
+    unawaited(_cancelSub(_onMessageSub));
+    _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
       final data = message.data;
       final title = data['title'] as String? ?? 'Obaveštenje';
       final body = data['body'] as String? ?? '';
@@ -267,14 +300,19 @@ class PushService {
       final orderId = data['order_id'] as String? ?? '';
       _showLocalNotification(
           title: title, body: body, type: type, orderId: orderId);
-      handler(message);
+      _foregroundHandler?.call(message);
     });
   }
 
   /// Postavi callback za tap na notifikaciju (app u backgroundu)
   void setMessageOpenedHandler(void Function(RemoteMessage) handler) {
     if (kIsWeb) return;
-    FirebaseMessaging.onMessageOpenedApp.listen(handler);
+    _messageOpenedHandler = handler;
+    unawaited(_cancelSub(_onMessageOpenedSub));
+    _onMessageOpenedSub =
+        FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      _messageOpenedHandler?.call(message);
+    });
   }
 
   /// Proveri da li je app pokrenut iz notifikacije

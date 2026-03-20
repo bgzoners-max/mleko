@@ -173,8 +173,26 @@ class ProductsService {
       query = query.lte('price_per_kg', maxPrice);
     }
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      final pattern = '*$searchQuery*';
-      query = query.or('name.ilike.$pattern,category.ilike.$pattern');
+      // Sanitizuj unos pre formiranja Supabase filter izraza.
+      // Bez ovoga, specifični karakteri (npr. `,`, navodnici, wildcard-i) mogu
+      // da razbiju filter string ili promene značenje upita.
+      final trimmed = searchQuery.trim();
+      final limited = trimmed.length > 50 ? trimmed.substring(0, 50) : trimmed;
+      final safe = limited
+          // Ukloni wildcard karaktere koji imaju posebno značenje u LIKE.
+          .replaceAll(RegExp(r'[*%_]'), '')
+          // Dozvoli slova/brojeve (inkl. unicode), razmake i nekoliko bezazlenih separatora.
+          .replaceAll(
+            RegExp(r'[^\p{L}\p{N}\s\-_.]+', unicode: true),
+            '',
+          )
+          // Normalizuj whitespace.
+          .replaceAll(RegExp(r'\s+'), ' ');
+
+      if (safe.isNotEmpty) {
+        final pattern = '*$safe*';
+        query = query.or('name.ilike.$pattern,category.ilike.$pattern');
+      }
     }
 
     final (orderColumn, orderAsc) = switch (sort) {
@@ -426,8 +444,12 @@ class ProductsService {
 
   /// Home ekran – jedan RPC (products + order_count + rating), limit 50, Realtime osvežavanje.
   /// Ako je [regionNotifier] prosleđen, region se čita pri svakom refetch (i pri promeni notifiera).
-  Stream<({List<ProductModel> products, Map<String, int> salesCounts, Map<String, ({double avg, int count})> ratings})>
-      getHomeProducts({
+  Stream<
+      ({
+        List<ProductModel> products,
+        Map<String, int> salesCounts,
+        Map<String, ({double avg, int count})> ratings
+      })> getHomeProducts({
     String? region,
     ValueNotifier<String?>? regionNotifier,
     String? category,
@@ -443,8 +465,10 @@ class ProductsService {
     final cache = ProductCacheService();
     StreamSubscription? refreshSub;
     VoidCallback? regionListener;
+    var isFetching = false;
+    var hasQueuedRefetch = false;
 
-    Future<void> refetch() async {
+    Future<void> runSingleFetch() async {
       final currentRegion = regionNotifier?.value ?? region;
       try {
         final res = await _client.rpc(
@@ -478,7 +502,8 @@ class ProductsService {
             ProductCacheService.homeProductsKey, products);
 
         if (!controller.isClosed) {
-          controller.add((products: products, salesCounts: salesCounts, ratings: ratings));
+          controller.add(
+              (products: products, salesCounts: salesCounts, ratings: ratings));
         }
       } catch (e, st) {
         LoggerService.error('Failed to load home products', e, stackTrace: st);
@@ -489,11 +514,29 @@ class ProductsService {
         if (cachedProducts != null && cachedProducts.isNotEmpty) {
           LoggerService.info('Using cached home products as fallback');
           if (!controller.isClosed) {
-            controller.add((products: cachedProducts, salesCounts: {}, ratings: {}));
+            controller
+                .add((products: cachedProducts, salesCounts: {}, ratings: {}));
           }
         } else if (!controller.isClosed) {
           controller.add((products: [], salesCounts: {}, ratings: {}));
         }
+      }
+    }
+
+    // Coalesce burst triggers (realtime + refresh + region) into minimal network calls.
+    Future<void> refetch() async {
+      if (isFetching) {
+        hasQueuedRefetch = true;
+        return;
+      }
+      isFetching = true;
+      try {
+        do {
+          hasQueuedRefetch = false;
+          await runSingleFetch();
+        } while (hasQueuedRefetch);
+      } finally {
+        isFetching = false;
       }
     }
 
@@ -503,7 +546,8 @@ class ProductsService {
         .then((cachedProducts) {
       if (cachedProducts != null && cachedProducts.isNotEmpty) {
         if (!controller.isClosed) {
-          controller.add((products: cachedProducts, salesCounts: {}, ratings: {}));
+          controller
+              .add((products: cachedProducts, salesCounts: {}, ratings: {}));
         }
       }
       // Zatim fetch sa servera

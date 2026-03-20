@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../core/haptic.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
+import '../models/product_reviews_data.dart';
 import '../models/review_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
@@ -14,9 +14,11 @@ import '../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
 
 import '../supabase_config.dart';
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/bounce_tap_button.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_network_image.dart';
 
 void _shareProduct(BuildContext context, ProductModel product) {
   final base = SupabaseConfig.shareBaseUrl.isNotEmpty
@@ -50,20 +52,21 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late Future<ProductModel?> _productFuture =
       ProductsService().getProduct(widget.productId);
-  late Future<Map<String, dynamic>> _reviewsFuture = _loadReviewsFuture();
+  late Future<ProductReviewsData> _reviewsFuture = _loadReviewsFuture();
   final _scrollController = ScrollController();
   final _moreFromSellerKey = GlobalKey();
   final _reviewsSectionKey = GlobalKey();
   bool _didScrollToReviews = false;
 
-  Future<Map<String, dynamic>> _loadReviewsFuture() => Future.wait([
+  Future<ProductReviewsData> _loadReviewsFuture() => Future.wait([
         ReviewsService().getAverageRatingForProduct(widget.productId),
         ReviewsService().getReviewsForProduct(widget.productId),
-      ]).then((r) => {
-            'avg': r[0],
-            'reviews': r[1],
-            'count': (r[1] as List).length,
-          });
+      ]).then(
+        (r) => ProductReviewsData(
+          averageRating: r[0] as double?,
+          reviews: (r[1] as List).cast<ReviewModel>(),
+        ),
+      );
 
   void _scrollToReviews() {
     final ctx = _reviewsSectionKey.currentContext;
@@ -182,7 +185,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           }
           final product = snap.data;
           if (product == null) {
-            return const Center(child: Text('Proizvod nije pronađen.'));
+            return const AppEmptyState(
+              icon: Icons.search_off_outlined,
+              title: 'Proizvod nije pronađen.',
+              subtitle:
+                  'Moguće je da je proizvod obrisan ili trenutno nije dostupan.',
+            );
           }
           _maybeScrollToReviewsOnLoad();
           return Center(
@@ -198,20 +206,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       height: 220,
                       child: product.imageUrls.isEmpty
                           ? ColoredBox(
-                              color: Colors.grey.shade200,
-                              child: const Icon(Icons.image_not_supported,
-                                  size: 64),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: const Icon(
+                                Icons.image_not_supported,
+                                size: 64,
+                              ),
                             )
                           : PageView.builder(
                               itemCount: product.imageUrls.length,
-                              itemBuilder: (_, i) => CachedNetworkImage(
+                              itemBuilder: (_, i) => AppNetworkImage(
                                 imageUrl: product.imageUrls[i],
                                 fit: BoxFit.cover,
                                 memCacheWidth: 800,
                                 memCacheHeight: 500,
                                 fadeInDuration: Duration.zero,
-                                errorWidget: (_, __, ___) =>
-                                    const Icon(Icons.broken_image, size: 64),
                               ),
                             ),
                     ),
@@ -396,7 +406,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 }
 
 class _RatingSummaryBadge extends StatelessWidget {
-  final Future<Map<String, dynamic>> reviewsFuture;
+  final Future<ProductReviewsData> reviewsFuture;
   final VoidCallback onTap;
 
   const _RatingSummaryBadge({
@@ -406,12 +416,12 @@ class _RatingSummaryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return FutureBuilder<ProductReviewsData>(
       future: reviewsFuture,
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
-        final avg = snap.data!['avg'] as double?;
-        final count = snap.data!['count'] as int? ?? 0;
+        final avg = snap.data!.averageRating;
+        final count = snap.data!.count;
         if (avg == null || count == 0) return const SizedBox.shrink();
 
         return InkWell(
@@ -440,12 +450,14 @@ class _RatingSummaryBadge extends StatelessWidget {
                 Text(
                   _reviewsLabel(count),
                   style: TextStyle(
-                    color: Colors.grey.shade700,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 13,
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.grey.shade600),
+                Icon(Icons.keyboard_arrow_down,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ],
             ),
           ),
@@ -462,18 +474,18 @@ class _RatingSummaryBadge extends StatelessWidget {
 }
 
 class _ProductReviewsSection extends StatelessWidget {
-  final Future<Map<String, dynamic>> reviewsFuture;
+  final Future<ProductReviewsData> reviewsFuture;
 
   const _ProductReviewsSection({super.key, required this.reviewsFuture});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return FutureBuilder<ProductReviewsData>(
       future: reviewsFuture,
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
-        final avg = snap.data!['avg'] as double?;
-        final reviews = (snap.data!['reviews'] as List?)?.cast<ReviewModel>() ?? <ReviewModel>[];
+        final avg = snap.data!.averageRating;
+        final reviews = snap.data!.reviews;
         if (avg == null && reviews.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +502,9 @@ class _ProductReviewsSection extends StatelessWidget {
                   Icon(Icons.star, color: Colors.amber.shade700, size: 18),
                   Text(avg.toStringAsFixed(1)),
                   Text(' (${reviews.length})',
-                      style: TextStyle(color: Colors.grey.shade600)),
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ],
             ),
@@ -517,7 +531,9 @@ class _ProductReviewsSection extends StatelessWidget {
                                     : r.comment,
                                 style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.grey.shade700))),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface))),
                       ],
                     ),
                   )),
@@ -543,10 +559,8 @@ class _InfoBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelLarge
-                  ?.copyWith(color: Colors.grey.shade600)),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(height: 2),
           Text(content, style: Theme.of(context).textTheme.bodyLarge),
         ],
@@ -603,7 +617,9 @@ class _MoreFromSellerSectionState extends State<_MoreFromSellerSection> {
                 const SizedBox(width: 8),
                 Text(
                   '(${all.length})',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12),
                 ),
                 const Spacer(),
                 if (all.length > 3)
@@ -629,25 +645,18 @@ class _MoreFromSellerSectionState extends State<_MoreFromSellerSection> {
                                   ? Container(
                                       width: 56,
                                       height: 56,
-                                      color: Colors.grey.shade200,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest,
                                       child: const Icon(
-                                          Icons.image_not_supported,
-                                          size: 24),
+                                        Icons.image_not_supported,
+                                        size: 24,
+                                      ),
                                     )
-                                  : CachedNetworkImage(
+                                  : AppNetworkImage.icon(
                                       imageUrl: item.imageUrls.first,
                                       width: 56,
                                       height: 56,
-                                      memCacheWidth: 140,
-                                      memCacheHeight: 140,
-                                      fit: BoxFit.cover,
-                                      errorWidget: (_, __, ___) => Container(
-                                        width: 56,
-                                        height: 56,
-                                        color: Colors.grey.shade200,
-                                        child: const Icon(Icons.broken_image,
-                                            size: 24),
-                                      ),
                                     ),
                             ),
                             const SizedBox(width: 12),
@@ -709,136 +718,157 @@ class _SellerInlineCartSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final cart = context.watch<CartProvider>();
-    return FutureBuilder<List<({ProductModel product, double quantity})>>(
-      future: cart.getProductsBySeller(sellerId),
-      builder: (context, snap) {
-        final items = snap.data ?? [];
-        if (items.isEmpty) return const SizedBox.shrink();
+    final cart = context.read<CartProvider>();
+    return Selector<CartProvider, String>(
+      selector: (_, c) {
+        final draft = c.getSellerDraft(sellerId);
+        if (draft.isEmpty) return '';
+        final entries = draft.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+        // Stabilan fingerprint: rebuild samo kad se stvarno promeni draft ovog prodavca.
+        return entries.map((e) => '${e.key}:${e.value}').join('|');
+      },
+      builder: (context, draftKey, _) {
+        if (draftKey.isEmpty) return const SizedBox.shrink();
 
-        final total = items.fold<double>(
-          0,
-          (sum, e) => sum + e.product.pricePerKg * e.quantity,
-        );
+        return FutureBuilder<List<({ProductModel product, double quantity})>>(
+          future: cart.getProductsBySeller(sellerId),
+          builder: (context, snap) {
+            final items = snap.data ?? [];
+            if (items.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.shopping_basket_outlined,
-                      size: 20, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Tvoja korpa kod ovog domaćinstva',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ],
+            final total = items.fold<double>(
+              0,
+              (sum, e) => sum + e.product.pricePerKg * e.quantity,
+            );
+
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: Theme.of(context).colorScheme.outline),
               ),
-              const SizedBox(height: 8),
-              ...items.take(3).map((e) {
-                final p = e.product;
-                final step = p.quantityStep;
-                final minQty = p.minOrderKg;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              p.formatQuantity(e.quantity),
-                              style: TextStyle(
-                                  color: Colors.grey.shade700, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.remove, size: 18),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: e.quantity <= minQty
-                            ? null
-                            : () {
-                                final next = e.quantity - step;
-                                if (next < minQty) return;
-                                cart.setQuantityForSeller(
-                                  sellerId: sellerId,
-                                  productId: p.id,
-                                  quantity: next,
-                                );
-                              },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add, size: 18),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          final next = e.quantity + step;
-                          cart.setQuantityForSeller(
-                            sellerId: sellerId,
-                            productId: p.id,
-                            quantity: next,
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          cart.removeFromSeller(
-                            sellerId: sellerId,
-                            productId: p.id,
-                          );
-                        },
+                      Icon(Icons.shopping_basket_outlined,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tvoja korpa kod ovog domaćinstva',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                );
-              }),
-              if (items.length > 3)
-                Text(
-                  '+${items.length - 3} proizvoda',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-              const SizedBox(height: 8),
-              Text(
-                'Ukupno za proizvode: ${total.toStringAsFixed(0)} RSD + dostava',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                  const SizedBox(height: 8),
+                  ...items.take(3).map((e) {
+                    final p = e.product;
+                    final step = p.quantityStep;
+                    final minQty = p.minOrderKg;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  p.formatQuantity(e.quantity),
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove, size: 18),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: e.quantity <= minQty
+                                ? null
+                                : () {
+                                    final next = e.quantity - step;
+                                    if (next < minQty) return;
+                                    cart.setQuantityForSeller(
+                                      sellerId: sellerId,
+                                      productId: p.id,
+                                      quantity: next,
+                                    );
+                                  },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add, size: 18),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              final next = e.quantity + step;
+                              cart.setQuantityForSeller(
+                                sellerId: sellerId,
+                                productId: p.id,
+                                quantity: next,
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              cart.removeFromSeller(
+                                sellerId: sellerId,
+                                productId: p.id,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  if (items.length > 3)
+                    Text(
+                      '+${items.length - 3} proizvoda',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ukupno za proizvode: ${total.toStringAsFixed(0)} RSD + dostava',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.tonal(
+                    onPressed: () => context.push('/checkout-seller/$sellerId'),
+                    child: const Text('Pošalji porudžbinu prodavcu'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              FilledButton.tonal(
-                onPressed: () => context.push('/checkout-seller/$sellerId'),
-                child: const Text('Pošalji porudžbinu prodavcu'),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 }
-

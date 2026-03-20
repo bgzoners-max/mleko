@@ -79,4 +79,27 @@ void main() {
 
     expect(find.textContaining('Tok porudzbine je prekinut'), findsOneWidget);
   });
+
+  testWidgets('audit section shows retry button on error', (tester) async {
+    Future<List<OrderStatusAuditLogModel>> failingLoader(String _) async {
+      throw Exception('DB error');
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OrderStatusAuditLogSection(
+            orderId: 'ord-1',
+            logsLoader: failingLoader,
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Greška pri učitavanju istorije statusa.'), findsOneWidget);
+    expect(find.text('Pokušaj ponovo'), findsOneWidget);
+  });
 }

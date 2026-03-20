@@ -27,8 +27,17 @@ jobs:
       - name: Flutter analyze
         run: flutter analyze
 
-      - name: Flutter test
-        run: flutter test
+      - name: Flutter test (with coverage)
+        run: flutter test --coverage
+
+      - name: Integration tests
+        run: flutter test integration_test
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
 
   db-integration-checks:
     runs-on: ubuntu-latest

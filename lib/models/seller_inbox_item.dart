@@ -7,6 +7,7 @@ class SellerInboxItem {
   final String? orderId;
   final String? conversationId;
   final String? buyerId;
+  final bool isFavorite;
   final String? otherPartyName;
   final String? otherPartyImageUrl;
   final String? productName;
@@ -26,6 +27,7 @@ class SellerInboxItem {
     this.orderId,
     this.conversationId,
     this.buyerId,
+    this.isFavorite = false,
     this.otherPartyName,
     this.otherPartyImageUrl,
     this.productName,

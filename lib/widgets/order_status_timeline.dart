@@ -28,21 +28,24 @@ class OrderStatusTimeline extends StatelessWidget {
       status == OrderStatus.rejected || status == OrderStatus.cancelledBySeller;
 
   String get _statusHint {
+    if (_isStopped) return 'Tok porudzbine je prekinut.';
     switch (status) {
       case OrderStatus.sent:
         return 'Čeka se potvrda porudžbine.';
       case OrderStatus.accepted:
         return 'Sad je na potezu prodavac – priprema tvoju porudžbinu za slanje.';
       case OrderStatus.shipped:
-        return 'Prodavac je poslao porudžbinu – sačekaj isporuku i onda potvrdi prijem.';
+        return 'prodavac je poslao porudžbinu – sačekaj isporuku i onda potvrdi prijem.';
       case OrderStatus.delivered:
         return 'Sad si ti na potezu – potvrdi da si primio porudžbinu.';
       case OrderStatus.cancelledBySeller:
-        return 'Prodavac je otkazao porudžbinu – ako ti nešto nije jasno, javi se prodavcu.';
-      case OrderStatus.rejected:
-        return 'Prodavac je odbio porudžbinu – kontaktiraj ga ako želiš dodatno objašnjenje.';
+        // `_isStopped` već pokriva cancelledBySeller, ali ostavljamo fallback.
+        return 'Tok porudzbine je prekinut.';
       case OrderStatus.archived:
         return 'Porudžbina je uspešno završena.';
+      case OrderStatus.rejected:
+        // `_isStopped` već pokriva rejected, ali ostavljamo fallback.
+        return 'Tok porudzbine je prekinut.';
     }
   }
 

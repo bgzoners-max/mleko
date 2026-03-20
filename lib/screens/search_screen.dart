@@ -39,7 +39,8 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
-  late final Future<List<String>> _historyFuture;
+  int _querySeq = 0;
+  late Future<List<String>> _historyFuture;
 
   @override
   void initState() {
@@ -79,11 +80,13 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadFirstPage() async {
+    final querySeq = ++_querySeq;
     setState(() {
       _loading = true;
       _products = [];
       _offset = 0;
       _hasMore = true;
+      _loadingMore = false;
     });
     final result = await _productsService.getProductsPage(
       category: _category,
@@ -94,7 +97,8 @@ class _SearchScreenState extends State<SearchScreen> {
       limit: productsPageSize,
       offset: 0,
     );
-    if (mounted) {
+    if (!mounted || querySeq != _querySeq) return;
+    {
       setState(() {
         _products = result.items;
         _salesCounts = result.salesCounts;
@@ -108,6 +112,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || !_hasMore || _loading) return;
+    final querySeq = _querySeq;
     setState(() => _loadingMore = true);
     final result = await _productsService.getProductsPage(
       category: _category,
@@ -118,7 +123,16 @@ class _SearchScreenState extends State<SearchScreen> {
       limit: productsPageSize,
       offset: _offset,
     );
-    if (mounted) {
+    if (!mounted) return;
+    if (querySeq != _querySeq) {
+      // Nove pretrage su počele dok je loadMore bio u flight-u.
+      // Ne sme se dodavati rezultat starog upita.
+      setState(() {
+        _loadingMore = false;
+      });
+      return;
+    }
+    {
       setState(() {
         _products = [..._products, ...result.items];
         _salesCounts = {..._salesCounts, ...result.salesCounts};
@@ -189,8 +203,12 @@ class _SearchScreenState extends State<SearchScreen> {
                 isDense: true,
               ),
               onChanged: (v) => _onSearchChanged(v),
-              onSubmitted: (q) {
-                _searchHistoryService.addToHistory(q);
+              onSubmitted: (q) async {
+                await _searchHistoryService.addToHistory(q);
+                if (!mounted) return;
+                setState(() {
+                  _historyFuture = _searchHistoryService.getHistory();
+                });
                 _applySearchImmediate(q);
               },
             ),
@@ -216,7 +234,10 @@ class _SearchScreenState extends State<SearchScreen> {
                       children: [
                         Text('Istorija:',
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey.shade600)),
+                                fontSize: 12,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)),
                         const SizedBox(width: 8),
                         ...history.take(5).map((h) => Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -299,7 +320,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             return AppEmptyState(
                               icon: Icons.search_off,
                               title: 'Nema rezultata za ovu pretragu',
-                              subtitle: 'Probajte drugi pojam, kategoriju ili pogledajte sve proizvode.',
+                              subtitle:
+                                  'Probajte drugi pojam, kategoriju ili pogledajte sve proizvode.',
                               ctaLabel: 'Pogledaj sve proizvode',
                               ctaIcon: Icons.list,
                               onCtaPressed: () {
@@ -340,15 +362,15 @@ class _SearchScreenState extends State<SearchScreen> {
                                           selector: (_, fav) =>
                                               fav.isFavorite(p.id),
                                           builder: (_, isFavorite, __) {
-                                            final favorites =
-                                                context.read<FavoritesProvider>();
+                                            final favorites = context
+                                                .read<FavoritesProvider>();
                                             return ProductCard(
                                               product: p,
                                               isFavorite: isFavorite,
-                                              onFavoriteToggle: () =>
-                                                  favorites.toggle(user.id, p.id),
+                                              onFavoriteToggle: () => favorites
+                                                  .toggle(user.id, p.id),
                                               isPopular: (_salesCounts[p.id] ??
-                                                          0) >=
+                                                      0) >=
                                                   AppConstants
                                                       .popularProductMinSales,
                                               avgRating: rating?.avg,
@@ -360,8 +382,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                           product: p,
                                           isFavorite: null,
                                           onFavoriteToggle: null,
-                                          isPopular: (_salesCounts[p.id] ?? 0) >=
-                                              AppConstants.popularProductMinSales,
+                                          isPopular:
+                                              (_salesCounts[p.id] ?? 0) >=
+                                                  AppConstants
+                                                      .popularProductMinSales,
                                           avgRating: rating?.avg,
                                           reviewCount: rating?.count,
                                         ),

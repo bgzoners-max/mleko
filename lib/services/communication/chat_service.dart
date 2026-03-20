@@ -66,6 +66,21 @@ class ChatService {
         .toList();
   }
 
+  Future<void> setConversationUserPrefs(
+    String conversationId, {
+    bool? isFavorite,
+    bool? hidden,
+  }) async {
+    await _client.rpc(
+      'set_conversation_user_prefs',
+      params: {
+        'p_conversation_id': conversationId,
+        'p_is_favorite': isFavorite,
+        'p_hidden': hidden,
+      },
+    );
+  }
+
   Stream<List<ConversationModel>> watchConversations(
     String userId, {
     Stream<void>? refreshTrigger,

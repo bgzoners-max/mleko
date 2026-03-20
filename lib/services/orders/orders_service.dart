@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/order_item_model.dart';
 import '../../models/order_model.dart';
+import '../../models/order_status_audit_log_model.dart';
 import '../../models/product_model.dart';
 import '../../utils/quantity_engine.dart';
 import '../core/logger_service.dart';
@@ -364,6 +365,23 @@ class OrdersService {
         await _client.from('order_items').select().eq('order_id', orderId);
     return (list as List)
         .map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<OrderStatusAuditLogModel>> getOrderStatusAuditLogs(
+    String orderId,
+  ) async {
+    final list = await _client
+        .from('order_status_audit_logs')
+        .select()
+        .eq('order_id', orderId)
+        .order('changed_at', ascending: false);
+
+    return (list as List)
+        .map(
+          (e) =>
+              OrderStatusAuditLogModel.fromJson(e as Map<String, dynamic>),
+        )
         .toList();
   }
 

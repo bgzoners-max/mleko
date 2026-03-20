@@ -5,6 +5,21 @@ import '../../models/user_model.dart';
 class UsersService {
   final _client = Supabase.instance.client;
 
+  Future<List<UserModel>> getRecentlyRegisteredSellers({
+    int limit = 3,
+  }) async {
+    final list = await _client
+        .from('profiles')
+        .select()
+        .eq('role', 'seller')
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    return (list as List)
+        .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<UserModel?> getUser(String userId) async {
     final res =
         await _client.from('profiles').select().eq('id', userId).maybeSingle();
