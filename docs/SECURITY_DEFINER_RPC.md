@@ -28,6 +28,12 @@
 2. Ako mora `DEFINER`: eksplicitno `SET search_path = public` i provera **`auth.uid()`** za sve „scope“ parametre.
 3. Ne izlaži admin/audit funkcije `anon` (vidi `REVOKE` u migracijama oko `audit_product_ordering`).
 
+Posle nove migracije (posle `20260321160000` u imenu fajla) pokreni:
+
+`dart run tool/scan_security_definer_migrations.dart`
+
+Skripta preskače istorijske migracije i upozorava ako u novom fajlu ima `p_*_id` bez `auth.uid()` (osim javnih funkcija iz allowliste u skripti).
+
 ## Appendix: inventar (stanje repoa)
 
 Grupisano po ulozi. Poslednja definicija funkcije pobedi u lancu migracija.

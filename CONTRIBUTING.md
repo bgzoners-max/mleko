@@ -49,6 +49,14 @@ Pokreni checker pre push-a:
 dart run tool/check_service_imports.dart
 ```
 
+Opciono — heuristika za nove Supabase migracije (`SECURITY DEFINER` + `p_*_id`):
+
+```bash
+dart run tool/scan_security_definer_migrations.dart
+```
+
+(vidi [docs/SECURITY_DEFINER_RPC.md](docs/SECURITY_DEFINER_RPC.md))
+
 Ako checker prijavi gresku, prepravi import-e na domain barrel ili `services.dart`.
 
 ## Pre-PR checklist
