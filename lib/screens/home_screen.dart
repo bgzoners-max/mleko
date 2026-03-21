@@ -581,7 +581,7 @@ class _HomeSidePanelState extends State<_HomeSidePanel>
   Widget build(BuildContext context) {
     final children = [
       _TopProductsList(homeProductsStream: widget.homeProductsStream),
-      const _FavoriteFarmsPlaceholder(),
+      _FavoriteFarmsList(tabController: _tabController),
     ];
     return Card(
       child: Column(
@@ -704,29 +704,215 @@ class _TopProductsList extends StatelessWidget {
   }
 }
 
-class _FavoriteFarmsPlaceholder extends StatelessWidget {
-  const _FavoriteFarmsPlaceholder();
+/// Lista gazdinstava koje kupac prati (isti podatak kao ekran „Pratim prodavce“).
+class _FavoriteFarmsList extends StatefulWidget {
+  final TabController tabController;
+
+  const _FavoriteFarmsList({required this.tabController});
+
+  @override
+  State<_FavoriteFarmsList> createState() => _FavoriteFarmsListState();
+}
+
+class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
+  final FavoriteSellersService _service = FavoriteSellersService();
+  Future<List<UserModel>>? _future;
+  String? _loadedForUserId;
+  int _prevTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.tabController.addListener(_onTabChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.tabController.removeListener(_onTabChanged);
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (widget.tabController.indexIsChanging) return;
+    final idx = widget.tabController.index;
+    // Osveži listu kad korisnik ponovo otvori ovaj tab (npr. posle praćenja na profilu).
+    if (idx == 1 && _prevTabIndex != 1) {
+      _refreshForCurrentUser();
+    }
+    _prevTabIndex = idx;
+  }
+
+  void _refreshForCurrentUser() {
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) return;
+    setState(() {
+      _future = _service.getFavoriteSellersWithProfiles(user.id);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) {
+      if (_loadedForUserId != null) {
+        setState(() {
+          _loadedForUserId = null;
+          _future = null;
+        });
+      }
+      return;
+    }
+    if (_loadedForUserId != user.id) {
+      setState(() {
+        _loadedForUserId = user.id;
+        _future = _service.getFavoriteSellersWithProfiles(user.id);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Omiljena gazdinstva će uskoro biti prikazana ovde kao brze prečice.',
-              textAlign: TextAlign.center,
+    final user = context.watch<AppState>().user;
+    if (user == null || user.isGuest) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.people_outline, size: 40, color: Colors.grey.shade400),
+              const SizedBox(height: 8),
+              Text(
+                'Prijavite se da vidite gazdinstva koja pratite.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              TextButton(
+                onPressed: () => context.push('/login'),
+                child: const Text('Prijavi se'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final future = _future;
+    if (future == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return FutureBuilder<List<UserModel>>(
+      future: future,
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Greška pri učitavanju.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  TextButton(
+                    onPressed: _refreshForCurrentUser,
+                    child: const Text('Pokušaj ponovo'),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => context.push('/favorite-sellers'),
-            child: const Text('Otvori listu omiljenih'),
-          ),
-        ],
-      ),
+          );
+        }
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final list = snap.data ?? [];
+        if (list.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 40, color: Colors.grey.shade400),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Još ne pratite nijedno gazdinstvo.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/search'),
+                    child: const Text('Pretraži proizvode'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(12),
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 4),
+                itemBuilder: (context, i) {
+                  final seller = list[i];
+                  final title =
+                      seller.farmName ?? seller.displayName ?? 'Gazdinstvo';
+                  final subtitle = seller.location ?? seller.city;
+                  return ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => context.push('/seller/${seller.id}'),
+                    leading: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: seller.profileImageUrl != null
+                          ? CachedNetworkImageProvider(seller.profileImageUrl!)
+                          : null,
+                      child: seller.profileImageUrl == null
+                          ? Icon(Icons.store, size: 20, color: Colors.grey.shade700)
+                          : null,
+                    ),
+                    title: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    subtitle: subtitle != null
+                        ? Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                            ),
+                          )
+                        : null,
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                  );
+                },
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/favorite-sellers'),
+              child: const Text('Sva omiljena gazdinstva'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
