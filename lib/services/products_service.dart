@@ -38,12 +38,39 @@ extension ProductSortX on ProductSort {
 /// Veličina jedne stranice pri paginaciji
 const int productsPageSize = 20;
 
+const int _kMaxSearchTokensLegacy = 8;
+
+String? _sanitizeProductSearchInputLegacy(String? searchQuery) {
+  if (searchQuery == null) return null;
+  final trimmed = searchQuery.trim();
+  if (trimmed.isEmpty) return null;
+  final limited = trimmed.length > 50 ? trimmed.substring(0, 50) : trimmed;
+  final safe = limited
+      .replaceAll(RegExp(r'[*%_]'), '')
+      .replaceAll(
+        RegExp(r'[^\p{L}\p{N}\s\-_.]+', unicode: true),
+        '',
+      )
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  return safe.isEmpty ? null : safe;
+}
+
+List<String> _nameSearchTokensLegacy(String safe) {
+  return safe
+      .split(RegExp(r'\s+'))
+      .where((t) => t.isNotEmpty)
+      .take(_kMaxSearchTokensLegacy)
+      .map((t) => t.toLowerCase())
+      .toList();
+}
+
 class ProductsService {
   final _client = Supabase.instance.client;
 
   /// Paginirani učitavanje proizvoda – za "load more" / beskonačan scroll
   /// Uvek koristi view products_with_ratings (ima avg_rating, order_count) – jedan poziv, bez getProductSalesCounts.
-  /// searchQuery – server-side ILIKE pretraga po name i category.
+  /// searchQuery – pretraga samo po nazivu proizvoda (više reči = AND).
   Future<
       ({
         List<ProductModel> items,
@@ -78,9 +105,11 @@ class ProductsService {
     if (maxPrice != null) {
       query = query.lte('price_per_kg', maxPrice);
     }
-    if (searchQuery != null && searchQuery.isNotEmpty) {
-      final pattern = '*$searchQuery*';
-      query = query.or('name.ilike.$pattern,category.ilike.$pattern');
+    final safeSearch = _sanitizeProductSearchInputLegacy(searchQuery);
+    if (safeSearch != null) {
+      for (final token in _nameSearchTokensLegacy(safeSearch)) {
+        query = query.ilike('name', '%$token%');
+      }
     }
 
     final (orderColumn, orderAsc) = switch (sort) {

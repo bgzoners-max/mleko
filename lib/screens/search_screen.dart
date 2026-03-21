@@ -198,7 +198,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
-                hintText: 'Traži sir, kačkavalj…',
+                hintText: 'Traži po nazivu proizvoda…',
                 prefixIcon: Icon(Icons.search),
                 isDense: true,
               ),
@@ -321,7 +321,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               icon: Icons.search_off,
                               title: 'Nema rezultata za ovu pretragu',
                               subtitle:
-                                  'Probajte drugi pojam, kategoriju ili pogledajte sve proizvode.',
+                                  'Probajte drugi naziv, filter kategorije ili pogledajte sve proizvode.',
                               ctaLabel: 'Pogledaj sve proizvode',
                               ctaIcon: Icons.list,
                               onCtaPressed: () {

@@ -40,6 +40,36 @@ extension ProductSortX on ProductSort {
 /// Veličina jedne stranice pri paginaciji
 const int productsPageSize = 20;
 
+/// Maksimalan broj reči u upitu (AND pretraga po nazivu).
+const int _kMaxSearchTokens = 8;
+
+/// Čisti tekstualni upit; vraća `null` ako nema smislenog sadržaja.
+String? _sanitizeProductSearchInput(String? searchQuery) {
+  if (searchQuery == null) return null;
+  final trimmed = searchQuery.trim();
+  if (trimmed.isEmpty) return null;
+  final limited = trimmed.length > 50 ? trimmed.substring(0, 50) : trimmed;
+  final safe = limited
+      .replaceAll(RegExp(r'[*%_]'), '')
+      .replaceAll(
+        RegExp(r'[^\p{L}\p{N}\s\-_.]+', unicode: true),
+        '',
+      )
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  return safe.isEmpty ? null : safe;
+}
+
+/// Tokeni za pretragu — samo naziv proizvoda; sve reči moraju biti podstring naziva (AND).
+List<String> _nameSearchTokens(String safe) {
+  return safe
+      .split(RegExp(r'\s+'))
+      .where((t) => t.isNotEmpty)
+      .take(_kMaxSearchTokens)
+      .map((t) => t.toLowerCase())
+      .toList();
+}
+
 class ProductListingAutoflag {
   final String productId;
   final String sellerId;
@@ -137,7 +167,10 @@ class ProductsService {
 
   /// Paginirani učitavanje proizvoda – za "load more" / beskonačan scroll
   /// Uvek koristi view products_with_ratings (ima avg_rating, order_count) – jedan poziv, bez getProductSalesCounts.
-  /// searchQuery – server-side ILIKE pretraga po name i category.
+  /// searchQuery – server-side pretraga samo po **nazivu** proizvoda (`name`).
+  /// Više reči = AND (svaka reč mora da se pojavi u nazivu). Kategorija iz filtera
+  /// i dalje koristi `eq('category', …)` — tekstualni upit ne traži po polju kategorije
+  /// (izbegava lažne pogotke tipa „Jogurt“ za „mleko“ jer je kategorija „Jogurt i kiselo mleko“).
   Future<
       ({
         List<ProductModel> items,
@@ -172,26 +205,12 @@ class ProductsService {
     if (maxPrice != null) {
       query = query.lte('price_per_kg', maxPrice);
     }
-    if (searchQuery != null && searchQuery.isNotEmpty) {
-      // Sanitizuj unos pre formiranja Supabase filter izraza.
-      // Bez ovoga, specifični karakteri (npr. `,`, navodnici, wildcard-i) mogu
-      // da razbiju filter string ili promene značenje upita.
-      final trimmed = searchQuery.trim();
-      final limited = trimmed.length > 50 ? trimmed.substring(0, 50) : trimmed;
-      final safe = limited
-          // Ukloni wildcard karaktere koji imaju posebno značenje u LIKE.
-          .replaceAll(RegExp(r'[*%_]'), '')
-          // Dozvoli slova/brojeve (inkl. unicode), razmake i nekoliko bezazlenih separatora.
-          .replaceAll(
-            RegExp(r'[^\p{L}\p{N}\s\-_.]+', unicode: true),
-            '',
-          )
-          // Normalizuj whitespace.
-          .replaceAll(RegExp(r'\s+'), ' ');
-
-      if (safe.isNotEmpty) {
-        final pattern = '*$safe*';
-        query = query.or('name.ilike.$pattern,category.ilike.$pattern');
+    final safeSearch = _sanitizeProductSearchInput(searchQuery);
+    if (safeSearch != null) {
+      final tokens = _nameSearchTokens(safeSearch);
+      // Svaki token mora da se poklopi sa nazivom (AND) — preciznije od OR name/category.
+      for (final token in tokens) {
+        query = query.ilike('name', '%$token%');
       }
     }
 
@@ -251,7 +270,9 @@ class ProductsService {
     int offset = 0,
   }) async {
     final cache = ProductCacheService();
-    final query = (searchQuery ?? '').trim().toLowerCase();
+    final safeSearch = _sanitizeProductSearchInput(searchQuery);
+    final tokens =
+        safeSearch != null ? _nameSearchTokens(safeSearch) : <String>[];
 
     final allCached = await cache.getAllCachedProducts();
     var filtered = allCached.where((p) {
@@ -270,18 +291,12 @@ class ProductsService {
       if (maxPrice != null && p.pricePerKg > maxPrice) {
         return false;
       }
-      if (query.isEmpty) {
+      if (tokens.isEmpty) {
         return true;
       }
 
       final name = p.name.toLowerCase();
-      final cat = p.category.toLowerCase();
-      final desc = p.description.toLowerCase();
-      final loc = p.location.toLowerCase();
-      return name.contains(query) ||
-          cat.contains(query) ||
-          desc.contains(query) ||
-          loc.contains(query);
+      return tokens.every((t) => name.contains(t));
     }).toList();
 
     filtered.sort((a, b) => _compareProducts(a, b, sort));
@@ -299,7 +314,8 @@ class ProductsService {
     final page = filtered.sublist(offset, end);
 
     LoggerService.info('Local cache search completed', extra: {
-      'query': query,
+      'query': safeSearch ?? '',
+      'tokens': tokens,
       'total': filtered.length,
       'returned': page.length,
       'offset': offset,
