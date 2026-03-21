@@ -10,7 +10,6 @@ import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/user_model.dart';
-import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
@@ -580,7 +579,6 @@ class _HomeSidePanelState extends State<_HomeSidePanel>
 
   @override
   Widget build(BuildContext context) {
-    final animationsEnabled = context.watch<AppSettingsProvider>().animationsEnabled;
     final children = [
       _TopProductsList(homeProductsStream: widget.homeProductsStream),
       const _FavoriteFarmsPlaceholder(),
@@ -597,16 +595,15 @@ class _HomeSidePanelState extends State<_HomeSidePanel>
               Tab(text: 'Omiljena gazdinstva'),
             ],
           ),
+          // IndexedStack (ne AnimatedSwitcher): oba taba ostaju u stablu pa
+          // StreamBuilder u „Najprodavaniji“ ne gubi pretplatu na home stream.
+          // Inače broadcast stream ne replay-uje poslednji event → večiti spinner.
           SizedBox(
             height: 260,
-            child: AnimatedSwitcher(
-              duration: Duration(milliseconds: animationsEnabled ? 250 : 0),
-              switchInCurve: Curves.easeIn,
-              switchOutCurve: Curves.easeOut,
-              child: KeyedSubtree(
-                key: ValueKey<int>(_tabController.index),
-                child: children[_tabController.index],
-              ),
+            child: IndexedStack(
+              index: _tabController.index,
+              sizing: StackFit.expand,
+              children: children,
             ),
           ),
         ],
