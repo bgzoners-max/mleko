@@ -14,7 +14,6 @@ import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/catalog/catalog_services.dart';
 import '../../services/media/media_services.dart';
-import 'package:flutter/cupertino.dart';
 import '../../widgets/cupertino_category_picker.dart';
 
 class AddEditProductScreen extends StatefulWidget {
@@ -296,7 +295,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Widget build(BuildContext context) {
     final catProvider = context.watch<CategoriesProvider>();
     final groups = catProvider.groups;
-    final categoryList = catProvider.categoryNames;
     final hasGroupedCategories = groups != null && groups.isNotEmpty;
     return Scaffold(
       appBar:

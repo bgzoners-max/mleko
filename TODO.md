@@ -1,16 +1,11 @@
-# APK Rebuild & Install Task ✓ COMPLETE
+# Task Progress: Fix unused 'categoryList' variable warning
 
-## Final Progress
-- [✅] 1. flutter pub get
-- [✅] 2. flutter clean  
-- [✅] 3. flutter build apk --debug (build/app/outputs/flutter-apk/app-debug.apk)
-- [✅] 4. adb install -r (Success on 23eadfec / 2312DRA50G)
-- [✅] 5. App launched via adb shell am start
-- [✅] 6. TODO.md updated
+## TODO Steps
+- [x] 1. Create TODO.md with approved plan steps
+- [x] 2. Edit lib/screens/seller/add_edit_product_screen.dart to remove unused categoryList declaration
+- [x] 3. Verify fix with flutter analyze
+- [x] 4. Mark complete and attempt_completion
 
-## Result
-Debug APK rebuilt with recent category picker centering fix and installed on connected device. App launched. Test Seller → Add Product → Category picker for centered text.
-
-To run logs: `flutter logs`
-To reinstall: `flutter build apk --debug && adb install -r build/app/outputs/flutter-apk/app-debug.apk`
+## Plan Summary
+Remove unused `final categoryList = catProvider.categoryNames;` from build() in add_edit_product_screen.dart
 
