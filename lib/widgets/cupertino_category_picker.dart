@@ -69,17 +69,16 @@ class _CupertinoCategoryPickerState extends State<CupertinoCategoryPicker> {
               labelText: widget.label,
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              suffixIcon: const Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: Icon(CupertinoIcons.chevron_down),
+              ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.initialCategory ?? 'Izaberite kategoriju',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ),
-                const Icon(CupertinoIcons.chevron_down),
-              ],
+            child: Center(
+              child: Text(
+                widget.initialCategory ?? 'Izaberite kategoriju',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
           ),
         );
@@ -99,7 +98,7 @@ class _CupertinoCategoryPickerState extends State<CupertinoCategoryPicker> {
               height: 40,
               decoration: BoxDecoration(
                 color: CupertinoColors.systemGrey6.resolveFrom(context),
-                border: Border(
+                border: const Border(
                   bottom: BorderSide(color: CupertinoColors.separator),
                 ),
               ),

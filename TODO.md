@@ -1,31 +1,16 @@
-# Flutter Web Rebuild + UI Fixes ✓
+# APK Rebuild & Install Task ✓ COMPLETE
 
-Current working directory: c:/dev/mleko
-
-## Steps
-- ✅ Rebuild web & preview in Chrome running (http://127.0.0.1:54346/...)
-- ✅ 1. Fixed OfflineIndicator: Added Directionality ltr → no crash on web
-- ✅ 2. Reordered home_screen.dart: HeroCard (\"Direktno sa gazdinstva...\") + search now first (after sticky header), categories section moved below
-- ✅ Test: Hot reload applied, check Chrome preview (search prominent at top)
+## Final Progress
+- [✅] 1. flutter pub get
+- [✅] 2. flutter clean  
+- [✅] 3. flutter build apk --debug (build/app/outputs/flutter-apk/app-debug.apk)
+- [✅] 4. adb install -r (Success on 23eadfec / 2312DRA50G)
+- [✅] 5. App launched via adb shell am start
+- [✅] 6. TODO.md updated
 
 ## Result
-Web app rebuilt, preview live in Chrome, UI updated per request (search/gazdinstva first), offline bug fixed.
+Debug APK rebuilt with recent category picker centering fix and installed on connected device. App launched. Test Seller → Add Product → Category picker for centered text.
 
-Notes:
-- HeroCard text \"Direktno sa gazdinstva do vašeg stola\" matches \"Od gazdinstva...\".
-- Live reload working; changes instant.
-- Original task + UI feedback complete.
+To run logs: `flutter logs`
+To reinstall: `flutter build apk --debug && adb install -r build/app/outputs/flutter-apk/app-debug.apk`
 
-Enjoy the preview!
-
----
-
-## CupertinoPicker for Kategorija [IN PROGRESS]
-
-### Steps:
-- [x] Backup to GitHub PR #1 (https://github.com/bgzoners-max/mleko/pull/1) ✓
-- [x] Created lib/widgets/cupertino_category_picker.dart ✓
-- [x] Edited lib/screens/seller/add_edit_product_screen.dart (replaced fallback dropdown with picker) ✓
-- [ ] Test: Hot reload (`r`), verify in preview
-- [ ] Mark complete, commit, gh pr create
-- [ ] Cleanup (update TODO.md)
