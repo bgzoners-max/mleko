@@ -5,12 +5,18 @@ const _keyThemeMode = 'mleko_theme_mode'; // 0=system, 1=light, 2=dark
 const _keyAnimationsEnabled = 'mleko_animations_enabled';
 const _keyFontScale = 'mleko_font_scale';
 
+/// Jednom se postavi na `true` nakon što su početne vrednosti (prva instalacija
+/// ili migracija sa starije verzije) upisane u SharedPreferences. Posle toga se
+/// uvek učitavaju samo sačuvane vrednosti — korisnički izbor se ne prepisuje.
+const _keyInstallDefaultsBootstrap = 'mleko_install_defaults_bootstrap';
+
 class AppSettingsProvider extends ChangeNotifier {
   /// Dostupne vrednosti za razmeru fonta (koristi se kao TextScaler.linear(fontScale)).
   static const double fontScaleMin = 0.9;
   static const double fontScaleMax = 1.5;
   static const List<double> fontScalePresets = [0.9, 1.0, 1.15, 1.3, 1.5];
 
+  /// Neutralno stanje dok se async `_load()` ne završi (izbegava pogrešan prvi frejm).
   ThemeMode _themeMode = ThemeMode.system;
   bool _animationsEnabled = true;
   double _fontScale = 1.0;
@@ -34,18 +40,69 @@ class AppSettingsProvider extends ChangeNotifier {
     _load();
   }
 
+  /// Ključevi koji ukazuju da je aplikacija već korišćena pre ovog bootstrap-a
+  /// (nadogradnja sa starije verzije). Namerno **ne** uključujemo `mleko_cache_*`
+  /// da ne bi keš upisan u prvom frejmu pogrešno tretirao „starog“ korisnika.
+  static bool _hasPriorAppUsage(SharedPreferences prefs) {
+    const knownKeys = <String>[
+      _keyThemeMode,
+      _keyFontScale,
+      _keyAnimationsEnabled,
+      'mleko_selected_region',
+      'mleko_search_history',
+      'mleko_cart',
+      'mleko_seller_drafts',
+      'mleko_pending_orders',
+      'mleko_cart_ids',
+    ];
+    for (final k in knownKeys) {
+      if (prefs.containsKey(k)) return true;
+    }
+    for (final k in prefs.getKeys()) {
+      if (k.startsWith('mleko_sync_analytics_')) return true;
+    }
+    return false;
+  }
+
+  Future<void> _persistBootstrapState(SharedPreferences prefs) async {
+    await prefs.setInt(_keyThemeMode, _themeModeToInt(_themeMode));
+    await prefs.setDouble(_keyFontScale, _fontScale.clamp(fontScaleMin, fontScaleMax));
+    await prefs.setBool(_keyAnimationsEnabled, _animationsEnabled);
+  }
+
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 0);
-      _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
-      _fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
+      final bootstrapDone = prefs.getBool(_keyInstallDefaultsBootstrap) ?? false;
+
+      if (!bootstrapDone) {
+        if (_hasPriorAppUsage(prefs)) {
+          // Nadogradnja: implicitne starije vrednosti (system, normalan font) ako nije bilo čuvanja.
+          _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 0);
+          _fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
+          _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
+        } else {
+          // Prva instalacija aplikacije: svetla tema + „Velika“ (1.15).
+          _themeMode = ThemeMode.light;
+          _fontScale = 1.15;
+          _animationsEnabled = true;
+        }
+        await _persistBootstrapState(prefs);
+        await prefs.setBool(_keyInstallDefaultsBootstrap, true);
+      } else {
+        // Samo sačuvano stanje (fallback samo ako je ključ oštećen / obrisan).
+        _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 1);
+        _fontScale = prefs.getDouble(_keyFontScale) ?? 1.15;
+        _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
+      }
+
       if (_fontScale < fontScaleMin || _fontScale > fontScaleMax) {
-        _fontScale = 1.0;
+        _fontScale = 1.15;
+        await prefs.setDouble(_keyFontScale, _fontScale);
       }
       notifyListeners();
     } catch (_) {
-      // keep defaults
+      // keep field defaults
     }
   }
 

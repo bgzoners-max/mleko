@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/notification_types.dart';
 import '../core/logger_service.dart';
 
 const _channelId = 'mleko_urgent';
@@ -44,15 +45,15 @@ void _showLocalNotification({
   required String type,
   required String orderId,
 }) {
-  final isOrder = type == 'new_order' || type == 'order_status';
+  final isOrder = notificationTypeIsOrderRelated(type);
   final channelId = isOrder ? _ordersChannelId : _channelId;
   final channelName = isOrder ? _ordersChannelName : _channelName;
   final payload = jsonEncode({'type': type, 'order_id': orderId});
   _localNotifications.show(
-    DateTime.now().millisecondsSinceEpoch.remainder(100000),
-    title,
-    body,
-    NotificationDetails(
+    id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    title: title,
+    body: body,
+    notificationDetails: NotificationDetails(
       android: AndroidNotificationDetails(
         channelId,
         channelName,
@@ -83,8 +84,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   const android = AndroidInitializationSettings('@mipmap/ic_launcher');
   await _localNotifications.initialize(
-    const InitializationSettings(android: android),
+    settings: const InitializationSettings(android: android),
   );
+
   final androidPlugin =
       _localNotifications.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -121,9 +123,10 @@ class PushService {
       if (Platform.isAndroid) {
         const android = AndroidInitializationSettings('@mipmap/ic_launcher');
         await _localNotifications.initialize(
-          const InitializationSettings(android: android),
+          settings: const InitializationSettings(android: android),
           onDidReceiveNotificationResponse: _onNotificationTapped,
         );
+
         final androidPlugin =
             _localNotifications.resolvePlatformSpecificImplementation<
                 AndroidFlutterLocalNotificationsPlugin>();
@@ -137,13 +140,13 @@ class PushService {
         );
         const darwin = DarwinInitializationSettings();
         await _localNotifications.initialize(
-          const InitializationSettings(iOS: darwin),
+          settings: const InitializationSettings(iOS: darwin),
           onDidReceiveNotificationResponse: _onNotificationTapped,
         );
       } else {
         const android = AndroidInitializationSettings('@mipmap/ic_launcher');
         await _localNotifications.initialize(
-          const InitializationSettings(android: android),
+          settings: const InitializationSettings(android: android),
           onDidReceiveNotificationResponse: _onNotificationTapped,
         );
       }
@@ -233,12 +236,12 @@ class PushService {
     try {
       final granted = await ensureNotificationPermission();
       if (!granted) {
-        debugPrint('PushService: notification permission denied');
+        LoggerService.warning('PushService: notification permission denied');
         return;
       }
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) {
-        debugPrint('PushService: getToken returned null/empty');
+        LoggerService.warning('PushService: getToken returned null/empty');
         return;
       }
 

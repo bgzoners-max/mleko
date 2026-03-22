@@ -49,3 +49,7 @@ app.*.map.json
 *firebase-adminsdk*.json
 service-account*.json
 *.env
+
+# Lokalne rezervne kopije (veliki fajlovi; vidi backups/README.md)
+backups/*.bundle
+backups/*.zip

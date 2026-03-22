@@ -32,7 +32,7 @@ class BackgroundSyncService {
       constraints: Constraints(
         networkType: NetworkType.connected,
       ),
-      existingWorkPolicy: ExistingWorkPolicy.keep,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       initialDelay: const Duration(minutes: 5),
     );
   }

@@ -10,6 +10,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
 import '../widgets/app_error_retry.dart';
+import '../widgets/buyer_review_widgets.dart';
 
 /// Profil kupca — vidi prodavac kada klikne na kupca u poruci ili porudžbini.
 class BuyerProfileScreen extends StatefulWidget {
@@ -131,11 +132,15 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                 child: ExpansionTile(
                   initiallyExpanded: true,
                   title: Text(
-                    'Ocene kupca',
+                    'Recenzije koje je kupac dobio',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Ocene koje su prodavci ostavili kupcu',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                   childrenPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -145,7 +150,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Center(
                           child: Text(
-                            'Kupac jos nema primljene recenzije.',
+                            'Kupac još nema primljene recenzije.',
                             style: TextStyle(color: Colors.grey.shade600),
                           ),
                         ),
@@ -165,11 +170,15 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                 child: ExpansionTile(
                   initiallyExpanded: false,
                   title: Text(
-                    'Ocene kao kupac',
+                    'Recenzije koje je kupac ostavio',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Ocene koje je kupac dao prodavcima',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                   childrenPadding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -490,12 +499,39 @@ class _ReviewTile extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    sellerName,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                  child: InkWell(
+                    onTap: () =>
+                        context.push('/seller/${review.sellerId}'),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.storefront_outlined,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            sellerName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary,
+                                ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Text(
@@ -547,12 +583,39 @@ class _BuyerReviewTile extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    sellerName,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                  child: InkWell(
+                    onTap: () =>
+                        context.push('/seller/${review.sellerId}'),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.storefront_outlined,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            sellerName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary,
+                                ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Text(
@@ -577,6 +640,13 @@ class _BuyerReviewTile extends StatelessWidget {
               Text(
                 review.comment,
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ],
+            if (!review.hasNoReply) ...[
+              const SizedBox(height: 10),
+              BuyerReplyPublicBlock(
+                reply: review.buyerReply!,
+                replyAt: review.buyerReplyAt,
               ),
             ],
           ],

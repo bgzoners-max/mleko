@@ -46,6 +46,14 @@ Ove provere pokrivaju ključne delove status flow-a: tranzicije, trigger-e, audi
    ```bash
    cd d:\mleko
    flutter pub get
+   ```
+
+   **Nova obaveza: Environment vars (.env)**
+   ```
+   cp .env.example .env
+   # Popuni SUPABASE_URL i SUPABASE_ANON_KEY iz Supabase Dashboard → Settings → API
+   ```
+
    flutter run -d chrome
    ```
 

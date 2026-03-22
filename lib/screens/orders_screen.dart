@@ -49,8 +49,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
         return 'shipped';
       case 4:
         return 'rejected';
+      case 5:
+        return 'delivered';
+      case 6:
+        return 'cancelled_by_seller';
       default:
-        return null;
+        return OrdersService.statusFilterActiveNonArchived;
     }
   }
   bool get _isArchive => _segmentIndex == 1;
@@ -148,7 +152,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Porudžbine koje još nisu završene – na čekanju, prihvaćene, poslate ili odbijene.',
+                'Aktivna lista: sve što nije u tvojoj arhivi. Završene (isporučeno, odbijeno, otkazano) možeš uvek da arhiviraš da nestanu odavde.',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
@@ -981,10 +985,7 @@ class _BuyerOrderCard extends StatelessWidget {
                     icon: const Icon(Icons.verified_outlined, size: 18),
                     label: const Text('Potvrdi prijem'),
                   ),
-                if (!isArchived &&
-                    (o.status == OrderStatus.delivered ||
-                        o.status == OrderStatus.rejected ||
-                        o.status == OrderStatus.cancelledBySeller))
+                if (!isArchived && o.canBuyerManuallyArchive)
                   FilledButton.tonalIcon(
                     onPressed: () => _archiveOrder(context),
                     icon: const Icon(Icons.archive_outlined, size: 18),

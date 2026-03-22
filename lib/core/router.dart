@@ -16,7 +16,9 @@ import '../screens/seller/becoming_seller_screen.dart';
 import '../screens/seller/add_edit_product_screen.dart';
 import '../screens/seller/add_product_screen.dart';
 import '../screens/seller/seller_profile_screen.dart';
+import '../screens/seller/seller_reviews_screen.dart';
 import '../screens/buyer_profile_screen.dart';
+import '../screens/buyer/buyer_reviews_hub_screen.dart';
 import '../screens/seller/seller_settings_screen.dart';
 import '../screens/seller/map_picker_screen.dart';
 import '../screens/favorites_screen.dart';
@@ -77,6 +79,26 @@ GoRouter createRouter(AppState appState) {
           return '/login';
         }
       }
+
+      // Stranica recenzija — samo vlasnik prodavnice (kupci i gosti na javni profil).
+      final sellerReviewsMatch = RegExp(r'^/seller/([^/]+)/reviews$').firstMatch(loc);
+      if (sellerReviewsMatch != null) {
+        final sid = sellerReviewsMatch.group(1)!;
+        final u = appState.user;
+        if (u == null || u.isGuest || !u.isSeller || u.id != sid) {
+          return '/seller/$sid';
+        }
+      }
+
+      final buyerReviewsMatch = RegExp(r'^/buyer/([^/]+)/reviews$').firstMatch(loc);
+      if (buyerReviewsMatch != null) {
+        final bid = buyerReviewsMatch.group(1)!;
+        final u = appState.user;
+        if (u == null || u.isGuest || u.isSeller || u.id != bid) {
+          return '/buyer/$bid';
+        }
+      }
+
       return null;
     },
     routes: [
@@ -156,11 +178,27 @@ GoRouter createRouter(AppState appState) {
         },
       ),
       GoRoute(
+        path: '/seller/:sellerId/reviews',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) {
+          final id = state.pathParameters['sellerId']!;
+          return SellerReviewsScreen(sellerId: id);
+        },
+      ),
+      GoRoute(
         path: '/seller/:sellerId',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (_, state) {
           final id = state.pathParameters['sellerId']!;
           return SellerProfileScreen(sellerId: id);
+        },
+      ),
+      GoRoute(
+        path: '/buyer/:buyerId/reviews',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, state) {
+          final id = state.pathParameters['buyerId']!;
+          return BuyerReviewsHubScreen(buyerId: id);
         },
       ),
       GoRoute(

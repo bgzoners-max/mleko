@@ -46,6 +46,23 @@ class ProfileScreen extends StatelessWidget {
             subtitle: const Text('Obaveštenja, prodavac, podrška'),
             onTap: () => context.push('/settings'),
           ),
+          if (!user.isGuest)
+            ListTile(
+              leading: const Icon(Icons.rate_review_outlined),
+              title: const Text('Recenzije'),
+              subtitle: Text(
+                user.isSeller
+                    ? 'Ocene kupaca i tvoji odgovori'
+                    : 'Primljene i ostavljene ocene (međusobno ocenjivanje)',
+              ),
+              onTap: () {
+                if (user.isSeller) {
+                  context.push('/seller/${user.id}/reviews');
+                } else {
+                  context.push('/buyer/${user.id}/reviews');
+                }
+              },
+            ),
           const Divider(height: 1),
           if (user.isSeller) ...[
             if (!user.isGuest)

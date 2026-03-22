@@ -6,7 +6,7 @@ import 'logger_service.dart';
 /// Prati internet konekciju - pomaže da znamo da li je app online/offline
 class ConnectivityService extends ChangeNotifier {
   final _connectivity = Connectivity();
-  StreamSubscription<ConnectivityResult>? _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
   bool _isOnline = true;
   bool get isOnline => _isOnline;

@@ -40,7 +40,9 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   bool _loadingMore = false;
 
   int _segmentIndex = 0;
-  String get _statusFilter => _segmentIndex == 0 ? 'sent' : 'arhivirano';
+  String get _statusFilter => _segmentIndex == 0
+      ? OrdersService.statusFilterActiveNonArchived
+      : 'arhivirano';
   bool get _isArchive => _segmentIndex == 1;
 
   @override
@@ -123,6 +125,18 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               _streamKey = null;
             }),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              _isArchive
+                  ? 'Ovde su porudžbine koje ste ručno arhivirali. Brisanje nakon isteka roka čuvanja (expires_at), ako je podešeno.'
+                  : 'Aktivne porudžbine (bez arhive). Završene — isporučeno, odbijeno ili otkazano — možete arhivirati da nestanu sa ove liste.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey.shade600),
+            ),
+          ),
           Expanded(
             child: StreamBuilder<List<OrderModel>>(
               stream: _ordersStream,
@@ -173,7 +187,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Text(
-                            'Porudžbine starije od 30 dana automatski se premeštaju u arhivu.\nPorudžbine se brišu nakon 12 meseci.',
+                            'Ista porudžbina može biti arhivirana i od kupca i od vas; ovde vidite samo vašu arhivu.',
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
                                       color: Colors.grey.shade600,
@@ -200,6 +214,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                       return _SellerOrderCard(
                         order: orders[listIndex],
                         user: user,
+                        isArchivedList: _isArchive,
                         onRefresh: () => _refreshController.add(null),
                       );
                     },
@@ -217,11 +232,13 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 class _SellerOrderCard extends StatelessWidget {
   final OrderModel order;
   final UserModel user;
+  final bool isArchivedList;
   final VoidCallback onRefresh;
 
   const _SellerOrderCard({
     required this.order,
     required this.user,
+    required this.isArchivedList,
     required this.onRefresh,
   });
 
@@ -284,6 +301,36 @@ class _SellerOrderCard extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Porudžbina je otkazana.')));
     }
+  }
+
+  Future<void> _archiveOrder(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Arhiviraj porudžbinu?'),
+        content: const Text(
+          'Arhivirana porudžbina više neće biti u listi aktivnih porudžbina.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Odustani'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Arhiviraj'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    await OrdersService().archiveOrderBySeller(user.id, order.id);
+    onRefresh();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Porudžbina je arhivirana.')),
+    );
   }
 
   @override
@@ -470,6 +517,13 @@ class _SellerOrderCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  if (!isArchivedList &&
+                      o.canSellerManuallyArchive)
+                    FilledButton.tonalIcon(
+                      onPressed: () => _archiveOrder(context),
+                      icon: const Icon(Icons.archive_outlined, size: 18),
+                      label: const Text('Arhiviraj'),
+                    ),
                   FilledButton.tonal(
                     onPressed: o.buyerPhone.isNotEmpty
                         ? () => _launchCall(context, o.buyerPhone)
