@@ -23,9 +23,9 @@ Enjoy the preview!
 ## CupertinoPicker for Kategorija [IN PROGRESS]
 
 ### Steps:
-- [ ] Backup current state to GitHub (new branch blackboxai/cupertino-category-picker, initial commit)
-- [ ] Create lib/widgets/cupertino_category_picker.dart (CupertinoPicker in sheet, flat categoryNames)
-- [ ] Edit lib/screens/seller/add_edit_product_screen.dart (add picker button)
+- [x] Backup to GitHub PR #1 (https://github.com/bgzoners-max/mleko/pull/1) ✓
+- [x] Created lib/widgets/cupertino_category_picker.dart ✓
+- [x] Edited lib/screens/seller/add_edit_product_screen.dart (replaced fallback dropdown with picker) ✓
 - [ ] Test: Hot reload (`r`), verify in preview
 - [ ] Mark complete, commit, gh pr create
 - [ ] Cleanup (update TODO.md)
