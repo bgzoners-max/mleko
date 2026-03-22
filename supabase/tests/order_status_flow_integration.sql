@@ -41,9 +41,16 @@ BEGIN
   END IF;
 END $$;
 
+-- to_regprocedure() can be unreliable for TRIGGER functions on some PG versions; use pg_proc.
 DO $$
 BEGIN
-  IF to_regprocedure('public.notify_order_status_change()') IS NULL THEN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'notify_order_status_change'
+  ) THEN
     RAISE EXCEPTION 'notify_order_status_change() missing';
   END IF;
 END $$;

@@ -1,11 +1,14 @@
 import 'dart:ui' show PlatformDispatcher;
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as p_provider;
+
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/notification_types.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'providers/app_settings_provider.dart';
@@ -22,19 +25,20 @@ import 'supabase_config.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Bolje logovanje na uređaju (adb logcat / DevTools) kad nešto pukne pre UI-a.
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    if (kDebugMode) {
-      debugPrint('FlutterError: ${details.exceptionAsString()}');
-      debugPrintStack(stackTrace: details.stack);
-    }
+    LoggerService.error(
+      'FlutterError: ${details.exceptionAsString()}',
+      'FlutterError: ${details.exceptionAsString()}: ${details.exception}',
+      stackTrace: details.stack,
+    );
   };
   PlatformDispatcher.instance.onError = (error, stack) {
-    if (kDebugMode) {
-      debugPrint('Uncaught async error: $error');
-      debugPrintStack(stackTrace: stack);
-    }
+    LoggerService.error(
+      'Uncaught async error',
+      error,
+      stackTrace: stack,
+    );
     return true;
   };
 
@@ -43,7 +47,6 @@ void main() async {
       await Firebase.initializeApp();
       await PushService.initialize();
     } catch (e) {
-      // Firebase nije konfigurisan – push notifikacije neće raditi
       LoggerService.warning(
         'Firebase initialization failed - push notifications disabled',
         extra: {'error': e.toString()},
@@ -53,15 +56,11 @@ void main() async {
 
   await initializeDateFormatting('sr', null);
 
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  const supabaseAnonKey =
-      String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-
-  final url = supabaseUrl.isNotEmpty ? supabaseUrl : SupabaseConfig.url;
-  final anonKey =
-      supabaseAnonKey.isNotEmpty ? supabaseAnonKey : SupabaseConfig.anonKey;
-
-  await Supabase.initialize(url: url, anonKey: anonKey);
+  await SupabaseConfig.load();
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
 
   final appState = AppState();
   final appSettings = AppSettingsProvider();
@@ -75,10 +74,17 @@ void main() async {
     final pushService = PushService();
     void navigateFromNotification(Map<String, dynamic> data) {
       final type = data['type'] as String?;
-      if (type == 'new_order' || type == 'order_status') {
+      final uid = appState.user?.id;
+      if (notificationTypeIsOrderRelated(type)) {
         router.go('/orders');
       } else if (type == 'new_message') {
         router.go('/conversations');
+      } else if (type == 'new_review' && uid != null) {
+        router.go('/seller/$uid/reviews');
+      } else if (type == 'new_buyer_review' && uid != null) {
+        router.go('/buyer/$uid/reviews');
+      } else if (type == 'new_review' || type == 'new_buyer_review') {
+        router.go('/notifications');
       }
     }
 
@@ -103,41 +109,43 @@ void main() async {
   }
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AppState>.value(value: appState),
-        ChangeNotifierProvider<AppSettingsProvider>.value(value: appSettings),
-        ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
-        ChangeNotifierProvider<CategoriesProvider>.value(
-            value: categoriesProvider),
-        ChangeNotifierProvider<FavoritesProvider>.value(
-            value: favoritesProvider),
-        ChangeNotifierProvider<LocationProvider>.value(
-            value: locationProvider),
-      ],
-      child: OfflineIndicator(
-        child: Consumer<AppSettingsProvider>(
-          builder: (_, settings, __) => MaterialApp.router(
-            title: 'Naše Selo',
-            theme: appTheme,
-            darkTheme: appDarkTheme,
-            themeMode: settings.themeMode,
-            routerConfig: router,
-            builder: (context, child) {
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(settings.fontScale),
-                ),
-                // GoRouter ponekad prosleđuje `null` child tokom prvog frejma / refresh-a.
-                // `SizedBox.shrink()` daje potpuno prazan ekran (često pogrešno shvaćen kao “beli ekran”).
-                child: child ??
-                    const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
+    ProviderScope(
+      child: p_provider.MultiProvider(
+        providers: [
+          p_provider.ChangeNotifierProvider<AppState>.value(value: appState),
+          p_provider.ChangeNotifierProvider<AppSettingsProvider>.value(
+              value: appSettings),
+          p_provider.ChangeNotifierProvider<CartProvider>.value(
+              value: cartProvider),
+          p_provider.ChangeNotifierProvider<CategoriesProvider>.value(
+              value: categoriesProvider),
+          p_provider.ChangeNotifierProvider<FavoritesProvider>.value(
+              value: favoritesProvider),
+          p_provider.ChangeNotifierProvider<LocationProvider>.value(
+              value: locationProvider),
+        ],
+        child: OfflineIndicator(
+          child: p_provider.Consumer<AppSettingsProvider>(
+            builder: (_, settings, __) => MaterialApp.router(
+              title: 'Naše Selo',
+              theme: appTheme,
+              darkTheme: appDarkTheme,
+              themeMode: settings.themeMode,
+              routerConfig: router,
+              builder: (context, child) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(settings.fontScale),
+                  ),
+                  child: child ??
+                      const Scaffold(
+                        body: Center(
+                          child: CircularProgressIndicator(),
+                        ),
                       ),
-                    ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

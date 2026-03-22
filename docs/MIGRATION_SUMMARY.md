@@ -52,7 +52,7 @@ UKUPNO MIGRIRANO:
    - Home products stream errors
    - [4 CATCH BLOKA MIGRIRANO]
 
-6. ✅ lib/services/orders_service.dart
+6. ✅ lib/services/orders/orders_service.dart (canonical; root `orders_service.dart` uklonjen)
    - Orders stream refetch errors
    - [1 CATCH BLOK MIGRIRANO]
 

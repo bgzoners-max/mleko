@@ -34,11 +34,17 @@ Dozvoljen je i umbrella barrel:
 import '../services/services.dart';
 ```
 
+## Supabase baza (migracije i produkcija)
+
+- Izvor istine za šemu, trigere, RLS i funkcije je **`supabase/migrations/`** — izmene u Dashboard-u bez migracije dovode do drifta.
+- Deploy na projekat: `npx supabase db push` (nakon `supabase link`).
+- Detalji i tabela `notifications.type`: **[docs/SUPABASE_DATABASE.md](docs/SUPABASE_DATABASE.md)**.
+
 Nemoj koristiti legacy root import putanje tipa:
 
 ```dart
 import '../services/products_service.dart';
-import '../services/orders_service.dart';
+// Umesto toga: import iz domena (npr. orders/order_services.dart) ili package:mleko/services/services.dart
 ```
 
 ## Import guard (obavezno)
@@ -59,7 +65,7 @@ dart run tool/scan_security_definer_migrations.dart
 
 Ako checker prijavi gresku, prepravi import-e na domain barrel ili `services.dart`.
 
-Checker skenira `lib/`, `test/` i `integration_test/` (ako postoje).
+Checker skenira `lib/` i `test/` (i `integration_test/` ako taj folder postoji).
 
 **CI na GitHubu pade na `import guard`, a lokalno prolazi?**  
 Verovatno grana nema poslednji `master` — uradi `git fetch` i `git merge origin/master` (ili rebase), pa push. Na `master` je ispravka legacy importa u commitu `6390255` i novijim.

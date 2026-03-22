@@ -1,14 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_model.dart';
-import 'push_service.dart';
+// import 'push_service.dart'; // commented
+
 import 'users_service.dart';
 
 class AuthService {
   final UsersService _users = UsersService();
 
   User? get currentSupabaseUser => Supabase.instance.client.auth.currentUser;
-  Stream<AuthState> get authStateChanges => Supabase.instance.client.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges =>
+      Supabase.instance.client.auth.onAuthStateChange;
 
   Future<UserModel?> getCurrentUser() async {
     final u = Supabase.instance.client.auth.currentUser;
@@ -25,7 +27,8 @@ class AuthService {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
-    await Supabase.instance.client.auth.signInWithPassword(email: email, password: password);
+    await Supabase.instance.client.auth
+        .signInWithPassword(email: email, password: password);
   }
 
   Future<void> registerWithEmail(
@@ -70,7 +73,7 @@ class AuthService {
   Future<void> signOut() async {
     final userId = currentSupabaseUser?.id;
     if (userId != null) {
-      await PushService().unregisterToken(userId);
+// await PushService().unregisterToken(userId);
     }
     await Supabase.instance.client.auth.signOut();
   }

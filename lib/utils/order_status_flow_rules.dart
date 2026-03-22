@@ -77,11 +77,18 @@ class OrderStatusFlowRules {
     }
   }
 
-  static bool canBuyerManuallyArchive(String status) {
+  /// Završene porudžbine koje kupac ili prodavac sme ručno da prebaci u arhivu.
+  static bool _canPartyManuallyArchive(String status) {
     return status == 'delivered' ||
         status == 'rejected' ||
         status == 'cancelled_by_seller';
   }
+
+  static bool canBuyerManuallyArchive(String status) =>
+      _canPartyManuallyArchive(status);
+
+  static bool canSellerManuallyArchive(String status) =>
+      _canPartyManuallyArchive(status);
 
   static String actorRoleForStatusChange({
     required String? actorUserId,

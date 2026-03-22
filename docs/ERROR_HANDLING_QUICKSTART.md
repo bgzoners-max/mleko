@@ -150,7 +150,7 @@ DOBRO ✅:
 🎯 PHASE 2: MIGRATE KEY SERVICES
    [ ] auth_service.dart - registration, login, password reset
    [ ] products_service.dart - getProductsPage, getProduct
-   [ ] orders_service.dart - getOrdersByBuyer, createOrder
+   [ ] lib/services/orders/orders_service.dart - getOrdersByBuyer, createOrder
    [ ] chat_service.dart - sendMessage, getMessages
 
 🎨 PHASE 3: ADD UI ERROR HANDLING

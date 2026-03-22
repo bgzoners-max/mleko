@@ -15,10 +15,12 @@ import '../../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
 
 import '../../core/haptic.dart';
+import '../../core/profile_display_names.dart';
 import '../../core/responsive.dart';
 import '../../widgets/add_review_dialog.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/product_grid_tile.dart';
+import '../../widgets/seller_review_widgets.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   final String sellerId;
@@ -785,16 +787,70 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         ReviewsService().getSellerStats(widget.sellerId),
         ReviewsService().getReviewsForSeller(widget.sellerId),
         if (canReview) ReviewsService().getReviewableOrder(user.id, widget.sellerId),
-      ]).then((r) => {
-        'stats': r[0],
-        'reviews': r[1],
-        'reviewable': r.length > 2 ? r[2] : null,
+      ]).then((r) async {
+        final reviews = r[1] as List<ReviewModel>;
+        final buyerNames = await fetchProfileDisplayNames(reviews.map((e) => e.buyerId));
+        return {
+          'stats': r[0],
+          'reviews': reviews,
+          'reviewable': r.length > 2 ? r[2] : null,
+          'buyerNames': buyerNames,
+        };
       }),
       builder: (context, snap) {
-        if (!snap.hasData) return const SizedBox.shrink();
+        if (snap.hasError) {
+          return Card(
+            margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Recenzije',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Greška pri učitavanju: ${snap.error}',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  ),
+                  TextButton.icon(
+                    onPressed: _refresh,
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Pokušaj ponovo'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        if (snap.connectionState == ConnectionState.waiting || !snap.hasData) {
+          return Card(
+            margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    'Recenzije',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
         final stats = snap.data!['stats'] as SellerStatsModel;
         final reviews = snap.data!['reviews'] as List<ReviewModel>;
         final reviewable = snap.data!['reviewable'] as ({String orderId, String productId, String productName})?;
+        final buyerNames = snap.data!['buyerNames'] as Map<String, String>;
         return Card(
           margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
           child: Padding(
@@ -804,27 +860,65 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
               children: [
                 Row(
                   children: [
-                    Text('Recenzije', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    if (stats.avgRating != null) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.star, color: Colors.amber.shade700, size: 18),
-                      Text(stats.avgRating!.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(' (${stats.reviewCount})', style: TextStyle(color: Colors.grey.shade600)),
-                    ],
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
+                    if (isSeller)
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => context.push('/seller/${widget.sellerId}/reviews'),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Recenzije',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                ),
+                                if (stats.avgRating != null) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(Icons.star, color: Colors.amber.shade700, size: 18),
+                                  Text(stats.avgRating!.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(' (${stats.reviewCount})', style: TextStyle(color: Colors.grey.shade600)),
+                                ],
+                                const Spacer(),
+                                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else ...[
+                      Text('Recenzije', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      if (stats.avgRating != null) ...[
+                        const SizedBox(width: 8),
+                        Icon(Icons.star, color: Colors.amber.shade700, size: 18),
+                        Text(stats.avgRating!.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(' (${stats.reviewCount})', style: TextStyle(color: Colors.grey.shade600)),
+                      ],
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(
+                          _expanded ? Icons.expand_less : Icons.expand_more,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _expanded = !_expanded;
+                          });
+                        },
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _expanded = !_expanded;
-                        });
-                      },
-                    ),
+                    ],
                   ],
                 ),
-                if (_expanded) ...[
+                if (isSeller) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Otvorite da biste videli sve recenzije i odgovorili kupcima.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+                if (!isSeller && _expanded) ...[
                   if (reviewable != null) ...[
                     const SizedBox(height: 12),
                     SizedBox(
@@ -844,17 +938,19 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                   else if (reviews.isNotEmpty) ...[
                     ...reviews.take(5).map((r) => Padding(
                       padding: const EdgeInsets.only(top: 12),
-                      child: _ReviewItem(
+                      child: SellerReviewListItem(
                         review: r,
                         isSeller: isSeller,
                         onRefresh: _refresh,
+                        reviewerDisplayName: buyerNames[r.buyerId] ?? 'Kupac',
+                        onReviewerTap: () => context.push('/buyer/${r.buyerId}'),
                       ),
                     )),
                     if (reviews.length > 5) ...[
                       const SizedBox(height: 4),
                       Center(
                         child: TextButton(
-                          onPressed: () => _showAllReviews(context, reviews, isSeller),
+                          onPressed: () => _showAllReviews(context, reviews, isSeller, buyerNames),
                           child: Text('Prikaži sve (${reviews.length})'),
                         ),
                       ),
@@ -887,6 +983,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     BuildContext context,
     List<ReviewModel> reviews,
     bool isSeller,
+    Map<String, String> buyerNames,
   ) {
     showModalBottomSheet(
       context: context,
@@ -896,6 +993,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         reviews: reviews,
         isSeller: isSeller,
         onRefresh: _refresh,
+        buyerNames: buyerNames,
       ),
     );
   }
@@ -907,11 +1005,13 @@ class _AllReviewsSheet extends StatefulWidget {
   final List<ReviewModel> reviews;
   final bool isSeller;
   final VoidCallback onRefresh;
+  final Map<String, String> buyerNames;
 
   const _AllReviewsSheet({
     required this.reviews,
     required this.isSeller,
     required this.onRefresh,
+    required this.buyerNames,
   });
 
   @override
@@ -959,11 +1059,19 @@ class _AllReviewsSheetState extends State<_AllReviewsSheet> {
               padding: const EdgeInsets.all(16),
               itemCount: widget.reviews.length,
               separatorBuilder: (_, __) => const Divider(height: 24),
-              itemBuilder: (_, i) => _ReviewItem(
-                review: widget.reviews[i],
-                isSeller: widget.isSeller,
-                onRefresh: _refresh,
-              ),
+              itemBuilder: (_, i) {
+                final r = widget.reviews[i];
+                return SellerReviewListItem(
+                  review: r,
+                  isSeller: widget.isSeller,
+                  onRefresh: _refresh,
+                  reviewerDisplayName: widget.buyerNames[r.buyerId] ?? 'Kupac',
+                  onReviewerTap: () {
+                    Navigator.pop(context);
+                    context.push('/buyer/${r.buyerId}');
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -1070,286 +1178,6 @@ class _SellerTagsRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
-    );
-  }
-}
-
-// ─── Review item ──────────────────────────────────────────────────────────────
-
-class _ReviewItem extends StatelessWidget {
-  final ReviewModel review;
-  final bool isSeller;
-  final VoidCallback onRefresh;
-
-  const _ReviewItem({
-    required this.review,
-    required this.isSeller,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final canAct = isSeller && review.isReplyEditable;
-    final hasReply = !review.hasNoReply;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Recenzija kupca ──────────────────────────────────────
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: List.generate(
-                      5,
-                      (i) => Icon(
-                        i < review.rating ? Icons.star : Icons.star_border,
-                        size: 16,
-                        color: Colors.amber.shade700,
-                      ),
-                    ),
-                  ),
-                  if (review.comment.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      review.comment,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (canAct) ...[
-              const SizedBox(width: 8),
-              TextButton.icon(
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                icon: Icon(
-                  hasReply ? Icons.edit_outlined : Icons.reply_outlined,
-                  size: 16,
-                ),
-                label: Text(
-                  hasReply ? 'Izmeni' : 'Odgovori',
-                  style: const TextStyle(fontSize: 13),
-                ),
-                onPressed: () => _showReplyDialog(context),
-              ),
-            ],
-          ],
-        ),
-
-        // ── Odgovor prodavca ─────────────────────────────────────
-        if (hasReply) ...[
-          const SizedBox(height: 8),
-          _SellerReplyBlock(
-            reply: review.sellerReply!,
-            replyAt: review.sellerReplyAt,
-          ),
-        ],
-      ],
-    );
-  }
-
-  void _showReplyDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => _SellerReplyDialog(
-        review: review,
-        onSaved: onRefresh,
-      ),
-    );
-  }
-}
-
-// ─── Blok odgovora prodavca ───────────────────────────────────────────────────
-
-class _SellerReplyBlock extends StatelessWidget {
-  final String reply;
-  final DateTime? replyAt;
-
-  const _SellerReplyBlock({required this.reply, this.replyAt});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(left: 16),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(color: scheme.primary.withValues(alpha: 0.4), width: 3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.store_outlined, size: 14, color: scheme.primary),
-              const SizedBox(width: 4),
-              Text(
-                'Odgovor prodavca',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.primary,
-                ),
-              ),
-              if (replyAt != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  DateFormat('d. MMM yyyy.', 'sr').format(replyAt!),
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(reply, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Dialog za pisanje / izmenu odgovora ──────────────────────────────────────
-
-class _SellerReplyDialog extends StatefulWidget {
-  final ReviewModel review;
-  final VoidCallback onSaved;
-
-  const _SellerReplyDialog({required this.review, required this.onSaved});
-
-  @override
-  State<_SellerReplyDialog> createState() => _SellerReplyDialogState();
-}
-
-class _SellerReplyDialogState extends State<_SellerReplyDialog> {
-  late final TextEditingController _ctrl;
-  bool _loading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: widget.review.sellerReply ?? '');
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final text = _ctrl.text.trim();
-    if (text.isEmpty) return;
-    setState(() => _loading = true);
-    try {
-      await ReviewsService().addSellerReply(
-        reviewId: widget.review.id,
-        reply: text,
-      );
-      if (mounted) {
-        widget.onSaved();
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Odgovor sačuvan.')),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      final msg = e.toString().contains('reply_not_editable_after_24h')
-          ? 'Odgovor nije moguće menjati nakon 24h.'
-          : 'Greška: $e';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
-      );
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final hasExisting = !widget.review.hasNoReply;
-    return AlertDialog(
-      title: Text(hasExisting ? 'Izmeni odgovor' : 'Odgovori na recenziju'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Prikaz originalne recenzije radi konteksta
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      i < widget.review.rating ? Icons.star : Icons.star_border,
-                      size: 14,
-                      color: Colors.amber.shade700,
-                    ),
-                  ),
-                ),
-                if (widget.review.comment.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.review.comment,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _ctrl,
-            maxLines: 4,
-            maxLength: 500,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Vaš odgovor',
-              alignLabelWithHint: true,
-              border: OutlineInputBorder(),
-            ),
-          ),
-          if (hasExisting)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Izmena je moguća samo unutar 24h od prvog odgovora.',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-              ),
-            ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Odustani'),
-        ),
-        FilledButton(
-          onPressed: _loading ? null : _save,
-          child: _loading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Sačuvaj'),
-        ),
-      ],
     );
   }
 }

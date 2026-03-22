@@ -14,6 +14,7 @@ import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/catalog/catalog_services.dart';
 import '../../services/media/media_services.dart';
+import '../../widgets/cupertino_category_picker.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   final String? productId;
@@ -294,7 +295,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Widget build(BuildContext context) {
     final catProvider = context.watch<CategoriesProvider>();
     final groups = catProvider.groups;
-    final categoryList = catProvider.categoryNames;
     final hasGroupedCategories = groups != null && groups.isNotEmpty;
     return Scaffold(
       appBar:
@@ -326,21 +326,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           ? 'Izaberite kategoriju'
                           : null,
                     )
-                  : DropdownButtonFormField<String>(
-                      key: ValueKey(_category),
-                      initialValue:
-                          _category != null && categoryList.contains(_category)
-                              ? _category
-                              : (categoryList.isNotEmpty
-                                  ? categoryList.first
-                                  : null),
-                      decoration:
-                          const InputDecoration(labelText: 'Kategorija *'),
-                      items: categoryList
-                          .map(
-                              (c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
-                      onChanged: (v) {
+                  : CupertinoCategoryPicker(
+                      initialCategory: _category,
+                      onCategoryChanged: (v) {
                         setState(() {
                           _category = v;
                           if (v != null && isVolumeCategory(v)) {

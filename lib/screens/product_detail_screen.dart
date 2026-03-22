@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 import '../core/haptic.dart';
+import '../core/profile_display_names.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/product_reviews_data.dart';
-import '../models/review_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
@@ -58,15 +58,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final _reviewsSectionKey = GlobalKey();
   bool _didScrollToReviews = false;
 
-  Future<ProductReviewsData> _loadReviewsFuture() => Future.wait([
-        ReviewsService().getAverageRatingForProduct(widget.productId),
-        ReviewsService().getReviewsForProduct(widget.productId),
-      ]).then(
-        (r) => ProductReviewsData(
-          averageRating: r[0] as double?,
-          reviews: (r[1] as List).cast<ReviewModel>(),
-        ),
-      );
+  Future<ProductReviewsData> _loadReviewsFuture() async {
+    final avg = await ReviewsService().getAverageRatingForProduct(widget.productId);
+    final reviews = await ReviewsService().getReviewsForProduct(widget.productId);
+    final names = await fetchProfileDisplayNames(reviews.map((r) => r.buyerId));
+    return ProductReviewsData(
+      averageRating: avg,
+      reviews: reviews,
+      buyerDisplayNames: names,
+    );
+  }
 
   void _scrollToReviews() {
     final ctx = _reviewsSectionKey.currentContext;
@@ -484,8 +485,11 @@ class _ProductReviewsSection extends StatelessWidget {
       future: reviewsFuture,
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
-        final avg = snap.data!.averageRating;
-        final reviews = snap.data!.reviews;
+        final data = snap.data!;
+        final avg = data.averageRating;
+        final reviews = data.reviews;
+        final buyerNames = data.buyerDisplayNames;
+        final scheme = Theme.of(context).colorScheme;
         if (avg == null && reviews.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -512,28 +516,61 @@ class _ProductReviewsSection extends StatelessWidget {
               const SizedBox(height: 8),
               ...reviews.take(3).map((r) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: List.generate(
-                              5,
-                              (i) => Icon(
-                                  i < r.rating ? Icons.star : Icons.star_border,
-                                  size: 14,
-                                  color: Colors.amber.shade700)),
+                        InkWell(
+                          onTap: () => context.push('/buyer/${r.buyerId}'),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              children: [
+                                Icon(Icons.person_outline,
+                                    size: 16, color: scheme.primary),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    buyerNames[r.buyerId] ?? 'Kupac',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: scheme.primary,
+                                        ),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right,
+                                    size: 18, color: scheme.primary),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: Text(
-                                r.comment.isEmpty
-                                    ? '(bez komentara)'
-                                    : r.comment,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface))),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: List.generate(
+                                  5,
+                                  (i) => Icon(
+                                      i < r.rating
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      size: 14,
+                                      color: Colors.amber.shade700)),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: Text(
+                                    r.comment.isEmpty
+                                        ? '(bez komentara)'
+                                        : r.comment,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: scheme.onSurface))),
+                          ],
+                        ),
                       ],
                     ),
                   )),
