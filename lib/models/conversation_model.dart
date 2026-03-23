@@ -1,3 +1,5 @@
+import '../services/core/logger_service.dart';
+
 class ConversationModel {
   final String id;
   final String buyerId;
@@ -44,8 +46,7 @@ class ConversationModel {
 
     // Poslednja poruka: RPC vraća ravna polja; stara putanja je nested 'last_message' objekat
     final lastMsg = json['last_message'] as Map<String, dynamic>?;
-    final lastBody = json['last_message_body'] as String? ??
-        (lastMsg?['body'] is String ? lastMsg!['body'] as String : null);
+    final lastBody = json['last_message_body'] as String? ?? _resolveBody(lastMsg);
     final lastAt = json['last_message_at'] ?? lastMsg?['created_at'];
 
     return ConversationModel(
@@ -61,5 +62,17 @@ class ConversationModel {
       lastMessageAt: parseDateOrNull(lastAt),
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  static String? _resolveBody(Map<String, dynamic>? lastMsg) {
+    final body = lastMsg?['body'];
+    if (body is String) return body;
+    if (body != null) {
+      LoggerService.warning(
+        'ConversationModel: unexpected last_message.body type',
+        extra: {'type': body.runtimeType.toString()},
+      );
+    }
+    return null;
   }
 }

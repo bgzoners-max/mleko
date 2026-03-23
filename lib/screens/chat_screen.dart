@@ -148,9 +148,12 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadConversationInfo() async {
     final user = context.read<AppState>().user;
     if (user == null) return;
-    final name =
-        await ChatService().getOtherPartyName(widget.conversationId, user.id);
-    final info = await ChatService().getConversationInfo(widget.conversationId);
+    final results = await Future.wait<dynamic>([
+      ChatService().getOtherPartyName(widget.conversationId, user.id),
+      ChatService().getConversationInfo(widget.conversationId),
+    ]);
+    final name = results[0] as String?;
+    final info = results[1] as Map<String, dynamic>?;
     OrderModel? order;
     if (info != null && info['order_id'] != null) {
       order = await OrdersService().getOrderById(info['order_id'] as String);

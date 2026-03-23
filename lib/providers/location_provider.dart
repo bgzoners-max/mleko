@@ -38,8 +38,8 @@ class LocationProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> tryDetectFromGps() async {
-    if (_gpsTried) return _selectedRegion != null;
+  Future<bool> tryDetectFromGps({bool force = false}) async {
+    if (_gpsTried && !force) return _selectedRegion != null;
     _gpsTried = true;
 
     try {

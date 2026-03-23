@@ -46,7 +46,6 @@ class FavoritesProvider extends ChangeNotifier {
       notifyListeners();
 
       LoggerService.error('Failed to toggle favorite', e, stackTrace: st);
-      rethrow;
     } finally {
       _togglingIds.remove(productId);
     }

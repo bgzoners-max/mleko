@@ -16,6 +16,8 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  Map<String, List<({dynamic product, double quantity})>>? _lastGrouped;
+
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
@@ -46,7 +48,7 @@ class _CartScreenState extends State<CartScreen> {
                 if (ok == true && context.mounted) {
                   await cart.clear();
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nacrt porudžbine je ispražnjen.')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nacrt porudžbine je ispražnjena.')));
                   }
                 }
               },
@@ -73,8 +75,9 @@ class _CartScreenState extends State<CartScreen> {
                     onRetry: () => setState(() {}),
                   );
                 }
-                if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-                final grouped = snap.data!;
+                if (snap.hasData) _lastGrouped = snap.data;
+                final grouped = snap.data ?? _lastGrouped;
+                if (grouped == null) return const Center(child: CircularProgressIndicator());
                 return ListView(
                   padding: const EdgeInsets.all(16),
                   children: grouped.entries.map((entry) {

@@ -20,7 +20,8 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with WidgetsBindingObserver {
   final _service = NotificationsService();
   Future<List<NotificationModel>>? _notificationsFuture;
   String? _lastUserId;
@@ -29,7 +30,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (!kIsWeb && Platform.isAndroid) {
+      Permission.notification.status.then((s) {
+        if (mounted) setState(() => _notificationPermissionGranted = s.isGranted);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !kIsWeb && Platform.isAndroid) {
       Permission.notification.status.then((s) {
         if (mounted) setState(() => _notificationPermissionGranted = s.isGranted);
       });
