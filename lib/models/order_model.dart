@@ -1,3 +1,5 @@
+import '../utils/order_status_flow_rules.dart';
+
 enum OrderStatus {
   sent,
   accepted,
@@ -65,6 +67,14 @@ class OrderModel {
   });
 
   bool get isArchived => status == OrderStatus.archived;
+
+  /// Kupac sme ručno da arhivira (završene: isporučeno, odbijeno, otkazano od prodavca).
+  bool get canBuyerManuallyArchive =>
+      OrderStatusFlowRules.canBuyerManuallyArchive(status.dbValue);
+
+  /// Prodavac sme ručno da arhivira isti skup završenih statusa kao i kupac.
+  bool get canSellerManuallyArchive =>
+      OrderStatusFlowRules.canSellerManuallyArchive(status.dbValue);
 
   String get statusLabel {
     switch (status) {

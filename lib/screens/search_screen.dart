@@ -12,6 +12,7 @@ import '../providers/favorites_provider.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/category_icon.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key, this.initialCategory});
@@ -187,7 +188,10 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    final categoryList = context.watch<CategoriesProvider>().categoryNames;
+    final categoriesProvider = context.watch<CategoriesProvider>();
+    final topCategories = categoriesProvider.topCategories.take(8).toList();
+    final isWide = Breakpoints.isDesktop(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pretraga'),
@@ -221,6 +225,74 @@ class _SearchScreenState extends State<SearchScreen> {
               BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
           child: Column(
             children: [
+              // Kategorije section
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Kategorije',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: isWide ? 5 : 4,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: isWide ? 1.0 : 0.9,
+                      children: topCategories
+                          .map((cat) => InkWell(
+                                onTap: () {
+                                  setState(() => _category = cat.name);
+                                  _onFilterChanged();
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    buildCategoryIcon(
+                                      cat.icon,
+                                      size: isWide ? 40 : 36,
+                                      color: _category == cat.name
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      cat.name,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: _category == cat.name
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                        color: _category == cat.name
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ),
+              ),
               FutureBuilder<List<String>>(
                 future: _historyFuture,
                 builder: (context, snap) {
@@ -274,16 +346,6 @@ class _SearchScreenState extends State<SearchScreen> {
                             _onFilterChanged();
                           });
                         }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Kategorija',
-                      value: _category,
-                      options: categoryList,
-                      onSelected: (v) {
-                        setState(() => _category = v);
-                        _onFilterChanged();
                       },
                     ),
                     const SizedBox(width: 8),

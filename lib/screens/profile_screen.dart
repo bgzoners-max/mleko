@@ -46,6 +46,23 @@ class ProfileScreen extends StatelessWidget {
             subtitle: const Text('Obaveštenja, prodavac, podrška'),
             onTap: () => context.push('/settings'),
           ),
+          if (!user.isGuest)
+            ListTile(
+              leading: const Icon(Icons.rate_review_outlined),
+              title: const Text('Recenzije'),
+              subtitle: Text(
+                user.isSeller
+                    ? 'Ocene kupaca i tvoji odgovori'
+                    : 'Primljene i ostavljene ocene (međusobno ocenjivanje)',
+              ),
+              onTap: () {
+                if (user.isSeller) {
+                  context.push('/seller/${user.id}/reviews');
+                } else {
+                  context.push('/buyer/${user.id}/reviews');
+                }
+              },
+            ),
           const Divider(height: 1),
           if (user.isSeller) ...[
             if (!user.isGuest)
@@ -586,7 +603,8 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
     final messenger = ScaffoldMessenger.of(context);
     final xFile = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (xFile == null) return;
-    final user = appState.user!;
+    final user = appState.user;
+    if (!mounted || user == null) return;
     setState(() => _loading = true);
     try {
       final bytes = await xFile.readAsBytes();

@@ -175,6 +175,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   void _showError(String msg) {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

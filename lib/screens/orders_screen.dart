@@ -49,8 +49,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
         return 'shipped';
       case 4:
         return 'rejected';
+      case 5:
+        return 'delivered';
+      case 6:
+        return 'cancelled_by_seller';
       default:
-        return null;
+        return OrdersService.statusFilterActiveNonArchived;
     }
   }
   bool get _isArchive => _segmentIndex == 1;
@@ -148,7 +152,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                'Porudžbine koje još nisu završene – na čekanju, prihvaćene, poslate ili odbijene.',
+                'Aktivna lista: sve što nije u tvojoj arhivi. Završene (isporučeno, odbijeno, otkazano) možeš uvek da arhiviraš da nestanu odavde.',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
@@ -332,7 +336,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Text(
-                                  'Porudzbina prelazi u arhivu tek kada je vi arhivirate.',
+                                  'Porudžbina prelazi u arhivu tek kada je vi arhivirate.',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -402,7 +406,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         productName.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Nije moguce ostaviti recenziju za ovu porudzbinu.')),
+            content: Text('Nije moguće ostaviti recenziju za ovu porudžbinu.')),
       );
       return;
     }
@@ -660,9 +664,9 @@ class _BuyerOrderCard extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Arhiviraj porudzbinu?'),
+        title: const Text('Arhiviraj porudžbinu?'),
         content: const Text(
-          'Arhivirana porudzbina vise nece biti u aktivnim porudzbinama.',
+          'Arhivirana porudžbina više neće biti u aktivnim porudžbinama.',
         ),
         actions: [
           TextButton(
@@ -685,7 +689,7 @@ class _BuyerOrderCard extends StatelessWidget {
     refreshController.add(null);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Porudzbina je arhivirana.')),
+      const SnackBar(content: Text('Porudžbina je arhivirana.')),
     );
   }
 
@@ -695,7 +699,7 @@ class _BuyerOrderCard extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Potvrda prijema'),
         content: const Text(
-          'Da li potvrdjujete da ste primili porudzbinu?',
+          'Da li potvrđujete da ste primili porudžbinu?',
         ),
         actions: [
           TextButton(
@@ -715,7 +719,7 @@ class _BuyerOrderCard extends StatelessWidget {
     refreshController.add(null);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Prijem porudzbine je potvrdjen.')),
+      const SnackBar(content: Text('Prijem porudžbine je potvrđen.')),
     );
   }
 
@@ -826,7 +830,7 @@ class _BuyerOrderCard extends StatelessWidget {
                           o.status == OrderStatus.delivered
                               ? 'Porudžbina je isporučena'
                               : o.status == OrderStatus.shipped
-                                  ? 'Prodavac je oznacio porudzbinu kao poslatu'
+                                  ? 'Prodavac je označio porudžbinu kao poslatu'
                                   : 'Prodavac je potvrdio porudžbinu',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
@@ -981,10 +985,7 @@ class _BuyerOrderCard extends StatelessWidget {
                     icon: const Icon(Icons.verified_outlined, size: 18),
                     label: const Text('Potvrdi prijem'),
                   ),
-                if (!isArchived &&
-                    (o.status == OrderStatus.delivered ||
-                        o.status == OrderStatus.rejected ||
-                        o.status == OrderStatus.cancelledBySeller))
+                if (!isArchived && o.canBuyerManuallyArchive)
                   FilledButton.tonalIcon(
                     onPressed: () => _archiveOrder(context),
                     icon: const Icon(Icons.archive_outlined, size: 18),

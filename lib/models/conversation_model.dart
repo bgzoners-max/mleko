@@ -44,7 +44,8 @@ class ConversationModel {
 
     // Poslednja poruka: RPC vraća ravna polja; stara putanja je nested 'last_message' objekat
     final lastMsg = json['last_message'] as Map<String, dynamic>?;
-    final lastBody = json['last_message_body'] as String? ?? lastMsg?['body'] as String?;
+    final lastBody = json['last_message_body'] as String? ??
+        (lastMsg?['body'] is String ? lastMsg!['body'] as String : null);
     final lastAt = json['last_message_at'] ?? lastMsg?['created_at'];
 
     return ConversationModel(

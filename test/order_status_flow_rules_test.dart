@@ -97,6 +97,17 @@ void main() {
       expect(OrderStatusFlowRules.canBuyerManuallyArchive('shipped'), isFalse);
     });
 
+    test('seller can manually archive same terminal statuses as buyer', () {
+      expect(OrderStatusFlowRules.canSellerManuallyArchive('delivered'), isTrue);
+      expect(OrderStatusFlowRules.canSellerManuallyArchive('rejected'), isTrue);
+      expect(
+        OrderStatusFlowRules.canSellerManuallyArchive('cancelled_by_seller'),
+        isTrue,
+      );
+      expect(OrderStatusFlowRules.canSellerManuallyArchive('sent'), isFalse);
+      expect(OrderStatusFlowRules.canSellerManuallyArchive('accepted'), isFalse);
+    });
+
     test('classifies who changed status', () {
       expect(
         OrderStatusFlowRules.actorRoleForStatusChange(

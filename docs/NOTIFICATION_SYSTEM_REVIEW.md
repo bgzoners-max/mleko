@@ -25,6 +25,8 @@
 | `on_new_order` | orders (INSERT) | new_order | prodavac |
 | `on_order_status_change` | orders (UPDATE) | order_status | kupac |
 | `on_new_message` | messages (INSERT) | new_message | drugi učesnik razgovora |
+| `on_review_insert_notify_seller` | reviews (INSERT) | new_review | prodavac (dobio ocenu od kupca) |
+| `on_buyer_review_insert_notify_buyer` | buyer_reviews (INSERT) | new_buyer_review | kupac (dobio ocenu od prodavca) |
 
 ### Trigger na `notifications`
 

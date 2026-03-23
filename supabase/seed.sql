@@ -160,7 +160,7 @@ FROM public.profiles p WHERE p.email = 'prodavac4@test.rs' AND p.role = 'seller'
 UNION ALL
 SELECT p.id, 'Jogurt i kiselo mleko', 'Domaći jogurt', 350, 0.5, 0.5, 60,
   'Prirodni jogurt bez aditiva, kremast.',
-  ARRAY['https://images.unsplash.com/photo-1571212515416-ffe4b2d2b6a8?w=400'],
+  ARRAY['https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400'],
   ARRAY['Preuzimanje na farmi', 'Dostava'], 'Niš, Palilula', true, true
 FROM public.profiles p WHERE p.email = 'prodavac4@test.rs' AND p.role = 'seller';
 

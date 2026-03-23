@@ -93,10 +93,15 @@ class LocationProvider extends ChangeNotifier {
     }
   }
 
-  void clearRegion() {
+  Future<void> clearRegion() async {
     _selectedRegion = null;
     _regionNotifier.value = null;
     notifyListeners();
-    SharedPreferences.getInstance().then((prefs) => prefs.remove(_keyRegion));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyRegion);
+    } catch (e) {
+      LoggerService.error('LocationProvider: failed to clear region', e);
+    }
   }
 }

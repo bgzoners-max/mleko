@@ -134,6 +134,7 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     buildCategoryIcon(cat.icon, size: 48, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(height: 12),

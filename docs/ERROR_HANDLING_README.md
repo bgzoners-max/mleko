@@ -200,7 +200,7 @@ Praćenje koja fajlove trebam updateovati:
 - [x] lib/services/push_service.dart - ✅ UPDATEOVANO
 - [ ] lib/services/auth_service.dart - TODO
 - [ ] lib/services/products_service.dart - TODO
-- [ ] lib/services/orders_service.dart - TODO
+- [ ] lib/services/orders/orders_service.dart - TODO
 - [ ] lib/services/chat_service.dart - TODO
 - [ ] lib/screens/product_detail_screen.dart - TODO (UI error handling)
 - [ ] lib/screens/home_screen.dart - TODO (UI error handling)

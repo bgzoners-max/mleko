@@ -45,43 +45,50 @@ class OrderStatusFlowRules {
       case 'accepted':
         return const OrderStatusNotificationTemplate(
           recipientRole: 'buyer',
-          title: 'Porudzbina prihvacena',
-          body: 'Prodavac je prihvatio vasu porudzbinu.',
+          title: 'Porudžbina prihvaćena',
+          body: 'Prodavac je prihvatio vašu porudžbinu.',
         );
       case 'shipped':
         return const OrderStatusNotificationTemplate(
           recipientRole: 'buyer',
-          title: 'Porudzbina poslata',
-          body: 'Prodavac je oznacio porudzbinu kao poslatu.',
+          title: 'Porudžbina poslata',
+          body: 'Prodavac je označio porudžbinu kao poslatu.',
         );
       case 'rejected':
         return const OrderStatusNotificationTemplate(
           recipientRole: 'buyer',
-          title: 'Porudzbina odbijena',
-          body: 'Prodavac je odbio vasu porudzbinu.',
+          title: 'Porudžbina odbijena',
+          body: 'Prodavac je odbio vašu porudžbinu.',
         );
       case 'cancelled_by_seller':
         return const OrderStatusNotificationTemplate(
           recipientRole: 'buyer',
-          title: 'Porudzbina otkazana',
-          body: 'Prodavac je otkazao porudzbinu.',
+          title: 'Porudžbina otkazana',
+          body: 'Prodavac je otkazao porudžbinu.',
         );
       case 'delivered':
         return const OrderStatusNotificationTemplate(
           recipientRole: 'seller',
           title: 'Kupac potvrdio prijem',
-          body: 'Kupac je potvrdio da je primio porudzbinu.',
+          body: 'Kupac je potvrdio da je primio porudžbinu.',
         );
       default:
         return null;
     }
   }
 
-  static bool canBuyerManuallyArchive(String status) {
+  /// Završene porudžbine koje kupac ili prodavac sme ručno da prebaci u arhivu.
+  static bool _canPartyManuallyArchive(String status) {
     return status == 'delivered' ||
         status == 'rejected' ||
         status == 'cancelled_by_seller';
   }
+
+  static bool canBuyerManuallyArchive(String status) =>
+      _canPartyManuallyArchive(status);
+
+  static bool canSellerManuallyArchive(String status) =>
+      _canPartyManuallyArchive(status);
 
   static String actorRoleForStatusChange({
     required String? actorUserId,

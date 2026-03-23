@@ -208,4 +208,15 @@ class ReviewsService {
       'p_reply': reply,
     });
   }
+
+  /// Kupac odgovara na recenziju prodavca (jedan odgovor; izmena do 24h).
+  Future<void> addBuyerReply({
+    required String buyerReviewId,
+    required String reply,
+  }) async {
+    await _client.rpc('add_buyer_reply', params: {
+      'p_review_id': buyerReviewId,
+      'p_reply': reply,
+    });
+  }
 }

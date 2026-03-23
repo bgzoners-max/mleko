@@ -25,7 +25,7 @@ class OrderStatusAuditLogModel {
       newStatus: json['new_status'] as String,
       changedByRole: json['changed_by_role'] as String,
       changedByUserId: json['changed_by_user_id'] as String?,
-      changedAt: DateTime.parse(json['changed_at'] as String),
+      changedAt: DateTime.tryParse(json['changed_at'] as String? ?? '') ?? DateTime.now(),
     );
   }
 }

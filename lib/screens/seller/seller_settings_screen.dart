@@ -78,7 +78,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     final lng = result['lng'] as num?;
     if (lat == null || lng == null) return;
     final appState = context.read<AppState>();
-    final u = appState.user!;
+    final u = appState.user;
+    if (u == null) return;
     setState(() {
       _error = null;
       _loading = true;
@@ -126,7 +127,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     final xFile = await ImagePicker()
         .pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (xFile == null) return;
-    final user = appState.user!;
+    final user = appState.user;
+    if (!mounted || user == null) return;
     setState(() => _loading = true);
     try {
       final bytes = await xFile.readAsBytes();

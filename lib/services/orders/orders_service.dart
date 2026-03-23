@@ -34,6 +34,9 @@ class BuyerSellerStats {
 class OrdersService {
   final _client = Supabase.instance.client;
 
+  /// Vrednost [statusFilter] za listu „aktivnih” porudžbina: sve osim kupčeve ručne arhive (`arhivirano`).
+  static const String statusFilterActiveNonArchived = 'active';
+
   // ─── Fetch (sa paginacijom i batch-učitavanjem imena) ──────────────────────
 
   Future<List<OrderModel>> _fetchOrdersByBuyer(
@@ -44,7 +47,11 @@ class OrdersService {
   }) async {
     var query = _client.from('orders').select().eq('buyer_id', buyerId);
     if (statusFilter != null && statusFilter.isNotEmpty) {
-      query = query.eq('status', statusFilter);
+      if (statusFilter == statusFilterActiveNonArchived) {
+        query = query.neq('status', 'arhivirano');
+      } else {
+        query = query.eq('status', statusFilter);
+      }
     }
     final list = await query
         .order('created_at', ascending: false)
@@ -63,7 +70,11 @@ class OrdersService {
   }) async {
     var query = _client.from('orders').select().eq('seller_id', sellerId);
     if (statusFilter != null && statusFilter.isNotEmpty) {
-      query = query.eq('status', statusFilter);
+      if (statusFilter == statusFilterActiveNonArchived) {
+        query = query.neq('status', 'arhivirano');
+      } else {
+        query = query.eq('status', statusFilter);
+      }
     }
     final list = await query
         .order('created_at', ascending: false)
@@ -232,7 +243,8 @@ class OrdersService {
   // ─── Real-time stream-ovi ──────────────────────────────────────────────────
 
   /// Stream prati najnovijih [_kPageSize] porudžbina.
-  /// [statusFilter]: 'sent' = aktivne, 'arhivirano' = arhiva.
+  /// [statusFilter]: [statusFilterActiveNonArchived] = sve osim arhive; tačan status = filter po koloni;
+  /// `'arhivirano'` = arhiva; `null` = sve (npr. statistika „Po prodavcima”).
   Stream<List<OrderModel>> getOrdersByBuyer(
     String buyerId, {
     Stream<void>? refreshTrigger,
@@ -341,13 +353,29 @@ class OrdersService {
         .eq('buyer_id', buyerId);
   }
 
+  /// Ručna arhiva sa prodavčeve strane (isti terminalni statusi kao kod kupca).
+  Future<void> archiveOrderBySeller(String sellerId, String orderId) async {
+    await _client
+        .from('orders')
+        .update({
+          'status': OrderStatus.archived.dbValue,
+          'archived_at': DateTime.now().toUtc().toIso8601String(),
+          'expires_at': DateTime.now()
+              .toUtc()
+              .add(const Duration(days: 365))
+              .toIso8601String(),
+        })
+        .eq('id', orderId)
+        .eq('seller_id', sellerId);
+  }
+
   Future<void> confirmOrderReceivedByBuyer(String orderId) async {
     final result = await _client.rpc(
       'buyer_confirm_order_received',
       params: {'p_order_id': orderId},
     );
     if (result != true) {
-      throw Exception('Nije moguce potvrditi prijem za ovu porudzbinu.');
+      throw Exception('Nije moguće potvrditi prijem za ovu porudžbinu.');
     }
   }
 
