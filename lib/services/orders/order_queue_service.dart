@@ -83,42 +83,22 @@ class PendingOrder {
 class OrderQueueService {
   static const _storageKey = 'mleko_pending_orders';
 
-  /// Dodaj porudžbinu u queue (bez slanja na server)
-  Future<void> addPendingOrder(PendingOrder order) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final orders = await getPendingOrders();
+  // Serializuje sve write operacije da spreči race condition na SharedPreferences.
+  // Sve mutacije (add/mark/remove/clean) idu u red i izvršavaju se jedna po jedna.
+  static Future<void> _writeChain = Future.value();
 
-      // Ako order već postoji, ne dupliraj
-      if (orders.any((o) => o.id == order.id)) {
-        LoggerService.warning('Order already in queue',
-            extra: {'orderId': order.id});
-        return;
-      }
-
-      orders.add(order);
-      await _saveOrders(prefs, orders);
-      LoggerService.info('Added pending order to queue',
-          extra: {'orderId': order.id});
-    } catch (e, st) {
-      LoggerService.error('Failed to add pending order', e, stackTrace: st);
-      rethrow;
-    }
+  Future<T> _serialized<T>(Future<T> Function() op) {
+    final result = _writeChain.then((_) => op());
+    _writeChain = result.then<void>((_) {}, onError: (_) {});
+    return result;
   }
 
-  /// Preuzmi sve pending porudžbine
+  /// Preuzmi sve pending porudžbine (read-only, nema race condition)
   Future<List<PendingOrder>> getPendingOrders(
       {bool onlyUnsynced = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final json = prefs.getString(_storageKey);
-      if (json == null || json.isEmpty) return [];
-
-      final list = jsonDecode(json) as List;
-      final orders = list
-          .map((e) => PendingOrder.fromJson(e as Map<String, dynamic>))
-          .toList();
-
+      final orders = await _loadOrders(prefs);
       if (onlyUnsynced) {
         return orders.where((o) => o.isPending).toList();
       }
@@ -129,69 +109,112 @@ class OrderQueueService {
     }
   }
 
-  /// Označi order kao sinhronizovan (već poslat na server)
-  Future<void> markAsSynced(String orderId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final orders = await getPendingOrders();
+  /// Dodaj porudžbinu u queue (bez slanja na server)
+  Future<void> addPendingOrder(PendingOrder order) {
+    return _serialized(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final orders = await _loadOrders(prefs);
 
-      final index = orders.indexWhere((o) => o.id == orderId);
-      if (index == -1) {
-        LoggerService.warning('Order not found in queue',
-            extra: {'orderId': orderId});
-        return;
+        if (orders.any((o) => o.id == order.id)) {
+          LoggerService.warning('Order already in queue',
+              extra: {'orderId': order.id});
+          return;
+        }
+
+        orders.add(order);
+        await _saveOrders(prefs, orders);
+        LoggerService.info('Added pending order to queue',
+            extra: {'orderId': order.id});
+      } catch (e, st) {
+        LoggerService.error('Failed to add pending order', e, stackTrace: st);
+        rethrow;
       }
+    });
+  }
 
-      final order = orders[index];
-      orders[index] = PendingOrder(
-        id: order.id,
-        buyerId: order.buyerId,
-        sellerId: order.sellerId,
-        productId: order.productId,
-        productName: order.productName,
-        quantityKg: order.quantityKg,
-        unitType: order.unitType,
-        note: order.note,
-        buyerCity: order.buyerCity,
-        buyerAddress: order.buyerAddress,
-        buyerPhone: order.buyerPhone,
-        preferCall: order.preferCall,
-        pickupOptions: order.pickupOptions,
-        createdAt: order.createdAt,
-        synced: DateTime.now(), // Označi kao sinhronizovano
-      );
+  /// Označi order kao sinhronizovan (već poslat na server)
+  Future<void> markAsSynced(String orderId) {
+    return _serialized(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final orders = await _loadOrders(prefs);
 
-      await _saveOrders(prefs, orders);
-      LoggerService.info('Marked order as synced', extra: {'orderId': orderId});
-    } catch (e, st) {
-      LoggerService.error('Failed to mark order as synced', e, stackTrace: st);
-    }
+        final index = orders.indexWhere((o) => o.id == orderId);
+        if (index == -1) {
+          LoggerService.warning('Order not found in queue',
+              extra: {'orderId': orderId});
+          return;
+        }
+
+        final order = orders[index];
+        orders[index] = PendingOrder(
+          id: order.id,
+          buyerId: order.buyerId,
+          sellerId: order.sellerId,
+          productId: order.productId,
+          productName: order.productName,
+          quantityKg: order.quantityKg,
+          unitType: order.unitType,
+          note: order.note,
+          buyerCity: order.buyerCity,
+          buyerAddress: order.buyerAddress,
+          buyerPhone: order.buyerPhone,
+          preferCall: order.preferCall,
+          pickupOptions: order.pickupOptions,
+          createdAt: order.createdAt,
+          synced: DateTime.now(),
+        );
+
+        await _saveOrders(prefs, orders);
+        LoggerService.info('Marked order as synced',
+            extra: {'orderId': orderId});
+      } catch (e, st) {
+        LoggerService.error('Failed to mark order as synced', e,
+            stackTrace: st);
+      }
+    });
   }
 
   /// Obriši porudžbinu iz queue (ako je cancelled)
-  Future<void> removePendingOrder(String orderId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final orders = await getPendingOrders();
-      orders.removeWhere((o) => o.id == orderId);
-      await _saveOrders(prefs, orders);
-      LoggerService.info('Removed pending order', extra: {'orderId': orderId});
-    } catch (e, st) {
-      LoggerService.error('Failed to remove pending order', e, stackTrace: st);
-    }
+  Future<void> removePendingOrder(String orderId) {
+    return _serialized(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final orders = await _loadOrders(prefs);
+        orders.removeWhere((o) => o.id == orderId);
+        await _saveOrders(prefs, orders);
+        LoggerService.info('Removed pending order',
+            extra: {'orderId': orderId});
+      } catch (e, st) {
+        LoggerService.error('Failed to remove pending order', e,
+            stackTrace: st);
+      }
+    });
   }
 
   /// Obriši sve sinhronizovane porudžbine (cleanup)
-  Future<void> cleanSyncedOrders() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final orders = await getPendingOrders();
-      final pending = orders.where((o) => o.isPending).toList();
-      await _saveOrders(prefs, pending);
-      LoggerService.info('Cleaned synced orders from queue');
-    } catch (e, st) {
-      LoggerService.error('Failed to clean synced orders', e, stackTrace: st);
-    }
+  Future<void> cleanSyncedOrders() {
+    return _serialized(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final orders = await _loadOrders(prefs);
+        final pending = orders.where((o) => o.isPending).toList();
+        await _saveOrders(prefs, pending);
+        LoggerService.info('Cleaned synced orders from queue');
+      } catch (e, st) {
+        LoggerService.error('Failed to clean synced orders', e, stackTrace: st);
+      }
+    });
+  }
+
+  Future<List<PendingOrder>> _loadOrders(SharedPreferences prefs) async {
+    final json = prefs.getString(_storageKey);
+    if (json == null || json.isEmpty) return [];
+    final list = jsonDecode(json) as List;
+    return list
+        .map((e) => PendingOrder.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<void> _saveOrders(

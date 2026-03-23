@@ -144,6 +144,25 @@ class ProductListingAutoflagSummary {
   }
 }
 
+/// Pokreće [op] do [maxAttempts] puta. Pravi pauzu prije svakog ponovnog pokušaja.
+/// Ne ponavlja ukoliko je izuzetak [AuthException] ili [StorageException].
+Future<T> _withRetry<T>(
+  Future<T> Function() op, {
+  int maxAttempts = 3,
+}) async {
+  var attempt = 0;
+  while (true) {
+    attempt++;
+    try {
+      return await op();
+    } catch (e) {
+      final isAuth = e is AuthException;
+      if (isAuth || attempt >= maxAttempts) rethrow;
+      await Future.delayed(Duration(milliseconds: 300 * attempt));
+    }
+  }
+}
+
 class ProductsService {
   final _client = Supabase.instance.client;
 
@@ -226,7 +245,7 @@ class ProductsService {
     if (sort == ProductSort.ratingDesc) {
       ordered = ordered.order('created_at', ascending: false);
     }
-    final list = await ordered.range(offset, offset + limit - 1);
+    final list = await _withRetry(() => ordered.range(offset, offset + limit - 1));
     final rows = list as List;
     final products = rows
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))

@@ -57,11 +57,11 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList();
     if (urls.isEmpty) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       for (final url in urls) {
+        if (!mounted) return;
         if (_preloadedCarouselImages.add(url)) {
-          precacheImage(CachedNetworkImageProvider(url), context);
+          await precacheImage(CachedNetworkImageProvider(url), context);
         }
       }
     });

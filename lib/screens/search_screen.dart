@@ -146,12 +146,15 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Timer? _debounceTimer;
+  Timer? _filterDebounceTimer;
   static const _debounceDuration = Duration(milliseconds: 350);
+  static const _filterDebounceDuration = Duration(milliseconds: 250);
   String _debouncedQuery = '';
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _filterDebounceTimer?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -182,7 +185,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _onFilterChanged() {
-    _loadFirstPage();
+    _filterDebounceTimer?.cancel();
+    _filterDebounceTimer = Timer(_filterDebounceDuration, () {
+      if (mounted) _loadFirstPage();
+    });
   }
 
   @override

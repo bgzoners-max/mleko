@@ -43,11 +43,17 @@ class _ChatScreenState extends State<ChatScreen> {
   late final Stream<List<MessageModel>> _messagesStream = ChatService()
       .watchMessages(widget.conversationId,
           refreshTrigger: _refreshController.stream);
+  late final Stream<Set<String>> _typingStream =
+      ChatService().watchTypingUsers(widget.conversationId);
 
   // Starije poruke učitane paginacijom ("Učitaj starije poruke")
   final List<MessageModel> _olderMessages = [];
   bool _hasOlderMessages = true;
   bool _loadingOlder = false;
+
+  // Typing indicator
+  bool _isTyping = false;
+  Timer? _typingTimer;
 
   bool _sending = false;
   String? _otherPartyName;
@@ -64,14 +70,47 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadConversationInfo();
+    _messageController.addListener(_onTypingChanged);
   }
 
   @override
   void dispose() {
+    _messageController.removeListener(_onTypingChanged);
+    _typingTimer?.cancel();
+    // Obavesti server da korisnik više ne kuca
+    final userId = context.read<AppState>().user?.id;
+    if (userId != null && _isTyping) {
+      ChatService().setTyping(
+          conversationId: widget.conversationId,
+          userId: userId,
+          isTyping: false);
+    }
     _messageController.dispose();
     _scrollController.dispose();
     _refreshController.close();
     super.dispose();
+  }
+
+  void _onTypingChanged() {
+    final userId = context.read<AppState>().user?.id;
+    if (userId == null) return;
+    if (_messageController.text.isNotEmpty && !_isTyping) {
+      _isTyping = true;
+      ChatService().setTyping(
+          conversationId: widget.conversationId,
+          userId: userId,
+          isTyping: true);
+    }
+    _typingTimer?.cancel();
+    _typingTimer = Timer(ChatService.typingStaleThreshold, () {
+      if (_isTyping) {
+        _isTyping = false;
+        ChatService().setTyping(
+            conversationId: widget.conversationId,
+            userId: userId,
+            isTyping: false);
+      }
+    });
   }
 
   Future<void> _loadOlderMessages(List<MessageModel> current) async {
@@ -142,6 +181,14 @@ class _ChatScreenState extends State<ChatScreen> {
     if (user == null) return;
 
     if (textOverride == null) _messageController.clear();
+    _typingTimer?.cancel();
+    if (_isTyping) {
+      _isTyping = false;
+      ChatService().setTyping(
+          conversationId: widget.conversationId,
+          userId: user.id,
+          isTyping: false);
+    }
     setState(() => _sending = true);
     try {
       await ChatService().sendMessage(widget.conversationId, user.id, text);
@@ -323,6 +370,34 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
+          StreamBuilder<Set<String>>(
+            stream: _typingStream,
+            builder: (context, snap) {
+              final typingUsers = snap.data ?? {};
+              final othersTyping = typingUsers
+                  .where((id) => id != context.read<AppState>().user?.id)
+                  .toList();
+              if (othersTyping.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 16,
+                      child: _TypingDots(),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'kuca...',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           Container(
             padding: const EdgeInsets.all(8),
             decoration:
@@ -441,3 +516,49 @@ class _OrderContextCard extends StatelessWidget {
   }
 }
 
+/// Tri animovane tačke koje pokazuju da sagovornik kuca.
+class _TypingDots extends StatefulWidget {
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(3, (i) {
+            final offset = ((_controller.value * 3) - i).clamp(0.0, 1.0);
+            final opacity = offset < 0.5 ? offset * 2 : (1 - offset) * 2;
+            return Opacity(
+              opacity: opacity.clamp(0.2, 1.0),
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade500,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}

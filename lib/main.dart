@@ -19,8 +19,64 @@ import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/location_provider.dart';
+import 'services/orders/sync_manager.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
+
+class _SyncFeedbackListener extends StatefulWidget {
+  final Widget child;
+  const _SyncFeedbackListener({required this.child});
+
+  @override
+  State<_SyncFeedbackListener> createState() => _SyncFeedbackListenerState();
+}
+
+class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
+  SyncManager? _syncManager;
+  bool _wasSyncing = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final manager = context.read<AppState>().syncManager;
+    if (manager != _syncManager) {
+      _syncManager?.removeListener(_onSyncChanged);
+      _syncManager = manager;
+      _syncManager!.addListener(_onSyncChanged);
+    }
+  }
+
+  void _onSyncChanged() {
+    final manager = _syncManager;
+    if (manager == null) return;
+    if (_wasSyncing && !manager.isSyncing && manager.syncedCount > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              manager.syncedCount == 1
+                  ? 'Porudžbina je sinhronizovana.'
+                  : '${manager.syncedCount} porudžbine sinhronizovane.',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
+    }
+    _wasSyncing = manager.isSyncing;
+  }
+
+  @override
+  void dispose() {
+    _syncManager?.removeListener(_onSyncChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -137,12 +193,14 @@ void main() async {
                   data: MediaQuery.of(context).copyWith(
                     textScaler: TextScaler.linear(settings.fontScale),
                   ),
-                  child: child ??
-                      const Scaffold(
-                        body: Center(
-                          child: CircularProgressIndicator(),
+                  child: _SyncFeedbackListener(
+                    child: child ??
+                        const Scaffold(
+                          body: Center(
+                            child: CircularProgressIndicator(),
+                          ),
                         ),
-                      ),
+                  ),
                 );
               },
             ),

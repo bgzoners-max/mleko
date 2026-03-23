@@ -153,9 +153,15 @@ class _CartSellerGroup extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: onCheckoutAll,
+                onPressed: items.any((i) => !(i.product as dynamic).isAvailable)
+                    ? null
+                    : onCheckoutAll,
                 icon: const Icon(Icons.send, size: 20),
-                label: Text('Pošalji upit za sve (${items.length} proizvoda)'),
+                label: Text(
+                  items.any((i) => !(i.product as dynamic).isAvailable)
+                      ? 'Neki proizvodi su nedostupni'
+                      : 'Pošalji upit za sve (${items.length} proizvoda)',
+                ),
               ),
             ),
           ),
@@ -322,9 +328,9 @@ class _CartItemCardState extends State<_CartItemCard> {
                 if (widget.onCheckout != null) ...[
                   const SizedBox(width: 8),
                   FilledButton.icon(
-                    onPressed: widget.onCheckout,
+                    onPressed: p.isAvailable ? widget.onCheckout : null,
                     icon: const Icon(Icons.send, size: 18),
-                    label: const Text('Pošalji upit'),
+                    label: Text(p.isAvailable ? 'Pošalji upit' : 'Nedostupno'),
                   ),
                 ],
               ],

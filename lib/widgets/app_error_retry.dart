@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 /// Prikaz greške sa mogućnošću ponovnog pokušaja
@@ -28,7 +29,7 @@ class AppErrorRetry extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            if (detail != null) ...[
+            if (kDebugMode && detail != null) ...[
               const SizedBox(height: 8),
               Text(
                 detail!,

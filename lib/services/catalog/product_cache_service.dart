@@ -32,9 +32,9 @@ class CachedProductList {
         final map = p as Map<String, dynamic>;
         if (map['id'] == null) continue;
         products.add(ProductModel.fromJson(map));
-      } catch (_) {
-        // Skip invalid product entries in cache
-        continue;
+      } catch (e) {
+        LoggerService.warning('Skipping corrupted product in cache',
+            extra: {'error': e.toString()});
       }
     }
     return CachedProductList(
