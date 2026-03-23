@@ -432,6 +432,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
    late final TextEditingController _addressCtrl;
   late final TextEditingController _farmNameCtrl;
   late List<String> _selectedTags;
+  final _formKey = GlobalKey<FormState>();
   bool _saving = false;
 
   @override
@@ -457,6 +458,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 
   Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
     final appState = context.read<AppState>();
     final user = widget.user;
     setState(() => _saving = true);
@@ -499,7 +501,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         left: 16, right: 16, top: 16,
         bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
       ),
-      child: SingleChildScrollView(
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -524,16 +528,32 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _phoneCtrl,
               decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder()),
               keyboardType: TextInputType.phone,
+              validator: (v) {
+                final val = v?.trim() ?? '';
+                if (val.isEmpty) return null;
+                final digits = val.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+                if (!RegExp(r'^\d{7,15}$').hasMatch(digits)) {
+                  return 'Unesite ispravan broj telefona';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
-            TextField(
+            TextFormField(
               controller: _cityCtrl,
               decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder()),
               textCapitalization: TextCapitalization.words,
+              validator: (v) {
+                final val = v?.trim() ?? '';
+                if (val.isEmpty) return null;
+                if (val.length < 2) return 'Grad mora imati najmanje 2 karaktera';
+                if (RegExp(r'^\d+$').hasMatch(val)) return 'Unesite ispravan naziv grada';
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             TextField(
@@ -582,11 +602,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           ],
         ),
       ),
+    ),
     );
   }
 }
-
-// ─── Gallery section ──────────────────────────────────────────────────────────
 
 class _SellerGallerySectionState extends State<_SellerGallerySection> {
   bool _loading = false;
