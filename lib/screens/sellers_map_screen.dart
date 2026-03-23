@@ -43,15 +43,19 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                    Icon(Icons.error_outline,
+                        size: 48, color: Colors.red.shade400),
                     const SizedBox(height: 16),
-                    Text('Greška pri učitavanju: ${snap.error}', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade700)),
+                    Text('Greška pri učitavanju: ${snap.error}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700)),
                   ],
                 ),
               ),
             );
           }
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snap.hasData)
+            return const Center(child: CircularProgressIndicator());
           final list = snap.data ?? [];
 
           if (list.isEmpty) {
@@ -59,11 +63,15 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.map_outlined, size: 64, color: Colors.grey.shade400),
+                  Icon(Icons.map_outlined,
+                      size: 64, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
-                  Text('Prodavci još nemaju lokacije na mapi', style: TextStyle(color: Colors.grey.shade600)),
+                  Text('Prodavci još nemaju lokacije na mapi',
+                      style: TextStyle(color: Colors.grey.shade600)),
                   const SizedBox(height: 8),
-                  Text('Prodavci mogu dodati koordinate u profilu', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  Text('Prodavci mogu dodati koordinate u profilu',
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                 ],
               ),
             );
@@ -75,12 +83,13 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
             return Marker(
               point: LatLng(lat, lng),
               width: 40,
-              height: 40,
+              height: 54,
               child: GestureDetector(
                 onTap: () => context.push('/seller/${e['id']}'),
                 child: Column(
                   children: [
-                    Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary, size: 36),
+                    Icon(Icons.location_on,
+                        color: Theme.of(context).colorScheme.primary, size: 36),
                     Text(
                       (e['farm_name'] ?? e['location'] ?? '') as String,
                       style: const TextStyle(fontSize: 10),
