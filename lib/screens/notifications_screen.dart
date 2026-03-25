@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, PostgresChangeEvent, PostgresChangeFilter, PostgresChangeFilterType, RealtimeChannel;
 import '../models/notification_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
@@ -23,13 +25,15 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen>
     with WidgetsBindingObserver {
   final _service = NotificationsService();
-  Future<List<NotificationModel>>? _notificationsFuture;
+  late final StreamController<List<NotificationModel>> _notificationsController;
+  RealtimeChannel? _realtimeChannel;
   String? _lastUserId;
   bool? _notificationPermissionGranted;
 
   @override
   void initState() {
     super.initState();
+    _notificationsController = StreamController.broadcast();
     WidgetsBinding.instance.addObserver(this);
     if (!kIsWeb && Platform.isAndroid) {
       Permission.notification.status.then((s) {
@@ -40,6 +44,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   @override
   void dispose() {
+    _realtimeChannel?.unsubscribe();
+    _notificationsController.close();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -59,13 +65,48 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final user = context.read<AppState>().user;
     if (user != null && !user.isGuest && user.id != _lastUserId) {
       _lastUserId = user.id;
-      _notificationsFuture = _service.getNotifications(user.id);
+      _loadAndMarkRead();
+      _subscribeRealtime(user.id);
     }
     if (!kIsWeb && Platform.isAndroid && _notificationPermissionGranted == null) {
       Permission.notification.status.then((s) {
         if (mounted) setState(() => _notificationPermissionGranted = s.isGranted);
       });
     }
+  }
+
+  Future<void> _loadAndMarkRead() async {
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) return;
+    final notifs = await _service.getNotifications(user.id);
+    if (!_notificationsController.isClosed) {
+      _notificationsController.add(notifs);
+    }
+    await _service.markAllAsRead(user.id);
+    if (mounted) {
+      context.read<AppState>().resetUnreadCount();
+    }
+  }
+
+  void _subscribeRealtime(String userId) {
+    _realtimeChannel?.unsubscribe();
+    final client = Supabase.instance.client;
+    _realtimeChannel = client
+        .channel('notifications-insert-$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (_) async {
+            await _loadAndMarkRead();
+          },
+        )
+        .subscribe();
   }
 
   @override
@@ -118,7 +159,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 if (ok == true && context.mounted) {
                   await _service.deleteAllNotifications(user.id);
                   if (context.mounted) {
-                    setState(() => _notificationsFuture = _service.getNotifications(user.id));
+                    _loadAndMarkRead();
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Obaveštenja obrisana.')));
                   }
                 }
@@ -144,14 +185,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
         ],
       ),
-      body: FutureBuilder<List<NotificationModel>>(
-        future: _notificationsFuture,
+      body: StreamBuilder<List<NotificationModel>>(
+        stream: _notificationsController.stream,
         builder: (context, snap) {
           if (snap.hasError) {
             return AppErrorRetry(
               message: 'Greška pri učitavanju obaveštenja.',
               detail: snap.error?.toString(),
-              onRetry: () => setState(() => _notificationsFuture = _service.getNotifications(user.id)),
+              onRetry: _loadAndMarkRead,
             );
           }
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
@@ -244,7 +285,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       onDismissed: (_) async {
                         await _service.deleteNotification(n.id);
                         if (context.mounted) {
-                          setState(() => _notificationsFuture = _service.getNotifications(user.id));
+                          _loadAndMarkRead();
                         }
                       },
                       child: Card(
@@ -262,7 +303,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                 onPressed: () async {
                                   await _service.deleteNotification(n.id);
                                   if (context.mounted) {
-                                    setState(() => _notificationsFuture = _service.getNotifications(user.id));
+                                    _loadAndMarkRead();
                                   }
                                 },
                               ),

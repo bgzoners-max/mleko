@@ -119,6 +119,18 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: IconButton(
+              icon: Badge(
+                isLabelVisible: context.watch<AppState>().unreadNotificationCount > 0,
+                label: Text('${context.watch<AppState>().unreadNotificationCount}'),
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              tooltip: 'Obaveštenja',
+              onPressed: () => context.push('/notifications'),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: IconButton(
               icon: const Icon(Icons.location_on),
               tooltip: locationProvider.selectedRegion ?? 'Izaberi lokaciju',
               onPressed: () => _showLocationPicker(context),

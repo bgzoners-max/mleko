@@ -54,8 +54,9 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
               ),
             );
           }
-          if (!snap.hasData)
+          if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
           final list = snap.data ?? [];
 
           if (list.isEmpty) {

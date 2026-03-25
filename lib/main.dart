@@ -145,7 +145,9 @@ void main() async {
     }
 
     PushService.setOnNotificationTapped(navigateFromNotification);
-    pushService.setForegroundHandler((_) {});
+    pushService.setForegroundHandler((_) {
+      appState.incrementUnreadCount();
+    });
     pushService
         .setMessageOpenedHandler((msg) => navigateFromNotification(msg.data));
     Future.microtask(() async {

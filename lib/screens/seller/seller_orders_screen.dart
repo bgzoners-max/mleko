@@ -513,104 +513,91 @@ class _SellerOrderCard extends StatelessWidget {
               ),
             if (!o.isArchived) ...[
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              Column(
                 children: [
-                  if (!isArchivedList &&
-                      o.canSellerManuallyArchive)
-                    FilledButton.tonalIcon(
-                      onPressed: () => _archiveOrder(context),
-                      icon: const Icon(Icons.archive_outlined, size: 18),
-                      label: const Text('Arhiviraj'),
-                    ),
-                  FilledButton.tonal(
-                    onPressed: o.buyerPhone.isNotEmpty
-                        ? () => _launchCall(context, o.buyerPhone)
-                        : null,
-                    child: const Text('Pozovi'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      try {
-                        final convId =
-                            await ChatService().getOrCreateConversation(
-                          o.buyerId,
-                          user.id,
-                          orderId: o.id,
-                        );
-                        if (context.mounted) context.push('/chat/$convId');
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Greška: $e'),
-                                backgroundColor: Colors.red),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.chat, size: 18),
-                    label: const Text('Poruka'),
-                  ),
+                  // Status-specific buttons (Prihvati/Odbij, Poslato/Otkaži, etc.)
                   if (o.status == OrderStatus.sent) ...[
-                    FilledButton(
-                      onPressed: () =>
-                          _updateStatus(context, o.id, OrderStatus.accepted),
-                      child: const Text('Prihvati'),
-                    ),
-                    OutlinedButton(
-                      onPressed: () async {
-                        final ok = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Odbij porudžbinu?'),
-                            content: const Text(
-                                'Kupac će biti obavešten da ste odbili porudžbinu.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Odustani'),
-                              ),
-                              FilledButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                style: FilledButton.styleFrom(
-                                    backgroundColor: Colors.red),
-                                child: const Text('Odbij'),
-                              ),
-                            ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () =>
+                                _updateStatus(context, o.id, OrderStatus.accepted),
+                            child: const Text('Prihvati'),
                           ),
-                        );
-                        if (ok == true && context.mounted) {
-                          await _updateStatus(
-                              context, o.id, OrderStatus.rejected);
-                        }
-                      },
-                      child: const Text('Odbij'),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () async {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Odbij porudžbinu?'),
+                                  content: const Text(
+                                      'Kupac će biti obavešten da ste odbili porudžbinu.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text('Odustani'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: FilledButton.styleFrom(
+                                          backgroundColor: Colors.red),
+                                      child: const Text('Odbij'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok == true && context.mounted) {
+                                await _updateStatus(
+                                    context, o.id, OrderStatus.rejected);
+                              }
+                            },
+                            child: const Text('Odbij'),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                  if (o.status == OrderStatus.accepted) ...[
-                    FilledButton.tonal(
-                      onPressed: () =>
-                          _updateStatus(context, o.id, OrderStatus.shipped),
-                      child: const Text('Poslato'),
+                  ] else if (o.status == OrderStatus.accepted) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.tonal(
+                            onPressed: () =>
+                                _updateStatus(context, o.id, OrderStatus.shipped),
+                            child: const Text('Poslato'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _cancelOrder(context, o.id),
+                            child: const Text('Otkaži'),
+                          ),
+                        ),
+                      ],
                     ),
-                    OutlinedButton(
-                      onPressed: () => _cancelOrder(context, o.id),
-                      child: const Text('Otkaži'),
+                  ] else if (o.status == OrderStatus.shipped) ...[
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Chip(
+                            label: Text('Čeka potvrdu kupca'),
+                            avatar: Icon(Icons.schedule, size: 16),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _cancelOrder(context, o.id),
+                            child: const Text('Otkaži'),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                  if (o.status == OrderStatus.shipped) ...[
-                    const Chip(
-                      label: Text('Ceka potvrdu kupca'),
-                      avatar: Icon(Icons.schedule, size: 16),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => _cancelOrder(context, o.id),
-                      child: const Text('Otkaži'),
-                    ),
-                  ],
-                  if (o.status == OrderStatus.delivered)
+                  ] else if (o.status == OrderStatus.delivered) ...[
                     _CanSellerReviewBuyerButton(
                       key: ValueKey('canreviewbuyer-${o.id}'),
                       sellerId: user.id,
@@ -626,6 +613,59 @@ class _SellerOrderCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                  ],
+                  // Archive button (if applicable)
+                  if (!isArchivedList && o.canSellerManuallyArchive) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        onPressed: () => _archiveOrder(context),
+                        icon: const Icon(Icons.archive_outlined, size: 18),
+                        label: const Text('Arhiviraj'),
+                      ),
+                    ),
+                  ],
+                  // Call and Message buttons
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: o.buyerPhone.isNotEmpty
+                              ? () => _launchCall(context, o.buyerPhone)
+                              : null,
+                          child: const Text('Pozovi'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              final convId =
+                                  await ChatService().getOrCreateConversation(
+                                o.buyerId,
+                                user.id,
+                                orderId: o.id,
+                              );
+                              if (context.mounted) context.push('/chat/$convId');
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Greška: $e'),
+                                      backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.chat, size: 18),
+                          label: const Text('Poruka'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

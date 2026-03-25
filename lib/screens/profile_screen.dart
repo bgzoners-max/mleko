@@ -80,7 +80,9 @@ class ProfileScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.location_on),
               title: const Text('Lokacija za mapu'),
-              subtitle: Text(user.lat != null && user.lng != null ? 'Lokacija postavljena' : 'Odaberi na mapi da te kupci vide'),
+              subtitle: Text(user.lat != null && user.lng != null
+                  ? 'Lokacija postavljena'
+                  : 'Odaberi na mapi da te kupci vide'),
               onTap: () => context.push('/seller-settings'),
             ),
           ] else ...[
@@ -134,7 +136,9 @@ class ProfileScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.support),
             title: const Text('Podrška / prijava problema'),
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kontakt: support@mleko.rs (MVP)'))),
+            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Kontakt: support@mleko.rs (MVP)'))),
           ),
           const Divider(),
           ListTile(
@@ -145,7 +149,8 @@ class ProfileScreen extends StatelessWidget {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Odjavi se?'),
-                  content: const Text('Da li ste sigurni da želite da se odjavite?'),
+                  content:
+                      const Text('Da li ste sigurni da želite da se odjavite?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
@@ -176,17 +181,20 @@ class _SellerProfilePhotoSection extends StatefulWidget {
   const _SellerProfilePhotoSection({required this.user});
 
   @override
-  State<_SellerProfilePhotoSection> createState() => _SellerProfilePhotoSectionState();
+  State<_SellerProfilePhotoSection> createState() =>
+      _SellerProfilePhotoSectionState();
 }
 
-class _SellerProfilePhotoSectionState extends State<_SellerProfilePhotoSection> {
+class _SellerProfilePhotoSectionState
+    extends State<_SellerProfilePhotoSection> {
   bool _loading = false;
   late final Future<int> _followersFuture;
 
   @override
   void initState() {
     super.initState();
-    _followersFuture = FavoriteSellersService().getFollowersCount(widget.user.id);
+    _followersFuture =
+        FavoriteSellersService().getFollowersCount(widget.user.id);
   }
 
   @override
@@ -195,7 +203,11 @@ class _SellerProfilePhotoSectionState extends State<_SellerProfilePhotoSection> 
       future: _followersFuture,
       builder: (context, snap) {
         final followersCount = snap.data ?? 0;
-        return _SellerProfilePhotoContent(user: widget.user, followersCount: followersCount, loading: _loading, onPickAndUpload: _pickAndUpload);
+        return _SellerProfilePhotoContent(
+            user: widget.user,
+            followersCount: followersCount,
+            loading: _loading,
+            onPickAndUpload: _pickAndUpload);
       },
     );
   }
@@ -204,16 +216,19 @@ class _SellerProfilePhotoSectionState extends State<_SellerProfilePhotoSection> 
     final appState = context.read<AppState>();
     final messenger = ScaffoldMessenger.of(context);
     final picker = ImagePicker();
-    final xFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final xFile =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (xFile == null) return;
     setState(() => _loading = true);
     try {
       final bytes = await xFile.readAsBytes();
-      final url = await StorageService().uploadProfileImage(widget.user.id, bytes);
+      final url =
+          await StorageService().uploadProfileImage(widget.user.id, bytes);
       await UsersService().updateProfileImage(widget.user.id, url);
       await appState.refreshUser();
       if (mounted) {
-        messenger.showSnackBar(const SnackBar(content: Text('Profilna slika ažurirana.')));
+        messenger.showSnackBar(
+            const SnackBar(content: Text('Profilna slika ažurirana.')));
       }
     } catch (e) {
       if (mounted) {
@@ -225,7 +240,6 @@ class _SellerProfilePhotoSectionState extends State<_SellerProfilePhotoSection> 
       if (mounted) setState(() => _loading = false);
     }
   }
-
 }
 
 class _SellerProfilePhotoContent extends StatelessWidget {
@@ -259,11 +273,14 @@ class _SellerProfilePhotoContent extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.grey.shade300,
-                    backgroundImage: currentUser.profileImageUrl != null ? NetworkImage(currentUser.profileImageUrl!) : null,
+                    backgroundImage: currentUser.profileImageUrl != null
+                        ? NetworkImage(currentUser.profileImageUrl!)
+                        : null,
                     child: loading
                         ? const CircularProgressIndicator()
                         : currentUser.profileImageUrl == null
-                            ? Icon(Icons.add_a_photo, size: 32, color: Colors.grey.shade600)
+                            ? Icon(Icons.add_a_photo,
+                                size: 32, color: Colors.grey.shade600)
                             : null,
                   ),
                 ),
@@ -278,7 +295,8 @@ class _SellerProfilePhotoContent extends StatelessWidget {
                       customBorder: const CircleBorder(),
                       child: const Padding(
                         padding: EdgeInsets.all(8),
-                        child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                        child: Icon(Icons.camera_alt,
+                            color: Colors.white, size: 20),
                       ),
                     ),
                   ),
@@ -290,15 +308,25 @@ class _SellerProfilePhotoContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(currentUser.farmName ?? 'Gazdinstvo', style: Theme.of(context).textTheme.titleMedium),
+                  Text(currentUser.farmName ?? 'Gazdinstvo',
+                      style: Theme.of(context).textTheme.titleMedium),
                   if (followersCount > 0) ...[
                     const SizedBox(height: 4),
-                    Text('$followersCount pratilaca', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+                    Text('$followersCount pratilaca',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey.shade600)),
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    loading ? 'Učitavanje…' : 'Dodirni da promeniš profilnu sliku',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                    loading
+                        ? 'Učitavanje…'
+                        : 'Dodirni da promeniš profilnu sliku',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -338,7 +366,10 @@ class _ProfileDataCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Moji podaci',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 if (!user.isGuest)
@@ -357,12 +388,17 @@ class _ProfileDataCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            if (user.displayName != null) _DataRow(label: 'Ime', value: user.displayName!),
-            if (user.phone != null) _DataRow(label: 'Telefon', value: user.phone!),
+            if (user.displayName != null)
+              _DataRow(label: 'Ime', value: user.displayName!),
+            if (user.phone != null)
+              _DataRow(label: 'Telefon', value: user.phone!),
             if (user.city != null) _DataRow(label: 'Grad', value: user.city!),
-            if (user.address != null) _DataRow(label: 'Adresa', value: user.address!),
-            if (user.email != null && !user.isGuest) _DataRow(label: 'Email', value: user.email!),
-            if (user.isSeller && user.farmName != null) _DataRow(label: 'Gazdinstvo', value: user.farmName!),
+            if (user.address != null)
+              _DataRow(label: 'Adresa', value: user.address!),
+            if (user.email != null && !user.isGuest)
+              _DataRow(label: 'Email', value: user.email!),
+            if (user.isSeller && user.farmName != null)
+              _DataRow(label: 'Gazdinstvo', value: user.farmName!),
             if (user.isSeller && user.sellerTags.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -371,7 +407,8 @@ class _ProfileDataCard extends StatelessWidget {
                 children: user.sellerTags
                     .map((t) => Chip(
                           label: Text(t, style: const TextStyle(fontSize: 12)),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                         ))
                     .toList(),
@@ -406,7 +443,9 @@ class _DataRow extends StatelessWidget {
         text: TextSpan(
           style: DefaultTextStyle.of(context).style,
           children: [
-            TextSpan(text: '$label: ', style: TextStyle(color: Colors.grey.shade600)),
+            TextSpan(
+                text: '$label: ',
+                style: TextStyle(color: Colors.grey.shade600)),
             TextSpan(text: value),
           ],
         ),
@@ -429,7 +468,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _cityCtrl;
-   late final TextEditingController _addressCtrl;
+  late final TextEditingController _addressCtrl;
   late final TextEditingController _farmNameCtrl;
   late List<String> _selectedTags;
   final _formKey = GlobalKey<FormState>();
@@ -465,10 +504,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     try {
       await UsersService().upsertProfile(
         user.id,
-        displayName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+        displayName:
+            _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-        address: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+        address:
+            _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
         farmName: user.isSeller && _farmNameCtrl.text.trim().isNotEmpty
             ? _farmNameCtrl.text.trim()
             : null,
@@ -498,111 +539,134 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     final isSeller = widget.user.isSeller;
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 16,
+        left: 16,
+        right: 16,
+        top: 16,
         bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
       ),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Uredi profil',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: 'Ime i prezime', border: OutlineInputBorder()),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneCtrl,
-              decoration: const InputDecoration(labelText: 'Telefon', border: OutlineInputBorder()),
-              keyboardType: TextInputType.phone,
-              validator: (v) {
-                final val = v?.trim() ?? '';
-                if (val.isEmpty) return null;
-                final digits = val.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
-                if (!RegExp(r'^\d{7,15}$').hasMatch(digits)) {
-                  return 'Unesite ispravan broj telefona';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _cityCtrl,
-              decoration: const InputDecoration(labelText: 'Grad', border: OutlineInputBorder()),
-              textCapitalization: TextCapitalization.words,
-              validator: (v) {
-                final val = v?.trim() ?? '';
-                if (val.isEmpty) return null;
-                if (val.length < 2) return 'Grad mora imati najmanje 2 karaktera';
-                if (RegExp(r'^\d+$').hasMatch(val)) return 'Unesite ispravan naziv grada';
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _addressCtrl,
-              decoration: const InputDecoration(labelText: 'Adresa (ulica i broj)', border: OutlineInputBorder()),
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            if (isSeller) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: _farmNameCtrl,
-                decoration: const InputDecoration(labelText: 'Naziv gazdinstva', border: OutlineInputBorder()),
-                textCapitalization: TextCapitalization.sentences,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Uredi profil',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              Text(
-                'Oznake gazdinstva',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              TextField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Ime i prezime', border: OutlineInputBorder()),
+                textCapitalization: TextCapitalization.words,
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _kSellerTags
-                    .map((tag) => FilterChip(
-                          label: Text(tag, style: const TextStyle(fontSize: 13)),
-                          selected: _selectedTags.contains(tag),
-                          onSelected: (v) => setState(() {
-                            if (v) {
-                              _selectedTags.add(tag);
-                            } else {
-                              _selectedTags.remove(tag);
-                            }
-                          }),
-                        ))
-                    .toList(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Telefon', border: OutlineInputBorder()),
+                keyboardType: TextInputType.phone,
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return null;
+                  final digits = val.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+                  if (!RegExp(r'^\d{7,15}$').hasMatch(digits)) {
+                    return 'Unesite ispravan broj telefona';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _cityCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Grad', border: OutlineInputBorder()),
+                textCapitalization: TextCapitalization.words,
+                validator: (v) {
+                  final val = v?.trim() ?? '';
+                  if (val.isEmpty) return null;
+                  if (val.length < 2) {
+                    return 'Grad mora imati najmanje 2 karaktera';
+                  }
+                  if (RegExp(r'^\d+$').hasMatch(val)) {
+                    return 'Unesite ispravan naziv grada';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _addressCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Adresa (ulica i broj)',
+                    border: OutlineInputBorder()),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              if (isSeller) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _farmNameCtrl,
+                  decoration: const InputDecoration(
+                      labelText: 'Naziv gazdinstva',
+                      border: OutlineInputBorder()),
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Oznake gazdinstva',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _kSellerTags
+                      .map((tag) => FilterChip(
+                            label:
+                                Text(tag, style: const TextStyle(fontSize: 13)),
+                            selected: _selectedTags.contains(tag),
+                            onSelected: (v) => setState(() {
+                              if (v) {
+                                _selectedTags.add(tag);
+                              } else {
+                                _selectedTags.remove(tag);
+                              }
+                            }),
+                          ))
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Sačuvaj'),
               ),
             ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Sačuvaj'),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -620,21 +684,28 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
   Future<void> _addPhoto() async {
     final appState = context.read<AppState>();
     final messenger = ScaffoldMessenger.of(context);
-    final xFile = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final xFile = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (xFile == null) return;
     final user = appState.user;
     if (!mounted || user == null) return;
     setState(() => _loading = true);
     try {
       final bytes = await xFile.readAsBytes();
-      final url = await StorageService().uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
+      final url = await StorageService()
+          .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
       final newUrls = [..._galleryUrls, url];
       if (mounted) setState(() => _galleryUrls = newUrls);
       await UsersService().updateFarmGallery(user.id, newUrls);
       await appState.refreshUser();
-      if (mounted) messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
+      if (mounted) {
+        messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
+      }
     } catch (e) {
-      if (mounted) messenger.showSnackBar(SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -645,13 +716,22 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
     final user = appState.user!;
     final removed = _galleryUrls[index];
     final updated = List<String>.from(_galleryUrls)..removeAt(index);
-    setState(() { _galleryUrls = updated; _loading = true; });
+    setState(() {
+      _galleryUrls = updated;
+      _loading = true;
+    });
     try {
       await UsersService().updateFarmGallery(user.id, updated);
       await appState.refreshUser();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Slika uklonjena.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Slika uklonjena.')));
+      }
     } catch (e) {
-      if (mounted) setState(() => _galleryUrls = List.from(_galleryUrls)..insert(index, removed));
+      if (mounted) {
+        setState(() =>
+            _galleryUrls = List.from(_galleryUrls)..insert(index, removed));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -669,38 +749,46 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Galerija farme', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Galerija farme',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Fotografije farme, stoke ili proizvodnje.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            Text('Fotografije farme, stoke ili proizvodnje.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 ...displayUrls.asMap().entries.map((e) => Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
-                        imageUrl: e.value,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                        memCacheWidth: 200,
-                        memCacheHeight: 200,
-                      ),
-                    ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                        style: IconButton.styleFrom(backgroundColor: Colors.black54),
-                        onPressed: _loading ? null : () => _removePhoto(e.key),
-                      ),
-                    ),
-                  ],
-                )),
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CachedNetworkImage(
+                            imageUrl: e.value,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 200,
+                            memCacheHeight: 200,
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 20),
+                            style: IconButton.styleFrom(
+                                backgroundColor: Colors.black54),
+                            onPressed:
+                                _loading ? null : () => _removePhoto(e.key),
+                          ),
+                        ),
+                      ],
+                    )),
                 if (displayUrls.length < 10)
                   GestureDetector(
                     onTap: _loading ? null : _addPhoto,
@@ -713,7 +801,8 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
                       ),
                       child: _loading
                           ? const Center(child: CircularProgressIndicator())
-                          : Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey.shade400),
+                          : Icon(Icons.add_photo_alternate,
+                              size: 40, color: Colors.grey.shade400),
                     ),
                   ),
               ],
@@ -724,4 +813,3 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
     );
   }
 }
-

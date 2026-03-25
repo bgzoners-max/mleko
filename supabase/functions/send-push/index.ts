@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
           },
         }
       } else {
-        const isOrder = data.type === "new_order" || data.type === "order_status";
+        const isOrder = data.type === "new_order" || data.type === "order_status" || data.type === "order_status_changed";
         const channelId = isOrder ? "orders_high" : "mleko_urgent";
         baseMessage.android = {
           priority: "HIGH",

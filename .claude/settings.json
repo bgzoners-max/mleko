@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:wvqtujpurhzraptorcvl.supabase.co)",
+      "Bash(adb logcat:*)",
+      "Bash(adb shell:*)",
+      "Bash(adb pull:*)",
+      "Bash(grep -r FCM_SERVICE_ACCOUNT c:devmleko --include=*.md --include=*.env*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Silent\\.claude\\projects\\c--dev-mleko\\memory"
+    ]
+  }
+}
