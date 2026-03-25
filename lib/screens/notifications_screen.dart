@@ -116,6 +116,19 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             await _loadAndMarkRead();
           },
         )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (_) async {
+            await _load();
+          },
+        )
         .subscribe();
   }
 

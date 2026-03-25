@@ -95,6 +95,19 @@ class AppState extends ChangeNotifier {
             await _loadUnreadCount();
           },
         )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: _user!.id,
+          ),
+          callback: (_) async {
+            await _loadUnreadCount();
+          },
+        )
         .subscribe();
   }
 
