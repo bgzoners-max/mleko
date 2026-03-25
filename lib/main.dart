@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/notification_types.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'firebase_options.dart';
 import 'providers/app_settings_provider.dart';
 import 'providers/app_state.dart';
 import 'services/communication/communication_services.dart';
@@ -100,7 +101,9 @@ void main() async {
 
   if (!kIsWeb) {
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       await PushService.initialize();
     } catch (e) {
       LoggerService.warning(

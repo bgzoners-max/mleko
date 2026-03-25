@@ -5,7 +5,9 @@
       "Bash(adb logcat:*)",
       "Bash(adb shell:*)",
       "Bash(adb pull:*)",
-      "Bash(grep -r FCM_SERVICE_ACCOUNT c:devmleko --include=*.md --include=*.env*)"
+      "Bash(grep -r FCM_SERVICE_ACCOUNT c:devmleko --include=*.md --include=*.env*)",
+      "Bash(sqlite3)",
+      "Bash(flutter analyze:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Silent\\.claude\\projects\\c--dev-mleko\\memory"

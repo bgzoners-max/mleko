@@ -239,9 +239,18 @@ class PushService {
         LoggerService.warning('PushService: notification permission denied');
         return;
       }
-      final token = await FirebaseMessaging.instance.getToken();
+      var token = await FirebaseMessaging.instance.getToken();
+
+      // Retry logika - ako je null, probaj do 3 puta
+      int retries = 0;
+      while ((token == null || token.isEmpty) && retries < 3) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        token = await FirebaseMessaging.instance.getToken();
+        retries++;
+      }
+
       if (token == null || token.isEmpty) {
-        LoggerService.warning('PushService: getToken returned null/empty');
+        LoggerService.warning('PushService: getToken returned null/empty after $retries retries');
         return;
       }
 
