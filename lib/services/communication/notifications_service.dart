@@ -16,12 +16,12 @@ class NotificationsService {
   }
 
   Future<int> getUnreadCount(String userId) async {
-    final list = await _client
+    final response = await _client
         .from('notifications')
         .select('id')
         .eq('user_id', userId)
         .isFilter('read_at', null);
-    return (list as List).length;
+    return (response as List).length;
   }
 
   Future<void> markAsRead(String notificationId) async {

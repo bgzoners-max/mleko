@@ -108,6 +108,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void decrementUnreadCount() {
+    if (_unreadNotificationCount > 0) {
+      _unreadNotificationCount--;
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _authSubscription?.cancel();

@@ -49,8 +49,12 @@ void _showLocalNotification({
   final channelId = isOrder ? _ordersChannelId : _channelId;
   final channelName = isOrder ? _ordersChannelName : _channelName;
   final payload = jsonEncode({'type': type, 'order_id': orderId});
+  // Jedinstveni ID baziran na payload + vreme za izbegavanje kolizija
+  final notificationId = Object.hashAll(
+    [type, orderId, DateTime.now().microsecondsSinceEpoch],
+  ).remainder(2147483647).abs();
   _localNotifications.show(
-    id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+    id: notificationId,
     title: title,
     body: body,
     notificationDetails: NotificationDetails(
@@ -234,12 +238,17 @@ class PushService {
   Future<void> registerToken(String userId) async {
     if (kIsWeb) return;
     try {
+      LoggerService.debug('PushService: STARTING token registration', extra: {'user_id': userId});
       final granted = await ensureNotificationPermission();
+      LoggerService.debug('PushService: Permission check', extra: {'granted': granted});
       if (!granted) {
-        LoggerService.warning('PushService: notification permission denied');
+        LoggerService.warning('PushService: Notification permission DENIED');
         return;
       }
       var token = await FirebaseMessaging.instance.getToken();
+      final hasToken = token?.isNotEmpty ?? false;
+      LoggerService.debug('PushService: Got initial token',
+          extra: {'has_token': hasToken, 'token_preview': token?.substring(0, 20)});
 
       // Retry logika - ako je null, probaj do 3 puta
       int retries = 0;
@@ -250,9 +259,13 @@ class PushService {
       }
 
       if (token == null || token.isEmpty) {
-        LoggerService.warning('PushService: getToken returned null/empty after $retries retries');
+        LoggerService.warning(
+          'PushService: getToken returned NULL/EMPTY after retries',
+          extra: {'retries': retries, 'reason': 'Google Play Services unavailable or Firebase not initialized'},
+        );
         return;
       }
+      LoggerService.debug('PushService: Got valid token, uploading to database');
 
       final platform = Platform.isIOS ? 'ios' : 'android';
       await _client.from('user_push_tokens').upsert(

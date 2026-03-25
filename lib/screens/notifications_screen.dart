@@ -75,17 +75,27 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
-  Future<void> _loadAndMarkRead() async {
+  Future<void> _load() async {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) return;
     final notifs = await _service.getNotifications(user.id);
     if (!_notificationsController.isClosed) {
       _notificationsController.add(notifs);
     }
+  }
+
+  Future<void> _markAllAsRead() async {
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) return;
     await _service.markAllAsRead(user.id);
     if (mounted) {
       context.read<AppState>().resetUnreadCount();
     }
+  }
+
+  Future<void> _loadAndMarkRead() async {
+    await _load();
+    await _markAllAsRead();
   }
 
   void _subscribeRealtime(String userId) {
@@ -283,10 +293,18 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       ),
                       confirmDismiss: (_) async => true,
                       onDismissed: (_) async {
-                        await _service.deleteNotification(n.id);
-                        if (context.mounted) {
-                          _loadAndMarkRead();
+                        // Optimistički ukloni iz liste i ažuriraje badge
+                        final removedWasUnread = !n.isRead;
+                        final currentList = List<NotificationModel>.from(list);
+                        currentList.removeWhere((item) => item.id == n.id);
+                        if (!_notificationsController.isClosed) {
+                          _notificationsController.add(currentList);
                         }
+                        if (removedWasUnread && context.mounted) {
+                          context.read<AppState>().decrementUnreadCount();
+                        }
+                        // Pokreni delete na serveru u backgroundu
+                        unawaited(_service.deleteNotification(n.id));
                       },
                       child: Card(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -301,10 +319,18 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               IconButton(
                                 icon: const Icon(Icons.delete_outline),
                                 onPressed: () async {
-                                  await _service.deleteNotification(n.id);
-                                  if (context.mounted) {
-                                    _loadAndMarkRead();
+                                  // Optimistički ukloni iz liste
+                                  final wasUnread = !n.isRead;
+                                  final currentList = List<NotificationModel>.from(list);
+                                  currentList.removeWhere((item) => item.id == n.id);
+                                  if (!_notificationsController.isClosed) {
+                                    _notificationsController.add(currentList);
                                   }
+                                  if (wasUnread && context.mounted) {
+                                    context.read<AppState>().decrementUnreadCount();
+                                  }
+                                  // Pokreni delete na serveru u backgroundu
+                                  unawaited(_service.deleteNotification(n.id));
                                 },
                               ),
                               if (n.orderId != null)
