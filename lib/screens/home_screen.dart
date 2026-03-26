@@ -15,6 +15,7 @@ import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
 import 'package:mleko/services/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
@@ -725,17 +726,44 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
   Future<List<UserModel>>? _future;
   String? _loadedForUserId;
   int _prevTabIndex = 0;
+  RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
     widget.tabController.addListener(_onTabChanged);
+    _subscribeToFavoriteSellersChanges();
   }
 
   @override
   void dispose() {
     widget.tabController.removeListener(_onTabChanged);
+    _channel?.unsubscribe();
+    _channel = null;
     super.dispose();
+  }
+
+  void _subscribeToFavoriteSellersChanges() {
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) return;
+
+    _channel = Supabase.instance.client
+        .channel('favorite_sellers:user_id=eq.${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'favorite_sellers',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (payload) {
+            // Kada se doda ili ukloni omiljeni prodavac, osvežavamo listu
+            _refreshForCurrentUser();
+          },
+        )
+        .subscribe();
   }
 
   void _onTabChanged() {
@@ -762,6 +790,8 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) {
       if (_loadedForUserId != null) {
+        _channel?.unsubscribe();
+        _channel = null;
         setState(() {
           _loadedForUserId = null;
           _future = null;
@@ -770,6 +800,9 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
       return;
     }
     if (_loadedForUserId != user.id) {
+      // Unsubscribe stare i subscribe nove
+      _channel?.unsubscribe();
+      _subscribeToFavoriteSellersChanges();
       setState(() {
         _loadedForUserId = user.id;
         _future = _service.getFavoriteSellersWithProfiles(user.id);

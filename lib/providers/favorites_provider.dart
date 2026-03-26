@@ -52,5 +52,11 @@ class FavoritesProvider extends ChangeNotifier {
   }
 
   bool isFavorite(String productId) => _ids.contains(productId);
+
+  @override
+  void dispose() {
+    _togglingIds.clear();
+    super.dispose();
+  }
 }
 

@@ -39,6 +39,14 @@ const _ordersChannel = AndroidNotificationChannel(
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
 
+bool _isLocalNotificationsInitialized() {
+  return PushService._localNotificationsInitialized;
+}
+
+void _setLocalNotificationsInitialized() {
+  PushService._localNotificationsInitialized = true;
+}
+
 void _showLocalNotification({
   required String title,
   required String body,
@@ -49,10 +57,24 @@ void _showLocalNotification({
   final channelId = isOrder ? _ordersChannelId : _channelId;
   final channelName = isOrder ? _ordersChannelName : _channelName;
   final payload = jsonEncode({'type': type, 'order_id': orderId});
+
   // Jedinstveni ID baziran na payload + vreme za izbegavanje kolizija
   final notificationId = Object.hashAll(
     [type, orderId, DateTime.now().microsecondsSinceEpoch],
   ).remainder(2147483647).abs();
+
+  LoggerService.debug(
+    'Prikazi lokalnu notifikaciju',
+    extra: {
+      'title': title,
+      'body': body,
+      'type': type,
+      'channelId': channelId,
+      'channelName': channelName,
+      'notificationId': notificationId,
+    },
+  );
+
   _localNotifications.show(
     id: notificationId,
     title: title,
@@ -71,6 +93,7 @@ void _showLocalNotification({
         visibility: NotificationVisibility.public,
         category: AndroidNotificationCategory.message,
         ticker: 'Nova obaveštenja',
+        styleInformation: const BigTextStyleInformation(''),
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
@@ -79,28 +102,42 @@ void _showLocalNotification({
       ),
     ),
     payload: payload,
-  );
+  ).catchError((e, st) {
+    LoggerService.error(
+      'Greška pri prikazu notifikacije',
+      e,
+      stackTrace: st,
+      extra: {'title': title, 'channelId': channelId},
+    );
+  });
 }
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (message.notification != null) return;
   await Firebase.initializeApp();
-  const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-  await _localNotifications.initialize(
-    settings: const InitializationSettings(android: android),
-  );
+  // Inicijalizuj local notifications samo ako nije već inicijalizovano
+  if (!_isLocalNotificationsInitialized()) {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    await _localNotifications.initialize(
+      settings: const InitializationSettings(android: android),
+    );
+    _setLocalNotificationsInitialized();
+  }
 
   final androidPlugin =
       _localNotifications.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
   await androidPlugin?.createNotificationChannel(_defaultChannel);
   await androidPlugin?.createNotificationChannel(_ordersChannel);
-  final data = message.data;
-  final title = data['title'] as String? ?? 'Obaveštenje';
-  final body = data['body'] as String? ?? '';
+
+  // Preuzmi podatke - iz notifikacije ili iz data payload-a
+  final data = message.data.isNotEmpty ? message.data : <String, dynamic>{};
+  final title = message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
+  final body = message.notification?.body ?? data['body'] as String? ?? '';
   final type = data['type'] as String? ?? '';
   final orderId = data['order_id'] as String? ?? '';
+
+  // Prikaži lokalnu notifikaciju sa pravilnim kanalom
   _showLocalNotification(
       title: title, body: body, type: type, orderId: orderId);
 }
@@ -117,15 +154,21 @@ class PushService {
   static void Function(RemoteMessage)? _foregroundHandler;
   static void Function(RemoteMessage)? _messageOpenedHandler;
 
+  static bool _localNotificationsInitialized = false;
+
   static Future<void> _cancelSub<T>(StreamSubscription<T>? sub) async {
     await sub?.cancel();
   }
 
   static Future<void> initialize() async {
     if (kIsWeb) return;
+    if (_localNotificationsInitialized) return;
+
     try {
+      // Zajedničke postavke
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+
       if (Platform.isAndroid) {
-        const android = AndroidInitializationSettings('@mipmap/ic_launcher');
         await _localNotifications.initialize(
           settings: const InitializationSettings(android: android),
           onDidReceiveNotificationResponse: _onNotificationTapped,
@@ -136,27 +179,45 @@ class PushService {
                 AndroidFlutterLocalNotificationsPlugin>();
         await androidPlugin?.createNotificationChannel(_defaultChannel);
         await androidPlugin?.createNotificationChannel(_ordersChannel);
+
+        // Zatraži Android notifikacijske dozvole
+        final status = await Permission.notification.status;
+        if (status.isDenied || status.isRestricted) {
+          await Permission.notification.request();
+        }
       } else if (Platform.isIOS) {
-        await FirebaseMessaging.instance.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
+        // iOS notifikacijske dozvole i inicijalizacija
+        const darwin = DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
         );
-        const darwin = DarwinInitializationSettings();
         await _localNotifications.initialize(
           settings: const InitializationSettings(iOS: darwin),
           onDidReceiveNotificationResponse: _onNotificationTapped,
         );
+
+        // Zatraži Firebase notifikacijske dozvole
+        await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
       } else {
-        const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+        // Fallback za ostatale platforme
         await _localNotifications.initialize(
           settings: const InitializationSettings(android: android),
           onDidReceiveNotificationResponse: _onNotificationTapped,
         );
       }
 
+      // Postavi background handler za primanje notifikacija kada je app u backgroundu
       FirebaseMessaging.onBackgroundMessage(
           _firebaseMessagingBackgroundHandler);
+
+      _localNotificationsInitialized = true;
+      LoggerService.debug('Push service initialized successfully');
     } catch (e, st) {
       LoggerService.error('Push service initialization failed', e,
           stackTrace: st);
@@ -321,16 +382,23 @@ class PushService {
   void setForegroundHandler(void Function(RemoteMessage) handler) {
     if (kIsWeb) return;
     _foregroundHandler = handler;
-    unawaited(_cancelSub(_onMessageSub));
-    _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
-      final data = message.data;
-      final title = data['title'] as String? ?? 'Obaveštenje';
-      final body = data['body'] as String? ?? '';
-      final type = data['type'] as String? ?? '';
-      final orderId = data['order_id'] as String? ?? '';
-      _showLocalNotification(
-          title: title, body: body, type: type, orderId: orderId);
-      _foregroundHandler?.call(message);
+    // Pričekaj da se prethodna pretplata prekine pre nego što kreiramo novu
+    _cancelSub(_onMessageSub).then((_) {
+      _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
+        // Preuzmi podatke - iz notifikacije ili iz data payload-a
+        final data = message.data.isNotEmpty ? message.data : <String, dynamic>{};
+        final title = message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
+        final body = message.notification?.body ?? data['body'] as String? ?? '';
+        final type = data['type'] as String? ?? '';
+        final orderId = data['order_id'] as String? ?? '';
+
+        // Prikaži lokalnu notifikaciju sa pratećim podatcima
+        _showLocalNotification(
+            title: title, body: body, type: type, orderId: orderId);
+
+        // Pozovi callback
+        _foregroundHandler?.call(message);
+      });
     });
   }
 
@@ -338,10 +406,12 @@ class PushService {
   void setMessageOpenedHandler(void Function(RemoteMessage) handler) {
     if (kIsWeb) return;
     _messageOpenedHandler = handler;
-    unawaited(_cancelSub(_onMessageOpenedSub));
-    _onMessageOpenedSub =
-        FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      _messageOpenedHandler?.call(message);
+    // Pričekaj da se prethodna pretplata prekine pre nego što kreiramo novu
+    _cancelSub(_onMessageOpenedSub).then((_) {
+      _onMessageOpenedSub =
+          FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _messageOpenedHandler?.call(message);
+      });
     });
   }
 

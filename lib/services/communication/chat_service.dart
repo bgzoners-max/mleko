@@ -506,14 +506,38 @@ class ChatService {
 
   // ─── Info o razgovoru ──────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>?> getConversationInfo(
-    String conversationId,
-  ) async {
-    return _client
-        .from('conversations')
-        .select()
-        .eq('id', conversationId)
-        .maybeSingle();
+  /// Dohvata kompletne informacije o razgovoru sa imenima učesnika (jednom RPC-om)
+  Future<({
+    String? id,
+    String? buyerId,
+    String? sellerId,
+    String? orderId,
+    String buyerName,
+    String sellerName,
+  })> getConversationInfoWithProfiles(String conversationId) async {
+    try {
+      final result = await _client.rpc(
+        'get_conversation_info_with_profile',
+        params: {'p_conversation_id': conversationId},
+      );
+
+      if (result == null) {
+        return (id: null, buyerId: null, sellerId: null, orderId: null, buyerName: 'Korisnik', sellerName: 'Korisnik');
+      }
+
+      final row = (result as List).first as Map<String, dynamic>;
+      return (
+        id: row['id'] as String?,
+        buyerId: row['buyer_id'] as String?,
+        sellerId: row['seller_id'] as String?,
+        orderId: row['order_id'] as String?,
+        buyerName: (row['buyer_name'] as String?) ?? 'Kupac',
+        sellerName: (row['seller_name'] as String?) ?? 'Prodavac',
+      );
+    } catch (e, st) {
+      LoggerService.error('Failed to load conversation info with profiles', e, stackTrace: st);
+      return (id: null, buyerId: null, sellerId: null, orderId: null, buyerName: 'Korisnik', sellerName: 'Korisnik');
+    }
   }
 
   /// Ime druge strane u razgovoru (samo za ChatScreen AppBar).
@@ -521,16 +545,10 @@ class ChatService {
     String conversationId,
     String currentUserId,
   ) async {
-    final c = await getConversationInfo(conversationId);
-    if (c == null) return 'Korisnik';
-    final otherId =
-        (c['buyer_id'] == currentUserId) ? c['seller_id'] : c['buyer_id'];
-    final p = await _client
-        .from('profiles')
-        .select('farm_name, display_name')
-        .eq('id', otherId)
-        .maybeSingle();
-    if (p == null) return 'Korisnik';
-    return (p['farm_name'] ?? p['display_name']) as String? ?? 'Korisnik';
+    final info = await getConversationInfoWithProfiles(conversationId);
+    if (info.id == null) return 'Korisnik';
+
+    final isBuyer = info.buyerId == currentUserId;
+    return isBuyer ? info.sellerName : info.buyerName;
   }
 }

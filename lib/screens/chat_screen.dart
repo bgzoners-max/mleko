@@ -38,13 +38,14 @@ class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _refreshController = StreamController<void>.broadcast();
+  final _chatService = ChatService();
 
   // Stream se čuva kao polje — sprečava re-kreiranje kanala na svakom buildu.
-  late final Stream<List<MessageModel>> _messagesStream = ChatService()
+  late final Stream<List<MessageModel>> _messagesStream = _chatService
       .watchMessages(widget.conversationId,
           refreshTrigger: _refreshController.stream);
   late final Stream<Set<String>> _typingStream =
-      ChatService().watchTypingUsers(widget.conversationId);
+      _chatService.watchTypingUsers(widget.conversationId);
 
   // Starije poruke učitane paginacijom ("Učitaj starije poruke")
   final List<MessageModel> _olderMessages = [];
@@ -80,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // Obavesti server da korisnik više ne kuca
     final userId = context.read<AppState>().user?.id;
     if (userId != null && _isTyping) {
-      ChatService().setTyping(
+      _chatService.setTyping(
           conversationId: widget.conversationId,
           userId: userId,
           isTyping: false);
@@ -96,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (userId == null) return;
     if (_messageController.text.isNotEmpty && !_isTyping) {
       _isTyping = true;
-      ChatService().setTyping(
+      _chatService.setTyping(
           conversationId: widget.conversationId,
           userId: userId,
           isTyping: true);
@@ -105,7 +106,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingTimer = Timer(ChatService.typingStaleThreshold, () {
       if (_isTyping) {
         _isTyping = false;
-        ChatService().setTyping(
+        _chatService.setTyping(
             conversationId: widget.conversationId,
             userId: userId,
             isTyping: false);
@@ -122,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
             : DateTime.now();
     setState(() => _loadingOlder = true);
     try {
-      final older = await ChatService().getOlderMessages(
+      final older = await _chatService.getOlderMessages(
         widget.conversationId,
         before: oldest,
       );
@@ -148,24 +149,22 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadConversationInfo() async {
     final user = context.read<AppState>().user;
     if (user == null) return;
-    final results = await Future.wait<dynamic>([
-      ChatService().getOtherPartyName(widget.conversationId, user.id),
-      ChatService().getConversationInfo(widget.conversationId),
-    ]);
-    final name = results[0] as String?;
-    final info = results[1] as Map<String, dynamic>?;
+    // Koristi jedan RPC umesto dva upita (getConversationInfo + profili)
+    final info = await _chatService.getConversationInfoWithProfiles(widget.conversationId);
+
     OrderModel? order;
-    if (info != null && info['order_id'] != null) {
-      order = await OrdersService().getOrderById(info['order_id'] as String);
+    if (info.orderId != null) {
+      order = await OrdersService().getOrderById(info.orderId!);
     }
-    final buyerId = info?['buyer_id'] as String?;
-    final sellerId = info?['seller_id'] as String?;
-    final isBuyer = buyerId != null && buyerId == user.id;
-    final otherPartyId = isBuyer ? sellerId : buyerId;
+
+    final isBuyer = info.buyerId == user.id;
+    final otherPartyId = isBuyer ? info.sellerId : info.buyerId;
+    final otherPartyName = isBuyer ? info.sellerName : info.buyerName;
     final customReplies = !isBuyer ? user.sellerQuickReplies : const <String>[];
+
     if (mounted) {
       setState(() {
-        _otherPartyName = name;
+        _otherPartyName = otherPartyName;
         _otherPartyId = otherPartyId;
         _order = order;
         _isBuyer = isBuyer;
@@ -187,14 +186,14 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingTimer?.cancel();
     if (_isTyping) {
       _isTyping = false;
-      ChatService().setTyping(
+      _chatService.setTyping(
           conversationId: widget.conversationId,
           userId: user.id,
           isTyping: false);
     }
     setState(() => _sending = true);
     try {
-      await ChatService().sendMessage(widget.conversationId, user.id, text);
+      await _chatService.sendMessage(widget.conversationId, user.id, text);
       _refreshController.add(null);
       await Future.delayed(const Duration(milliseconds: 300));
       if (_scrollController.hasClients) {
@@ -264,7 +263,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (messages.length != _lastMarkedReadCount) {
                   _lastMarkedReadCount = messages.length;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ChatService().markAsRead(widget.conversationId, user.id);
+                    _chatService.markAsRead(widget.conversationId, user.id);
                   });
                 }
 

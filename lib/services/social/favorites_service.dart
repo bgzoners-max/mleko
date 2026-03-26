@@ -85,10 +85,19 @@ class FavoritesService {
 
   Future<void> toggleFavorite(String userId, String productId) async {
     try {
-      final isFav = await isFavorite(userId, productId);
-      if (isFav) {
+      // Prvo proverimo da li postoji
+      final existing = await _client
+          .from('favorites')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('product_id', productId)
+          .maybeSingle();
+
+      if (existing != null) {
+        // Ako postoji, obriši
         await removeFavorite(userId, productId);
       } else {
+        // Ako ne postoji, dodaj
         await addFavorite(userId, productId);
       }
     } catch (e, st) {

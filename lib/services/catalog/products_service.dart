@@ -579,15 +579,15 @@ class ProductsService {
     cache
         .getCachedProducts(ProductCacheService.homeProductsKey)
         .then((cachedProducts) {
+      if (controller.isClosed) return;
       if (cachedProducts != null && cachedProducts.isNotEmpty) {
-        if (!controller.isClosed) {
-          controller
-              .add((products: cachedProducts, salesCounts: {}, ratings: {}));
-        }
+        controller
+            .add((products: cachedProducts, salesCounts: {}, ratings: {}));
       }
       // Zatim fetch sa servera
       refetch();
     }).catchError((e) {
+      if (controller.isClosed) return;
       // Ako cache read fail, direktno fetch
       refetch();
     });

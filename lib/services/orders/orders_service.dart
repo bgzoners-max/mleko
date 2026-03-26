@@ -442,52 +442,22 @@ class OrdersService {
     String sellerId, {
     int limit = 5,
   }) async {
-    final orders = await _client
-        .from('orders')
-        .select('id, product_id')
+    // Koristi products_with_ratings view koji već broji prodaje ispravno
+    final products = await _client
+        .from('products_with_ratings')
+        .select()
         .eq('seller_id', sellerId)
-        .inFilter('status', ['accepted', 'delivered']);
+        .gte('order_count', 1)
+        .order('order_count', ascending: false)
+        .limit(limit);
 
-    final productCounts = <String, int>{};
-    final multiOrderIds = <String>[];
-
-    for (final o in (orders as List).cast<Map<String, dynamic>>()) {
-      final productId = o['product_id'] as String?;
-      if (productId != null) {
-        productCounts[productId] = (productCounts[productId] ?? 0) + 1;
-      } else {
-        multiOrderIds.add(o['id'] as String);
-      }
-    }
-
-    // Batch-load svih stavki za multi-item porudžbine (1 upit umesto N)
-    if (multiOrderIds.isNotEmpty) {
-      final items = await _client
-          .from('order_items')
-          .select('product_id')
-          .inFilter('order_id', multiOrderIds);
-      for (final it in (items as List).cast<Map<String, dynamic>>()) {
-        final pid = it['product_id'] as String?;
-        if (pid != null) {
-          productCounts[pid] = (productCounts[pid] ?? 0) + 1;
-        }
-      }
-    }
-
-    if (productCounts.isEmpty) return [];
-    final sorted = productCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final topIds = sorted.take(limit).map((e) => e.key).toList();
-    final products =
-        await _client.from('products').select().inFilter('id', topIds);
-    final productMap = <String, ProductModel>{};
-    for (final row in (products as List).cast<Map<String, dynamic>>()) {
-      final p = ProductModel.fromJson(row);
-      productMap[p.id] = p;
-    }
-    return topIds
-        .where((id) => productMap.containsKey(id))
-        .map((id) => (product: productMap[id]!, salesCount: productCounts[id]!))
+    return (products as List)
+        .map((p) {
+          final data = p as Map<String, dynamic>;
+          final product = ProductModel.fromJson(data);
+          final salesCount = data['order_count'] as int;
+          return (product: product, salesCount: salesCount);
+        })
         .toList();
   }
 }

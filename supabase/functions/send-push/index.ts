@@ -50,6 +50,11 @@ Deno.serve(async (req) => {
     let bodyText: string
     let data: Record<string, string> = {}
 
+    console.log("FCM: Primljena zahteva:", {
+      has_record: !!body.record,
+      keys: Object.keys(body).slice(0, 10),
+    })
+
     if (body.record) {
       const record = body.record
       user_id = record.user_id
@@ -63,7 +68,15 @@ Deno.serve(async (req) => {
       data = { type: body.type ?? "", order_id: body.order_id ?? "" }
     }
 
+    console.log("FCM: Procesuirana notifikacija:", {
+      user_id,
+      title,
+      bodyText: bodyText.slice(0, 50),
+      type: data.type,
+    })
+
     if (!user_id) {
+      console.error("FCM: Nedostaje user_id")
       return new Response(
         JSON.stringify({ error: "user_id required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -75,9 +88,16 @@ Deno.serve(async (req) => {
       .select("token, platform")
       .eq("user_id", user_id)
 
+    console.log("FCM: Pretraga tokena:", {
+      user_id,
+      token_count: tokens?.length || 0,
+      error: error?.message,
+    })
+
     if (error || !tokens?.length) {
+      console.warn(`FCM: Nema tokena za korisnika ${user_id}`)
       return new Response(
-        JSON.stringify({ message: "No push tokens", sent: 0 }),
+        JSON.stringify({ message: "No push tokens", sent: 0, token_count: tokens?.length || 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
@@ -113,6 +133,15 @@ Deno.serve(async (req) => {
         notification: { title, body: bodyText },
         data: { ...data, title, body: bodyText },
       }
+
+      console.log(`FCM: Slanje notifikacije (${platform}):`, {
+        title,
+        body: bodyText,
+        type: data.type,
+        order_id: data.order_id,
+        token: row.token.slice(0, 20) + "...",
+      })
+
       if (platform === "ios") {
         baseMessage.apns = {
           headers: { "apns-priority": "10" },
@@ -138,24 +167,34 @@ Deno.serve(async (req) => {
           },
         }
       }
-      const res = await fetch(fcmUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ message: baseMessage }),
-      })
-      if (res.ok) {
-        sent++
-      } else {
-        const errBody = await res.text()
-        const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
-        console.error("FCM error:", errMsg)
-        errors.push(errMsg)
-        if (res.status === 404) {
-          await supabase.from("user_push_tokens").delete().eq("token", row.token)
+
+      try {
+        const res = await fetch(fcmUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ message: baseMessage }),
+        })
+
+        if (res.ok) {
+          sent++
+          console.log(`FCM: Uspešno poslano (${platform})`)
+        } else {
+          const errBody = await res.text()
+          const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
+          console.error("FCM error:", errMsg)
+          errors.push(errMsg)
+          if (res.status === 404) {
+            console.log("FCM: Token ne postoji, uklanjam iz DB")
+            await supabase.from("user_push_tokens").delete().eq("token", row.token)
+          }
         }
+      } catch (err) {
+        const errMsg = `Greška pri slanju: ${String(err).slice(0, 100)}`
+        console.error(errMsg)
+        errors.push(errMsg)
       }
     }
 
