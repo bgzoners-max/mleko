@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order_item_model.dart';
+import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
@@ -407,7 +408,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final totalRsd = _totalAmount.toStringAsFixed(0);
-    final isOffline = context.watch<AppState>().isOffline;
+    final isOffline = context.select<AppState, bool>((s) => s.isOffline);
     final canSubmit = !_sending &&
         _items.isNotEmpty &&
         !_items.any((i) => !i.product.isAvailable);
@@ -634,7 +635,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
               ),
               Builder(
                 builder: (ctx) {
-                  final user = context.watch<AppState>().user;
+                  final user = context.select<AppState, UserModel?>((s) => s.user);
                   if (user == null) return const SizedBox.shrink();
                   return CheckboxListTile(
                     value: _savePhoneToProfile,

@@ -13,7 +13,7 @@ class TabOrdersOrInboxScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSeller = context.watch<AppState>().user?.isSeller ?? false;
+    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
     if (isSeller) {
       return _SellerOrdersInboxTabs();
     }

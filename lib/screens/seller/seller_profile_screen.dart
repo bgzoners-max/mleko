@@ -102,8 +102,9 @@ class _SellerProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.watch<CartProvider>();
-    final draftCount = cart.getSellerDraft(seller.id).length;
+    final draftCount = context.select<CartProvider, int>(
+      (cart) => cart.getSellerDraft(seller.id).length,
+    );
     final sellerName = seller.farmName ?? 'Proizvođač';
     final isWide = Breakpoints.isDesktop(context);
     return Scaffold(
@@ -1425,11 +1426,12 @@ class _SellerOrderDraftBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select<AppState, UserModel?>((s) => s.user);
     final canContact = user != null && !user.isGuest && user.id != sellerId;
 
-    final cart = context.watch<CartProvider>();
-    final draft = cart.getSellerDraft(sellerId);
+    final draft = context.select<CartProvider, Map<String, double>>(
+      (cart) => cart.getSellerDraft(sellerId),
+    );
     final hasDraft = draft.isNotEmpty;
 
     if (!canContact && !hasDraft) return const SizedBox.shrink();
@@ -1454,7 +1456,7 @@ class _SellerOrderDraftBar extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               FutureBuilder<List<({ProductModel product, double quantity})>>(
-                future: cart.getProductsBySeller(sellerId),
+                future: context.read<CartProvider>().getProductsBySeller(sellerId),
                 builder: (_, snap) {
                   final items = snap.data ?? [];
                   if (items.isEmpty) return const SizedBox.shrink();

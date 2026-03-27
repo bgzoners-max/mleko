@@ -105,7 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final locationProvider = context.watch<LocationProvider>();
     final categoriesProvider = context.watch<CategoriesProvider>();
     final topCategories = categoriesProvider.topCategories.take(8).toList();
-    final isSeller = context.watch<AppState>().user?.isSeller ?? false;
+    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
+    final unreadCount = context.select<AppState, int>((s) => s.unreadNotificationCount);
     final isWide = Breakpoints.isDesktop(context);
     final stream = _homeProductsStream;
     if (stream == null) {
@@ -122,8 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.only(right: 4),
             child: IconButton(
               icon: Badge(
-                isLabelVisible: context.watch<AppState>().unreadNotificationCount > 0,
-                label: Text('${context.watch<AppState>().unreadNotificationCount}'),
+                isLabelVisible: unreadCount > 0,
+                label: Text('$unreadCount'),
                 child: const Icon(Icons.notifications_outlined),
               ),
               tooltip: 'Obaveštenja',
@@ -311,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? (newProducts.isNotEmpty ? newProducts : list)
                         : (popularProducts.isNotEmpty ? popularProducts : list);
                     _warmupCarouselImages(displayList);
-                    final user = context.watch<AppState>().user;
+                    final user = context.select<AppState, UserModel?>((s) => s.user);
                     final canFavorite = user != null && !user.isGuest;
                     return SliverToBoxAdapter(
                       child: Column(
@@ -815,7 +816,7 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select<AppState, UserModel?>((s) => s.user);
     if (user == null || user.isGuest) {
       return Center(
         child: Padding(

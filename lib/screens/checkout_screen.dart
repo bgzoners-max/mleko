@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
+import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
@@ -216,7 +217,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = context.watch<AppState>().isOffline;
+    final isOffline = context.select<AppState, bool>((s) => s.isOffline);
     return Scaffold(
       appBar: AppBar(title: const Text('Porudžbina')),
       body: SafeArea(
@@ -268,7 +269,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
               const SizedBox(height: 4),
               Builder(
                 builder: (ctx) {
-                  final user = context.watch<AppState>().user;
+                  final user = context.select<AppState, UserModel?>((s) => s.user);
                   if (user == null) return const SizedBox.shrink();
                   return CheckboxListTile(
                     value: _savePhoneToProfile,
