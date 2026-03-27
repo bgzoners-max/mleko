@@ -26,10 +26,10 @@ class CategoriesProvider extends ChangeNotifier {
   }
 
   /// Top-level kategorije (parent_id == null)
+  /// Note: Already sorted from SQL, no need to sort again
   List<Category> get topCategories {
     if (_categories == null) return [];
-    return _categories!.where((c) => c.parentId == null).toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    return _categories!.where((c) => c.parentId == null).toList();
   }
 
   Future<void> load() async {
@@ -55,41 +55,49 @@ class CategoriesProvider extends ChangeNotifier {
 
   /// Gradi grupe za dropdown: svaka kategorija sa decom = grupa (3 nivoa).
   /// Top-level sa listovima + podkategorije sa svojim listovima (Šunke i pršute, Kobasice, itd.)
+  /// Optimized: SQL już sortira, ne trebaju dodatna sortiranja
   List<CategoryGroup> _buildGroups(List<Category> list) {
     final groups = <CategoryGroup>[];
     final byParent = <String?, List<Category>>{};
+
+    // Grupiraj po parent_id (već sortirano iz SQL-a po parent_id, pa po order)
     for (final c in list) {
       byParent.putIfAbsent(c.parentId, () => []).add(c);
     }
-    for (final cs in byParent.values) {
-      cs.sort((a, b) => a.order.compareTo(b.order));
-    }
-    void addGroups(Category? parent, int depth) {
+
+    void addGroups(Category? parent) {
       final children = byParent[parent?.id] ?? [];
       if (children.isEmpty && parent != null) return;
+
       final leaves = <Category>[];
       final withChildren = <Category>[];
+
+      // Podeli decu: ona sa decom i ona bez dece (već su sortirani iz SQL-a)
       for (final c in children) {
-        final hasChild = (byParent[c.id]?.isNotEmpty ?? false);
-        if (hasChild) {
+        if (byParent.containsKey(c.id) && byParent[c.id]!.isNotEmpty) {
           withChildren.add(c);
         } else {
           leaves.add(c);
         }
       }
+
+      // Dodaj grupu sa listovima (ako postoje)
       if (parent != null && leaves.isNotEmpty) {
         groups.add(CategoryGroup(parent: parent, children: leaves));
       }
+
+      // Rekurzivno obradi kategorije sa decom
       for (final c in withChildren) {
-        addGroups(c, depth + 1);
+        addGroups(c);
       }
     }
 
-    final topLevel = (byParent[null] ?? []).toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    // Počni sa top-level kategorijama (parent_id == null)
+    final topLevel = byParent[null] ?? [];
     for (final top in topLevel) {
-      addGroups(top, 0);
+      addGroups(top);
     }
+
     return groups;
   }
 

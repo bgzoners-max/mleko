@@ -5,10 +5,11 @@ class SupabaseService {
   final _client = Supabase.instance.client;
 
   /// Fetches top-level categories (where parent_id is null)
+  /// Optimized: SQL ordering + minimal select
   Future<List<Category>> getTopCategories() async {
     final res = await _client
         .from('categories')
-        .select()
+        .select('id,name,slug,icon,order,parent_id')
         .filter('parent_id', 'is', null)
         .order('order', ascending: true);
 
@@ -16,37 +17,50 @@ class SupabaseService {
   }
 
   /// Fetches all categories (top + children) for product form, search filters, etc.
-  /// Order: top-level first, then children, each by "order"
+  /// Optimized: SQL ordering handles top-level first, then children within groups
+  /// Minimal select reduces payload size
   Future<List<Category>> getAllCategories() async {
-    final res = await _client.from('categories').select().order('order', ascending: true);
-    final list = (res as List).map((e) => Category.fromJson(e)).toList();
-    list.sort((a, b) {
-      final aTop = a.parentId == null;
-      final bTop = b.parentId == null;
-      if (aTop != bTop) return aTop ? -1 : 1;
-      return a.order.compareTo(b.order);
-    });
-    return list;
+    final res = await _client
+        .from('categories')
+        .select('id,name,slug,icon,order,parent_id')
+        // Order by: parent_id (nulls first), then order within each group
+        .order('parent_id', ascending: true, nullsFirst: true)
+        .order('order', ascending: true);
+
+    return (res as List).map((e) => Category.fromJson(e)).toList();
   }
 
   /// Grupisane kategorije – roditelji sa podkategorijama za hijerarhijski prikaz
+  /// Uses getAllCategories which is already ordered for efficient grouping
   Future<List<CategoryGroup>> getCategoriesGrouped() async {
     final all = await getAllCategories();
-    final topLevel = all.where((c) => c.parentId == null).toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
 
-    return topLevel.map((parent) {
-      final children = all.where((c) => c.parentId == parent.id).toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
-      return CategoryGroup(parent: parent, children: children);
-    }).toList();
+    // Build a map for quick lookup
+    final byParent = <String?, List<Category>>{};
+    for (final c in all) {
+      byParent.putIfAbsent(c.parentId, () => []).add(c);
+    }
+
+    // Build groups: iterate top-level and their children
+    final groups = <CategoryGroup>[];
+    final topLevel = byParent[null] ?? [];
+
+    for (final parent in topLevel) {
+      final children = byParent[parent.id] ?? [];
+      if (children.isNotEmpty) {
+        groups.add(CategoryGroup(parent: parent, children: children));
+      }
+    }
+
+    return groups;
   }
 
   /// Fetches child categories for a given parent
+  /// Optimized: minimal select
   Future<List<Category>> getChildCategories(String parentId) async {
     final res = await _client
         .from('categories')
-        .select()
+        .select('id,name,slug,icon,order,parent_id')
         .eq('parent_id', parentId)
         .order('order', ascending: true);
 
