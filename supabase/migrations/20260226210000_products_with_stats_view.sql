@@ -32,7 +32,7 @@ LEFT JOIN (
 LEFT JOIN (
   SELECT product_id, COUNT(*)::bigint AS order_count
   FROM public.orders
-  WHERE status IN ('accepted', 'delivered')
+  WHERE status IN ('accepted', 'delivered', 'Sent', 'Delivered', 'Arhivirano')
   GROUP BY product_id
 ) s ON p.id = s.product_id;
 

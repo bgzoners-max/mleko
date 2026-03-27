@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/notification_types.dart';
+import '../../firebase_options.dart';
 import '../core/logger_service.dart';
 
 const _channelId = 'mleko_urgent';
@@ -75,7 +76,8 @@ void _showLocalNotification({
     },
   );
 
-  _localNotifications.show(
+  _localNotifications
+      .show(
     id: notificationId,
     title: title,
     body: body,
@@ -102,7 +104,8 @@ void _showLocalNotification({
       ),
     ),
     payload: payload,
-  ).catchError((e, st) {
+  )
+      .catchError((e, st) {
     LoggerService.error(
       'Greška pri prikazu notifikacije',
       e,
@@ -114,12 +117,22 @@ void _showLocalNotification({
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   // Inicijalizuj local notifications samo ako nije već inicijalizovano
   if (!_isLocalNotificationsInitialized()) {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const darwin = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
     await _localNotifications.initialize(
-      settings: const InitializationSettings(android: android),
+      settings: const InitializationSettings(
+        android: android,
+        iOS: darwin,
+      ),
     );
     _setLocalNotificationsInitialized();
   }
@@ -132,7 +145,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // Preuzmi podatke - iz notifikacije ili iz data payload-a
   final data = message.data.isNotEmpty ? message.data : <String, dynamic>{};
-  final title = message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
+  final title =
+      message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
   final body = message.notification?.body ?? data['body'] as String? ?? '';
   final type = data['type'] as String? ?? '';
   final orderId = data['order_id'] as String? ?? '';
@@ -203,6 +217,13 @@ class PushService {
           badge: true,
           sound: true,
           provisional: false,
+        );
+
+        await FirebaseMessaging.instance
+            .setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
         );
       } else {
         // Fallback za ostatale platforme
@@ -299,17 +320,21 @@ class PushService {
   Future<void> registerToken(String userId) async {
     if (kIsWeb) return;
     try {
-      LoggerService.debug('PushService: STARTING token registration', extra: {'user_id': userId});
+      LoggerService.debug('PushService: STARTING token registration',
+          extra: {'user_id': userId});
       final granted = await ensureNotificationPermission();
-      LoggerService.debug('PushService: Permission check', extra: {'granted': granted});
+      LoggerService.debug('PushService: Permission check',
+          extra: {'granted': granted});
       if (!granted) {
         LoggerService.warning('PushService: Notification permission DENIED');
         return;
       }
       var token = await FirebaseMessaging.instance.getToken();
       final hasToken = token?.isNotEmpty ?? false;
-      LoggerService.debug('PushService: Got initial token',
-          extra: {'has_token': hasToken, 'token_preview': token?.substring(0, 20)});
+      LoggerService.debug('PushService: Got initial token', extra: {
+        'has_token': hasToken,
+        'token_preview': token?.substring(0, 20)
+      });
 
       // Retry logika - ako je null, probaj do 3 puta
       int retries = 0;
@@ -322,11 +347,16 @@ class PushService {
       if (token == null || token.isEmpty) {
         LoggerService.warning(
           'PushService: getToken returned NULL/EMPTY after retries',
-          extra: {'retries': retries, 'reason': 'Google Play Services unavailable or Firebase not initialized'},
+          extra: {
+            'retries': retries,
+            'reason':
+                'Google Play Services unavailable or Firebase not initialized'
+          },
         );
         return;
       }
-      LoggerService.debug('PushService: Got valid token, uploading to database');
+      LoggerService.debug(
+          'PushService: Got valid token, uploading to database');
 
       final platform = Platform.isIOS ? 'ios' : 'android';
       await _client.from('user_push_tokens').upsert(
@@ -386,9 +416,13 @@ class PushService {
     _cancelSub(_onMessageSub).then((_) {
       _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
         // Preuzmi podatke - iz notifikacije ili iz data payload-a
-        final data = message.data.isNotEmpty ? message.data : <String, dynamic>{};
-        final title = message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
-        final body = message.notification?.body ?? data['body'] as String? ?? '';
+        final data =
+            message.data.isNotEmpty ? message.data : <String, dynamic>{};
+        final title = message.notification?.title ??
+            data['title'] as String? ??
+            'Obaveštenje';
+        final body =
+            message.notification?.body ?? data['body'] as String? ?? '';
         final type = data['type'] as String? ?? '';
         final orderId = data['order_id'] as String? ?? '';
 

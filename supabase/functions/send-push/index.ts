@@ -8,6 +8,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+function toLockscreenBody(input: string, maxLen = 88): string {
+  const trimmed = (input || "").replace(/\s+/g, " ").trim()
+  if (trimmed.length <= maxLen) return trimmed
+  const cut = trimmed.slice(0, maxLen)
+  const lastSpace = cut.lastIndexOf(" ")
+  const safe = lastSpace > 24 ? cut.slice(0, lastSpace) : cut
+  return safe.trimEnd() + "..."
+}
+
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
   const sa = JSON.parse(serviceAccountJson)
   const key = await jose.importPKCS8(sa.private_key, "RS256")
@@ -39,10 +48,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const requestId = crypto.randomUUID()
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     )
+
+    const writeDeliveryLog = async (params: {
+      userId?: string
+      title?: string
+      type?: string
+      tokenCount?: number
+      sentCount?: number
+      status: "success" | "partial" | "error" | "no_tokens" | "invalid_request"
+      errors?: string[]
+      payload?: Record<string, unknown>
+    }) => {
+      try {
+        const failedCount = Math.max((params.tokenCount ?? 0) - (params.sentCount ?? 0), 0)
+        await supabase.from("push_delivery_logs").insert({
+          request_id: requestId,
+          user_id: params.userId ?? null,
+          title: params.title ?? null,
+          type: params.type ?? null,
+          token_count: params.tokenCount ?? 0,
+          sent_count: params.sentCount ?? 0,
+          failed_count: failedCount,
+          status: params.status,
+          errors: params.errors ?? [],
+          payload: params.payload ?? {},
+        })
+      } catch (logErr) {
+        console.error("FCM: upis push_delivery_logs nije uspeo", String(logErr))
+      }
+    }
 
     let body = await req.json()
     let user_id: string
@@ -77,6 +116,11 @@ Deno.serve(async (req) => {
 
     if (!user_id) {
       console.error("FCM: Nedostaje user_id")
+      await writeDeliveryLog({
+        status: "invalid_request",
+        errors: ["user_id required"],
+        payload: { keys: Object.keys(body || {}) },
+      })
       return new Response(
         JSON.stringify({ error: "user_id required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -96,6 +140,16 @@ Deno.serve(async (req) => {
 
     if (error || !tokens?.length) {
       console.warn(`FCM: Nema tokena za korisnika ${user_id}`)
+      await writeDeliveryLog({
+        userId: user_id,
+        title,
+        type: data.type,
+        tokenCount: tokens?.length ?? 0,
+        sentCount: 0,
+        status: "no_tokens",
+        errors: error ? [error.message] : [],
+        payload: { body_len: bodyText.length },
+      })
       return new Response(
         JSON.stringify({ message: "No push tokens", sent: 0, token_count: tokens?.length || 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -105,6 +159,15 @@ Deno.serve(async (req) => {
     let serviceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON")
     if (!serviceAccountJson) {
       console.error("FCM_SERVICE_ACCOUNT_JSON not set")
+      await writeDeliveryLog({
+        userId: user_id,
+        title,
+        type: data.type,
+        tokenCount: tokens.length,
+        sentCount: 0,
+        status: "error",
+        errors: ["FCM_SERVICE_ACCOUNT_JSON not set"],
+      })
       return new Response(
         JSON.stringify({ error: "FCM not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -128,9 +191,10 @@ Deno.serve(async (req) => {
     const errors: string[] = []
     for (const row of tokens) {
       const platform = (row.platform ?? "android") as string
+      const lockscreenBody = toLockscreenBody(bodyText)
       const baseMessage: Record<string, unknown> = {
         token: row.token,
-        notification: { title, body: bodyText },
+        notification: { title, body: lockscreenBody },
         data: { ...data, title, body: bodyText },
       }
 
@@ -147,7 +211,7 @@ Deno.serve(async (req) => {
           headers: { "apns-priority": "10" },
           payload: {
             aps: {
-              alert: { title, body: bodyText },
+              alert: { title, body: lockscreenBody },
               sound: "default",
               badge: 1,
             },
@@ -158,10 +222,12 @@ Deno.serve(async (req) => {
         const channelId = isOrder ? "orders_high" : "mleko_urgent";
         baseMessage.android = {
           priority: "HIGH",
+          ttl: "86400s",
           notification: {
             channel_id: channelId,
             sound: "default",
             default_vibrate_timings: true,
+            default_sound: true,
             visibility: "PUBLIC",
             notification_priority: "PRIORITY_HIGH",
           },
@@ -186,7 +252,7 @@ Deno.serve(async (req) => {
           const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
           console.error("FCM error:", errMsg)
           errors.push(errMsg)
-          if (res.status === 404) {
+          if (res.status === 404 || res.status === 400) {
             console.log("FCM: Token ne postoji, uklanjam iz DB")
             await supabase.from("user_push_tokens").delete().eq("token", row.token)
           }
@@ -198,8 +264,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    await writeDeliveryLog({
+      userId: user_id,
+      title,
+      type: data.type,
+      tokenCount: tokens.length,
+      sentCount: sent,
+      status: errors.length === 0 ? "success" : sent > 0 ? "partial" : "error",
+      errors,
+      payload: {
+        request_source: body.record ? "db_trigger" : "direct_call",
+        order_id: data.order_id,
+      },
+    })
+
     return new Response(
-      JSON.stringify({ message: "OK", sent, errors }),
+      JSON.stringify({ message: "OK", sent, errors, request_id: requestId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   } catch (err) {
