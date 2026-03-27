@@ -8,7 +8,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
-function toLockscreenBody(input: string, maxLen = 88): string {
+// Cache za FCM access token – izbegava skupu JWT generisanje
+interface TokenCache {
+  token: string
+  expiresAt: number // milliseconds
+}
+
+const tokenCache = new Map<string, TokenCache>() // Key: project_id
+
+function getLockscreenBody(input: string, maxLen = 88): string {
   const trimmed = (input || "").replace(/\s+/g, " ").trim()
   if (trimmed.length <= maxLen) return trimmed
   const cut = trimmed.slice(0, maxLen)
@@ -17,7 +25,16 @@ function toLockscreenBody(input: string, maxLen = 88): string {
   return safe.trimEnd() + "..."
 }
 
-async function getAccessToken(serviceAccountJson: string): Promise<string> {
+async function getAccessToken(serviceAccountJson: string, projectId: string): Promise<string> {
+  // Prvo proveri cache
+  const cached = tokenCache.get(projectId)
+  if (cached && Date.now() < cached.expiresAt) {
+    console.log(`FCM: Korišćen cached token za ${projectId}`)
+    return cached.token
+  }
+
+  // Generisanje novog token-a ako cache nije validan
+  console.log(`FCM: Generiši novi token za ${projectId}`)
   const sa = JSON.parse(serviceAccountJson)
   const key = await jose.importPKCS8(sa.private_key, "RS256")
   const jwt = await new jose.SignJWT({ scope: "https://www.googleapis.com/auth/firebase.messaging" })
@@ -39,7 +56,16 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
   })
   const data = await res.json()
   if (data.error) throw new Error(data.error_description ?? data.error)
-  return data.access_token
+
+  const accessToken = data.access_token
+  const expiresIn = data.expires_in || 3600 // Default 1 hour
+
+  // Cache token sa 5 minut margine pre nego što istekne (55 minuta umesto 60)
+  const expiresAt = Date.now() + (expiresIn - 300) * 1000
+  tokenCache.set(projectId, { token: accessToken, expiresAt })
+
+  console.log(`FCM: Token cache-ovan, važi još ${Math.round((expiresAt - Date.now()) / 60000)} minuta`)
+  return accessToken
 }
 
 Deno.serve(async (req) => {
@@ -183,7 +209,7 @@ Deno.serve(async (req) => {
 
     const sa = JSON.parse(serviceAccountJson)
     const projectId = sa.project_id
-    const accessToken = await getAccessToken(serviceAccountJson)
+    const accessToken = await getAccessToken(serviceAccountJson, projectId)
 
     const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`
 
@@ -250,10 +276,19 @@ Deno.serve(async (req) => {
         } else {
           const errBody = await res.text()
           const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
+
           // Označi invalid token za brisanje
           if (res.status === 404 || res.status === 400) {
             invalidTokens.push(row.token)
           }
+
+          // Ako je 401, invalidiraj access token cache
+          // Sledeći zahtjev će generiusti novi token
+          if (res.status === 401) {
+            console.warn(`FCM: Unauthorized (401) - cache token je istekao, briši cache`)
+            tokenCache.delete(projectId)
+          }
+
           return { success: false, token: row.token, error: errMsg }
         }
       } catch (err) {
