@@ -63,6 +63,84 @@ class AppNetworkImage extends StatelessWidget {
         fadeInDuration: Duration.zero,
       );
 
+  /// Za male profile slike (48x48), bez fade-in.
+  factory AppNetworkImage.profileSmall({
+    Key? key,
+    required String imageUrl,
+    double? width,
+    double? height,
+  }) =>
+      AppNetworkImage(
+        key: key,
+        imageUrl: imageUrl,
+        width: width ?? 48,
+        height: height ?? 48,
+        memCacheWidth: 48,
+        memCacheHeight: 48,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        placeholder: ColoredBox(
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.person, size: 24),
+        ),
+      );
+
+  /// Za veće profile slike (120x120), bez fade-in.
+  factory AppNetworkImage.profileLarge({
+    Key? key,
+    required String imageUrl,
+    double? width,
+    double? height,
+  }) =>
+      AppNetworkImage(
+        key: key,
+        imageUrl: imageUrl,
+        width: width ?? 120,
+        height: height ?? 120,
+        memCacheWidth: 120,
+        memCacheHeight: 120,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        placeholder: ColoredBox(
+          color: Colors.grey.shade300,
+          child: const Icon(Icons.person, size: 48),
+        ),
+      );
+
+  /// Za seller banner slike (800x300), sa fade-in.
+  factory AppNetworkImage.banner({
+    Key? key,
+    required String imageUrl,
+    double? width,
+    double? height,
+  }) =>
+      AppNetworkImage(
+        key: key,
+        imageUrl: imageUrl,
+        width: width,
+        height: height ?? 180,
+        memCacheWidth: 800,
+        memCacheHeight: 300,
+        fit: BoxFit.cover,
+      );
+
+  /// Za product detail slike (600x600), sa fade-in.
+  factory AppNetworkImage.productDetail({
+    Key? key,
+    required String imageUrl,
+    double? width,
+    double? height,
+  }) =>
+      AppNetworkImage(
+        key: key,
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        memCacheWidth: 600,
+        memCacheHeight: 600,
+        fit: BoxFit.cover,
+      );
+
   static Widget _defaultPlaceholder() => ColoredBox(
         color: Colors.grey.shade200,
         child: Center(

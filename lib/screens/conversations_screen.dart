@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +8,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_network_image.dart';
 
 String _formatConvTime(DateTime? dt) {
   if (dt == null) return '';
@@ -106,15 +106,18 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: conv.otherPartyImageUrl != null && conv.otherPartyImageUrl!.isNotEmpty
-                          ? CachedNetworkImageProvider(conv.otherPartyImageUrl!)
-                          : null,
-                      child: conv.otherPartyImageUrl == null || conv.otherPartyImageUrl!.isEmpty
-                          ? Icon(Icons.person, color: Colors.grey.shade600)
-                          : null,
-                    ),
+                    leading: conv.otherPartyImageUrl != null && conv.otherPartyImageUrl!.isNotEmpty
+                        ? ClipOval(
+                            child: AppNetworkImage.profileSmall(
+                              imageUrl: conv.otherPartyImageUrl!,
+                              width: 40,
+                              height: 40,
+                            ),
+                          )
+                        : CircleAvatar(
+                            backgroundColor: Colors.grey.shade300,
+                            child: Icon(Icons.person, color: Colors.grey.shade600),
+                          ),
                     title: Text(
                       conv.otherPartyName ?? 'Korisnik',
                       style: TextStyle(

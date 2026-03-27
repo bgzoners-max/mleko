@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +19,7 @@ import '../../widgets/order_status_audit_log_section.dart';
 import '../../widgets/order_status_timeline.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/error_dialog.dart';
+import '../../widgets/app_network_image.dart';
 
 /// Jedinstveni inbox za prodavca – porudžbine i razgovori u jednoj listi
 class SellerInboxScreen extends StatefulWidget {
@@ -235,19 +235,20 @@ class _OrderInboxCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
-                  backgroundImage: o.otherPartyImageUrl != null &&
-                          o.otherPartyImageUrl!.isNotEmpty
-                      ? CachedNetworkImageProvider(o.otherPartyImageUrl!)
-                      : null,
-                  child: o.otherPartyImageUrl == null ||
-                          o.otherPartyImageUrl!.isEmpty
-                      ? Icon(Icons.person,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)
-                      : null,
-                ),
+                o.otherPartyImageUrl != null && o.otherPartyImageUrl!.isNotEmpty
+                    ? ClipOval(
+                        child: AppNetworkImage.profileSmall(
+                          imageUrl: o.otherPartyImageUrl!,
+                          width: 40,
+                          height: 40,
+                        ),
+                      )
+                    : CircleAvatar(
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: Icon(Icons.person,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -552,19 +553,20 @@ class _ConversationInboxCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                backgroundColor:
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
-                backgroundImage: c.otherPartyImageUrl != null &&
-                        c.otherPartyImageUrl!.isNotEmpty
-                    ? CachedNetworkImageProvider(c.otherPartyImageUrl!)
-                    : null,
-                child: c.otherPartyImageUrl == null ||
-                        c.otherPartyImageUrl!.isEmpty
-                    ? Icon(Icons.person,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)
-                    : null,
-              ),
+              c.otherPartyImageUrl != null && c.otherPartyImageUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: AppNetworkImage.profileSmall(
+                        imageUrl: c.otherPartyImageUrl!,
+                        width: 40,
+                        height: 40,
+                      ),
+                    )
+                  : CircleAvatar(
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Icon(Icons.person,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

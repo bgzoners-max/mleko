@@ -21,6 +21,7 @@ import '../../widgets/add_review_dialog.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/product_grid_tile.dart';
 import '../../widgets/seller_review_widgets.dart';
+import '../../widgets/app_network_image.dart';
 
 class SellerProfileScreen extends StatefulWidget {
   final String sellerId;
@@ -314,16 +315,19 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
             const SizedBox(height: 12),
             Row(
               children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: seller.profileImageUrl != null
-                      ? CachedNetworkImageProvider(seller.profileImageUrl!)
-                      : null,
-                  child: seller.profileImageUrl == null
-                      ? Icon(Icons.store, size: 40, color: Colors.grey.shade600)
-                      : null,
-                ),
+                seller.profileImageUrl != null
+                    ? ClipOval(
+                        child: AppNetworkImage.profileLarge(
+                          imageUrl: seller.profileImageUrl!,
+                          width: 80,
+                          height: 80,
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.grey.shade300,
+                        child: Icon(Icons.store, size: 40, color: Colors.grey.shade600),
+                      ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, PostgresChangeEvent, PostgresChangeFilter, PostgresChangeFilterType, RealtimeChannel;
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
+import '../services/media/image_cache_service.dart';
 
 
 class AppState extends ChangeNotifier {
@@ -50,6 +51,8 @@ class AppState extends ChangeNotifier {
         _user = null;
         _unreadNotificationCount = 0;
         _notifChannel?.unsubscribe();
+        // Očisti image cache na logout (privatnost + memorija)
+        await ImageCacheService().clearAllCaches();
       } else {
         _user = await _auth.getCurrentUser();
         if (_user != null && !_user!.isGuest) {

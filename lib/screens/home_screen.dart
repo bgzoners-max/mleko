@@ -22,6 +22,7 @@ import '../widgets/app_error_retry.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/cache_status_widget.dart';
+import '../widgets/app_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -693,6 +694,8 @@ class _TopProductsList extends StatelessWidget {
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
+                        memCacheWidth: 80,
+                        memCacheHeight: 80,
                         fadeInDuration: Duration.zero,
                       ),
                     )
@@ -915,17 +918,20 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     onTap: () => context.push('/seller/${seller.id}'),
-                    leading: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: seller.profileImageUrl != null
-                          ? CachedNetworkImageProvider(seller.profileImageUrl!)
-                          : null,
-                      child: seller.profileImageUrl == null
-                          ? Icon(Icons.store,
-                              size: 20, color: Colors.grey.shade700)
-                          : null,
-                    ),
+                    leading: seller.profileImageUrl != null
+                        ? ClipOval(
+                            child: AppNetworkImage.profileSmall(
+                              imageUrl: seller.profileImageUrl!,
+                              width: 40,
+                              height: 40,
+                            ),
+                          )
+                        : CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.grey.shade300,
+                            child: Icon(Icons.store,
+                                size: 20, color: Colors.grey.shade700),
+                          ),
                     title: Text(
                       title,
                       maxLines: 1,
