@@ -77,38 +77,63 @@ class AppState extends ChangeNotifier {
   }
 
   void _subscribeToNotifications() {
+    // Prethodno unsubscribe ako je kanal već aktivan
     _notifChannel?.unsubscribe();
+    _notifChannel = null;
+
     if (_user == null || _user!.isGuest) return;
+
     final client = Supabase.instance.client;
-    _notifChannel = client
-        .channel('notifications-${_user!.id}')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'notifications',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: _user!.id,
-          ),
-          callback: (_) async {
-            await _loadUnreadCount();
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'notifications',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: _user!.id,
-          ),
-          callback: (_) async {
-            await _loadUnreadCount();
-          },
-        )
-        .subscribe();
+    final userId = _user!.id;
+
+    // Wrapped callback sa error handling i logging
+    Future<void> safeLoadUnreadCount() async {
+      try {
+        await _loadUnreadCount();
+      } catch (e, st) {
+        LoggerService.error(
+          'Failed to load unread count in notification callback',
+          e,
+          stackTrace: st,
+          extra: {'user_id': userId},
+        );
+      }
+    }
+
+    try {
+      LoggerService.debug('Subscribing to notifications', extra: {'user_id': userId});
+      _notifChannel = client.channel('notifications-$userId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'notifications',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'user_id',
+              value: userId,
+            ),
+            callback: (_) => safeLoadUnreadCount(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'notifications',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'user_id',
+              value: userId,
+            ),
+            callback: (_) => safeLoadUnreadCount(),
+          )
+          .subscribe();
+    } catch (e, st) {
+      LoggerService.error(
+        'Failed to subscribe to notifications',
+        e,
+        stackTrace: st,
+        extra: {'user_id': userId},
+      );
+    }
   }
 
   void resetUnreadCount() {
