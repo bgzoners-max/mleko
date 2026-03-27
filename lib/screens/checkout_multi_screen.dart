@@ -84,9 +84,11 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
 
   Future<void> _load(Map<String, double> productQuantities) async {
     final productsService = ProductsService();
+    // Batch load umesto N+1 petlje
+    final products = await productsService.getProductsByIds(productQuantities.keys.toList());
     final items = <({ProductModel product, double quantity})>[];
     for (final e in productQuantities.entries) {
-      final p = await productsService.getProduct(e.key);
+      final p = products[e.key];
       if (p != null && p.sellerId == widget.sellerId) {
         items.add((product: p, quantity: e.value));
       }

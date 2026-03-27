@@ -85,8 +85,10 @@ class CartProvider extends ChangeNotifier {
 
     if (legacyFlat.isEmpty) return;
 
+    // Batch load umesto N+1 petlje
+    final products = await _productsService.getProductsByIds(legacyFlat.keys.toList());
     for (final entry in legacyFlat.entries) {
-      final p = await _productsService.getProduct(entry.key);
+      final p = products[entry.key];
       if (p == null) continue;
       final sellerDraft =
           _sellerItems.putIfAbsent(p.sellerId, () => <String, double>{});
@@ -239,9 +241,12 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null || sellerDraft.isEmpty) return [];
     return _bySellerCache.putIfAbsent(sellerId, () async {
+      // Batch load umesto N+1 petlje
+      final productIds = sellerDraft.keys.toList();
+      final products = await _productsService.getProductsByIds(productIds);
       final result = <({ProductModel product, double quantity})>[];
       for (final e in sellerDraft.entries) {
-        final p = await _productsService.getProduct(e.key);
+        final p = products[e.key];
         if (p != null) result.add((product: p, quantity: e.value));
       }
       return result;

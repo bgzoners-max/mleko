@@ -808,6 +808,48 @@ class ProductsService {
     }
   }
 
+  /// Batch učitavanje više proizvoda odjednom – zamenjuje N+1 petlje.
+  /// Vraća mapu ID → ProductModel; nedostajući IDs nisu uključeni.
+  Future<Map<String, ProductModel>> getProductsByIds(List<String> ids) async {
+    if (ids.isEmpty) return {};
+
+    final cache = ProductCacheService();
+    final result = <String, ProductModel>{};
+    final missingIds = <String>[];
+
+    // Prvo pokušaj iz cache-a
+    for (final id in ids) {
+      final cached = await cache.getCachedProduct(id);
+      if (cached != null) {
+        result[id] = cached;
+      } else {
+        missingIds.add(id);
+      }
+    }
+
+    // Batch fetch missing iz DB
+    if (missingIds.isNotEmpty) {
+      try {
+        final res = await _client
+            .from('products')
+            .select()
+            .inFilter('id', missingIds);
+        for (final row in res as List) {
+          final product = ProductModel.fromJson(row as Map<String, dynamic>);
+          result[product.id] = product;
+          // Cache za kasnije
+          await cache.cacheProduct(product);
+        }
+      } catch (e, st) {
+        LoggerService.error('Failed to load products batch', e,
+            stackTrace: st, extra: {'count': missingIds.length});
+        // Fallback: vraći samo cacheirane
+      }
+    }
+
+    return result;
+  }
+
   Future<String> addProduct(ProductModel product) async {
     final data = product.toJson();
     final res =
