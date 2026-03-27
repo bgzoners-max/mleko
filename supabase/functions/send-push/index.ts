@@ -187,9 +187,18 @@ Deno.serve(async (req) => {
 
     const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`
 
+    // Optimizacija: Batch slanje tokena sa max 100 istovremeno (umesto sekvencijalnog)
+    const BATCH_SIZE = 100
     let sent = 0
     const errors: string[] = []
-    for (const row of tokens) {
+    const invalidTokens: string[] = [] // Tokeni koji su 404/400 – za bulk delete
+
+    // Helper: Prati jedan token i vraća {success: boolean, token: string, error?: string}
+    const sendSingleMessage = async (row: { token: string; platform: string }): Promise<{
+      success: boolean
+      token: string
+      error?: string
+    }> => {
       const platform = (row.platform ?? "android") as string
       const lockscreenBody = toLockscreenBody(bodyText)
       const baseMessage: Record<string, unknown> = {
@@ -197,14 +206,6 @@ Deno.serve(async (req) => {
         notification: { title, body: lockscreenBody },
         data: { ...data, title, body: bodyText },
       }
-
-      console.log(`FCM: Slanje notifikacije (${platform}):`, {
-        title,
-        body: bodyText,
-        type: data.type,
-        order_id: data.order_id,
-        token: row.token.slice(0, 20) + "...",
-      })
 
       if (platform === "ios") {
         baseMessage.apns = {
@@ -245,23 +246,46 @@ Deno.serve(async (req) => {
         })
 
         if (res.ok) {
-          sent++
-          console.log(`FCM: Uspešno poslano (${platform})`)
+          return { success: true, token: row.token }
         } else {
           const errBody = await res.text()
           const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
-          console.error("FCM error:", errMsg)
-          errors.push(errMsg)
+          // Označi invalid token za brisanje
           if (res.status === 404 || res.status === 400) {
-            console.log("FCM: Token ne postoji, uklanjam iz DB")
-            await supabase.from("user_push_tokens").delete().eq("token", row.token)
+            invalidTokens.push(row.token)
           }
+          return { success: false, token: row.token, error: errMsg }
         }
       } catch (err) {
         const errMsg = `Greška pri slanju: ${String(err).slice(0, 100)}`
-        console.error(errMsg)
-        errors.push(errMsg)
+        return { success: false, token: row.token, error: errMsg }
       }
+    }
+
+    // Slanje u batch-evima (max 100 istovremeno)
+    for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+      const batch = tokens.slice(i, i + BATCH_SIZE)
+      console.log(`FCM: Slanje batch-a (${i + 1}-${Math.min(i + BATCH_SIZE, tokens.length)} od ${tokens.length})`)
+
+      // Promise.all() čini sve requste u batch-u istovremeno
+      const results = await Promise.all(batch.map(sendSingleMessage))
+
+      // Prikupi rezultate
+      for (const result of results) {
+        if (result.success) {
+          sent++
+        } else {
+          errors.push(result.error || "Nepoznata greška")
+        }
+      }
+
+      console.log(`FCM: Batch gotov - poslano: ${results.filter((r) => r.success).length}/${batch.length}`)
+    }
+
+    // Obriši sve invalid tokene odjednom (umesto jedan po jedan)
+    if (invalidTokens.length > 0) {
+      console.log(`FCM: Brisanje ${invalidTokens.length} invalid tokena`)
+      await supabase.from("user_push_tokens").delete().in("token", invalidTokens)
     }
 
     await writeDeliveryLog({
