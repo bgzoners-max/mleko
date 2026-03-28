@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
       error?: string
     }> => {
       const platform = (row.platform ?? "android") as string
-      const lockscreenBody = toLockscreenBody(bodyText)
+      const lockscreenBody = getLockscreenBody(bodyText)
       const baseMessage: Record<string, unknown> = {
         token: row.token,
         notification: { title, body: lockscreenBody },

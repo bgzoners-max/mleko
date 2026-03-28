@@ -58,6 +58,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final _reviewsSectionKey = GlobalKey();
   bool _didScrollToReviews = false;
 
+  // Gallery state
+  late PageController _pageController;
+  int _pageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<ProductReviewsData> _loadReviewsFuture() async {
     final avg = await ReviewsService().getAverageRatingForProduct(widget.productId);
     final reviews = await ReviewsService().getReviewsForProduct(widget.productId);
@@ -94,6 +111,227 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _reviewsFuture = _loadReviewsFuture();
       });
 
+  /// Gradi gallery sa slika + dots indicator
+  Widget _buildGallery(ProductModel product, {double height = 220}) {
+    final hasMultipleImages = product.imageUrls.length > 1;
+    return Column(
+      children: [
+        SizedBox(
+          height: height,
+          child: product.imageUrls.isEmpty
+              ? ColoredBox(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Icon(Icons.image_not_supported, size: 64),
+                )
+              : PageView.builder(
+                  controller: _pageController,
+                  onPageChanged: (i) => setState(() => _pageIndex = i),
+                  itemCount: product.imageUrls.length,
+                  itemBuilder: (_, i) => AppNetworkImage(
+                    imageUrl: product.imageUrls[i],
+                    fit: BoxFit.cover,
+                    memCacheWidth: 800,
+                    memCacheHeight: 500,
+                    fadeInDuration: Duration.zero,
+                  ),
+                ),
+        ),
+        if (hasMultipleImages) _buildGalleryDots(product),
+      ],
+    );
+  }
+
+  /// Dots indicator za više slika
+  Widget _buildGalleryDots(ProductModel product) {
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(
+          product.imageUrls.length,
+          (i) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Container(
+              width: _pageIndex == i ? 8 : 6,
+              height: _pageIndex == i ? 8 : 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _pageIndex == i
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3),
+                border: _pageIndex == i
+                    ? null
+                    : Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1,
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Gradi info sekciju (naziv, cena, opis, dugmići, itd.)
+  Widget _buildInfoSection(ProductModel product) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            product.name,
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            product.priceFormatted,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(height: 8),
+          _RatingSummaryBadge(
+            reviewsFuture: _reviewsFuture,
+            onTap: _scrollToReviews,
+          ),
+          const SizedBox(height: 16),
+          _InfoBlock(title: 'Opis', content: product.description),
+          _InfoBlock(
+              title: 'Minimalna porudžbina',
+              content: product.minOrderFormatted),
+          _InfoBlock(
+              title: 'Dostupna količina',
+              content: product.isAvailable
+                  ? product.availableFormatted
+                  : 'Nedostupno'),
+          _InfoBlock(title: 'Lokacija', content: product.location),
+          _InfoBlock(
+              title: 'Način preuzimanja',
+              content: product.pickupOptions.join(', ')),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: BounceTapButton(
+              onPressed:
+                  product.isAvailable ? () => _addToCart(product) : null,
+              builder: (onPressed) => ElevatedButton(
+                onPressed: product.isAvailable ? onPressed : null,
+                child: Text(
+                    product.isAvailable ? 'Dodaj u korpu' : 'Trenutno nedostupno'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SellerInlineCartSection(sellerId: product.sellerId),
+          const SizedBox(height: 16),
+          _MoreFromSellerSection(key: _moreFromSellerKey, product: product),
+          const SizedBox(height: 16),
+          _ProductReviewsSection(
+            key: _reviewsSectionKey,
+            reviewsFuture: _reviewsFuture,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => context.push('/seller/${product.sellerId}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.store,
+                            size: 20,
+                            color:
+                                Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pogledaj profil proizvođača',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!product.isAvailable)
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      color: Colors.orange.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ovaj proizvod je trenutno nedostupan.',
+                          style: TextStyle(
+                              color: Colors.orange.shade800,
+                              fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        InkWell(
+                          onTap: () {
+                            final ctx =
+                                _moreFromSellerKey.currentContext;
+                            if (ctx != null) {
+                              Scrollable.ensureVisible(
+                                ctx,
+                                duration:
+                                    const Duration(milliseconds: 350),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                          child: Text(
+                            'Pogledaj druge proizvode ovog domaćinstva',
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary,
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(
+              height: MediaQuery.of(context).padding.bottom + 16),
+        ],
+      ),
+    );
+  }
+
   Future<void> _addToCart(ProductModel product) async {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) {
@@ -126,6 +364,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = Breakpoints.isTabletOrLarger(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Proizvod'),
@@ -199,206 +438,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             child: ConstrainedBox(
               constraints: BoxConstraints(
                   maxWidth: Breakpoints.maxContentWidth(context)),
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      height: 220,
-                      child: product.imageUrls.isEmpty
-                          ? ColoredBox(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest,
-                              child: const Icon(
-                                Icons.image_not_supported,
-                                size: 64,
-                              ),
-                            )
-                          : PageView.builder(
-                              itemCount: product.imageUrls.length,
-                              itemBuilder: (_, i) => AppNetworkImage(
-                                imageUrl: product.imageUrls[i],
-                                fit: BoxFit.cover,
-                                memCacheWidth: 800,
-                                memCacheHeight: 500,
-                                fadeInDuration: Duration.zero,
-                              ),
-                            ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
+              child: isTablet
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: MediaQuery.sizeOf(context).width * 0.4,
+                          child: _buildGallery(product, height: 450),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            child: _buildInfoSection(product),
+                          ),
+                        ),
+                      ],
+                    )
+                  : SingleChildScrollView(
+                      controller: _scrollController,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            product.name,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            product.priceFormatted,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                          ),
-                          const SizedBox(height: 8),
-                          _RatingSummaryBadge(
-                            reviewsFuture: _reviewsFuture,
-                            onTap: _scrollToReviews,
-                          ),
-                          const SizedBox(height: 16),
-                          _InfoBlock(
-                              title: 'Opis', content: product.description),
-                          _InfoBlock(
-                              title: 'Minimalna porudžbina',
-                              content: product.minOrderFormatted),
-                          _InfoBlock(
-                              title: 'Dostupna količina',
-                              content: product.isAvailable
-                                  ? product.availableFormatted
-                                  : 'Nedostupno'),
-                          _InfoBlock(
-                              title: 'Lokacija', content: product.location),
-                          _InfoBlock(
-                              title: 'Način preuzimanja',
-                              content: product.pickupOptions.join(', ')),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: BounceTapButton(
-                              onPressed: product.isAvailable
-                                  ? () => _addToCart(product)
-                                  : null,
-                              builder: (onPressed) => ElevatedButton(
-                                onPressed:
-                                    product.isAvailable ? onPressed : null,
-                                child: Text(product.isAvailable
-                                    ? 'Dodaj u korpu'
-                                    : 'Trenutno nedostupno'),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _SellerInlineCartSection(sellerId: product.sellerId),
-                          const SizedBox(height: 16),
-                          _MoreFromSellerSection(
-                              key: _moreFromSellerKey, product: product),
-                          const SizedBox(height: 16),
-                          _ProductReviewsSection(
-                            key: _reviewsSectionKey,
-                            reviewsFuture: _reviewsFuture,
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () => context
-                                      .push('/seller/${product.sellerId}'),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 8),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.store,
-                                            size: 20,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Pogledaj profil proizvođača',
-                                          style: TextStyle(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          if (!product.isAvailable)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: Colors.orange.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.info_outline,
-                                      color: Colors.orange.shade700),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Ovaj proizvod je trenutno nedostupan.',
-                                          style: TextStyle(
-                                              color: Colors.orange.shade800,
-                                              fontWeight: FontWeight.w500),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        InkWell(
-                                          onTap: () {
-                                            final ctx = _moreFromSellerKey
-                                                .currentContext;
-                                            if (ctx != null) {
-                                              Scrollable.ensureVisible(
-                                                ctx,
-                                                duration: const Duration(
-                                                    milliseconds: 350),
-                                                curve: Curves.easeInOut,
-                                              );
-                                            }
-                                          },
-                                          child: Text(
-                                            'Pogledaj druge proizvode ovog domaćinstva',
-                                            style: TextStyle(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                              fontWeight: FontWeight.w500,
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          SizedBox(
-                              height:
-                                  MediaQuery.of(context).padding.bottom + 16),
+                          _buildGallery(product, height: 220),
+                          _buildInfoSection(product),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
             ),
           );
         },
