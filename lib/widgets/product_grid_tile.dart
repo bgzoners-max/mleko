@@ -68,6 +68,7 @@ class ProductGridTile extends StatelessWidget {
                       top: 6,
                       right: 6,
                       child: IconButton(
+                        tooltip: isFavorite == true ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
                         icon: Icon(
                           isFavorite == true ? Icons.favorite : Icons.favorite_border,
                           color: isFavorite == true ? Colors.red : Colors.white,

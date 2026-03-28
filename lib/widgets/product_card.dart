@@ -41,9 +41,13 @@ class _ProductCardState extends State<ProductCard> {
     final card = Card(
       elevation: kIsWeb && _isHovered ? 6 : null,
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
-        child: Column(
+      child: Semantics(
+        button: true,
+        enabled: true,
+        label: 'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
+        child: InkWell(
+          onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
@@ -79,6 +83,7 @@ class _ProductCardState extends State<ProductCard> {
                     top: 8,
                     right: 8,
                     child: IconButton(
+                      tooltip: widget.isFavorite == true ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
                       icon: Icon(
                         widget.isFavorite == true ? Icons.favorite : Icons.favorite_border,
                         color: widget.isFavorite == true ? Colors.red : Colors.white,
@@ -116,26 +121,30 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                   if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0) ...[
                     const SizedBox(height: 4),
-                    InkWell(
-                      onTap: () => withHaptic(() => context.push('/product/${widget.product.id}?reviews=1')),
-                      borderRadius: BorderRadius.circular(4),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, size: 14, color: Colors.amber),
-                            const SizedBox(width: 4),
-                            Text(
-                              widget.avgRating!.toStringAsFixed(1),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '(${widget.reviewCount})',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
-                            ),
-                          ],
+                    Semantics(
+                      button: true,
+                      label: 'Ocena ${widget.avgRating!.toStringAsFixed(1)}, ${widget.reviewCount} recenzije. Klikni da vidiš sve recenzije.',
+                      child: InkWell(
+                        onTap: () => withHaptic(() => context.push('/product/${widget.product.id}?reviews=1')),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, size: 14, color: Colors.amber),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.avgRating!.toStringAsFixed(1),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '(${widget.reviewCount})',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -157,6 +166,7 @@ class _ProductCardState extends State<ProductCard> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

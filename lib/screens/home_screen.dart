@@ -226,33 +226,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           itemCount: topCategories.length,
                           itemBuilder: (context, index) {
                             final cat = topCategories[index];
-                            return InkWell(
-                              onTap: () => context.push('/categories/${cat.id}',
-                                  extra: cat),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Row(
-                                  children: [
-                                    buildCategoryIcon(
-                                      cat.icon,
-                                      size: 36,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        cat.name,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                                fontWeight: FontWeight.w500),
+                            return Semantics(
+                              button: true,
+                              label: 'Kategorija ${cat.name}',
+                              child: InkWell(
+                                onTap: () => context.push('/categories/${cat.id}',
+                                    extra: cat),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    children: [
+                                      buildCategoryIcon(
+                                        cat.icon,
+                                        size: 36,
+                                        color:
+                                            Theme.of(context).colorScheme.primary,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          cat.name,
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                  fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
@@ -1475,6 +1479,7 @@ class _PopularProductCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: IconButton(
+                        tooltip: isFavorite == true ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
                         icon: Icon(
                           isFavorite == true
                               ? Icons.favorite

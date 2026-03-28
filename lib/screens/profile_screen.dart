@@ -562,6 +562,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   ),
                   const Spacer(),
                   IconButton(
+                    tooltip: 'Zatvori',
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -779,6 +780,7 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
                           top: 4,
                           right: 4,
                           child: IconButton(
+                            tooltip: 'Ukloni fotografiju',
                             icon: const Icon(Icons.close,
                                 color: Colors.white, size: 20),
                             style: IconButton.styleFrom(

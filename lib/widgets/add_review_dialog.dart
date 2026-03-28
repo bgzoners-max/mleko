@@ -72,6 +72,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
             const Text('Ocena:'),
             Row(
               children: List.generate(5, (i) => IconButton(
+                tooltip: 'Ocena ${i + 1} od 5',
                 icon: Icon(i < _rating ? Icons.star : Icons.star_border, color: Colors.amber),
                 onPressed: () => setState(() => _rating = i + 1),
               )),

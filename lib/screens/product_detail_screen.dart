@@ -156,6 +156,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     builder: (_, isFavorite, __) {
                       final favorites = ctx.read<FavoritesProvider>();
                       return IconButton(
+                        tooltip: isFavorite ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
                         icon: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: isFavorite ? Colors.red : null,
@@ -839,6 +840,7 @@ class _SellerInlineCartSection extends StatelessWidget {
                             ),
                           ),
                           IconButton(
+                            tooltip: 'Smanji količinu',
                             icon: const Icon(Icons.remove, size: 18),
                             visualDensity: VisualDensity.compact,
                             onPressed: e.quantity <= minQty
@@ -854,6 +856,7 @@ class _SellerInlineCartSection extends StatelessWidget {
                                   },
                           ),
                           IconButton(
+                            tooltip: 'Povećaj količinu',
                             icon: const Icon(Icons.add, size: 18),
                             visualDensity: VisualDensity.compact,
                             onPressed: () {
@@ -866,6 +869,7 @@ class _SellerInlineCartSection extends StatelessWidget {
                             },
                           ),
                           IconButton(
+                            tooltip: 'Ukloni iz korpe',
                             icon: const Icon(Icons.close, size: 18),
                             visualDensity: VisualDensity.compact,
                             onPressed: () {

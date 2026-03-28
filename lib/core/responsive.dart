@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Breakpoints za responsive layout
-/// Telefon: < 600, Tablet: 600-1200, Desktop: > 1200
+/// Phone: < 600, Tablet: 600-1200, Desktop: > 1200
 class Breakpoints {
   Breakpoints._();
 
@@ -9,19 +9,24 @@ class Breakpoints {
   static const double tablet = 1200;
 
   static bool isPhone(BuildContext context) =>
-      MediaQuery.sizeOf(context).shortestSide < phone;
+      MediaQuery.sizeOf(context).width < phone;
+
+  static bool isTablet(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    return width >= phone && width < tablet;
+  }
 
   static bool isTabletOrLarger(BuildContext context) =>
-      MediaQuery.sizeOf(context).shortestSide >= phone;
+      MediaQuery.sizeOf(context).width >= phone;
 
   static bool isDesktop(BuildContext context) =>
-      MediaQuery.sizeOf(context).shortestSide >= tablet;
+      MediaQuery.sizeOf(context).width >= tablet;
 
   /// Maksimalna širina sadržaja na tablet/desktop (centrirano)
   static double maxContentWidth(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= tablet) return 1000;
-    if (width >= phone) return 700;
+    if (width >= tablet) return 1200;
+    if (width >= phone) return 800;
     return double.infinity;
   }
 
@@ -35,7 +40,23 @@ class Breakpoints {
 
   /// Broj kolona za category chips (koliko stane u jedan red)
   static int categoryChipsPerRow(BuildContext context) {
-    if (isPhone(context)) return 4;
-    return 6;
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= tablet) return 8;
+    if (width >= phone) return 5;
+    return 4;
+  }
+
+  /// Horizontalni padding za različite uređaje
+  static double horizontalPadding(BuildContext context) {
+    if (isDesktop(context)) return 32;
+    if (isTablet(context)) return 24;
+    return 16;
+  }
+
+  /// Vertikalni spacing između sekcija
+  static double sectionSpacing(BuildContext context) {
+    if (isDesktop(context)) return 32;
+    if (isTablet(context)) return 24;
+    return 16;
   }
 }

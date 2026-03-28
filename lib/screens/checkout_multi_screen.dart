@@ -547,6 +547,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
+                                tooltip: 'Smanji količinu',
                                 icon: const Icon(Icons.remove_circle_outline),
                                 onPressed: e.quantity <= p.minOrderKg
                                     ? null
@@ -565,6 +566,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                                 ),
                               ),
                               IconButton(
+                                tooltip: 'Povećaj količinu',
                                 icon: const Icon(Icons.add_circle_outline),
                                 onPressed: () =>
                                     _setQuantity(i, e.quantity + step),
@@ -574,6 +576,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                                 ),
                               ),
                               IconButton(
+                                tooltip: 'Ukloni proizvod',
                                 icon: Icon(Icons.delete_outline,
                                     color: Colors.red.shade400),
                                 onPressed: () => _remove(i),

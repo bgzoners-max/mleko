@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
@@ -78,19 +79,28 @@ class _CartScreenState extends State<CartScreen> {
                 if (snap.hasData) _lastGrouped = snap.data;
                 final grouped = snap.data ?? _lastGrouped;
                 if (grouped == null) return const Center(child: CircularProgressIndicator());
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: grouped.entries.map((entry) {
-                    final sellerId = entry.key;
-                    final items = entry.value;
-                    return _CartSellerGroup(
-                      sellerId: sellerId,
-                      items: items,
-                      cart: cart,
-                      onCheckoutOne: (item) => context.push('/checkout/${item.product.id}', extra: {'quantity': item.quantity}),
-                      onCheckoutAll: () => context.push('/checkout-seller/$sellerId'),
-                    );
-                  }).toList(),
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: Breakpoints.maxContentWidth(context),
+                    ),
+                    child: ListView(
+                      padding: EdgeInsets.all(
+                        Breakpoints.horizontalPadding(context),
+                      ),
+                      children: grouped.entries.map((entry) {
+                        final sellerId = entry.key;
+                        final items = entry.value;
+                        return _CartSellerGroup(
+                          sellerId: sellerId,
+                          items: items,
+                          cart: cart,
+                          onCheckoutOne: (item) => context.push('/checkout/${item.product.id}', extra: {'quantity': item.quantity}),
+                          onCheckoutAll: () => context.push('/checkout-seller/$sellerId'),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 );
               },
             ),

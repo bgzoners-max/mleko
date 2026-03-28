@@ -330,6 +330,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
+                                tooltip: 'Obriši obaveštenje',
                                 icon: const Icon(Icons.delete_outline),
                                 onPressed: () async {
                                   // Optimistički ukloni iz liste
@@ -348,6 +349,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               ),
                               if (n.orderId != null)
                                 IconButton(
+                                  tooltip: 'Vidi porudžbinu',
                                   icon: const Icon(Icons.receipt_long),
                                   onPressed: () => context.go('/orders'),
                                 ),
