@@ -8,6 +8,31 @@ class Breakpoints {
   static const double phone = 600;
   static const double tablet = 1200;
 
+  /// Vraća skaliran font-size na osnovu device-a
+  /// Tablet: +2-3px boost, Desktop: +4-5px boost
+  static double scaleFontSize(double baseFontSize, BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= tablet) {
+      // Desktop: veći boost
+      return baseFontSize + (baseFontSize < 16 ? 4 : 5);
+    } else if (width >= phone) {
+      // Tablet: manji boost
+      return baseFontSize + (baseFontSize < 16 ? 2 : 3);
+    }
+    // Mobile: bez promene
+    return baseFontSize;
+  }
+
+  /// Prilagođena TextStyle sa responsive font-size
+  static TextStyle responsiveTextStyle(
+    TextStyle baseStyle,
+    BuildContext context,
+  ) {
+    return baseStyle.copyWith(
+      fontSize: scaleFontSize(baseStyle.fontSize ?? 14, context),
+    );
+  }
+
   static bool isPhone(BuildContext context) =>
       MediaQuery.sizeOf(context).width < phone;
 
