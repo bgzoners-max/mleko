@@ -6,6 +6,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/skeleton.dart';
 
 class FavoriteSellersScreen extends StatefulWidget {
   const FavoriteSellersScreen({super.key});
@@ -61,7 +62,7 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
             );
           }
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const SellerProductListSkeleton();
           }
           final list = snap.data ?? [];
           if (list.isEmpty) {

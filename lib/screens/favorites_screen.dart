@@ -8,6 +8,7 @@ import '../providers/app_state.dart';
 import '../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/skeleton.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
 
@@ -21,18 +22,36 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final _favoritesService = FavoritesService();
   final _refreshController = StreamController<void>.broadcast();
+  final _scrollController = ScrollController();
 
   /// Stream keširan da se na svakom rebuild-u ne kreira novi i ne ponovo učitavaju omiljeni.
   Stream<List<ProductModel>>? _favoritesStream;
   String? _streamUserId;
 
+  static const _pageSize = 20;
+  int _displayCount = _pageSize;
+
   void _initStream(String userId) {
     if (_streamUserId == userId) return;
     _streamUserId = userId;
+    _displayCount = _pageSize;
     _favoritesStream = _favoritesService.streamFavoriteProducts(
       userId,
       refreshTrigger: _refreshController.stream,
     );
+  }
+
+  void _onScroll() {
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 200) {
+      setState(() => _displayCount += _pageSize);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -47,6 +66,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _refreshController.close();
     super.dispose();
   }
@@ -95,7 +116,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             );
           }
           if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const ProductListSkeleton();
           }
           final list = snap.data ?? [];
           if (list.isEmpty) {
@@ -117,14 +138,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             );
           }
+          final visible = list.take(_displayCount).toList();
+          final hasMore = list.length > _displayCount;
           return RefreshIndicator(
             onRefresh: _onRefresh,
             child: ListView.builder(
+              controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
-              itemCount: list.length,
+              itemCount: visible.length + (hasMore ? 1 : 0),
               itemBuilder: (_, i) {
-                final p = list[i];
+                if (i == visible.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                final p = visible[i];
                 return Selector<FavoritesProvider, bool>(
                   selector: (_, fav) => fav.isFavorite(p.id),
                   builder: (_, isFavorite, __) {

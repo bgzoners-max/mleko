@@ -10,6 +10,7 @@ import 'package:mleko/services/services.dart';
 import '../models/product_model.dart';
 
 import '../widgets/offline_indicator.dart';
+import '../widgets/skeleton.dart';
 
 /// Checkout više proizvoda od istog prodavca
 class CheckoutMultiScreen extends StatefulWidget {
@@ -115,7 +116,7 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Porudžbina')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const ProductDetailSkeleton(),
       );
     }
     if (_error != null || _items == null || _items!.isEmpty) {

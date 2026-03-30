@@ -23,6 +23,7 @@ import '../widgets/category_icon.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/cache_status_widget.dart';
 import '../widgets/app_network_image.dart';
+import '../widgets/product_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,13 +112,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final stream = _homeProductsStream;
     if (stream == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text(AppConstants.appName)),
+        appBar: AppBar(title: const Text(AppConstants.appName, style: TextStyle(color: Colors.white))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppConstants.appName),
+        title: const Text(AppConstants.appName, style: TextStyle(color: Colors.white)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 4),
@@ -151,45 +152,305 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               cacheExtent: 400,
               slivers: [
-                SliverPersistentHeader(
-                  pinned: isWide,
-                  delegate: _StickySearchHeaderDelegate(
-                    isWide: isWide,
-                    onTapSearch: () => _openSearch(context),
+                if (!isWide)
+                  SliverPersistentHeader(
+                    pinned: false,
+                    delegate: _StickySearchHeaderDelegate(
+                      isWide: false,
+                      onTapSearch: () => _openSearch(context),
+                    ),
                   ),
-                ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
                     child: isWide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                flex: 3,
-                                child: _HeroCard(
-                                  isSeller: isSeller,
-                                  isWide: isWide,
-                                  onSearchTap: () => _openSearch(context),
+                                flex: 65,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: topCategories
+                                          .map((cat) => Semantics(
+                                                button: true,
+                                                label: 'Kategorija ${cat.name}',
+                                                child: ActionChip(
+                                                  avatar: buildCategoryIcon(
+                                                      cat.icon,
+                                                      size: 18,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .primary),
+                                                  label: Text(cat.name),
+                                                  onPressed: () => context.push(
+                                                      '/categories/${cat.id}',
+                                                      extra: cat),
+                                                ),
+                                              ))
+                                          .toList(),
+                                    ),
+                                    if (isSeller) ...[
+                                      const SizedBox(height: 8),
+                                      _SellerDashboardSliver(
+                                        statsFuture: _sellerStatsFuture,
+                                        popularFuture: _popularProductsFuture,
+                                      ),
+                                    ],
+                                    const SizedBox(height: 16),
+                                    StreamBuilder<
+                                        ({
+                                          List<ProductModel> products,
+                                          Map<String, int> salesCounts,
+                                          Map<String, ({double avg, int count})> ratings
+                                        })>(
+                                      stream: stream,
+                                      builder: (context, snap) {
+                                        if (snap.hasError) {
+                                          return AppErrorRetry(
+                                            message: 'Greška pri učitavanju proizvoda.',
+                                            detail: snap.error?.toString(),
+                                            onRetry: () => _refreshController.add(null),
+                                          );
+                                        }
+                                        if (snap.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return const Padding(
+                                            padding: EdgeInsets.only(bottom: 24),
+                                            child: ProductCarouselSkeleton(),
+                                          );
+                                        }
+                                        final list = snap.data?.products ?? [];
+                                        final salesCounts =
+                                            snap.data?.salesCounts ?? {};
+                                        final ratings = snap.data?.ratings ?? {};
+                                        final newProducts = list
+                                            .where((p) =>
+                                                DateTime.now()
+                                                    .difference(p.createdAt)
+                                                    .inDays <
+                                                AppConstants.newProductDays)
+                                            .toList();
+                                        final popularProducts = list
+                                            .where((p) =>
+                                                (salesCounts[p.id] ?? 0) >=
+                                                AppConstants.popularProductMinSales)
+                                            .toList();
+                                        final displayList =
+                                            _carouselFilter ==
+                                                    _CarouselFilter.najnovije
+                                                ? (newProducts.isNotEmpty
+                                                    ? newProducts
+                                                    : list)
+                                                : (popularProducts.isNotEmpty
+                                                    ? popularProducts
+                                                    : list);
+                                        _warmupCarouselImages(displayList);
+                                        final user = context.select<AppState,
+                                            UserModel?>((s) => s.user);
+                                        final canFavorite =
+                                            user != null && !user.isGuest;
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                SegmentedButton<_CarouselFilter>(
+                                                  segments: const [
+                                                    ButtonSegment(
+                                                        value: _CarouselFilter
+                                                            .najnovije,
+                                                        label: Text('Najnovije')),
+                                                    ButtonSegment(
+                                                        value: _CarouselFilter
+                                                            .popularno,
+                                                        label: Text('Popularno')),
+                                                  ],
+                                                  selected: {_carouselFilter},
+                                                  onSelectionChanged: (s) =>
+                                                      setState(() =>
+                                                          _carouselFilter =
+                                                              s.first),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            GridView.builder(
+                                              shrinkWrap: true,
+                                              physics:
+                                                  const NeverScrollableScrollPhysics(),
+                                              gridDelegate:
+                                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: 3,
+                                                mainAxisSpacing: 12,
+                                                crossAxisSpacing: 12,
+                                                mainAxisExtent: 380,
+                                              ),
+                                              itemCount:
+                                                  displayList.take(6).length,
+                                              itemBuilder: (context, i) {
+                                                final product = displayList[i];
+                                                final rating =
+                                                    ratings[product.id];
+                                                return Selector<FavoritesProvider,
+                                                    bool>(
+                                                  selector: (_, fav) =>
+                                                      fav.isFavorite(product.id),
+                                                  builder:
+                                                      (_, isFavorite, __) =>
+                                                          ProductCard(
+                                                    product: product,
+                                                    isPopular:
+                                                        (salesCounts[product.id] ??
+                                                                0) >=
+                                                            AppConstants
+                                                                .popularProductMinSales,
+                                                    isFavorite: canFavorite
+                                                        ? isFavorite
+                                                        : null,
+                                                    onFavoriteToggle: canFavorite
+                                                        ? () => context
+                                                            .read<
+                                                                FavoritesProvider>()
+                                                            .toggle(user.id,
+                                                                product.id)
+                                                        : null,
+                                                    avgRating: rating?.avg,
+                                                    reviewCount: rating?.count,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(height: 8),
+                                            CacheStatusIndicator(
+                                              onRefresh: () =>
+                                                  _refreshController.add(null),
+                                            ),
+                                            const SizedBox(height: 16),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                flex: 2,
-                                child: _HomeSidePanel(
-                                  homeProductsStream: stream,
-                                  isSeller: isSeller,
+                                flex: 35,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    TextField(
+                                      readOnly: true,
+                                      onTap: () => _openSearch(context),
+                                      decoration: const InputDecoration(
+                                        hintText: 'Traži sir, kačkavalj…',
+                                        prefixIcon: Icon(Icons.search),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _HomeSidePanel(
+                                      homeProductsStream: stream,
+                                      isSeller: isSeller,
+                                    ),
+                                    if (locationProvider.selectedRegion != null) ...[
+                                      const SizedBox(height: 16),
+                                      _SellersNearYouSection(
+                                          region: locationProvider.selectedRegion!),
+                                    ],
+                                    const SizedBox(height: 16),
+                                    _MapCard(),
+                                  ],
                                 ),
                               ),
                             ],
                           )
                         : Column(
                             children: [
-                              _HeroCard(
-                                isSeller: isSeller,
-                                isWide: isWide,
-                                onSearchTap: () => _openSearch(context),
+                              TextField(
+                                readOnly: true,
+                                onTap: () => _openSearch(context),
+                                decoration: const InputDecoration(
+                                  hintText: 'Traži sir, kačkavalj…',
+                                  prefixIcon: Icon(Icons.search),
+                                ),
                               ),
+                              const SizedBox(height: 16),
+                              Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Kategorije',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(fontWeight: FontWeight.bold)),
+                                        TextButton(
+                                          onPressed: () => context.push('/categories'),
+                                          child: const Text('Vidi sve'),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: topCategories.length,
+                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 4,
+                                        crossAxisSpacing: 4,
+                                        mainAxisExtent: 64,
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final cat = topCategories[index];
+                                        return Semantics(
+                                          button: true,
+                                          label: 'Kategorija ${cat.name}',
+                                          child: InkWell(
+                                            onTap: () => context.push(
+                                                '/categories/${cat.id}',
+                                                extra: cat),
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(12),
+                                              child: Row(
+                                                children: [
+                                                  buildCategoryIcon(
+                                                    cat.icon,
+                                                    size: 30,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary,
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      cat.name,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight.w500),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
                               const SizedBox(height: 16),
                               _HomeSidePanel(
                                 homeProductsStream: stream,
@@ -199,80 +460,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Kategorije',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold)),
-                            TextButton(
-                              onPressed: () => context.push('/categories'),
-                              child: const Text('Vidi sve'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: topCategories.length,
-                          itemBuilder: (context, index) {
-                            final cat = topCategories[index];
-                            return Semantics(
-                              button: true,
-                              label: 'Kategorija ${cat.name}',
-                              child: InkWell(
-                                onTap: () => context.push('/categories/${cat.id}',
-                                    extra: cat),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Row(
-                                    children: [
-                                      buildCategoryIcon(
-                                        cat.icon,
-                                        size: 36,
-                                        color:
-                                            Theme.of(context).colorScheme.primary,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          cat.name,
-                                          textAlign: TextAlign.center,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                  fontWeight: FontWeight.w500),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                          separatorBuilder: (context, index) =>
-                              const Divider(height: 1),
-                        ),
-                      ],
-                    ),
+                if (!isWide && isSeller)
+                  SliverToBoxAdapter(
+                    child: _SellerDashboardSliver(
+                        statsFuture: _sellerStatsFuture,
+                        popularFuture: _popularProductsFuture),
                   ),
-                ),
-                if (isSeller)
-                  _SellerDashboardSliver(
-                      statsFuture: _sellerStatsFuture,
-                      popularFuture: _popularProductsFuture),
-                const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                if (!isWide)
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                if (!isWide)
                 StreamBuilder<
                     ({
                       List<ProductModel> products,
@@ -343,59 +539,103 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          CarouselSlider(
-                            items: displayList.map((product) {
-                              final rating = ratings[product.id];
-                              return Builder(
-                                builder: (context) {
+                          if (isWide)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 380,
+                                ),
+                                itemCount: displayList.take(6).length,
+                                itemBuilder: (context, i) {
+                                  final product = displayList[i];
+                                  final rating = ratings[product.id];
                                   return Selector<FavoritesProvider, bool>(
                                     selector: (_, fav) =>
                                         fav.isFavorite(product.id),
-                                    builder: (_, isFavorite, __) => Container(
-                                      width: MediaQuery.of(context).size.width,
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 5),
-                                      child: _PopularProductCard(
-                                        product: product,
-                                        isNew: DateTime.now()
-                                                .difference(product.createdAt)
-                                                .inDays <
-                                            AppConstants.newProductDays,
-                                        isPopular: (salesCounts[product.id] ??
-                                                0) >=
-                                            AppConstants.popularProductMinSales,
-                                        isFavorite:
-                                            canFavorite ? isFavorite : null,
-                                        onFavoriteToggle: canFavorite
-                                            ? () => context
-                                                .read<FavoritesProvider>()
-                                                .toggle(user.id, product.id)
-                                            : null,
-                                        avgRating: rating?.avg,
-                                        reviewCount: rating?.count,
-                                      ),
+                                    builder: (_, isFavorite, __) =>
+                                        ProductCard(
+                                      product: product,
+                                      isPopular: (salesCounts[product.id] ??
+                                              0) >=
+                                          AppConstants.popularProductMinSales,
+                                      isFavorite:
+                                          canFavorite ? isFavorite : null,
+                                      onFavoriteToggle: canFavorite
+                                          ? () => context
+                                              .read<FavoritesProvider>()
+                                              .toggle(user.id, product.id)
+                                          : null,
+                                      avgRating: rating?.avg,
+                                      reviewCount: rating?.count,
                                     ),
                                   );
                                 },
-                              );
-                            }).toList(),
-                            options: CarouselOptions(
-                              height: 220,
-                              aspectRatio: 16 / 9,
-                              viewportFraction: 0.85,
-                              initialPage: 0,
-                              enableInfiniteScroll: list.length > 1,
-                              reverse: false,
-                              autoPlay: list.length > 1,
-                              autoPlayInterval: const Duration(seconds: 3),
-                              autoPlayAnimationDuration:
-                                  const Duration(milliseconds: 800),
-                              autoPlayCurve: Curves.fastOutSlowIn,
-                              enlargeCenterPage: true,
-                              enlargeFactor: 0.2,
-                              scrollDirection: Axis.horizontal,
+                              ),
+                            )
+                          else
+                            CarouselSlider(
+                              items: displayList.map((product) {
+                                final rating = ratings[product.id];
+                                return Builder(
+                                  builder: (context) {
+                                    return Selector<FavoritesProvider, bool>(
+                                      selector: (_, fav) =>
+                                          fav.isFavorite(product.id),
+                                      builder: (_, isFavorite, __) => Container(
+                                        width:
+                                            MediaQuery.of(context).size.width,
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        child: _PopularProductCard(
+                                          product: product,
+                                          isNew: DateTime.now()
+                                                  .difference(product.createdAt)
+                                                  .inDays <
+                                              AppConstants.newProductDays,
+                                          isPopular:
+                                              (salesCounts[product.id] ?? 0) >=
+                                                  AppConstants
+                                                      .popularProductMinSales,
+                                          isFavorite:
+                                              canFavorite ? isFavorite : null,
+                                          onFavoriteToggle: canFavorite
+                                              ? () => context
+                                                  .read<FavoritesProvider>()
+                                                  .toggle(user.id, product.id)
+                                              : null,
+                                          avgRating: rating?.avg,
+                                          reviewCount: rating?.count,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }).toList(),
+                              options: CarouselOptions(
+                                height: 220,
+                                aspectRatio: 16 / 9,
+                                viewportFraction: 0.85,
+                                initialPage: 0,
+                                enableInfiniteScroll: list.length > 1,
+                                reverse: false,
+                                autoPlay: list.length > 1,
+                                autoPlayInterval: const Duration(seconds: 3),
+                                autoPlayAnimationDuration:
+                                    const Duration(milliseconds: 800),
+                                autoPlayCurve: Curves.fastOutSlowIn,
+                                enlargeCenterPage: true,
+                                enlargeFactor: 0.2,
+                                scrollDirection: Axis.horizontal,
+                              ),
                             ),
-                          ),
                           if (locationProvider.selectedRegion != null) ...[
                             const SizedBox(height: 20),
                             _SellersNearYouSection(
@@ -482,77 +722,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _HeroCard extends StatelessWidget {
-  final bool isSeller;
-  final bool isWide;
-  final VoidCallback onSearchTap;
-
-  const _HeroCard({
-    required this.isSeller,
-    required this.isWide,
-    required this.onSearchTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: Text(
-              'Direktno sa gazdinstva do vašeg stola',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pronađi domaće proizvode iz svog kraja i naruči direktno od proizvođača.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-          if (isSeller) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Kao prodavac, ovde vidiš i kratak pregled svojih porudžbina.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.center,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isWide ? 480 : double.infinity,
-              ),
-              child: TextField(
-                readOnly: true,
-                onTap: onSearchTap,
-                decoration: const InputDecoration(
-                  hintText: 'Traži sir, kačkavalj…',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _HomeSidePanel extends StatefulWidget {
   final Stream<
@@ -646,7 +815,7 @@ class _TopProductsList extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const ProductListSkeleton();
         }
         if (snapshot.hasError) {
           return Center(
@@ -847,7 +1016,7 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
 
     final future = _future;
     if (future == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const SellerProductListSkeleton(itemCount: 3);
     }
 
     return FutureBuilder<List<UserModel>>(
@@ -878,7 +1047,7 @@ class _FavoriteFarmsListState extends State<_FavoriteFarmsList> {
           );
         }
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SellerProductListSkeleton(itemCount: 3);
         }
         final list = snap.data ?? [];
         if (list.isEmpty) {
@@ -981,11 +1150,10 @@ class _SellerDashboardSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          FutureBuilder<SellerStats>(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FutureBuilder<SellerStats>(
             future: statsFuture,
             builder: (context, statsSnap) {
               final stats = statsSnap.data;
@@ -1051,8 +1219,7 @@ class _SellerDashboardSliver extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
+      );
   }
 }
 
@@ -1184,10 +1351,7 @@ class _SellersNearYouSection extends StatelessWidget {
             future: ProductsService().getSellersInRegion(region),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const SizedBox(
-                  height: 80,
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return const SellerAvatarRowSkeleton();
               }
               final sellers = snap.data ?? <UserModel>[];
               if (sellers.isEmpty) {

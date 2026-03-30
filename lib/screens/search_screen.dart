@@ -10,6 +10,7 @@ import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/app_error_retry.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/category_icon.dart';
@@ -41,6 +42,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loadingMore = false;
   bool _hasMore = true;
   int _querySeq = 0;
+  String? _searchError;
   late Future<List<String>> _historyFuture;
 
   @override
@@ -84,22 +86,23 @@ class _SearchScreenState extends State<SearchScreen> {
     final querySeq = ++_querySeq;
     setState(() {
       _loading = true;
+      _searchError = null;
       _products = [];
       _offset = 0;
       _hasMore = true;
       _loadingMore = false;
     });
-    final result = await _productsService.getProductsPage(
-      category: _category,
-      region: _region,
-      availableNow: _availableNow,
-      searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
-      sort: _sort,
-      limit: productsPageSize,
-      offset: 0,
-    );
-    if (!mounted || querySeq != _querySeq) return;
-    {
+    try {
+      final result = await _productsService.getProductsPage(
+        category: _category,
+        region: _region,
+        availableNow: _availableNow,
+        searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
+        sort: _sort,
+        limit: productsPageSize,
+        offset: 0,
+      );
+      if (!mounted || querySeq != _querySeq) return;
       setState(() {
         _products = result.items;
         _salesCounts = result.salesCounts;
@@ -108,6 +111,12 @@ class _SearchScreenState extends State<SearchScreen> {
         _hasMore = result.hasMore;
         _loading = false;
       });
+    } catch (e) {
+      if (!mounted || querySeq != _querySeq) return;
+      setState(() {
+        _loading = false;
+        _searchError = e.toString();
+      });
     }
   }
 
@@ -115,25 +124,23 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_loadingMore || !_hasMore || _loading) return;
     final querySeq = _querySeq;
     setState(() => _loadingMore = true);
-    final result = await _productsService.getProductsPage(
-      category: _category,
-      region: _region,
-      availableNow: _availableNow,
-      searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
-      sort: _sort,
-      limit: productsPageSize,
-      offset: _offset,
-    );
-    if (!mounted) return;
-    if (querySeq != _querySeq) {
-      // Nove pretrage su počele dok je loadMore bio u flight-u.
-      // Ne sme se dodavati rezultat starog upita.
-      setState(() {
-        _loadingMore = false;
-      });
-      return;
-    }
-    {
+    try {
+      final result = await _productsService.getProductsPage(
+        category: _category,
+        region: _region,
+        availableNow: _availableNow,
+        searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
+        sort: _sort,
+        limit: productsPageSize,
+        offset: _offset,
+      );
+      if (!mounted) return;
+      if (querySeq != _querySeq) {
+        // Nove pretrage su počele dok je loadMore bio u flight-u.
+        // Ne sme se dodavati rezultat starog upita.
+        setState(() => _loadingMore = false);
+        return;
+      }
       setState(() {
         _products = [..._products, ...result.items];
         _salesCounts = {..._salesCounts, ...result.salesCounts};
@@ -142,6 +149,12 @@ class _SearchScreenState extends State<SearchScreen> {
         _hasMore = result.hasMore;
         _loadingMore = false;
       });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Greška pri učitavanju više proizvoda.')),
+      );
     }
   }
 
@@ -191,6 +204,196 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  Widget _buildCategoryItem(BuildContext context, dynamic cat) {
+    final selected = _category == cat.name;
+    return InkWell(
+      onTap: () {
+        setState(() => _category = selected ? null : cat.name);
+        _onFilterChanged();
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                buildCategoryIcon(
+                  cat.icon,
+                  size: 28,
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  cat.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight:
+                        selected ? FontWeight.bold : FontWeight.normal,
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryChips() {
+    return FutureBuilder<List<String>>(
+      future: _historyFuture,
+      builder: (context, snap) {
+        final history = snap.data ?? [];
+        if (history.isEmpty) return const SizedBox.shrink();
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              Text('Istorija:',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          Theme.of(context).colorScheme.onSurfaceVariant)),
+              const SizedBox(width: 8),
+              ...history.take(5).map((h) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      label:
+                          Text(h, style: const TextStyle(fontSize: 12)),
+                      onPressed: () {
+                        _searchController.text = h;
+                        _applySearchImmediate(h);
+                      },
+                    ),
+                  )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChips(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          _FilterChip(
+            label: 'Sortiraj',
+            value: _sort.label,
+            options: ProductSort.values.map((s) => s.label).toList(),
+            onSelected: (v) {
+              final idx =
+                  ProductSort.values.indexWhere((s) => s.label == v);
+              if (idx >= 0) {
+                setState(() {
+                  _sort = ProductSort.values[idx];
+                  _onFilterChanged();
+                });
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Region',
+            value: _region,
+            options: AppConstants.regions,
+            onSelected: (v) {
+              setState(() => _region = v);
+              _onFilterChanged();
+            },
+          ),
+          const SizedBox(width: 8),
+          ActionChip(
+            label: const Text('Dostupno sada'),
+            onPressed: () {
+              setState(
+                  () => _availableNow = _availableNow == true ? null : true);
+              _onFilterChanged();
+            },
+            backgroundColor: _availableNow == true
+                ? Theme.of(context).colorScheme.primaryContainer
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, int i, dynamic user) {
+    final p = _products[i];
+    final rating = _ratings[p.id];
+    return user != null && !user.isGuest
+        ? Selector<FavoritesProvider, bool>(
+            selector: (_, fav) => fav.isFavorite(p.id),
+            builder: (_, isFavorite, __) {
+              final favorites = context.read<FavoritesProvider>();
+              return ProductCard(
+                product: p,
+                isFavorite: isFavorite,
+                onFavoriteToggle: () => favorites.toggle(user.id, p.id),
+                isPopular: (_salesCounts[p.id] ?? 0) >=
+                    AppConstants.popularProductMinSales,
+                avgRating: rating?.avg,
+                reviewCount: rating?.count,
+              );
+            },
+          )
+        : ProductCard(
+            product: p,
+            isFavorite: null,
+            onFavoriteToggle: null,
+            isPopular: (_salesCounts[p.id] ?? 0) >=
+                AppConstants.popularProductMinSales,
+            avgRating: rating?.avg,
+            reviewCount: rating?.count,
+          );
+  }
+
+  Widget _buildEmptyState() {
+    final hasFilters = _category != null || _region != null || _availableNow == true;
+    final subtitle = hasFilters
+        ? 'Pokušajte da uklonite aktivne filtere ili promenite pojam pretrage.'
+        : 'Probajte drugi naziv ili pogledajte sve proizvode.';
+    return AppEmptyState(
+      icon: Icons.search_off,
+      title: 'Nema rezultata za ovu pretragu',
+      subtitle: subtitle,
+      ctaLabel: 'Pogledaj sve proizvode',
+      ctaIcon: Icons.list,
+      onCtaPressed: () {
+        _searchController.clear();
+        setState(() {
+          _category = null;
+          _region = null;
+          _availableNow = null;
+          _debouncedQuery = '';
+        });
+        _loadFirstPage();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
@@ -199,6 +402,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final isWide = Breakpoints.isDesktop(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFE9E9E9),
       appBar: AppBar(
         title: const Text('Pretraga'),
         bottom: PreferredSize(
@@ -229,243 +433,208 @@ class _SearchScreenState extends State<SearchScreen> {
         child: ConstrainedBox(
           constraints:
               BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
-          child: Column(
-            children: [
-              // Kategorije section
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
+          child: isWide
+              ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Kategorije',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: isWide ? 5 : 4,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: isWide ? 1.0 : 0.9,
-                      children: topCategories
-                          .map((cat) => InkWell(
-                                onTap: () {
-                                  setState(() => _category = cat.name);
-                                  _onFilterChanged();
-                                },
-                                borderRadius: BorderRadius.circular(12),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    buildCategoryIcon(
-                                      cat.icon,
-                                      size: isWide ? 40 : 36,
-                                      color: _category == cat.name
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      cat.name,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: _category == cat.name
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: _category == cat.name
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                            : null,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
-              FutureBuilder<List<String>>(
-                future: _historyFuture,
-                builder: (context, snap) {
-                  final history = snap.data ?? [];
-                  if (history.isEmpty) return const SizedBox.shrink();
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      children: [
-                        Text('Istorija:',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant)),
-                        const SizedBox(width: 8),
-                        ...history.take(5).map((h) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ActionChip(
-                                label: Text(h,
-                                    style: const TextStyle(fontSize: 12)),
-                                onPressed: () {
-                                  _searchController.text = h;
-                                  _applySearchImmediate(h);
-                                },
-                              ),
-                            )),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    _FilterChip(
-                      label: 'Sortiraj',
-                      value: _sort.label,
-                      options: ProductSort.values.map((s) => s.label).toList(),
-                      onSelected: (v) {
-                        final idx =
-                            ProductSort.values.indexWhere((s) => s.label == v);
-                        if (idx >= 0) {
-                          setState(() {
-                            _sort = ProductSort.values[idx];
-                            _onFilterChanged();
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Region',
-                      value: _region,
-                      options: AppConstants.regions,
-                      onSelected: (v) {
-                        setState(() => _region = v);
-                        _onFilterChanged();
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    ActionChip(
-                      label: const Text('Dostupno sada'),
-                      onPressed: () {
-                        setState(() => _availableNow =
-                            _availableNow == true ? null : true);
-                        _onFilterChanged();
-                      },
-                      backgroundColor: _availableNow == true
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _loading
-                    ? const ProductListSkeleton()
-                    : Builder(
-                        builder: (context) {
-                          if (_products.isEmpty) {
-                            return AppEmptyState(
-                              icon: Icons.search_off,
-                              title: 'Nema rezultata za ovu pretragu',
-                              subtitle:
-                                  'Probajte drugi naziv, filter kategorije ili pogledajte sve proizvode.',
-                              ctaLabel: 'Pogledaj sve proizvode',
-                              ctaIcon: Icons.list,
-                              onCtaPressed: () {
-                                _searchController.clear();
-                                _category = null;
-                                _region = null;
-                                setState(() {});
-                                _loadFirstPage();
-                              },
-                            );
-                          }
-                          return RefreshIndicator(
-                            onRefresh: _onRefresh,
-                            child: ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(16),
-                              itemCount:
-                                  _products.length + (_loadingMore ? 1 : 0),
-                              itemBuilder: (_, i) {
-                                if (i == _products.length) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 16),
-                                    child: Center(
-                                        child: SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )),
-                                  );
-                                }
-                                final p = _products[i];
-                                final rating = _ratings[p.id];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: user != null && !user.isGuest
-                                      ? Selector<FavoritesProvider, bool>(
-                                          selector: (_, fav) =>
-                                              fav.isFavorite(p.id),
-                                          builder: (_, isFavorite, __) {
-                                            final favorites = context
-                                                .read<FavoritesProvider>();
-                                            return ProductCard(
-                                              product: p,
-                                              isFavorite: isFavorite,
-                                              onFavoriteToggle: () => favorites
-                                                  .toggle(user.id, p.id),
-                                              isPopular: (_salesCounts[p.id] ??
-                                                      0) >=
-                                                  AppConstants
-                                                      .popularProductMinSales,
-                                              avgRating: rating?.avg,
-                                              reviewCount: rating?.count,
-                                            );
-                                          },
-                                        )
-                                      : ProductCard(
-                                          product: p,
-                                          isFavorite: null,
-                                          onFavoriteToggle: null,
-                                          isPopular:
-                                              (_salesCounts[p.id] ?? 0) >=
-                                                  AppConstants
-                                                      .popularProductMinSales,
-                                          avgRating: rating?.avg,
-                                          reviewCount: rating?.count,
-                                        ),
-                                );
-                              },
+                    // Leva kolona: kategorije (15%)
+                    Expanded(
+                      flex: 15,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: Divider.createBorderSide(context),
+                          ),
+                        ),
+                        child: ListView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text('Kategorije',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
                             ),
-                          );
-                        },
+                            ...topCategories
+                                .map((cat) => _buildCategoryItem(context, cat)),
+                          ],
+                        ),
                       ),
-              ),
-            ],
-          ),
+                    ),
+                    const VerticalDivider(width: 1, color: Color(0xFFD0D0D0)),
+                    // Desna kolona: filteri + rezultati (85%)
+                    Expanded(
+                      flex: 85,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: Divider.createBorderSide(context),
+                          ),
+                        ),
+                        child: Column(
+                        children: [
+                          _buildHistoryChips(),
+                          _buildFilterChips(context),
+                          Expanded(
+                            child: _loading
+                                ? const ProductListSkeleton()
+                                : _products.isEmpty
+                                    ? _buildEmptyState()
+                                    : RefreshIndicator(
+                                        onRefresh: _onRefresh,
+                                        child: GridView.builder(
+                                          controller: _scrollController,
+                                          padding: const EdgeInsets.all(16),
+                                          gridDelegate:
+                                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 4,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
+                                            mainAxisExtent: 380,
+                                          ),
+                                          itemCount: _products.length +
+                                              (_loadingMore ? 4 : 0),
+                                          itemBuilder: (_, i) {
+                                            if (i >= _products.length) {
+                                              return const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                          strokeWidth: 2));
+                                            }
+                                            return _buildProductCard(
+                                                context, i, user);
+                                          },
+                                        ),
+                                      ),
+                          ),
+                        ],
+                      ),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    // Kategorije grid (mobile)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Kategorije',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 4,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 0.9,
+                            children: topCategories
+                                .map((cat) => InkWell(
+                                      onTap: () {
+                                        setState(
+                                            () => _category = cat.name);
+                                        _onFilterChanged();
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          buildCategoryIcon(
+                                            cat.icon,
+                                            size: 36,
+                                            color: _category == cat.name
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            cat.name,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: _category == cat.name
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                              color: _category == cat.name
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
+                                                  : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _buildHistoryChips(),
+                    _buildFilterChips(context),
+                    Expanded(
+                      child: _loading
+                          ? const ProductListSkeleton()
+                          : _searchError != null
+                              ? AppErrorRetry(
+                                  message: 'Greška pri učitavanju proizvoda.',
+                                  detail: _searchError,
+                                  onRetry: _loadFirstPage,
+                                )
+                              : _products.isEmpty
+                              ? _buildEmptyState()
+                              : RefreshIndicator(
+                                  onRefresh: _onRefresh,
+                                  child: ListView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.all(16),
+                                    itemCount: _products.length +
+                                        (_loadingMore ? 1 : 0),
+                                    itemBuilder: (_, i) {
+                                      if (i == _products.length) {
+                                        return const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 16),
+                                          child: Center(
+                                              child: SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          )),
+                                        );
+                                      }
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 16),
+                                        child: _buildProductCard(
+                                            context, i, user),
+                                      );
+                                    },
+                                  ),
+                                ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

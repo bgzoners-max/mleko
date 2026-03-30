@@ -9,6 +9,7 @@ import '../../models/review_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
 import '../../widgets/buyer_review_widgets.dart';
+import '../../widgets/skeleton.dart';
 
 /// Međusobno ocenjivanje: primljene ocene od prodavaca (sa jednim odgovorom) i ostavljene prodavcima.
 class BuyerReviewsHubScreen extends StatefulWidget {
@@ -99,7 +100,7 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
         future: _load(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const OrderListSkeleton();
           }
           if (snap.hasError) {
             return Center(

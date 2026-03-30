@@ -36,139 +36,188 @@ class _ProductCardState extends State<ProductCard> {
     return diff < AppConstants.newProductDays;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final card = Card(
+  Widget _buildCard(BuildContext context, bool gridMode) {
+    final image = Stack(
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 10,
+          child: widget.product.imageUrls.isEmpty
+              ? ColoredBox(
+                  color: Colors.grey.shade200,
+                  child: Icon(Icons.image_not_supported,
+                      size: 48, color: Colors.grey.shade400),
+                )
+              : AppNetworkImage.thumbnail(
+                  imageUrl: widget.product.imageUrls.first,
+                  fit: BoxFit.cover,
+                ),
+        ),
+        Positioned(
+          top: 8,
+          left: 8,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!widget.product.isAvailable)
+                const _Badge(label: 'Nedostupno', color: Colors.grey),
+              if (!widget.product.isAvailable && (_isNew || widget.isPopular))
+                const SizedBox(width: 6),
+              if (_isNew) const _Badge(label: 'Novo', color: Colors.green),
+              if (_isNew && widget.isPopular) const SizedBox(width: 6),
+              if (widget.isPopular)
+                const _Badge(label: 'Popularno', color: Colors.orange),
+            ],
+          ),
+        ),
+        if (widget.onFavoriteToggle != null)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              tooltip: widget.isFavorite == true
+                  ? 'Ukloni iz omiljenih'
+                  : 'Dodaj u omiljene',
+              icon: Icon(
+                widget.isFavorite == true
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: widget.isFavorite == true ? Colors.red : Colors.white,
+                size: 28,
+              ),
+              onPressed: widget.onFavoriteToggle != null
+                  ? () => withHaptic(widget.onFavoriteToggle)
+                  : null,
+            ),
+          ),
+      ],
+    );
+
+    final textContent = Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: gridMode ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              if (widget.product.isDomestic)
+                const _Chip(label: 'Domaće', color: Colors.green),
+              if (widget.product.isDomestic) const SizedBox(width: 6),
+              _Chip(
+                  label: widget.product.category,
+                  color: Colors.brown.shade300),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            widget.product.name,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            widget.product.priceFormatted,
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
+          if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0) ...[
+            const SizedBox(height: 4),
+            Semantics(
+              button: true,
+              label:
+                  'Ocena ${widget.avgRating!.toStringAsFixed(1)}, ${widget.reviewCount} recenzije. Klikni da vidiš sve recenzije.',
+              child: InkWell(
+                onTap: () => withHaptic(
+                    () => context.push('/product/${widget.product.id}?reviews=1')),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.avgRating!.toStringAsFixed(1),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${widget.reviewCount})',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey.shade500),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            widget.product.location,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.grey.shade600),
+          ),
+          if (gridMode) const Spacer() else const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonal(
+              onPressed: () => withHaptic(
+                  () => context.push('/product/${widget.product.id}')),
+              child: const Text('Pogledaj'),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Card(
       elevation: kIsWeb && _isHovered ? 6 : null,
       clipBehavior: Clip.antiAlias,
       child: Semantics(
         button: true,
         enabled: true,
-        label: 'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
+        label:
+            'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
         child: InkWell(
-          onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
+          onTap: () =>
+              withHaptic(() => context.push('/product/${widget.product.id}')),
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: 16 / 10,
-                  child: widget.product.imageUrls.isEmpty
-                  ? ColoredBox(
-                      color: Colors.grey.shade200,
-                      child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey.shade400),
-                    )
-                  : AppNetworkImage.thumbnail(
-                      imageUrl: widget.product.imageUrls.first,
-                      fit: BoxFit.cover,
-                    ),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!widget.product.isAvailable) const _Badge(label: 'Nedostupno', color: Colors.grey),
-                      if (!widget.product.isAvailable && (_isNew || widget.isPopular)) const SizedBox(width: 6),
-                      if (_isNew) const _Badge(label: 'Novo', color: Colors.green),
-                      if (_isNew && widget.isPopular) const SizedBox(width: 6),
-                      if (widget.isPopular) const _Badge(label: 'Popularno', color: Colors.orange),
-                    ],
-                  ),
-                ),
-                if (widget.onFavoriteToggle != null)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: IconButton(
-                      tooltip: widget.isFavorite == true ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
-                      icon: Icon(
-                        widget.isFavorite == true ? Icons.favorite : Icons.favorite_border,
-                        color: widget.isFavorite == true ? Colors.red : Colors.white,
-                        size: 28,
-                      ),
-                      onPressed: widget.onFavoriteToggle != null ? () => withHaptic(widget.onFavoriteToggle) : null,
-                    ),
-                  ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      if (widget.product.isDomestic)
-                        const _Chip(label: 'Domaće', color: Colors.green),
-                      if (widget.product.isDomestic) const SizedBox(width: 6),
-                      _Chip(label: widget.product.category, color: Colors.brown.shade300),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.product.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.product.priceFormatted,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
-                  ),
-                  if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0) ...[
-                    const SizedBox(height: 4),
-                    Semantics(
-                      button: true,
-                      label: 'Ocena ${widget.avgRating!.toStringAsFixed(1)}, ${widget.reviewCount} recenzije. Klikni da vidiš sve recenzije.',
-                      child: InkWell(
-                        onTap: () => withHaptic(() => context.push('/product/${widget.product.id}?reviews=1')),
-                        borderRadius: BorderRadius.circular(4),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star, size: 14, color: Colors.amber),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.avgRating!.toStringAsFixed(1),
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '(${widget.reviewCount})',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.product.location,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonal(
-                      onPressed: () => withHaptic(() => context.push('/product/${widget.product.id}')),
-                      child: const Text('Pogledaj'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              image,
+              if (gridMode) Expanded(child: textContent) else textContent,
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final card = LayoutBuilder(
+      builder: (context, constraints) {
+        // Ako roditelj daje ograničenu visinu (grid) → grid mod sa Spacer-om
+        // Ako je visina neograničena (lista) → normalni mod
+        final gridMode = constraints.maxHeight.isFinite;
+        return _buildCard(context, gridMode);
+      },
     );
 
     if (kIsWeb) {

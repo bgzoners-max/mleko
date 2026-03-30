@@ -9,6 +9,7 @@ import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_network_image.dart';
+import '../widgets/skeleton.dart';
 
 String _formatConvTime(DateTime? dt) {
   if (dt == null) return '';
@@ -73,7 +74,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
             );
           }
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ConversationListSkeleton();
           }
           final list = snap.data ?? [];
           if (list.isEmpty) {

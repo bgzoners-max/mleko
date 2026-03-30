@@ -16,6 +16,7 @@ class UserModel {
   final double? lat;
   final double? lng;
   final bool isVerified;
+  final bool phonePublic;
   final String? sellerStory;
   final List<String> farmGalleryUrls;
   final List<String> sellerTags;
@@ -39,6 +40,7 @@ class UserModel {
     this.lat,
     this.lng,
     this.isVerified = false,
+    this.phonePublic = false,
     this.sellerStory,
     this.farmGalleryUrls = const [],
     this.sellerTags = const [],
@@ -51,8 +53,8 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final role = json['role'] == 'seller' ? UserRole.seller : UserRole.buyer;
     final location = json['location'] as String?;
-    final address = (json['address'] as String?) ??
-        (role == UserRole.buyer ? location : null);
+    // Kupci čuvaju adresu dostave u DB koloni `location` (nema posebne `address` kolone).
+    final address = role == UserRole.buyer ? location : null;
 
     return UserModel(
       id: json['id'] as String,
@@ -69,6 +71,7 @@ class UserModel {
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
       isVerified: json['is_verified'] as bool? ?? false,
+      phonePublic: json['phone_public'] as bool? ?? false,
       sellerStory: json['seller_story'] as String?,
       farmGalleryUrls: (json['farm_gallery_urls'] as List<dynamic>?)
               ?.map((e) => e.toString())
@@ -94,11 +97,13 @@ class UserModel {
       if (phone != null) 'phone': phone,
       if (displayName != null) 'display_name': displayName,
       if (city != null) 'city': city,
-      if (address != null && role == UserRole.buyer) 'location': address,
+      // `address` (kupci) i `location` (prodavci) dele istu DB kolonu `location`.
+      if (location != null) 'location': location,
+      if (address != null && location == null) 'location': address,
+      'phone_public': phonePublic,
       'role': role == UserRole.seller ? 'seller' : 'buyer',
       'is_guest': isGuest,
       if (farmName != null) 'farm_name': farmName,
-      if (location != null) 'location': location,
       if (profileImageUrl != null) 'profile_image_url': profileImageUrl,
       if (sellerQuickReplies.isNotEmpty)
         'seller_quick_replies': sellerQuickReplies,
@@ -120,6 +125,7 @@ class UserModel {
     double? lat,
     double? lng,
     bool? isVerified,
+    bool? phonePublic,
     String? sellerStory,
     List<String>? farmGalleryUrls,
     List<String>? sellerTags,
@@ -141,6 +147,7 @@ class UserModel {
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
       isVerified: isVerified ?? this.isVerified,
+      phonePublic: phonePublic ?? this.phonePublic,
       sellerStory: sellerStory ?? this.sellerStory,
       farmGalleryUrls: farmGalleryUrls ?? this.farmGalleryUrls,
       sellerTags: sellerTags ?? this.sellerTags,

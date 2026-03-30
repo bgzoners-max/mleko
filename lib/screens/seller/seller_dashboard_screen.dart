@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
+import '../../widgets/app_error_retry.dart';
 import '../../widgets/skeleton.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
@@ -175,29 +176,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
               stream: _productsStream,
               builder: (context, snap) {
                 if (snap.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline,
-                              size: 48, color: Colors.red.shade300),
-                          const SizedBox(height: 16),
-                          Text(
-                            snap.error.toString(),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade700),
-                          ),
-                          const SizedBox(height: 24),
-                          FilledButton.icon(
-                            onPressed: goToAddProduct,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Dodaj proizvod'),
-                          ),
-                        ],
-                      ),
-                    ),
+                  return AppErrorRetry(
+                    message: 'Greška pri učitavanju proizvoda.',
+                    detail: snap.error?.toString(),
+                    onRetry: _onRefresh,
                   );
                 }
 

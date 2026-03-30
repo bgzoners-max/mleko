@@ -189,8 +189,8 @@ void main() async {
           child: p_provider.Consumer<AppSettingsProvider>(
             builder: (_, settings, __) => MaterialApp.router(
               title: 'Naše Selo',
-              theme: appTheme,
-              darkTheme: appDarkTheme,
+              theme: buildAppTheme(compact: settings.compactMode),
+              darkTheme: buildAppDarkTheme(compact: settings.compactMode),
               themeMode: settings.themeMode,
               routerConfig: router,
               builder: (context, child) {

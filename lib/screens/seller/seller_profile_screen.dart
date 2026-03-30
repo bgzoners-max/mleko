@@ -19,6 +19,7 @@ import '../../core/profile_display_names.dart';
 import '../../core/responsive.dart';
 import '../../widgets/add_review_dialog.dart';
 import '../../widgets/app_empty_state.dart';
+import '../../widgets/skeleton.dart';
 import '../../widgets/product_grid_tile.dart';
 import '../../widgets/seller_review_widgets.dart';
 import '../../widgets/app_network_image.dart';
@@ -79,7 +80,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         if (!userSnap.hasData) {
           return Scaffold(
             appBar: AppBar(title: const Text('Proizvođač')),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const BuyerProfileSkeleton(),
           );
         }
         final seller = userSnap.data;
@@ -1215,10 +1216,7 @@ class _ProductGridState extends State<_ProductGrid> {
       stream: _productsStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(32),
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return const SellerProductListSkeleton(itemCount: 3);
         }
         final list = snap.data ?? [];
         if (list.isEmpty) {

@@ -13,10 +13,14 @@
       "Bash(supabase secrets:*)",
       "Bash(findstr PushService)",
       "Bash(findstr /I \"firebase\\\\|push\\\\|token\")",
-      "Bash(supabase db:*)"
+      "Bash(supabase db:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080)",
+      "Bash(flutter clean:*)",
+      "Bash(start python:*)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\Silent\\.claude\\projects\\c--dev-mleko\\memory"
+      "c:\\Users\\Silent\\.claude\\projects\\c--dev-mleko\\memory",
+      "c:\\dev"
     ]
   }
 }

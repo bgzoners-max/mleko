@@ -8,6 +8,7 @@ import '../../models/seller_stats_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
 import '../../widgets/seller_review_widgets.dart';
+import '../../widgets/skeleton.dart';
 
 /// Pregled svih recenzija za prodavca — odgovori, zahvalnice; brisanje nije dozvoljeno (RLS).
 class SellerReviewsScreen extends StatefulWidget {
@@ -72,7 +73,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
         }),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const OrderListSkeleton();
           }
           if (snap.hasError) {
             return Center(

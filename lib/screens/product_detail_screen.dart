@@ -114,27 +114,104 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   /// Gradi gallery sa slika + dots indicator
   Widget _buildGallery(ProductModel product, {double height = 220}) {
     final hasMultipleImages = product.imageUrls.length > 1;
+    final isTablet = Breakpoints.isTabletOrLarger(context);
+
     return Column(
       children: [
-        SizedBox(
-          height: height,
-          child: product.imageUrls.isEmpty
-              ? ColoredBox(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.image_not_supported, size: 64),
-                )
-              : PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: (i) => setState(() => _pageIndex = i),
-                  itemCount: product.imageUrls.length,
-                  itemBuilder: (_, i) => AppNetworkImage(
-                    imageUrl: product.imageUrls[i],
-                    fit: BoxFit.cover,
-                    memCacheWidth: 800,
-                    memCacheHeight: 500,
-                    fadeInDuration: Duration.zero,
+        Stack(
+          children: [
+            SizedBox(
+              height: height,
+              child: product.imageUrls.isEmpty
+                  ? ColoredBox(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.image_not_supported, size: 64),
+                    )
+                  : PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (i) => setState(() => _pageIndex = i),
+                      itemCount: product.imageUrls.length,
+                      itemBuilder: (_, i) => AppNetworkImage(
+                        imageUrl: product.imageUrls[i],
+                        fit: BoxFit.cover,
+                        memCacheWidth: 800,
+                        memCacheHeight: 500,
+                        fadeInDuration: Duration.zero,
+                      ),
+                    ),
+            ),
+            // Left/right arrows na tablet
+            if (isTablet && hasMultipleImages) ...[
+              Positioned(
+                left: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.chevron_left,
+                        size: 32,
+                        color: Theme.of(context).colorScheme.surface,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      onPressed: _pageIndex > 0
+                          ? () => _pageController.previousPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              )
+                          : null,
+                      splashRadius: 24,
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                    ),
                   ),
                 ),
+              ),
+              Positioned(
+                right: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.chevron_right,
+                        size: 32,
+                        color: Theme.of(context).colorScheme.surface,
+                        shadows: const [
+                          Shadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      onPressed: _pageIndex < product.imageUrls.length - 1
+                          ? () => _pageController.nextPage(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              )
+                          : null,
+                      splashRadius: 24,
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         if (hasMultipleImages) _buildGalleryDots(product),
       ],
@@ -439,30 +516,38 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               constraints: BoxConstraints(
                   maxWidth: Breakpoints.maxContentWidth(context)),
               child: isTablet
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: MediaQuery.sizeOf(context).width * 0.4,
-                          child: _buildGallery(product, height: 450),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            child: _buildInfoSection(product),
-                          ),
-                        ),
-                      ],
-                    )
-                  : SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                  ? RefreshIndicator(
+                      onRefresh: () async => _retry(),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildGallery(product, height: 220),
-                          _buildInfoSection(product),
+                          SizedBox(
+                            width: MediaQuery.sizeOf(context).width * 0.4,
+                            child: _buildGallery(product, height: 450),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: _buildInfoSection(product),
+                            ),
+                          ),
                         ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async => _retry(),
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildGallery(product, height: 220),
+                            _buildInfoSection(product),
+                          ],
+                        ),
                       ),
                     ),
             ),
@@ -487,7 +572,7 @@ class _RatingSummaryBadge extends StatelessWidget {
     return FutureBuilder<ProductReviewsData>(
       future: reviewsFuture,
       builder: (context, snap) {
-        if (!snap.hasData) return const SizedBox.shrink();
+        if (snap.hasError || !snap.hasData) return const SizedBox.shrink();
         final avg = snap.data!.averageRating;
         final count = snap.data!.count;
         if (avg == null || count == 0) return const SizedBox.shrink();
@@ -541,23 +626,31 @@ class _RatingSummaryBadge extends StatelessWidget {
   }
 }
 
-class _ProductReviewsSection extends StatelessWidget {
+class _ProductReviewsSection extends StatefulWidget {
   final Future<ProductReviewsData> reviewsFuture;
 
   const _ProductReviewsSection({super.key, required this.reviewsFuture});
 
   @override
+  State<_ProductReviewsSection> createState() => _ProductReviewsSectionState();
+}
+
+class _ProductReviewsSectionState extends State<_ProductReviewsSection> {
+  bool _showAll = false;
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<ProductReviewsData>(
-      future: reviewsFuture,
+      future: widget.reviewsFuture,
       builder: (context, snap) {
-        if (!snap.hasData) return const SizedBox.shrink();
+        if (snap.hasError || !snap.hasData) return const SizedBox.shrink();
         final data = snap.data!;
         final avg = data.averageRating;
         final reviews = data.reviews;
         final buyerNames = data.buyerDisplayNames;
         final scheme = Theme.of(context).colorScheme;
         if (avg == null && reviews.isEmpty) return const SizedBox.shrink();
+        final visible = _showAll ? reviews : reviews.take(3).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -581,7 +674,7 @@ class _ProductReviewsSection extends StatelessWidget {
             ),
             if (reviews.isNotEmpty) ...[
               const SizedBox(height: 8),
-              ...reviews.take(3).map((r) => Padding(
+              ...visible.map((r) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,6 +734,13 @@ class _ProductReviewsSection extends StatelessWidget {
                       ],
                     ),
                   )),
+              if (reviews.length > 3)
+                TextButton(
+                  onPressed: () => setState(() => _showAll = !_showAll),
+                  child: Text(_showAll
+                      ? 'Prikaži manje'
+                      : 'Prikaži sve (${reviews.length})'),
+                ),
             ],
           ],
         );

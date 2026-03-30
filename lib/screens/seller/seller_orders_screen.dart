@@ -14,6 +14,7 @@ import '../../services/orders/order_services.dart';
 import '../../services/social/social_services.dart';
 import '../../widgets/add_buyer_review_dialog.dart';
 import '../../widgets/app_empty_state.dart';
+import '../../widgets/app_error_retry.dart';
 import '../../widgets/cancel_order_dialog.dart';
 import '../../widgets/order_status_audit_log_section.dart';
 import '../../widgets/order_status_timeline.dart';
@@ -86,6 +87,12 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           if (more.length < 20) _hasMore = false;
         });
       }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Greška pri učitavanju starijih porudžbina.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
@@ -143,6 +150,13 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return const OrderListSkeleton();
+                }
+                if (snap.hasError) {
+                  return AppErrorRetry(
+                    message: 'Greška pri učitavanju porudžbina.',
+                    detail: snap.error?.toString(),
+                    onRetry: _onRefresh,
+                  );
                 }
                 final recent = snap.data ?? [];
                 final orders = [...recent, ..._olderOrders];

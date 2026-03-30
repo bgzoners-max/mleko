@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _keyThemeMode = 'mleko_theme_mode'; // 0=system, 1=light, 2=dark
 const _keyAnimationsEnabled = 'mleko_animations_enabled';
 const _keyFontScale = 'mleko_font_scale';
+const _keyCompactMode = 'mleko_compact_mode';
 
 /// Jednom se postavi na `true` nakon što su početne vrednosti (prva instalacija
 /// ili migracija sa starije verzije) upisane u SharedPreferences. Posle toga se
@@ -20,10 +21,12 @@ class AppSettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _animationsEnabled = true;
   double _fontScale = 1.0;
+  bool _compactMode = false;
 
   ThemeMode get themeMode => _themeMode;
   bool get animationsEnabled => _animationsEnabled;
   double get fontScale => _fontScale.clamp(fontScaleMin, fontScaleMax);
+  bool get compactMode => _compactMode;
 
   bool get isDarkTheme {
     switch (_themeMode) {
@@ -68,6 +71,7 @@ class AppSettingsProvider extends ChangeNotifier {
     await prefs.setInt(_keyThemeMode, _themeModeToInt(_themeMode));
     await prefs.setDouble(_keyFontScale, _fontScale.clamp(fontScaleMin, fontScaleMax));
     await prefs.setBool(_keyAnimationsEnabled, _animationsEnabled);
+    await prefs.setBool(_keyCompactMode, _compactMode);
   }
 
   Future<void> _load() async {
@@ -81,11 +85,13 @@ class AppSettingsProvider extends ChangeNotifier {
           _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 0);
           _fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
           _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
+          _compactMode = prefs.getBool(_keyCompactMode) ?? false;
         } else {
-          // Prva instalacija aplikacije: svetla tema + „Velika“ (1.15).
+          // Prva instalacija aplikacije: svetla tema + „Velika” (1.15).
           _themeMode = ThemeMode.light;
           _fontScale = 1.15;
           _animationsEnabled = true;
+          _compactMode = false;
         }
         await _persistBootstrapState(prefs);
         await prefs.setBool(_keyInstallDefaultsBootstrap, true);
@@ -94,6 +100,7 @@ class AppSettingsProvider extends ChangeNotifier {
         _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 1);
         _fontScale = prefs.getDouble(_keyFontScale) ?? 1.15;
         _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
+        _compactMode = prefs.getBool(_keyCompactMode) ?? false;
       }
 
       if (_fontScale < fontScaleMin || _fontScale > fontScaleMax) {
@@ -156,6 +163,16 @@ class AppSettingsProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_keyFontScale, clamped);
+    } catch (_) {}
+  }
+
+  Future<void> setCompactMode(bool value) async {
+    if (_compactMode == value) return;
+    _compactMode = value;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyCompactMode, value);
     } catch (_) {}
   }
 }

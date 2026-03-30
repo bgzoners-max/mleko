@@ -61,9 +61,9 @@ void main() {
     await tester.tap(find.text('Istorija statusa'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Prihvaceno -> Poslato'), findsOneWidget);
-    expect(find.text('Poslato -> Isporuceno'), findsOneWidget);
-    expect(find.textContaining('Prodavac'), findsOneWidget);
+    expect(find.textContaining('Prihvaceno -> Poslato'), findsOneWidget);
+    expect(find.textContaining('Poslato -> Isporuceno'), findsOneWidget);
+    expect(find.textContaining('Prodavac'), findsNWidgets(2));
     expect(find.textContaining('Kupac'), findsOneWidget);
   });
 
@@ -77,7 +77,7 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Tok porudzbine je prekinut'), findsOneWidget);
+    expect(find.textContaining('Tok porudžbine je prekinut'), findsOneWidget);
   });
 
   testWidgets('audit section shows retry button on error', (tester) async {

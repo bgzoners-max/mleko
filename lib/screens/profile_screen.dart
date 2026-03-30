@@ -28,7 +28,21 @@ class ProfileScreen extends StatelessWidget {
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Profil')),
-        body: const Center(child: Text('Niste prijavljeni.')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.person_outline, size: 64),
+              const SizedBox(height: 16),
+              const Text('Niste prijavljeni.'),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Prijavi se'),
+              ),
+            ],
+          ),
+        ),
       );
     }
     return Scaffold(
@@ -391,10 +405,59 @@ class _ProfileDataCard extends StatelessWidget {
             if (user.displayName != null)
               _DataRow(label: 'Ime', value: user.displayName!),
             if (user.phone != null)
-              _DataRow(label: 'Telefon', value: user.phone!),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: DefaultTextStyle.of(context).style,
+                        children: [
+                          TextSpan(
+                              text: 'Telefon: ',
+                              style: TextStyle(color: Colors.grey.shade600)),
+                          TextSpan(text: user.phone!),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: user.phonePublic ? 'Vidljivo svima' : 'Vidljivo samo tebi',
+                      child: Icon(
+                        user.phonePublic ? Icons.lock_open_outlined : Icons.lock_outline,
+                        size: 13,
+                        color: user.phonePublic ? Colors.green.shade600 : Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (user.city != null) _DataRow(label: 'Grad', value: user.city!),
             if (user.address != null)
-              _DataRow(label: 'Adresa', value: user.address!),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: DefaultTextStyle.of(context).style,
+                        children: [
+                          TextSpan(
+                              text: 'Adresa: ',
+                              style: TextStyle(color: Colors.grey.shade600)),
+                          TextSpan(text: user.address!),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: 'Vidljivo samo tebi',
+                      child: Icon(Icons.lock_outline,
+                          size: 13, color: Colors.grey.shade500),
+                    ),
+                  ],
+                ),
+              ),
             if (user.email != null && !user.isGuest)
               _DataRow(label: 'Email', value: user.email!),
             if (user.isSeller && user.farmName != null)
@@ -471,6 +534,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late final TextEditingController _addressCtrl;
   late final TextEditingController _farmNameCtrl;
   late List<String> _selectedTags;
+  late bool _phonePublic;
   final _formKey = GlobalKey<FormState>();
   bool _saving = false;
 
@@ -484,6 +548,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _addressCtrl = TextEditingController(text: u.address ?? '');
     _farmNameCtrl = TextEditingController(text: u.farmName ?? '');
     _selectedTags = List.from(u.sellerTags);
+    _phonePublic = u.phonePublic;
   }
 
   @override
@@ -508,8 +573,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-        address:
+        location:
             _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+        phonePublic: _phonePublic,
         farmName: user.isSeller && _farmNameCtrl.text.trim().isNotEmpty
             ? _farmNameCtrl.text.trim()
             : null,
@@ -591,7 +657,22 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+              SwitchListTile(
+                value: _phonePublic,
+                onChanged: (v) => setState(() => _phonePublic = v),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                secondary: Icon(
+                  _phonePublic ? Icons.lock_open_outlined : Icons.lock_outline,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                title: Text(
+                  _phonePublic ? 'Telefon vidljiv svima' : 'Telefon privatan',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _cityCtrl,
                 decoration: const InputDecoration(
@@ -612,9 +693,16 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               const SizedBox(height: 12),
               TextField(
                 controller: _addressCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Adresa (ulica i broj)',
-                    border: OutlineInputBorder()),
+                decoration: InputDecoration(
+                  labelText: 'Adresa (ulica i broj)',
+                  border: const OutlineInputBorder(),
+                  helperText: 'Vidljiva samo tebi i prodavcu pri narudžbini',
+                  helperStyle: TextStyle(color: Colors.grey.shade600),
+                  suffixIcon: Tooltip(
+                    message: 'Adresa nije javno vidljiva',
+                    child: Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade500),
+                  ),
+                ),
                 textCapitalization: TextCapitalization.sentences,
               ),
               if (isSeller) ...[
@@ -714,7 +802,8 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
 
   Future<void> _removePhoto(int index) async {
     final appState = context.read<AppState>();
-    final user = appState.user!;
+    final user = appState.user;
+    if (user == null) return;
     final removed = _galleryUrls[index];
     final updated = List<String>.from(_galleryUrls)..removeAt(index);
     setState(() {

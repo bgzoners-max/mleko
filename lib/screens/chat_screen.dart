@@ -9,6 +9,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
 import '../widgets/app_error_retry.dart';
+import '../widgets/skeleton.dart';
 
 /// Brzi odgovori – različiti za kupca i prodavca
 const _quickRepliesBuyer = [
@@ -253,7 +254,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ChatMessagesSkeleton();
                 }
                 final recent = snap.data ?? [];
                 final messages = [..._olderMessages, ...recent];

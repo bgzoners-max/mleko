@@ -13,6 +13,7 @@ import 'package:mleko/services/services.dart';
 
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/skeleton.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -56,6 +57,39 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       Permission.notification.status.then((s) {
         if (mounted) setState(() => _notificationPermissionGranted = s.isGranted);
       });
+    }
+  }
+
+  Future<void> _deleteNotification(
+      NotificationModel n, List<NotificationModel> list) async {
+    final wasUnread = !n.isRead;
+    final originalIndex = list.indexWhere((item) => item.id == n.id);
+    final optimistic = List<NotificationModel>.from(list)
+      ..removeWhere((item) => item.id == n.id);
+    if (!_notificationsController.isClosed) {
+      _notificationsController.add(optimistic);
+    }
+    if (wasUnread && mounted) {
+      context.read<AppState>().decrementUnreadCount();
+    }
+    try {
+      await _service.deleteNotification(n.id);
+    } catch (_) {
+      // Rollback — vrati notifikaciju na originalnu poziciju
+      final restored = List<NotificationModel>.from(optimistic);
+      final insertAt = originalIndex.clamp(0, restored.length);
+      restored.insert(insertAt, n);
+      if (!_notificationsController.isClosed) {
+        _notificationsController.add(restored);
+      }
+      if (wasUnread && mounted) {
+        context.read<AppState>().incrementUnreadCount();
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Greška pri brisanju obaveštenja.')),
+        );
+      }
     }
   }
 
@@ -218,7 +252,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               onRetry: _loadAndMarkRead,
             );
           }
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snap.hasData) return const NotificationListSkeleton();
           final list = snap.data!;
           final settingsCard = (!kIsWeb && Platform.isAndroid)
               ? Padding(
@@ -305,20 +339,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         child: const Icon(Icons.delete, color: Colors.white, size: 28),
                       ),
                       confirmDismiss: (_) async => true,
-                      onDismissed: (_) async {
-                        // Optimistički ukloni iz liste i ažuriraje badge
-                        final removedWasUnread = !n.isRead;
-                        final currentList = List<NotificationModel>.from(list);
-                        currentList.removeWhere((item) => item.id == n.id);
-                        if (!_notificationsController.isClosed) {
-                          _notificationsController.add(currentList);
-                        }
-                        if (removedWasUnread && context.mounted) {
-                          context.read<AppState>().decrementUnreadCount();
-                        }
-                        // Pokreni delete na serveru u backgroundu
-                        unawaited(_service.deleteNotification(n.id));
-                      },
+                      onDismissed: (_) => _deleteNotification(n, list),
                       child: Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         color: n.isRead ? null : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -332,20 +353,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               IconButton(
                                 tooltip: 'Obriši obaveštenje',
                                 icon: const Icon(Icons.delete_outline),
-                                onPressed: () async {
-                                  // Optimistički ukloni iz liste
-                                  final wasUnread = !n.isRead;
-                                  final currentList = List<NotificationModel>.from(list);
-                                  currentList.removeWhere((item) => item.id == n.id);
-                                  if (!_notificationsController.isClosed) {
-                                    _notificationsController.add(currentList);
-                                  }
-                                  if (wasUnread && context.mounted) {
-                                    context.read<AppState>().decrementUnreadCount();
-                                  }
-                                  // Pokreni delete na serveru u backgroundu
-                                  unawaited(_service.deleteNotification(n.id));
-                                },
+                                onPressed: () => _deleteNotification(n, list),
                               ),
                               if (n.orderId != null)
                                 IconButton(

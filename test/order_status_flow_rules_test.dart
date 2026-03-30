@@ -68,7 +68,7 @@ void main() {
 
       expect(accepted, isNotNull);
       expect(accepted!.recipientRole, 'buyer');
-      expect(accepted.title, 'Porudzbina prihvacena');
+      expect(accepted.title, 'Porudžbina prihvaćena');
 
       expect(delivered, isNotNull);
       expect(delivered!.recipientRole, 'seller');

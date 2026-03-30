@@ -45,7 +45,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _clearLocation() async {
     final appState = context.read<AppState>();
-    final user = appState.user!;
+    final user = appState.user;
+    if (user == null) return;
     setState(() {
       _error = null;
       _loading = true;
@@ -101,7 +102,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _saveStory() async {
     final appState = context.read<AppState>();
-    final user = appState.user!;
+    final user = appState.user;
+    if (user == null) return;
     setState(() {
       _error = null;
       _loading = true;
@@ -153,7 +155,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _removeGalleryPhoto(int index) async {
     final appState = context.read<AppState>();
-    final user = appState.user!;
+    final user = appState.user;
+    if (user == null) return;
     final removed = _galleryUrls[index];
     final updated = List<String>.from(_galleryUrls)..removeAt(index);
     setState(() {
@@ -442,7 +445,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
                         });
                         try {
                           final appState = context.read<AppState>();
-                          final u = appState.user!;
+                          final u = appState.user;
+                          if (u == null) return;
                           final replies =
                               controllers.map((c) => c.text).toList();
                           await UsersService()

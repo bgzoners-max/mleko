@@ -10,6 +10,7 @@ import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../models/order_item_model.dart';
+import '../widgets/app_error_retry.dart';
 import '../widgets/add_review_dialog.dart';
 import '../widgets/order_status_audit_log_section.dart';
 import '../widgets/order_status_timeline.dart';
@@ -101,6 +102,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           _olderOrders.addAll(more);
           if (more.length < 20) _hasMore = false;
         });
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Greška pri učitavanju starijih porudžbina.')),
+        );
       }
     } finally {
       if (mounted) setState(() => _loadingMore = false);
@@ -246,6 +253,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       if (snap.connectionState == ConnectionState.waiting &&
                           !snap.hasData) {
                         return const OrderListSkeleton();
+                      }
+                      if (snap.hasError) {
+                        return AppErrorRetry(
+                          message: 'Greška pri učitavanju porudžbina.',
+                          detail: snap.error?.toString(),
+                          onRetry: _onRefresh,
+                        );
                       }
                       final recent = snap.data ?? [];
                       final list = [...recent, ..._olderOrders];
@@ -455,20 +469,13 @@ class _BySellerTabState extends State<_BySellerTab> {
       future: _future,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const OrderListSkeleton();
         }
         if (snap.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Greška: ${snap.error}',
-                    style: TextStyle(color: Colors.red.shade700)),
-                const SizedBox(height: 16),
-                FilledButton.tonal(
-                    onPressed: _refresh, child: const Text('Pokušaj ponovo')),
-              ],
-            ),
+          return AppErrorRetry(
+            message: 'Greška pri učitavanju porudžbina.',
+            detail: snap.error?.toString(),
+            onRetry: _refresh,
           );
         }
         final list = snap.data ?? [];
@@ -563,7 +570,7 @@ class _BySellerTabState extends State<_BySellerTab> {
               'Porudžbina dodata u korpu. Možete izmeniti količine u korpi.'),
         ),
       );
-      context.push('/cart');
+      context.push('/checkout-seller/${stats.sellerId}');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

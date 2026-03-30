@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/order_model.dart';
@@ -10,6 +11,7 @@ import 'package:mleko/services/services.dart';
 
 import '../widgets/app_error_retry.dart';
 import '../widgets/offline_indicator.dart';
+import '../widgets/skeleton.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final String productId;
@@ -46,8 +48,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           );
         }
         if (!snap.hasData) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+          return Scaffold(
+            appBar: AppBar(title: const Text('Porudžbina')),
+            body: const ProductDetailSkeleton(),
+          );
         }
         final product = snap.data;
         if (product == null) {
@@ -76,6 +80,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
   late final TextEditingController _quantityController;
   final _noteController = TextEditingController();
   final _cityController = TextEditingController();
+  final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _savePhoneToProfile = false;
 
@@ -91,6 +96,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
     if (user != null) {
       if (user.city != null && user.city!.isNotEmpty) {
         _cityController.text = user.city!;
+      }
+      if (user.address != null && user.address!.isNotEmpty) {
+        _addressController.text = user.address!;
       }
       if (user.phone != null && user.phone!.isNotEmpty) {
         _phoneController.text = user.phone!;
@@ -144,7 +152,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           note: _noteController.text.trim(),
           buyerCity: _cityController.text.trim(),
           buyerPhone: phone,
-          buyerAddress: user.address,
+          buyerAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
           status: OrderStatus.sent,
           createdAt: DateTime.now(),
         );
@@ -176,7 +184,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           unitType: widget.product.unitType,
           note: _noteController.text.trim(),
           buyerCity: _cityController.text.trim(),
-          buyerAddress: user.address ?? _cityController.text.trim(),
+          buyerAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
           buyerPhone: phone,
           preferCall: false,
           pickupOptions: [],
@@ -242,6 +250,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                 controller: _quantityController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[,.]?\d{0,2}')),
+                ],
                 decoration: InputDecoration(
                   labelText: 'Količina (${widget.product.quantityUnitLabel})',
                   hintText: 'Min ${widget.product.minOrderFormatted}',
@@ -258,6 +269,11 @@ class _CheckoutFormState extends State<_CheckoutForm> {
               TextField(
                 controller: _cityController,
                 decoration: const InputDecoration(labelText: 'Grad kupca'),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _addressController,
+                decoration: const InputDecoration(labelText: 'Adresa (ulica i broj)'),
               ),
               const SizedBox(height: 16),
               TextField(

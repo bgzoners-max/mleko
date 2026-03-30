@@ -33,14 +33,16 @@ class UsersService {
     String? displayName,
     String? phone,
     String? city,
-    String? address,
     String? role,
     bool? isGuest,
     String? farmName,
+    /// Adresa dostave (kupci) ili opis lokacije farme (prodavci) —
+    /// oba se čuvaju u DB koloni `location`.
     String? location,
     String? profileImageUrl,
     double? lat,
     double? lng,
+    bool? phonePublic,
   }) async {
     final data = <String, dynamic>{
       'id': userId,
@@ -50,7 +52,6 @@ class UsersService {
     if (displayName != null) data['display_name'] = displayName;
     if (phone != null) data['phone'] = phone;
     if (city != null) data['city'] = city;
-    if (address != null) data['location'] = address;
     if (role != null) data['role'] = role;
     if (isGuest != null) data['is_guest'] = isGuest;
     if (farmName != null) data['farm_name'] = farmName;
@@ -58,6 +59,7 @@ class UsersService {
     if (profileImageUrl != null) data['profile_image_url'] = profileImageUrl;
     if (lat != null) data['lat'] = lat;
     if (lng != null) data['lng'] = lng;
+    if (phonePublic != null) data['phone_public'] = phonePublic;
     await _client.from('profiles').upsert(data);
   }
 

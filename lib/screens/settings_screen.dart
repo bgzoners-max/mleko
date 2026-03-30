@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
 
@@ -86,6 +87,15 @@ class SettingsScreen extends StatelessWidget {
               appSettings.setAnimationsEnabled(value);
             },
           ),
+          SwitchListTile(
+            secondary: const Icon(Icons.density_small_outlined),
+            title: const Text('Kompaktan prikaz'),
+            subtitle: const Text('Manji razmaci i dugmad — više sadržaja na ekranu'),
+            value: appSettings.compactMode,
+            onChanged: (value) {
+              appSettings.setCompactMode(value);
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.text_fields_outlined),
             title: const Text('Veći font'),
@@ -119,6 +129,24 @@ class SettingsScreen extends StatelessWidget {
                 const SnackBar(content: Text('Kontakt: support@mleko.rs (MVP)')),
               );
             },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Politika privatnosti'),
+            onTap: () => launchUrl(
+              Uri.parse('https://mleko.rs/politika-privatnosti'),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.gavel_outlined),
+            title: const Text('Uslovi korišćenja'),
+            onTap: () => launchUrl(
+              Uri.parse('https://mleko.rs/uslovi-koriscenja'),
+              mode: LaunchMode.externalApplication,
+            ),
           ),
           if (!user.isGuest) ...[
             const Divider(height: 1),

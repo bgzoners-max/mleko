@@ -271,6 +271,27 @@ class ProductsService {
     );
   }
 
+  /// Najnoviji proizvodi za listu kategorija (parent category page).
+  Future<({List<ProductModel> items, bool hasMore})> getProductsByCategories({
+    required List<String> categoryNames,
+    int limit = productsPageSize,
+    int offset = 0,
+  }) async {
+    if (categoryNames.isEmpty) return (items: <ProductModel>[], hasMore: false);
+    const table = 'products_with_ratings';
+    final list = await _withRetry(() => _client
+        .from(table)
+        .select()
+        .inFilter('category', categoryNames)
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1));
+    final rows = list as List;
+    final products = rows
+        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return (items: products, hasMore: products.length >= limit);
+  }
+
   /// Lokalna pretraga kroz cache za offline scenario.
   Future<
       ({

@@ -5,6 +5,7 @@ import '../providers/categories_provider.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/skeleton.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -35,7 +36,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final error = catProvider.error;
 
     if (loading && !catProvider.isLoaded) {
-      return const Center(child: CircularProgressIndicator());
+      return const CategoryGridSkeleton();
     }
     if (error != null) {
       return AppErrorRetry(

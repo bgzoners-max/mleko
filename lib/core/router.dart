@@ -210,7 +210,7 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/cart',
-        redirect: (_, __) => '/search',
+        redirect: (_, __) => '/orders',
       ),
       GoRoute(
         path: '/favorites',

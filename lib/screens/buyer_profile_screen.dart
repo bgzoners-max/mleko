@@ -11,6 +11,7 @@ import 'package:mleko/services/services.dart';
 
 import '../widgets/app_error_retry.dart';
 import '../widgets/buyer_review_widgets.dart';
+import '../widgets/skeleton.dart';
 
 /// Profil kupca — vidi prodavac kada klikne na kupca u poruci ili porudžbini.
 class BuyerProfileScreen extends StatefulWidget {
@@ -101,7 +102,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
         if (!snap.hasData) {
           return Scaffold(
             appBar: AppBar(title: const Text('Profil kupca')),
-            body: const Center(child: CircularProgressIndicator()),
+            body: const BuyerProfileSkeleton(),
           );
         }
         final user = snap.data!['user'] as UserModel?;
@@ -116,7 +117,9 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
 
         return Scaffold(
           appBar: AppBar(title: Text(displayName)),
-          body: ListView(
+          body: RefreshIndicator(
+            onRefresh: () async => _retry(),
+            child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               _BuyerHeaderCard(
@@ -204,6 +207,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                 ),
               ),
             ],
+            ),
           ),
         );
       },
@@ -279,21 +283,6 @@ class _BuyerHeaderCard extends StatelessWidget {
                             .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
-                      if (user?.location != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on,
-                                size: 14, color: Colors.grey.shade600),
-                            const SizedBox(width: 2),
-                            Text(
-                              user!.location!,
-                              style: TextStyle(
-                                  color: Colors.grey.shade600, fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ],
                       if (user?.createdAt != null) ...[
                         const SizedBox(height: 4),
                         Text(
