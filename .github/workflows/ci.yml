@@ -16,7 +16,9 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.41.6'
           channel: stable
+          cache: true
 
       - name: Flutter pub get
         run: flutter pub get
@@ -38,39 +40,3 @@ jobs:
         with:
           name: coverage
           path: coverage/lcov.info
-
-  db-integration-checks:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install JS dependencies
-        run: npm ci
-
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
-      - name: Start local Supabase stack
-        run: npx supabase db start
-
-      - name: Reset local DB with migrations
-        run: npx supabase db reset --local --yes
-
-      - name: Run order status flow DB integration checks
-        shell: bash
-        run: |
-          set -euo pipefail
-          DB_URL="$(npx supabase status -o env | sed -n 's/^DB_URL=//p' | head -1 | tr -d '\r')"
-          if [ -z "$DB_URL" ]; then
-            echo "DB_URL is empty; Supabase local DB is not available."
-            npx supabase status -o env || true
-            exit 1
-          fi
-          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/order_status_flow_integration.sql

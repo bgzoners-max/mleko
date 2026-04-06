@@ -193,7 +193,6 @@ class SupportService {
     final ticketNumber = _generateTicketNumber();
     final trimmedSubject = subject.trim();
     final trimmedBody = body.trim();
-    final legacySubject = '[$ticketNumber] $trimmedSubject';
     final legacyMessage = [
       'Kategorija: ${category.label}',
       if (userName.trim().isNotEmpty) 'Ime: ${userName.trim()}',
