@@ -84,7 +84,11 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
 
     return Scaffold(
       appBar: widget.showAppBar ? AppBar(title: const Text('Razgovori')) : null,
-      body: StreamBuilder<List<SellerInboxItem>>(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: StreamBuilder<List<SellerInboxItem>>(
         stream: _inboxStream,
         builder: (context, snap) {
           if (snap.hasError) {
@@ -149,6 +153,8 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
           );
         },
       ),
+    ),
+  ),
     );
   }
 }

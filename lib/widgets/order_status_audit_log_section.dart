@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../core/responsive.dart';
 
 import 'package:mleko/models/order_status_audit_log_model.dart';
 import '../core/ui_strings.dart';
@@ -73,7 +74,9 @@ class _OrderStatusAuditLogSectionState
         }
 
         final dateFormat = DateFormat('dd.MM.yyyy. HH:mm', 'sr');
-        return Container(
+        final isWide = Breakpoints.isTabletOrLarger(context);
+
+        final card = Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(10),
@@ -107,7 +110,7 @@ class _OrderStatusAuditLogSectionState
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      Flexible(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -137,6 +140,15 @@ class _OrderStatusAuditLogSectionState
                   ),
                 ),
             ],
+          ),
+        );
+
+        if (!isWide) return card;
+
+        return IntrinsicWidth(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 300),
+            child: card,
           ),
         );
       },

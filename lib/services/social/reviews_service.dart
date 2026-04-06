@@ -5,6 +5,10 @@ import '../../models/review_model.dart';
 import '../../models/seller_stats_model.dart';
 
 class ReviewsService {
+  static final ReviewsService _instance = ReviewsService._();
+  factory ReviewsService() => _instance;
+  ReviewsService._();
+
   final _client = Supabase.instance.client;
 
   Future<List<ReviewModel>> getReviewsForSeller(String sellerId) async {
@@ -55,25 +59,21 @@ class ReviewsService {
   }
 
   Future<double?> getAverageRatingForSeller(String sellerId) async {
-    final list = await _client
+    final result = await _client
         .from('reviews')
-        .select('rating')
-        .eq('seller_id', sellerId);
-    if ((list as List).isEmpty) return null;
-    final sum = (list as List).fold<double>(
-        0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
-    return sum / list.length;
+        .select('rating.avg()')
+        .eq('seller_id', sellerId)
+        .single();
+    return (result['avg'] as num?)?.toDouble();
   }
 
   Future<double?> getAverageRatingForProduct(String productId) async {
-    final list = await _client
+    final result = await _client
         .from('reviews')
-        .select('rating')
-        .eq('product_id', productId);
-    if ((list as List).isEmpty) return null;
-    final sum = (list as List).fold<double>(
-        0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
-    return sum / list.length;
+        .select('rating.avg()')
+        .eq('product_id', productId)
+        .single();
+    return (result['avg'] as num?)?.toDouble();
   }
 
   Future<List<BuyerReviewModel>> getReviewsForBuyer(String buyerId) async {
@@ -94,14 +94,12 @@ class ReviewsService {
 
   Future<double?> getAverageRatingForBuyer(String buyerId) async {
     try {
-      final list = await _client
+      final result = await _client
           .from('buyer_reviews')
-          .select('rating')
-          .eq('buyer_id', buyerId);
-      if ((list as List).isEmpty) return null;
-      final sum = (list as List).fold<double>(
-          0, (s, e) => s + ((e['rating'] as num?)?.toDouble() ?? 0));
-      return sum / list.length;
+          .select('rating.avg()')
+          .eq('buyer_id', buyerId)
+          .single();
+      return (result['avg'] as num?)?.toDouble();
     } on PostgrestException catch (e) {
       if (e.code == '42P01') return null;
       rethrow;

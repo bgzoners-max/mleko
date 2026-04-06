@@ -13,6 +13,7 @@ import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
 
+import '../models/user_model.dart';
 import '../supabase_config.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
@@ -53,6 +54,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late Future<ProductModel?> _productFuture =
       ProductsService().getProduct(widget.productId);
   late Future<ProductReviewsData> _reviewsFuture = _loadReviewsFuture();
+  Future<UserModel?>? _sellerFuture;
+  String? _sellerFutureSellerId;
+
+  Future<UserModel?> _ensureSellerFuture(String sellerId) {
+    if (_sellerFutureSellerId != sellerId || _sellerFuture == null) {
+      _sellerFutureSellerId = sellerId;
+      _sellerFuture = UsersService().getUser(sellerId);
+    }
+    return _sellerFuture!;
+  }
+
+  Widget _buildSellerBanner(String sellerId) {
+    return FutureBuilder<UserModel?>(
+      future: _ensureSellerFuture(sellerId),
+      builder: (context, snap) {
+        final seller = snap.data;
+        final name = seller?.farmName ?? seller?.displayName ?? '';
+        if (name.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: InkWell(
+                onTap: () => context.push('/seller/$sellerId'),
+                borderRadius: BorderRadius.circular(4),
+                child: Row(
+                  children: [
+                    Icon(Icons.store_outlined,
+                        size: 16, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      name,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right,
+                        size: 16, color: Theme.of(context).colorScheme.primary),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Divider(height: 1, thickness: 1),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
   final _scrollController = ScrollController();
   final _moreFromSellerKey = GlobalKey();
   final _reviewsSectionKey = GlobalKey();
@@ -76,8 +131,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<ProductReviewsData> _loadReviewsFuture() async {
-    final avg = await ReviewsService().getAverageRatingForProduct(widget.productId);
-    final reviews = await ReviewsService().getReviewsForProduct(widget.productId);
+    final avg =
+        await ReviewsService().getAverageRatingForProduct(widget.productId);
+    final reviews =
+        await ReviewsService().getReviewsForProduct(widget.productId);
     final names = await fetchProfileDisplayNames(reviews.map((r) => r.buyerId));
     return ProductReviewsData(
       averageRating: avg,
@@ -124,7 +181,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               height: height,
               child: product.imageUrls.isEmpty
                   ? ColoredBox(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.image_not_supported, size: 64),
                     )
                   : PageView.builder(
@@ -254,25 +312,76 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  /// Gradi info sekciju (naziv, cena, opis, dugmići, itd.)
-  Widget _buildInfoSection(ProductModel product) {
+  Widget _buildCartBlock(ProductModel product, {bool desktopMode = false}) {
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final button = SizedBox(
+      width: desktopMode ? (isLargeTablet ? 220.0 : 200.0) : double.infinity,
+      height: isLargeTablet ? 50 : 52,
+      child: BounceTapButton(
+        onPressed: product.isAvailable ? () => _addToCart(product) : null,
+        builder: (onPressed) => ElevatedButton(
+          onPressed: product.isAvailable ? onPressed : null,
+          child: Text(
+              product.isAvailable ? 'Dodaj u korpu' : 'Trenutno nedostupno'),
+        ),
+      ),
+    );
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, desktopMode ? 16 : 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          desktopMode
+              ? Align(alignment: Alignment.centerRight, child: button)
+              : button,
+          const SizedBox(height: 16),
+          _SellerInlineCartSection(sellerId: product.sellerId),
+        ],
+      ),
+    );
+  }
+
+  /// Gradi info sekciju (naziv, cena, opis, dugmići, itd.)
+  Widget _buildInfoSection(ProductModel product, {bool includeCart = true}) {
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final infoPadding = Breakpoints.cardPadding(context);
+    final titleSize = Breakpoints.adaptiveDouble(
+      context,
+      phone: 24,
+      smallTabletValue: 27,
+      largeTabletValue: 30,
+      desktop: 30,
+    );
+    final priceSize = Breakpoints.adaptiveDouble(
+      context,
+      phone: 22,
+      smallTabletValue: 24,
+      largeTabletValue: 26,
+      desktop: 26,
+    );
+    return Padding(
+      padding: EdgeInsets.all(infoPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             product.name,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Breakpoints.heroTitleStyle(
+              context,
+              Theme.of(context).textTheme.headlineSmall,
+            )?.copyWith(
+              fontSize: titleSize,
+              height: isLargeTablet ? 1.15 : 1.2,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             product.priceFormatted,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Theme.of(context).colorScheme.primary),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: priceSize,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
           const SizedBox(height: 8),
           _RatingSummaryBadge(
@@ -294,22 +403,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               title: 'Način preuzimanja',
               content: product.pickupOptions.join(', ')),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: BounceTapButton(
-              onPressed:
-                  product.isAvailable ? () => _addToCart(product) : null,
-              builder: (onPressed) => ElevatedButton(
-                onPressed: product.isAvailable ? onPressed : null,
-                child: Text(
-                    product.isAvailable ? 'Dodaj u korpu' : 'Trenutno nedostupno'),
+          if (includeCart) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: BounceTapButton(
+                onPressed:
+                    product.isAvailable ? () => _addToCart(product) : null,
+                builder: (onPressed) => ElevatedButton(
+                  onPressed: product.isAvailable ? onPressed : null,
+                  child: Text(product.isAvailable
+                      ? 'Dodaj u korpu'
+                      : 'Trenutno nedostupno'),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _SellerInlineCartSection(sellerId: product.sellerId),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            _SellerInlineCartSection(sellerId: product.sellerId),
+            const SizedBox(height: 16),
+            const Divider(height: 1, thickness: 1),
+            const SizedBox(height: 16),
+          ],
           _MoreFromSellerSection(key: _moreFromSellerKey, product: product),
           const SizedBox(height: 16),
           _ProductReviewsSection(
@@ -328,14 +442,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         Icon(Icons.store,
                             size: 20,
-                            color:
-                                Theme.of(context).colorScheme.primary),
+                            color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
                           'Pogledaj profil proizvođača',
                           style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -349,8 +461,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 16),
           if (!product.isAvailable)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.orange.shade50,
                 borderRadius: BorderRadius.circular(8),
@@ -358,8 +469,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline,
-                      color: Colors.orange.shade700),
+                  Icon(Icons.info_outline, color: Colors.orange.shade700),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -374,13 +484,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         const SizedBox(height: 4),
                         InkWell(
                           onTap: () {
-                            final ctx =
-                                _moreFromSellerKey.currentContext;
+                            final ctx = _moreFromSellerKey.currentContext;
                             if (ctx != null) {
                               Scrollable.ensureVisible(
                                 ctx,
-                                duration:
-                                    const Duration(milliseconds: 350),
+                                duration: const Duration(milliseconds: 350),
                                 curve: Curves.easeInOut,
                               );
                             }
@@ -388,9 +496,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Text(
                             'Pogledaj druge proizvode ovog domaćinstva',
                             style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w500,
                               decoration: TextDecoration.underline,
                             ),
@@ -402,8 +508,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ],
               ),
             ),
-          SizedBox(
-              height: MediaQuery.of(context).padding.bottom + 16),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
         ],
       ),
     );
@@ -435,13 +540,93 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           label: 'Pregled',
           onPressed: () => context.push('/checkout-seller/${product.sellerId}'),
         ),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: 16,
+          right: 16,
+          left: MediaQuery.of(context).size.width - 400 - 16,
+        ),
       ),
+    );
+  }
+
+  Widget _buildDesktopLayout(ProductModel product) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = Breakpoints.isDesktop(context);
+        final galleryFraction = isDesktop ? 0.60 : 0.52;
+        final galleryWidth = constraints.maxWidth * galleryFraction;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSellerBanner(product.sellerId),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: galleryWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildGallery(product, height: 480),
+                      _buildCartBlock(product, desktopMode: true),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: _buildInfoSection(product, includeCart: false),
+                ),
+              ],
+            ),
+            const Divider(height: 1, thickness: 1),
+            _buildDesktopFooter(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopFooter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          TextButton(
+            onPressed: () => context.push('/terms'),
+            child: const Text('Uslovi korišćenja'),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () => context.push('/privacy'),
+            child: const Text('Politika privatnosti'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(ProductModel product) {
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSellerBanner(product.sellerId),
+        _buildGallery(product, height: isSmallTablet ? 280 : 220),
+        _buildInfoSection(product),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = Breakpoints.isTabletOrLarger(context);
+    final isWideLayout =
+        Breakpoints.isLargeTablet(context) || Breakpoints.isDesktop(context);
+    final maxWidth = Breakpoints.isDesktop(context)
+        ? 980.0
+        : (Breakpoints.isLargeTablet(context)
+            ? 920.0
+            : Breakpoints.maxContentWidth(context));
     return Scaffold(
       appBar: AppBar(
         title: const Text('Proizvod'),
@@ -472,7 +657,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     builder: (_, isFavorite, __) {
                       final favorites = ctx.read<FavoritesProvider>();
                       return IconButton(
-                        tooltip: isFavorite ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
+                        tooltip: isFavorite
+                            ? 'Ukloni iz omiljenih'
+                            : 'Dodaj u omiljene',
                         icon: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: isFavorite ? Colors.red : null,
@@ -513,43 +700,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           _maybeScrollToReviewsOnLoad();
           return Center(
             child: ConstrainedBox(
-              constraints: BoxConstraints(
-                  maxWidth: Breakpoints.maxContentWidth(context)),
-              child: isTablet
-                  ? RefreshIndicator(
-                      onRefresh: () async => _retry(),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: MediaQuery.sizeOf(context).width * 0.4,
-                            child: _buildGallery(product, height: 450),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: _buildInfoSection(product),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async => _retry(),
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildGallery(product, height: 220),
-                            _buildInfoSection(product),
-                          ],
-                        ),
-                      ),
-                    ),
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: RefreshIndicator(
+                onRefresh: () async => _retry(),
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: isWideLayout
+                      ? _buildDesktopLayout(product)
+                      : _buildMobileLayout(product),
+                ),
+              ),
             ),
           );
         },
@@ -569,6 +730,23 @@ class _RatingSummaryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final badgePadding = EdgeInsets.symmetric(
+      horizontal: Breakpoints.adaptiveDouble(
+        context,
+        phone: 12,
+        smallTabletValue: 13,
+        largeTabletValue: 14,
+        desktop: 14,
+      ),
+      vertical: Breakpoints.adaptiveDouble(
+        context,
+        phone: 8,
+        smallTabletValue: 9,
+        largeTabletValue: 10,
+        desktop: 10,
+      ),
+    );
     return FutureBuilder<ProductReviewsData>(
       future: reviewsFuture,
       builder: (context, snap) {
@@ -581,7 +759,7 @@ class _RatingSummaryBadge extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: badgePadding,
             decoration: BoxDecoration(
               color: Colors.amber.shade50,
               borderRadius: BorderRadius.circular(8),
@@ -590,26 +768,34 @@ class _RatingSummaryBadge extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.star, color: Colors.amber.shade700, size: 20),
+                Icon(Icons.star,
+                    color: Colors.amber.shade700,
+                    size: isLargeTablet ? 22 : 20),
                 const SizedBox(width: 6),
                 Text(
                   avg.toStringAsFixed(1),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.amber.shade800,
+                        fontSize: isLargeTablet ? 19 : null,
                       ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _reviewsLabel(count),
-                  style: TextStyle(
+                  style: Breakpoints.supportingTextStyle(
+                    context,
+                    Theme.of(context).textTheme.bodySmall,
+                    phone: 13,
+                    largeTabletValue: 14,
+                    desktop: 14,
                     color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 13,
+                    height: 1.2,
                   ),
                 ),
                 const SizedBox(width: 4),
                 Icon(Icons.keyboard_arrow_down,
-                    size: 18,
+                    size: isLargeTablet ? 20 : 18,
                     color: Theme.of(context).colorScheme.onSurfaceVariant),
               ],
             ),

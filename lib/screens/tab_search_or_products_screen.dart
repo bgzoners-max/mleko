@@ -13,8 +13,11 @@ class TabSearchOrProductsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
-    return isSeller
-        ? const SellerDashboardScreen()
-        : SearchScreen(initialCategory: initialCategory);
+    // Prodavac vidi dashboard samo kada nema filtera kategorije.
+    // Kada klikne na kategoriju, prikazuje se marketplace pretraga.
+    if (isSeller && initialCategory == null) {
+      return const SellerDashboardScreen();
+    }
+    return SearchScreen(initialCategory: initialCategory);
   }
 }

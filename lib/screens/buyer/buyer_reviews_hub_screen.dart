@@ -95,7 +95,11 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
       appBar: AppBar(
         title: const Text('Recenzije'),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: FutureBuilder<Map<String, dynamic>>(
         key: ValueKey(_refreshKey),
         future: _load(),
         builder: (context, snap) {
@@ -210,6 +214,8 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
             ],
           );
         },
+      ),
+        ),
       ),
     );
   }

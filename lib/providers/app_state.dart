@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, PostgresChangeEvent, PostgresChangeFilter, PostgresChangeFilterType, RealtimeChannel;
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent, AuthState, Supabase, PostgresChangeEvent, PostgresChangeFilter, PostgresChangeFilterType, RealtimeChannel;
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../services/media/image_cache_service.dart';
@@ -22,10 +22,22 @@ class AppState extends ChangeNotifier {
   bool _authChecked = false;
   bool _loading = false;
   int _unreadNotificationCount = 0;
+  bool _pendingEmailVerification = false;
+  bool _justConfirmedEmail = false;
 
   UserModel? get user => _user;
   bool get authChecked => _authChecked;
   bool get isLoading => _loading;
+  bool get justConfirmedEmail => _justConfirmedEmail;
+
+  void markPendingEmailVerification() {
+    _pendingEmailVerification = true;
+  }
+
+  void clearJustConfirmedEmail() {
+    _justConfirmedEmail = false;
+    notifyListeners();
+  }
   bool get isOnline => _connectivity.isOnline;
   bool get isOffline => _connectivity.isOffline;
   AuthService get authService => _auth;
@@ -46,7 +58,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _initAuth() {
-    _authSubscription = _auth.authStateChanges.listen((authState) async {
+    _authSubscription = _auth.authStateChanges.listen((AuthState authState) async {
       if (authState.session == null) {
         _user = null;
         _unreadNotificationCount = 0;
@@ -54,6 +66,11 @@ class AppState extends ChangeNotifier {
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
       } else {
+        if (_pendingEmailVerification &&
+            authState.event == AuthChangeEvent.signedIn) {
+          _justConfirmedEmail = true;
+          _pendingEmailVerification = false;
+        }
         _user = await _auth.getCurrentUser();
         if (_user != null && !_user!.isGuest) {
           await PushService().registerToken(_user!.id);

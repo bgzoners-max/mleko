@@ -53,13 +53,31 @@ class _SellerOrdersInboxTabsState extends State<_SellerOrdersInboxTabs>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Porudžbine'),
-        bottom: TabBar(
-          controller: _tabController,
-          onTap: (_) => HapticFeedback.selectionClick(),
-          tabs: const [
-            Tab(text: 'Porudžbine', icon: Icon(Icons.receipt_long)),
-            Tab(text: 'Razgovori', icon: Icon(Icons.chat)),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const maxContent = 800.0;
+              final avail = constraints.maxWidth;
+              final leftPad = ((avail - maxContent) / 2).clamp(0.0, double.infinity);
+              return Padding(
+                padding: EdgeInsets.only(left: leftPad),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  onTap: (_) => HapticFeedback.selectionClick(),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white60,
+                  indicatorColor: Colors.white,
+                  tabs: const [
+                    Tab(text: 'Porudžbine', icon: Icon(Icons.receipt_long)),
+                    Tab(text: 'Razgovori', icon: Icon(Icons.chat)),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
       body: AnimatedSwitcher(

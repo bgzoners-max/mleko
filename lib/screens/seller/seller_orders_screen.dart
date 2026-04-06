@@ -113,7 +113,11 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     return Scaffold(
       appBar:
           widget.showAppBar ? AppBar(title: const Text('Porudžbine')) : null,
-      body: Column(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
         children: [
           SegmentedButton<int>(
             segments: const [
@@ -238,6 +242,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

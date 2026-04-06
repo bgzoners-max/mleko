@@ -25,140 +25,194 @@ class ProductGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => withHaptic(() => context.push('/product/${product.id}')),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 5,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  product.imageUrls.isEmpty
-                  ? ColoredBox(
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.image_not_supported),
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: product.imageUrls.first,
-                      fit: BoxFit.cover,
-                      memCacheWidth: 400,
-                      memCacheHeight: 250,
-                      fadeInDuration: Duration.zero,
-                      errorWidget: (_, __, ___) => const Icon(Icons.broken_image),
-                    ),
-                  if (!product.isAvailable)
-                    Positioned(
-                      top: 6,
-                      left: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text('Nedostupno', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
-                      ),
-                    ),
-                  if (onFavoriteToggle != null)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: IconButton(
-                        tooltip: isFavorite == true ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
-                        icon: Icon(
-                          isFavorite == true ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite == true ? Colors.red : Colors.white,
-                          size: 24,
-                        ),
-                        onPressed: onFavoriteToggle != null ? () => withHaptic(onFavoriteToggle!) : null,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (avgRating != null && (reviewCount ?? 0) > 0)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                color: Colors.black.withValues(alpha: 0.5),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      size: 14,
-                      color: Colors.amber,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      avgRating!.toStringAsFixed(1),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '($reviewCount)',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Expanded(
-              flex: 3,
-              child: Padding(
-                // Manji vertikalni padding da tile sadržaj ne pređe zadatu visinu
-                // (posebno na Flutter Web-u gde često dobijamo strožije constraints).
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      product.priceFormatted,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
+    final hasRating = avgRating != null && (reviewCount ?? 0) > 0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrowCard = constraints.maxWidth < 170;
+        final availableHeight =
+            constraints.maxHeight.isFinite ? constraints.maxHeight : 320.0;
+        final contentHeight =
+            onAddToOrder != null ? (isNarrowCard ? 104.0 : 112.0) : 72.0;
+        final ratingHeight = hasRating ? 24.0 : 0.0;
+        final imageHeight = (availableHeight - contentHeight - ratingHeight)
+            .clamp(120.0, 220.0);
+        final addToOrderLabel = isNarrowCard ? 'Dodaj' : 'Dodaj u porudžbinu';
+
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () =>
+                withHaptic(() => context.push('/product/${product.id}')),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: imageHeight,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      product.imageUrls.isEmpty
+                          ? ColoredBox(
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.image_not_supported),
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: product.imageUrls.first,
+                              fit: BoxFit.cover,
+                              memCacheWidth: 400,
+                              memCacheHeight: 250,
+                              fadeInDuration: Duration.zero,
+                              errorWidget: (_, __, ___) =>
+                                  const Icon(Icons.broken_image),
+                            ),
+                      if (!product.isAvailable)
+                        Positioned(
+                          top: 6,
+                          left: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Nedostupno',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                    ),
-                    if (onAddToOrder != null) ...[
-                      const SizedBox(height: 4),
-                      FilledButton.tonal(
-                        onPressed: onAddToOrder != null ? () => withHaptic(onAddToOrder!) : null,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                          minimumSize: Size.zero,
                         ),
-                        child: const Text(
-                          'Dodaj u porudžbinu',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
+                      if (onFavoriteToggle != null)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: IconButton(
+                            tooltip: isFavorite == true
+                                ? 'Ukloni iz omiljenih'
+                                : 'Dodaj u omiljene',
+                            icon: Icon(
+                              isFavorite == true
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: isFavorite == true
+                                  ? Colors.red
+                                  : Colors.white,
+                              size: 24,
+                            ),
+                            onPressed: onFavoriteToggle != null
+                                ? () => withHaptic(onFavoriteToggle!)
+                                : null,
+                          ),
                         ),
-                      ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
+                if (hasRating)
+                  Container(
+                    height: ratingHeight,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    color: Colors.black.withValues(alpha: 0.5),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          avgRating!.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '($reviewCount)',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(
+                  height: contentHeight,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          product.name,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          product.priceFormatted,
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        if (onAddToOrder != null) ...[
+                          const Spacer(),
+                          FilledButton.tonal(
+                            onPressed: onAddToOrder != null
+                                ? () => withHaptic(onAddToOrder!)
+                                : null,
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
+                              minimumSize: const Size.fromHeight(30),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                              textStyle: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            child: Text(
+                              addToOrderLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

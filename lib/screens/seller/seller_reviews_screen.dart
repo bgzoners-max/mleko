@@ -60,7 +60,11 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       appBar: AppBar(
         title: const Text('Recenzije'),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: FutureBuilder<Map<String, dynamic>>(
         key: ValueKey(_refreshKey),
         future: Future.wait([
           ReviewsService().getSellerStats(widget.sellerId),
@@ -155,6 +159,8 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
             ],
           );
         },
+          ),
+        ),
       ),
     );
   }

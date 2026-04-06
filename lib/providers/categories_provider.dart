@@ -32,6 +32,41 @@ class CategoriesProvider extends ChangeNotifier {
     return _categories!.where((c) => c.parentId == null).toList();
   }
 
+  /// Sekcije za All Categories screen – uredjen prikaz po grupama
+  static const _sectionOrder = [
+    'hrana', 'osnove', 'domace', 'sveze', 'pica', 'specijaliteti', 'ostalo',
+  ];
+
+  static const _sectionLabels = {
+    'hrana':         ('🥛', 'Hrana'),
+    'osnove':        ('🌾', 'Osnove za kuhinju'),
+    'domace':        ('🍯', 'Domaći proizvodi'),
+    'sveze':         ('🍎', 'Sveže i prirodno'),
+    'pica':          ('🧃', 'Pića'),
+    'specijaliteti': ('🍲', 'Specijaliteti'),
+    'ostalo':        ('🎨', 'Ostalo'),
+  };
+
+  /// Vraća listu (emoji, label, kategorije) za svaku sekciju, u ispravnom redoslijedu.
+  List<({String emoji, String label, List<Category> categories})> get categoriesBySection {
+    if (_categories == null) return [];
+    final topLevel = _categories!.where((c) => c.parentId == null).toList();
+    final bySection = <String, List<Category>>{};
+    for (final cat in topLevel) {
+      final key = cat.section ?? 'ostalo';
+      bySection.putIfAbsent(key, () => []).add(cat);
+    }
+    return [
+      for (final key in _sectionOrder)
+        if (bySection.containsKey(key))
+          (
+            emoji: _sectionLabels[key]?.$1 ?? '📦',
+            label: _sectionLabels[key]?.$2 ?? key,
+            categories: bySection[key]!,
+          ),
+    ];
+  }
+
   Future<void> load() async {
     if (_loading || _loaded) return;
     _loading = true;

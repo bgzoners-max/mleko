@@ -9,6 +9,10 @@ import '../core/logger_service.dart';
 const _kMsgPageSize = 50;
 
 class ChatService {
+  static final ChatService _instance = ChatService._();
+  factory ChatService() => _instance;
+  ChatService._();
+
   final _client = Supabase.instance.client;
 
   static const typingStaleThreshold = Duration(seconds: 6);
@@ -108,6 +112,7 @@ class ChatService {
         }
       } catch (e, st) {
         LoggerService.error('Failed to watch conversations', e, stackTrace: st);
+        if (!controller.isClosed) controller.addError(e, st);
       }
     }
 
@@ -229,6 +234,7 @@ class ChatService {
       } catch (e, st) {
         LoggerService.error('Failed to watch messages', e,
             stackTrace: st, extra: {'conversationId': conversationId});
+        if (!controller.isClosed) controller.addError(e, st);
       }
     }
 
@@ -490,6 +496,10 @@ class ChatService {
       'sender_id': senderId,
       'body': body,
     });
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    await _client.from('messages').delete().eq('id', messageId);
   }
 
   Future<void> markAsRead(

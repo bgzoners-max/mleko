@@ -3,6 +3,7 @@ UPDATE public.edge_config
 SET value = 'https://wvqtujpurhzraptorcvl.supabase.co'
 WHERE key = 'functions_base_url';
 
+-- Edge Function verify_jwt=true zahteva pravi JWT ključ, ne publishable format
 UPDATE public.edge_config
-SET value = 'sb_publishable_fctLgkfcyV3HtMIHkO6lvw_NdmiBrsX'
+SET value = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2cXR1anB1cmh6cmFwdG9yY3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwODEyNDEsImV4cCI6MjA4NzY1NzI0MX0.UcZtf4geUoMJXCk3Ma87481XDQ_2plQvgWZKXxLA8ns'
 WHERE key = 'anon_key';

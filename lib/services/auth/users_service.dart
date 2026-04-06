@@ -3,6 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/user_model.dart';
 
 class UsersService {
+  static final UsersService _instance = UsersService._();
+  factory UsersService() => _instance;
+  UsersService._();
+
   final _client = Supabase.instance.client;
 
   Future<List<UserModel>> getRecentlyRegisteredSellers({

@@ -164,6 +164,10 @@ Future<T> _withRetry<T>(
 }
 
 class ProductsService {
+  static final ProductsService _instance = ProductsService._();
+  factory ProductsService() => _instance;
+  ProductsService._();
+
   final _client = Supabase.instance.client;
 
   int _compareProducts(ProductModel a, ProductModel b, ProductSort sort) {
@@ -203,6 +207,7 @@ class ProductsService {
     String? region,
     bool? availableNow,
     String? searchQuery,
+    String? excludeSellerId,
     ProductSort sort = ProductSort.dateDesc,
     int limit = productsPageSize,
     int offset = 0,
@@ -211,6 +216,9 @@ class ProductsService {
     var query = _client.from(table).select();
     if (category != null && category.isNotEmpty) {
       query = query.eq('category', category);
+    }
+    if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
+      query = query.neq('seller_id', excludeSellerId);
     }
     if (region != null && region.isNotEmpty) {
       query = query.eq('location', region);
@@ -526,6 +534,9 @@ class ProductsService {
 
     Future<void> runSingleFetch() async {
       final currentRegion = regionNotifier?.value ?? region;
+      final cacheKey = currentRegion != null
+          ? '${ProductCacheService.homeProductsKey}_$currentRegion'
+          : ProductCacheService.homeProductsKey;
       try {
         final res = await _client.rpc(
           'get_home_products',
@@ -553,9 +564,8 @@ class ProductsService {
           }
         }
 
-        // Cache novo učitane proizvode
-        await cache.cacheProducts(
-            ProductCacheService.homeProductsKey, products);
+        // Cache novo učitane proizvode pod region-specifičnim ključem
+        await cache.cacheProducts(cacheKey, products);
 
         if (!controller.isClosed) {
           controller.add(
@@ -565,8 +575,7 @@ class ProductsService {
         LoggerService.error('Failed to load home products', e, stackTrace: st);
 
         // Fallback na cache kada je offline
-        final cachedProducts =
-            await cache.getCachedProducts(ProductCacheService.homeProductsKey);
+        final cachedProducts = await cache.getCachedProducts(cacheKey);
         if (cachedProducts != null && cachedProducts.isNotEmpty) {
           LoggerService.info('Using cached home products as fallback');
           if (!controller.isClosed) {
@@ -597,8 +606,12 @@ class ProductsService {
     }
 
     // Prvo pokušaj emitovati cached proizvode (brz UX)
+    final initialRegion = regionNotifier?.value ?? region;
+    final initialCacheKey = initialRegion != null
+        ? '${ProductCacheService.homeProductsKey}_$initialRegion'
+        : ProductCacheService.homeProductsKey;
     cache
-        .getCachedProducts(ProductCacheService.homeProductsKey)
+        .getCachedProducts(initialCacheKey)
         .then((cachedProducts) {
       if (controller.isClosed) return;
       if (cachedProducts != null && cachedProducts.isNotEmpty) {

@@ -25,6 +25,8 @@ class UserModel {
   /// Sopstveni šabloni brzih odgovora (samo za prodavce).
   final List<String> sellerQuickReplies;
 
+  final bool isAdmin;
+
   const UserModel({
     required this.id,
     this.email,
@@ -46,6 +48,7 @@ class UserModel {
     this.sellerTags = const [],
     this.createdAt,
     this.sellerQuickReplies = const [],
+    this.isAdmin = false,
   });
 
   bool get isSeller => role == UserRole.seller;
@@ -88,6 +91,7 @@ class UserModel {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      isAdmin: json['is_admin'] as bool? ?? false,
     );
   }
 
@@ -131,6 +135,7 @@ class UserModel {
     List<String>? sellerTags,
     DateTime? createdAt,
     List<String>? sellerQuickReplies,
+    bool? isAdmin,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -153,6 +158,7 @@ class UserModel {
       sellerTags: sellerTags ?? this.sellerTags,
       createdAt: createdAt ?? this.createdAt,
       sellerQuickReplies: sellerQuickReplies ?? this.sellerQuickReplies,
+      isAdmin: isAdmin ?? this.isAdmin,
     );
   }
 }

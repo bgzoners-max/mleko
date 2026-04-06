@@ -5,6 +5,8 @@ import '../screens/splash_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/verify_email_screen.dart';
+import '../screens/auth/auth_confirmed_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/tab_search_or_products_screen.dart';
 import '../screens/tab_orders_or_inbox_screen.dart';
@@ -28,8 +30,13 @@ import '../screens/favorite_sellers_screen.dart';
 import '../screens/sellers_map_screen.dart';
 import '../screens/conversations_screen.dart';
 import '../screens/chat_screen.dart';
+import '../screens/support_screen.dart';
+import '../screens/support_ticket_chat_screen.dart';
+import '../screens/admin/admin_tickets_screen.dart';
+import '../screens/admin/admin_ticket_detail_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/child_categories_screen.dart';
+import '../screens/terms_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
 
@@ -47,6 +54,13 @@ GoRouter createRouter(AppState appState) {
 
       if (loc == '/splash') return null;
       if (loc.startsWith('/onboarding')) return null;
+      if (loc == '/verify-email') return null;
+      if (loc == '/terms') return null;
+
+      // Email just confirmed — steer to success screen before anything else
+      if (appState.justConfirmedEmail && loc != '/auth/confirmed') return '/auth/confirmed';
+      if (loc == '/auth/confirmed') return null;
+
       if (loc.startsWith('/login') || loc.startsWith('/register')) {
         if (appState.user != null) return '/';
         return null;
@@ -62,10 +76,7 @@ GoRouter createRouter(AppState appState) {
       // niti da postane prodavac.
       final isGuest = appState.user?.isGuest ?? false;
       if (isGuest) {
-        if (loc.startsWith('/cart') ||
-            loc.startsWith('/checkout') ||
-            loc.startsWith('/orders') ||
-            loc.startsWith('/becoming-seller') ||
+        if (loc.startsWith('/becoming-seller') ||
             loc.startsWith('/seller-settings') ||
             loc.startsWith('/settings') ||
             loc.startsWith('/add-product') ||
@@ -78,6 +89,12 @@ GoRouter createRouter(AppState appState) {
             loc.startsWith('/buyer/')) {
           return '/login';
         }
+      }
+
+      // Admin stranice — samo korisnici sa is_admin = true
+      if (loc.startsWith('/admin/')) {
+        final u = appState.user;
+        if (u == null || !u.isAdmin) return '/';
       }
 
       // Stranica recenzija — samo vlasnik prodavnice (kupci i gosti na javni profil).
@@ -225,8 +242,41 @@ GoRouter createRouter(AppState appState) {
         builder: (_, __) => const SettingsScreen(),
       ),
       GoRoute(
+        path: '/support',
+        builder: (_, __) => const SupportScreen(),
+      ),
+      GoRoute(
+        path: '/support/ticket/:id',
+        builder: (_, state) => SupportTicketChatScreen(
+          ticketId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/admin/tickets',
+        builder: (_, __) => const AdminTicketsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tickets/:id',
+        builder: (_, state) =>
+            AdminTicketDetailScreen(ticketId: state.pathParameters['id']!),
+      ),
+      GoRoute(
         path: '/favorite-sellers',
         builder: (_, __) => const FavoriteSellersScreen(),
+      ),
+      GoRoute(
+        path: '/terms',
+        builder: (_, __) => const TermsScreen(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (_, state) => VerifyEmailScreen(
+          email: (state.extra as String?) ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/auth/confirmed',
+        builder: (_, __) => const AuthConfirmedScreen(),
       ),
       GoRoute(
         path: '/sellers-map',
@@ -239,7 +289,12 @@ GoRouter createRouter(AppState appState) {
       GoRoute(
         path: '/categories/:parentId',
         builder: (_, state) {
-          final parent = state.extra as Category?;
+          final extra = state.extra;
+          final parent = extra is Category
+              ? extra
+              : extra is Map<String, dynamic>
+                  ? Category.fromJson(extra)
+                  : null;
           if (parent == null) {
             return const CategoriesScreen();
           }

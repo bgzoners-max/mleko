@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../models/user_model.dart';
@@ -121,6 +122,11 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           _error = 'Minimalna porudžbina: ${widget.product.minOrderFormatted}');
       return;
     }
+    if (widget.product.availableKg > 0 && qty > widget.product.availableKg) {
+      setState(() =>
+          _error = 'Maksimalna dostupna količina: ${widget.product.availableFormatted}');
+      return;
+    }
     if (_phoneController.text.trim().isEmpty) {
       setState(() => _error = 'Kontakt telefon je obavezan.');
       return;
@@ -152,7 +158,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           note: _noteController.text.trim(),
           buyerCity: _cityController.text.trim(),
           buyerPhone: phone,
-          buyerAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+          buyerAddress: _addressController.text.trim().isEmpty
+              ? null
+              : _addressController.text.trim(),
           status: OrderStatus.sent,
           createdAt: DateTime.now(),
         );
@@ -184,7 +192,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           unitType: widget.product.unitType,
           note: _noteController.text.trim(),
           buyerCity: _cityController.text.trim(),
-          buyerAddress: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+          buyerAddress: _addressController.text.trim().isEmpty
+              ? null
+              : _addressController.text.trim(),
           buyerPhone: phone,
           preferCall: false,
           pickupOptions: [],
@@ -226,13 +236,18 @@ class _CheckoutFormState extends State<_CheckoutForm> {
   @override
   Widget build(BuildContext context) {
     final isOffline = context.select<AppState, bool>((s) => s.isOffline);
+    final user = context.select<AppState, UserModel?>((s) => s.user);
     return Scaffold(
       appBar: AppBar(title: const Text('Porudžbina')),
-      body: SafeArea(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: Breakpoints.isTabletOrLarger(context) ? 640 : double.infinity),
+          child: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
+            left: Breakpoints.horizontalPadding(context),
+            right: Breakpoints.horizontalPadding(context),
             top: 24,
             bottom: 24 + MediaQuery.of(context).padding.bottom,
           ),
@@ -251,7 +266,8 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[,.]?\d{0,2}')),
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d*[,.]?\d{0,2}')),
                 ],
                 decoration: InputDecoration(
                   labelText: 'Količina (${widget.product.quantityUnitLabel})',
@@ -273,7 +289,8 @@ class _CheckoutFormState extends State<_CheckoutForm> {
               const SizedBox(height: 16),
               TextField(
                 controller: _addressController,
-                decoration: const InputDecoration(labelText: 'Adresa (ulica i broj)'),
+                decoration:
+                    const InputDecoration(labelText: 'Adresa (ulica i broj)'),
               ),
               const SizedBox(height: 16),
               TextField(
@@ -283,24 +300,19 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                     const InputDecoration(labelText: 'Kontakt telefon *'),
               ),
               const SizedBox(height: 4),
-              Builder(
-                builder: (ctx) {
-                  final user = context.select<AppState, UserModel?>((s) => s.user);
-                  if (user == null) return const SizedBox.shrink();
-                  return CheckboxListTile(
-                    value: _savePhoneToProfile,
-                    onChanged: (v) =>
-                        setState(() => _savePhoneToProfile = v ?? false),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text(
-                      'Sačuvaj ovaj broj u profilu',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                  );
-                },
-              ),
+              if (user != null)
+                CheckboxListTile(
+                  value: _savePhoneToProfile,
+                  onChanged: (v) =>
+                      setState(() => _savePhoneToProfile = v ?? false),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text(
+                    'Sačuvaj ovaj broj u profilu',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
               const SizedBox(height: 8),
               if (_error != null) ...[
                 const SizedBox(height: 12),
@@ -331,8 +343,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
             ],
           ),
         ),
+          ),
+        ),
       ),
     );
   }
 }
-

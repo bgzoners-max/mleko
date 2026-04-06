@@ -5,6 +5,10 @@ import 'package:uuid/uuid.dart';
 
 /// Storage za slike – profili i proizvodi (Supabase).
 class StorageService {
+  static final StorageService _instance = StorageService._();
+  factory StorageService() => _instance;
+  StorageService._();
+
   static const _uuid = Uuid();
   static const _bucketProducts = 'product-images';
   static const _bucketProfiles = 'profiles';

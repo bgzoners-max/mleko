@@ -143,11 +143,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await androidPlugin?.createNotificationChannel(_defaultChannel);
   await androidPlugin?.createNotificationChannel(_ordersChannel);
 
-  // Preuzmi podatke - iz notifikacije ili iz data payload-a
+  // Ako FCM poruka ima notification polje, Android sistem je već prikazao
+  // obaveštenje automatski (koristeći android.notification.channel_id koji
+  // smo postavili u Edge Function). Ne prikazujemo lokalnu notifikaciju
+  // ponovo jer bi to rezultiralo duplikatom.
+  // Lokalna notifikacija je potrebna samo za data-only poruke.
+  if (message.notification != null) return;
+
+  // Preuzmi podatke iz data payload-a (data-only poruke)
   final data = message.data.isNotEmpty ? message.data : <String, dynamic>{};
-  final title =
-      message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
-  final body = message.notification?.body ?? data['body'] as String? ?? '';
+  final title = data['title'] as String? ?? 'Obaveštenje';
+  final body = data['body'] as String? ?? '';
   final type = data['type'] as String? ?? '';
   final orderId = data['order_id'] as String? ?? '';
 
@@ -415,6 +421,9 @@ class PushService {
     // Pričekaj da se prethodna pretplata prekine pre nego što kreiramo novu
     _cancelSub(_onMessageSub).then((_) {
       _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
+        final shouldSkipLocalNotification =
+            Platform.isIOS && message.notification != null;
+
         // Preuzmi podatke - iz notifikacije ili iz data payload-a
         final data =
             message.data.isNotEmpty ? message.data : <String, dynamic>{};
@@ -426,9 +435,12 @@ class PushService {
         final type = data['type'] as String? ?? '';
         final orderId = data['order_id'] as String? ?? '';
 
-        // Prikaži lokalnu notifikaciju sa pratećim podatcima
-        _showLocalNotification(
-            title: title, body: body, type: type, orderId: orderId);
+        // Na iOS-u sistem već može prikazati foreground obaveštenje kada
+        // poruka sadrži notification payload, pa preskačemo lokalni duplikat.
+        if (!shouldSkipLocalNotification) {
+          _showLocalNotification(
+              title: title, body: body, type: type, orderId: orderId);
+        }
 
         // Pozovi callback
         _foregroundHandler?.call(message);

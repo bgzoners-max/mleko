@@ -62,7 +62,11 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Postani prodavac')),
-      body: SafeArea(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.only(
             left: 24,
@@ -110,6 +114,8 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
             ),
           ],
         ),
+        ),
+          ),
         ),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../providers/app_state.dart';
@@ -128,10 +129,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Moje porudžbine')),
-      body: Column(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: EdgeInsets.fromLTRB(Breakpoints.horizontalPadding(context), 8, Breakpoints.horizontalPadding(context), 4),
             child: SegmentedButton<int>(
               segments: const [
                 ButtonSegment(
@@ -390,6 +395,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

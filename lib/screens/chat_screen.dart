@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:math' show min;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/message_model.dart';
+import '../models/message_reaction_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../providers/app_state.dart';
@@ -10,6 +14,8 @@ import 'package:mleko/services/services.dart';
 
 import '../widgets/app_error_retry.dart';
 import '../widgets/skeleton.dart';
+
+const _kReactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
 /// Brzi odgovori – različiti za kupca i prodavca
 const _quickRepliesBuyer = [
@@ -47,6 +53,8 @@ class _ChatScreenState extends State<ChatScreen> {
           refreshTrigger: _refreshController.stream);
   late final Stream<Set<String>> _typingStream =
       _chatService.watchTypingUsers(widget.conversationId);
+  // Reakcije — inicijalizuju se u initState kad imamo userId
+  Stream<List<MessageReactionModel>>? _reactionsStream;
 
   // Starije poruke učitane paginacijom ("Učitaj starije poruke")
   final List<MessageModel> _olderMessages = [];
@@ -63,6 +71,7 @@ class _ChatScreenState extends State<ChatScreen> {
   OrderModel? _order;
   bool _isBuyer = true;
   List<String> _sellerCustomReplies = const [];
+  SellerResponseStats? _sellerStats;
 
   // Debounce: markAsRead se poziva samo kada stigne nova poruka,
   // ne na svakom rebuildu widgeta.
@@ -73,6 +82,16 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _loadConversationInfo();
     _messageController.addListener(_onTypingChanged);
+    // Inicijalizuj stream reakcija čim imamo userId (async safe: initState ne smije biti async)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<AppState>().user?.id;
+      if (userId != null && mounted) {
+        setState(() {
+          _reactionsStream = _chatService.watchMessageReactions(
+              widget.conversationId, userId);
+        });
+      }
+    });
   }
 
   @override
@@ -139,6 +158,20 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  List<_ChatItem> _buildChatItems(List<MessageModel> messages) {
+    final items = <_ChatItem>[];
+    DateTime? lastDay;
+    for (final m in messages) {
+      final day = DateTime(m.createdAt.year, m.createdAt.month, m.createdAt.day);
+      if (lastDay == null || day != lastDay) {
+        items.add(_DateSeparatorItem(day));
+        lastDay = day;
+      }
+      items.add(_MessageChatItem(m));
+    }
+    return items;
+  }
+
   String _formatTime(DateTime dt) {
     final now = DateTime.now();
     if (dt.day == now.day && dt.month == now.month && dt.year == now.year) {
@@ -174,6 +207,203 @@ class _ChatScreenState extends State<ChatScreen> {
             : customReplies;
       });
     }
+
+    if (isBuyer && otherPartyId != null) {
+      final stats = await _chatService.getSellerResponseStats(otherPartyId);
+      if (mounted && stats.hasData) {
+        setState(() => _sellerStats = stats);
+      }
+    }
+  }
+
+  Future<void> _deleteMessage(MessageModel m) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Obriši poruku'),
+        content: const Text('Da li ste sigurni? Ova radnja se ne može poništiti.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Odustani')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Obriši'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _chatService.deleteMessage(m.id);
+      _refreshController.add(null);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleReaction(MessageModel m, String emoji) async {
+    final user = context.read<AppState>().user;
+    if (user == null) return;
+    try {
+      await _chatService.toggleMessageReaction(
+        conversationId: widget.conversationId,
+        messageId: m.id,
+        userId: user.id,
+        reaction: emoji,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  bool get _isDesktop =>
+      kIsWeb ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux ||
+      defaultTargetPlatform == TargetPlatform.macOS;
+
+  void _showMessageMenu(BuildContext context, MessageModel m, bool isMe,
+      {Offset? tapPosition}) {
+    if (_isDesktop && tapPosition != null) {
+      _showDesktopContextMenu(context, m, isMe, tapPosition);
+    } else {
+      _showMobileBottomSheet(context, m, isMe);
+    }
+  }
+
+  Future<void> _showDesktopContextMenu(
+      BuildContext context, MessageModel m, bool isMe, Offset position) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final rel = RelativeRect.fromRect(
+      Rect.fromLTWH(position.dx, position.dy, 1, 1),
+      Offset.zero & overlay.size,
+    );
+
+    // Emoji reactions row as a custom widget in a PopupMenuItem
+    final result = await showMenu<String>(
+      context: context,
+      position: rel,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: [
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: _kReactionEmojis.map((emoji) {
+              return InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.pop(context, 'reaction:$emoji');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        const PopupMenuItem<String>(
+          value: 'copy',
+          child: Row(
+            children: [
+              Icon(Icons.copy_outlined, size: 18),
+              SizedBox(width: 10),
+              Text('Kopiraj poruku'),
+            ],
+          ),
+        ),
+        if (isMe)
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                SizedBox(width: 10),
+                Text('Obriši poruku', style: TextStyle(color: Colors.red)),
+              ],
+            ),
+          ),
+      ],
+    );
+
+    if (result == null || !mounted) return;
+    if (result.startsWith('reaction:')) {
+      _toggleReaction(m, result.substring(9));
+    } else if (result == 'copy') {
+      await Clipboard.setData(ClipboardData(text: m.body));
+      if (mounted) {
+        messenger.showSnackBar(const SnackBar(content: Text('Poruka kopirana')));
+      }
+    } else if (result == 'delete') {
+      _deleteMessage(m);
+    }
+  }
+
+  void _showMobileBottomSheet(
+      BuildContext context, MessageModel m, bool isMe) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: _kReactionEmojis.map((emoji) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _toggleReaction(m, emoji);
+                    },
+                    child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                  );
+                }).toList(),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Kopiraj poruku'),
+              onTap: () {
+                Navigator.pop(context);
+                Clipboard.setData(ClipboardData(text: m.body));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Poruka kopirana')),
+                );
+              },
+            ),
+            if (isMe)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Obriši poruku',
+                    style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(m);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _send([String? textOverride]) async {
@@ -239,13 +469,25 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
         ],
       ),
-      body: Column(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
         children: [
           if (_order != null) _OrderContextCard(order: _order!),
+          if (_sellerStats != null) _SellerStatsCard(stats: _sellerStats!),
           Expanded(
-            child: StreamBuilder<List<MessageModel>>(
-              stream: _messagesStream,
-              builder: (context, snap) {
+            child: StreamBuilder<List<MessageReactionModel>>(
+              stream: _reactionsStream,
+              builder: (context, reactionsSnap) {
+                final reactionsByMsg = <String, List<MessageReactionModel>>{};
+                for (final r in reactionsSnap.data ?? []) {
+                  reactionsByMsg.putIfAbsent(r.messageId, () => []).add(r);
+                }
+                return StreamBuilder<List<MessageModel>>(
+                  stream: _messagesStream,
+                  builder: (context, snap) {
                 if (snap.hasError) {
                   return AppErrorRetry(
                     message: 'Greška pri učitavanju poruka.',
@@ -278,11 +520,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
+                // Gradi flat listu: "učitaj starije" + separatori + poruke
+                final items = _buildChatItems(messages);
+                final totalCount = items.length + (_hasOlderMessages ? 1 : 0);
+
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  // +1 za "Učitaj starije poruke" tile na vrhu
-                  itemCount: messages.length + (_hasOlderMessages ? 1 : 0),
+                  itemCount: totalCount,
                   itemBuilder: (_, i) {
                     if (i == 0 && _hasOlderMessages) {
                       return Padding(
@@ -298,38 +543,57 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       );
                     }
-                    final m = messages[_hasOlderMessages ? i - 1 : i];
+                    final item = items[_hasOlderMessages ? i - 1 : i];
+                    if (item is _DateSeparatorItem) {
+                      return _DateSeparator(date: item.date);
+                    }
+                    final m = (item as _MessageChatItem).message;
                     final isMe = m.senderId == user.id;
-                    return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75),
-                        decoration: BoxDecoration(
-                          color: isMe
-                              ? Theme.of(context).colorScheme.primaryContainer
-                              : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              m.body,
-                              style: TextStyle(
-                                color: isMe
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                    : Colors.black87,
+                    final msgReactions = reactionsByMsg[m.id] ?? [];
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        Align(
+                          alignment: isMe
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: GestureDetector(
+                            onSecondaryTapUp: (details) => _showMessageMenu(
+                                context, m, isMe,
+                                tapPosition: details.globalPosition),
+                            onLongPress: () =>
+                                _showMessageMenu(context, m, isMe),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          constraints: BoxConstraints(
+                              maxWidth: min(MediaQuery.sizeOf(context).width * 0.75, 500)),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? Theme.of(context).colorScheme.primaryContainer
+                                : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                m.body,
+                                style: TextStyle(
+                                  color: isMe
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer
+                                      : Colors.black87,
+                                ),
                               ),
-                            ),
-                            if (isMe)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Row(
@@ -340,40 +604,67 @@ class _ChatScreenState extends State<ChatScreen> {
                                       _formatTime(m.createdAt),
                                       style: TextStyle(
                                         fontSize: 10,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onPrimaryContainer
-                                            .withValues(alpha: 0.7),
+                                        color: isMe
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                                .withValues(alpha: 0.7)
+                                            : Colors.black38,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      m.readAt != null
-                                          ? Icons.done_all
-                                          : Icons.done,
-                                      size: 14,
-                                      color: m.readAt != null
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onPrimaryContainer
-                                              .withValues(alpha: 0.7),
-                                    ),
+                                    if (isMe) ...[
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        m.readAt != null
+                                            ? Icons.done_all
+                                            : Icons.done,
+                                        size: 14,
+                                        color: m.readAt != null
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer
+                                                .withValues(alpha: 0.7),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    );
+                    ),
+                    if (msgReactions.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: isMe ? 0 : 8,
+                          right: isMe ? 8 : 0,
+                          bottom: 8,
+                        ),
+                        child: Wrap(
+                          spacing: 4,
+                          children: msgReactions
+                              .map((r) => _ReactionChip(
+                                    reaction: r,
+                                    onTap: () => _toggleReaction(m, r.reaction),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                  ],
+                );
                   },
+                );
+              },
                 );
               },
             ),
           ),
           StreamBuilder<Set<String>>(
+
             stream: _typingStream,
             builder: (context, snap) {
               final typingUsers = snap.data ?? {};
@@ -458,6 +749,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
@@ -512,6 +805,150 @@ class _OrderContextCard extends StatelessWidget {
               ),
             ),
             Icon(Icons.chevron_right, color: Colors.grey.shade500),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Chat item types (za ListView koji meša separatore i poruke) ──────────────
+
+sealed class _ChatItem {}
+
+class _MessageChatItem extends _ChatItem {
+  final MessageModel message;
+  _MessageChatItem(this.message);
+}
+
+class _DateSeparatorItem extends _ChatItem {
+  final DateTime date;
+  _DateSeparatorItem(this.date);
+}
+
+// ─── Seller stats card ────────────────────────────────────────────────────────
+
+class _SellerStatsCard extends StatelessWidget {
+  final SellerResponseStats stats;
+  const _SellerStatsCard({required this.stats});
+
+  String _formatResponseTime(double minutes) {
+    if (minutes < 15) return 'u roku od 15 minuta';
+    if (minutes < 60) return 'u roku od sat vremena';
+    if (minutes < 1440) return 'u roku od jednog dana';
+    return 'u roku od više dana';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final avg = stats.avgResponseMinutes;
+    if (avg == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.timer_outlined,
+              size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Prodavac obično odgovara ${_formatResponseTime(avg)}.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey.shade700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Date separator ───────────────────────────────────────────────────────────
+
+class _DateSeparator extends StatelessWidget {
+  final DateTime date;
+  const _DateSeparator({required this.date});
+
+  String _label() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    if (date == today) return 'Danas';
+    if (date == yesterday) return 'Juče';
+    return '${date.day}.${date.month}.${date.year}.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey.shade300, thickness: 0.8)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              _label(),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
+          ),
+          Expanded(child: Divider(color: Colors.grey.shade300, thickness: 0.8)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Chip koji prikazuje jednu emoji reakciju sa brojem korisnika.
+class _ReactionChip extends StatelessWidget {
+  final MessageReactionModel reaction;
+  final VoidCallback onTap;
+
+  const _ReactionChip({required this.reaction, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: reaction.reactedByMe
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: reaction.reactedByMe
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
+                : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(reaction.reaction, style: const TextStyle(fontSize: 14)),
+            if (reaction.count > 1) ...[
+              const SizedBox(width: 4),
+              Text(
+                '${reaction.count}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: reaction.reactedByMe
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey.shade700,
+                ),
+              ),
+            ],
           ],
         ),
       ),

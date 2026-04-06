@@ -117,7 +117,11 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
 
         return Scaffold(
           appBar: AppBar(title: Text(displayName)),
-          body: RefreshIndicator(
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: RefreshIndicator(
             onRefresh: () async => _retry(),
             child: ListView(
             padding: const EdgeInsets.all(16),
@@ -209,6 +213,8 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
             ],
             ),
           ),
+              ),
+            ),
         );
       },
     );

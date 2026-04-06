@@ -3,7 +3,6 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart' as p_provider;
 
@@ -50,22 +49,45 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
   void _onSyncChanged() {
     final manager = _syncManager;
     if (manager == null) return;
-    if (_wasSyncing && !manager.isSyncing && manager.syncedCount > 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_wasSyncing && manager.isSyncing) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              manager.syncedCount == 1
-                  ? 'Porudžbina je sinhronizovana.'
-                  : '${manager.syncedCount} porudžbine sinhronizovane.',
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Slanje offline porudžbina...'),
+              ],
             ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 4),
+            duration: Duration(minutes: 2),
           ),
         );
-      });
-    }
+      } else if (_wasSyncing && !manager.isSyncing) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        if (manager.syncedCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                manager.syncedCount == 1
+                    ? 'Porudžbina je sinhronizovana.'
+                    : '${manager.syncedCount} porudžbine sinhronizovane.',
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    });
     _wasSyncing = manager.isSyncing;
   }
 
@@ -136,6 +158,8 @@ void main() async {
       final uid = appState.user?.id;
       if (notificationTypeIsOrderRelated(type)) {
         router.go('/orders');
+      } else if (type == 'support_ticket_created') {
+        router.go('/admin/tickets');
       } else if (type == 'new_message') {
         router.go('/conversations');
       } else if (type == 'new_review' && uid != null) {
@@ -144,6 +168,13 @@ void main() async {
         router.go('/buyer/$uid/reviews');
       } else if (type == 'new_review' || type == 'new_buyer_review') {
         router.go('/notifications');
+      } else if (type == 'admin_reply') {
+        final ticketId = data['ticket_id'] as String?;
+        if (ticketId != null) {
+          router.go('/support/ticket/$ticketId');
+        } else {
+          router.go('/support');
+        }
       }
     }
 
@@ -170,45 +201,43 @@ void main() async {
   }
 
   runApp(
-    ProviderScope(
-      child: p_provider.MultiProvider(
-        providers: [
-          p_provider.ChangeNotifierProvider<AppState>.value(value: appState),
-          p_provider.ChangeNotifierProvider<AppSettingsProvider>.value(
-              value: appSettings),
-          p_provider.ChangeNotifierProvider<CartProvider>.value(
-              value: cartProvider),
-          p_provider.ChangeNotifierProvider<CategoriesProvider>.value(
-              value: categoriesProvider),
-          p_provider.ChangeNotifierProvider<FavoritesProvider>.value(
-              value: favoritesProvider),
-          p_provider.ChangeNotifierProvider<LocationProvider>.value(
-              value: locationProvider),
-        ],
-        child: OfflineIndicator(
-          child: p_provider.Consumer<AppSettingsProvider>(
-            builder: (_, settings, __) => MaterialApp.router(
-              title: 'Naše Selo',
-              theme: buildAppTheme(compact: settings.compactMode),
-              darkTheme: buildAppDarkTheme(compact: settings.compactMode),
-              themeMode: settings.themeMode,
-              routerConfig: router,
-              builder: (context, child) {
-                return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(settings.fontScale),
-                  ),
-                  child: _SyncFeedbackListener(
-                    child: child ??
-                        const Scaffold(
-                          body: Center(
-                            child: CircularProgressIndicator(),
-                          ),
+    p_provider.MultiProvider(
+      providers: [
+        p_provider.ChangeNotifierProvider<AppState>.value(value: appState),
+        p_provider.ChangeNotifierProvider<AppSettingsProvider>.value(
+            value: appSettings),
+        p_provider.ChangeNotifierProvider<CartProvider>.value(
+            value: cartProvider),
+        p_provider.ChangeNotifierProvider<CategoriesProvider>.value(
+            value: categoriesProvider),
+        p_provider.ChangeNotifierProvider<FavoritesProvider>.value(
+            value: favoritesProvider),
+        p_provider.ChangeNotifierProvider<LocationProvider>.value(
+            value: locationProvider),
+      ],
+      child: OfflineIndicator(
+        child: p_provider.Consumer<AppSettingsProvider>(
+          builder: (_, settings, __) => MaterialApp.router(
+            title: 'Naše Selo',
+            theme: buildAppTheme(compact: settings.compactMode),
+            darkTheme: buildAppDarkTheme(compact: settings.compactMode),
+            themeMode: settings.themeMode,
+            routerConfig: router,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(settings.fontScale),
+                ),
+                child: _SyncFeedbackListener(
+                  child: child ??
+                      const Scaffold(
+                        body: Center(
+                          child: CircularProgressIndicator(),
                         ),
-                  ),
-                );
-              },
-            ),
+                      ),
+                ),
+              );
+            },
           ),
         ),
       ),

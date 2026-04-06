@@ -229,11 +229,11 @@ Deno.serve(async (req) => {
       const lockscreenBody = getLockscreenBody(bodyText)
       const baseMessage: Record<string, unknown> = {
         token: row.token,
-        notification: { title, body: lockscreenBody },
         data: { ...data, title, body: bodyText },
       }
 
       if (platform === "ios") {
+        baseMessage.notification = { title, body: lockscreenBody }
         baseMessage.apns = {
           headers: { "apns-priority": "10" },
           payload: {

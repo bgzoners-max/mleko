@@ -53,7 +53,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+                    Icon(Icons.error_outline,
+                        size: 48, color: Colors.red.shade400),
                     const SizedBox(height: 16),
                     Text(
                       'Greška pri učitavanju profila.',
@@ -64,7 +65,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
                     Text(
                       userSnap.error.toString(),
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
@@ -107,7 +109,10 @@ class _SellerProfileContent extends StatelessWidget {
       (cart) => cart.getSellerDraft(seller.id).length,
     );
     final sellerName = seller.farmName ?? 'Proizvođač';
-    final isWide = Breakpoints.isDesktop(context);
+    final isDesktop = Breakpoints.isDesktop(context);
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final isWide = isDesktop || isLargeTablet;
     return Scaffold(
       appBar: AppBar(
         title: Text(sellerName),
@@ -117,124 +122,140 @@ class _SellerProfileContent extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: Center(
                 child: TextButton(
-                  onPressed: () => context.push('/checkout-seller/${seller.id}'),
+                  onPressed: () =>
+                      context.push('/checkout-seller/${seller.id}'),
                   child: Text('Porudžbina ($draftCount)'),
                 ),
               ),
             ),
         ],
       ),
-      bottomNavigationBar: _SellerOrderDraftBar(sellerId: seller.id, seller: seller),
+      bottomNavigationBar:
+          _SellerOrderDraftBar(sellerId: seller.id, seller: seller),
       body: Material(
         color: Theme.of(context).scaffoldBackgroundColor,
         child: LayoutBuilder(
-        builder: (context, constraints) {
-          final minHeight = constraints.maxHeight;
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: Breakpoints.maxContentWidth(context),
-                minHeight: minHeight > 0 ? minHeight : 400,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                // HEADER / PROFIL
-                _ProfileHeader(seller: seller),
-                if (seller.sellerTags.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _SellerTagsRow(tags: seller.sellerTags),
-                ],
-
-                // STATS (ugled / poverenje)
-                const SizedBox(height: 8),
-                _SellerSafetyStrip(seller: seller),
-
-                if (isWide) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          builder: (context, constraints) {
+            final minHeight = constraints.maxHeight;
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop
+                        ? 1120.0
+                        : (isLargeTablet
+                            ? 980.0
+                            : Breakpoints.maxContentWidth(context)),
+                    minHeight: minHeight > 0 ? minHeight : 400,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                      // HEADER / PROFIL
+                      _ProfileHeader(seller: seller),
+                      if (seller.sellerTags.isNotEmpty) ...[
+                        SizedBox(height: isSmallTablet ? 10 : 8),
+                        _SellerTagsRow(tags: seller.sellerTags),
+                      ],
+
+                      // STATS (ugled / poverenje)
+                      SizedBox(height: isSmallTablet ? 10 : 8),
+                      _SellerSafetyStrip(seller: seller),
+
+                      if (isWide) ...[
+                        SizedBox(height: isLargeTablet ? 14 : 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (seller.farmGalleryUrls.isNotEmpty) ...[
-                              _FarmGallerySection(urls: seller.farmGalleryUrls),
-                              const SizedBox(height: 16),
-                            ],
-                            if (seller.sellerStory != null &&
-                                seller.sellerStory!.isNotEmpty) ...[
-                              _SellerStorySection(story: seller.sellerStory!),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _ReviewsSection(sellerId: seller.id),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'Mini prodavnica',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                            // Lijevo: galerija + priča + mini prodavnica
+                            Expanded(
+                              flex: isLargeTablet ? 5 : 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (seller.farmGalleryUrls.isNotEmpty) ...[
+                                    _FarmGallerySection(
+                                        urls: seller.farmGalleryUrls),
+                                    SizedBox(height: isLargeTablet ? 12 : 16),
+                                  ],
+                                  if (seller.sellerStory != null &&
+                                      seller.sellerStory!.isNotEmpty) ...[
+                                    _SellerStorySection(
+                                        story: seller.sellerStory!),
+                                    SizedBox(height: isLargeTablet ? 12 : 16),
+                                  ],
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
+                                    child: Text(
+                                      'Mini prodavnica',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _ProductGrid(
+                                    sellerId: seller.id,
+                                    forceColumns: isDesktop ? 3 : 2,
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            _ProductGrid(sellerId: seller.id),
+                            SizedBox(width: isLargeTablet ? 12 : 16),
+                            // Desno: recenzije
+                            Expanded(
+                              flex: isLargeTablet ? 4 : 2,
+                              child: _ReviewsSection(sellerId: seller.id),
+                            ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 100),
+                      ] else ...[
+                        // Mobilni / tablet – postojeći stacked layout
+                        if (seller.farmGalleryUrls.isNotEmpty) ...[
+                          SizedBox(height: isSmallTablet ? 14 : 16),
+                          _FarmGallerySection(urls: seller.farmGalleryUrls),
+                        ],
+                        if (seller.sellerStory != null &&
+                            seller.sellerStory!.isNotEmpty) ...[
+                          SizedBox(height: isSmallTablet ? 14 : 16),
+                          _SellerStorySection(story: seller.sellerStory!),
+                        ],
+                        SizedBox(height: isSmallTablet ? 14 : 16),
+                        _ReviewsSection(sellerId: seller.id),
+                        SizedBox(height: isSmallTablet ? 14 : 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Mini prodavnica',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _ProductGrid(
+                          sellerId: seller.id,
+                          forceColumns: isSmallTablet ? 2 : null,
+                        ),
+                        const SizedBox(height: 100),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 100),
-                ] else ...[
-                  // Mobilni / tablet – postojeći stacked layout
-                  if (seller.farmGalleryUrls.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _FarmGallerySection(urls: seller.farmGalleryUrls),
-                  ],
-                  if (seller.sellerStory != null &&
-                      seller.sellerStory!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _SellerStorySection(story: seller.sellerStory!),
-                  ],
-                  const SizedBox(height: 16),
-                  _ReviewsSection(sellerId: seller.id),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Mini prodavnica',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _ProductGrid(sellerId: seller.id),
-                  const SizedBox(height: 100),
-                ],
-              ],
-            ),
-          ),
-        );
-        },
-      ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -266,8 +287,14 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
   Future<void> _checkFollowing() async {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) return;
-    final following = await _favSellersService.isFollowing(user.id, widget.seller.id);
-    if (mounted) setState(() { _isFollowing = following; _checked = true; });
+    final following =
+        await _favSellersService.isFollowing(user.id, widget.seller.id);
+    if (mounted) {
+      setState(() {
+        _isFollowing = following;
+        _checked = true;
+      });
+    }
   }
 
   Future<void> _toggleFollow() async {
@@ -278,16 +305,36 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
     }
     setState(() => _loading = true);
     await _favSellersService.toggleFollow(user.id, widget.seller.id);
-    if (mounted) setState(() { _isFollowing = !_isFollowing; _loading = false; });
+    if (mounted) {
+      setState(() {
+        _isFollowing = !_isFollowing;
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final seller = widget.seller;
+    final cardPadding = Breakpoints.cardPadding(context);
+    final avatarSize = Breakpoints.adaptiveDouble(
+      context,
+      phone: 80,
+      smallTabletValue: 86,
+      largeTabletValue: 92,
+      desktop: 92,
+    );
+    final titleSize = Breakpoints.adaptiveDouble(
+      context,
+      phone: 24,
+      smallTabletValue: 28,
+      largeTabletValue: 30,
+      desktop: 30,
+    );
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -300,16 +347,18 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                   child: Text(
                     seller.farmName ?? 'Gazdinstvo',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Breakpoints.heroTitleStyle(
+                      context,
+                      Theme.of(context).textTheme.titleLarge,
+                    )?.copyWith(fontSize: titleSize),
                   ),
                 ),
                 if (seller.isVerified) ...[
                   const SizedBox(width: 8),
                   Tooltip(
                     message: 'Proveren prodavac',
-                    child: Icon(Icons.verified, color: Theme.of(context).colorScheme.primary, size: 20),
+                    child: Icon(Icons.verified,
+                        color: Theme.of(context).colorScheme.primary, size: 20),
                   ),
                 ],
               ],
@@ -321,14 +370,15 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                     ? ClipOval(
                         child: AppNetworkImage.profileLarge(
                           imageUrl: seller.profileImageUrl!,
-                          width: 80,
-                          height: 80,
+                          width: avatarSize,
+                          height: avatarSize,
                         ),
                       )
                     : CircleAvatar(
-                        radius: 40,
+                        radius: avatarSize / 2,
                         backgroundColor: Colors.grey.shade300,
-                        child: Icon(Icons.store, size: 40, color: Colors.grey.shade600),
+                        child: Icon(Icons.store,
+                            size: avatarSize / 2, color: Colors.grey.shade600),
                       ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -338,16 +388,33 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                       if (seller.createdAt != null) ...[
                         Text(
                           'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(seller.createdAt!)}',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          style: Breakpoints.supportingTextStyle(
+                            context,
+                            Theme.of(context).textTheme.bodySmall,
+                            phone: 13,
+                            largeTabletValue: 14,
+                            desktop: 14,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ],
                       if (seller.location != null) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                            Icon(Icons.location_on,
+                                size: 16, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
-                            Text(seller.location!, style: TextStyle(color: Colors.grey.shade700)),
+                            Text(seller.location!,
+                                style: Breakpoints.supportingTextStyle(
+                                  context,
+                                  Theme.of(context).textTheme.bodyMedium,
+                                  phone: 14,
+                                  largeTabletValue: 14,
+                                  desktop: 14,
+                                  color: Colors.grey.shade700,
+                                  height: 1.2,
+                                )),
                           ],
                         ),
                       ],
@@ -385,7 +452,9 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                                 if (response != null && response.isNotEmpty)
                                   Row(
                                     children: [
-                                      Icon(Icons.schedule, size: 14, color: Colors.grey.shade600),
+                                      Icon(Icons.schedule,
+                                          size: 14,
+                                          color: Colors.grey.shade600),
                                       const SizedBox(width: 4),
                                       Text(
                                         response,
@@ -401,7 +470,8 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                                   Row(
                                     children: [
                                       Icon(Icons.local_shipping_outlined,
-                                          size: 14, color: Colors.grey.shade600),
+                                          size: 14,
+                                          color: Colors.grey.shade600),
                                       const SizedBox(width: 4),
                                       Text(
                                         delivered,
@@ -428,11 +498,14 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                             padding: const EdgeInsets.only(top: 4),
                             child: Row(
                               children: [
-                                Icon(Icons.people_outline, size: 14, color: Colors.grey.shade500),
+                                Icon(Icons.people_outline,
+                                    size: 14, color: Colors.grey.shade500),
                                 const SizedBox(width: 4),
                                 Text(
                                   '$count pratilac${count == 1 ? '' : 'a'}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500),
                                 ),
                               ],
                             ),
@@ -447,7 +520,10 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                   FilledButton.tonal(
                     onPressed: _loading ? null : _toggleFollow,
                     child: _loading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2))
                         : Text(_isFollowing ? 'Ne prati' : 'Prati'),
                   ),
                 ],
@@ -661,7 +737,8 @@ Future<void> _launchCall(BuildContext context, String? phone) async {
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pozivanje nije podržano na ovom uređaju.')),
+        const SnackBar(
+            content: Text('Pozivanje nije podržano na ovom uređaju.')),
       );
     }
   } catch (_) {
@@ -708,13 +785,36 @@ class _SellerStorySection extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(
+          Breakpoints.adaptiveDouble(
+            context,
+            phone: 16,
+            smallTabletValue: 17,
+            largeTabletValue: 18,
+            desktop: 18,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('O gazdinstvu', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('O gazdinstvu',
+                style: Breakpoints.sectionTitleStyle(
+                  context,
+                  Theme.of(context).textTheme.titleMedium,
+                )),
             const SizedBox(height: 8),
-            Text(story, style: TextStyle(color: Colors.grey.shade700)),
+            Text(
+              story,
+              style: Breakpoints.supportingTextStyle(
+                context,
+                Theme.of(context).textTheme.bodyMedium,
+                phone: 14,
+                largeTabletValue: 15,
+                desktop: 15,
+                color: Colors.grey.shade700,
+                height: 1.45,
+              ),
+            ),
           ],
         ),
       ),
@@ -729,36 +829,58 @@ class _FarmGallerySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Galerija', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        ),
+        Text('Galerija',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: isLargeTablet ? 20 : null,
+                )),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: urls.length,
-            itemBuilder: (_, i) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: urls[i],
-                  width: 120,
-                  memCacheWidth: 240,
-                  memCacheHeight: 240,
-                  height: 120,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => ColoredBox(color: Colors.grey.shade300, child: const Icon(Icons.broken_image)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final galleryHeight = Breakpoints.adaptiveDouble(
+              context,
+              phone: 168,
+              smallTabletValue: 188,
+              largeTabletValue: 220,
+              desktop: 240,
+            );
+            final tileWidth = constraints.maxWidth *
+                (Breakpoints.isDesktop(context)
+                    ? 0.9
+                    : (isLargeTablet ? 0.88 : (isSmallTablet ? 0.86 : 0.84)));
+
+            return SizedBox(
+              height: galleryHeight,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                itemCount: urls.length,
+                itemBuilder: (_, i) => Padding(
+                  padding:
+                      EdgeInsets.only(right: i == urls.length - 1 ? 0 : 10),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: urls[i],
+                      width: tileWidth,
+                      memCacheWidth: 900,
+                      memCacheHeight: 600,
+                      height: galleryHeight,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => ColoredBox(
+                          color: Colors.grey.shade300,
+                          child: const Icon(Icons.broken_image)),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
@@ -783,19 +905,30 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    final canReview = user != null && !user.isGuest && user.id != widget.sellerId;
-    final isSeller = user != null && !user.isGuest && user.id == widget.sellerId;
-    final isWide = Breakpoints.isDesktop(context);
+    final canReview =
+        user != null && !user.isGuest && user.id != widget.sellerId;
+    final isSeller =
+        user != null && !user.isGuest && user.id == widget.sellerId;
+    final isWide =
+        Breakpoints.isLargeTablet(context) || Breakpoints.isDesktop(context);
+    final cardPadding = Breakpoints.adaptiveDouble(
+      context,
+      phone: 16,
+      largeTabletValue: 18,
+      desktop: 18,
+    );
 
     return FutureBuilder<Map<String, dynamic>>(
       key: ValueKey(_refreshKey),
       future: Future.wait([
         ReviewsService().getSellerStats(widget.sellerId),
         ReviewsService().getReviewsForSeller(widget.sellerId),
-        if (canReview) ReviewsService().getReviewableOrder(user.id, widget.sellerId),
+        if (canReview)
+          ReviewsService().getReviewableOrder(user.id, widget.sellerId),
       ]).then((r) async {
         final reviews = r[1] as List<ReviewModel>;
-        final buyerNames = await fetchProfileDisplayNames(reviews.map((e) => e.buyerId));
+        final buyerNames =
+            await fetchProfileDisplayNames(reviews.map((e) => e.buyerId));
         return {
           'stats': r[0],
           'reviews': reviews,
@@ -808,13 +941,16 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           return Card(
             margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(cardPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Recenzije',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Breakpoints.sectionTitleStyle(
+                      context,
+                      Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -835,12 +971,15 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
           return Card(
             margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(cardPadding),
               child: Row(
                 children: [
                   Text(
                     'Recenzije',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Breakpoints.sectionTitleStyle(
+                      context,
+                      Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
                   const Spacer(),
                   const SizedBox(
@@ -855,12 +994,16 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         }
         final stats = snap.data!['stats'] as SellerStatsModel;
         final reviews = snap.data!['reviews'] as List<ReviewModel>;
-        final reviewable = snap.data!['reviewable'] as ({String orderId, String productId, String productName})?;
+        final reviewable = snap.data!['reviewable'] as ({
+          String orderId,
+          String productId,
+          String productName
+        })?;
         final buyerNames = snap.data!['buyerNames'] as Map<String, String>;
         return Card(
           margin: EdgeInsets.symmetric(horizontal: isWide ? 24 : 16),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(cardPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -869,39 +1012,61 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                     if (isSeller)
                       Expanded(
                         child: InkWell(
-                          onTap: () => context.push('/seller/${widget.sellerId}/reviews'),
+                          onTap: () => context
+                              .push('/seller/${widget.sellerId}/reviews'),
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4, horizontal: 4),
                             child: Row(
                               children: [
                                 Text(
                                   'Recenzije',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                       ),
                                 ),
                                 if (stats.avgRating != null) ...[
                                   const SizedBox(width: 8),
-                                  Icon(Icons.star, color: Colors.amber.shade700, size: 18),
-                                  Text(stats.avgRating!.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Text(' (${stats.reviewCount})', style: TextStyle(color: Colors.grey.shade600)),
+                                  Icon(Icons.star,
+                                      color: Colors.amber.shade700, size: 18),
+                                  Text(stats.avgRating!.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text(' (${stats.reviewCount})',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600)),
                                 ],
                                 const Spacer(),
-                                Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
+                                Icon(Icons.chevron_right,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
                               ],
                             ),
                           ),
                         ),
                       )
                     else ...[
-                      Text('Recenzije', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('Recenzije',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                       if (stats.avgRating != null) ...[
                         const SizedBox(width: 8),
-                        Icon(Icons.star, color: Colors.amber.shade700, size: 18),
-                        Text(stats.avgRating!.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(' (${stats.reviewCount})', style: TextStyle(color: Colors.grey.shade600)),
+                        Icon(Icons.star,
+                            color: Colors.amber.shade700, size: 18),
+                        Text(stats.avgRating!.toStringAsFixed(1),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                        Text(' (${stats.reviewCount})',
+                            style: TextStyle(color: Colors.grey.shade600)),
                       ],
                       const Spacer(),
                       IconButton(
@@ -932,31 +1097,36 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
                       child: FilledButton.tonalIcon(
                         icon: const Icon(Icons.star_outline, size: 20),
                         label: const Text('Oceni prodavca'),
-                        onPressed: () => _showReviewDialog(context, user, reviewable),
+                        onPressed: () =>
+                            _showReviewDialog(context, user, reviewable),
                       ),
                     ),
                   ],
                   if (reviews.isEmpty && reviewable == null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text('Još nema recenzija.', style: TextStyle(color: Colors.grey.shade600)),
+                      child: Text('Još nema recenzija.',
+                          style: TextStyle(color: Colors.grey.shade600)),
                     )
                   else if (reviews.isNotEmpty) ...[
                     ...reviews.take(5).map((r) => Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: SellerReviewListItem(
-                        review: r,
-                        isSeller: isSeller,
-                        onRefresh: _refresh,
-                        reviewerDisplayName: buyerNames[r.buyerId] ?? 'Kupac',
-                        onReviewerTap: () => context.push('/buyer/${r.buyerId}'),
-                      ),
-                    )),
+                          padding: const EdgeInsets.only(top: 12),
+                          child: SellerReviewListItem(
+                            review: r,
+                            isSeller: isSeller,
+                            onRefresh: _refresh,
+                            reviewerDisplayName:
+                                buyerNames[r.buyerId] ?? 'Kupac',
+                            onReviewerTap: () =>
+                                context.push('/buyer/${r.buyerId}'),
+                          ),
+                        )),
                     if (reviews.length > 5) ...[
                       const SizedBox(height: 4),
                       Center(
                         child: TextButton(
-                          onPressed: () => _showAllReviews(context, reviews, isSeller, buyerNames),
+                          onPressed: () => _showAllReviews(
+                              context, reviews, isSeller, buyerNames),
                           child: Text('Prikaži sve (${reviews.length})'),
                         ),
                       ),
@@ -971,7 +1141,8 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     );
   }
 
-  void _showReviewDialog(BuildContext context, dynamic user, ({String orderId, String productId, String productName}) reviewable) {
+  void _showReviewDialog(BuildContext context, dynamic user,
+      ({String orderId, String productId, String productName}) reviewable) {
     showDialog(
       context: context,
       builder: (ctx) => AddReviewDialog(
@@ -1094,7 +1265,8 @@ class _SellerTagsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalized = tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+    final normalized =
+        tags.map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
     const trustLabels = [
       'Provereno gazdinstvo',
       'Redovna isporuka',
@@ -1138,7 +1310,8 @@ class _SellerTagsRow extends StatelessWidget {
               } else {
                 icon = Icons.local_shipping_outlined;
                 color = Colors.orange.shade800;
-                tooltip = 'Prodavac organizuje dostavu u vaš grad (ili dogovorom).';
+                tooltip =
+                    'Prodavac organizuje dostavu u vaš grad (ili dogovorom).';
               }
               return Tooltip(
                 message: tooltip,
@@ -1146,11 +1319,15 @@ class _SellerTagsRow extends StatelessWidget {
                   avatar: Icon(icon, size: 16, color: Colors.white),
                   label: Text(
                     t,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white),
                   ),
                   backgroundColor: color,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   visualDensity: VisualDensity.compact,
                 ),
               );
@@ -1190,8 +1367,9 @@ class _SellerTagsRow extends StatelessWidget {
 
 class _ProductGrid extends StatefulWidget {
   final String sellerId;
+  final int? forceColumns;
 
-  const _ProductGrid({required this.sellerId});
+  const _ProductGrid({required this.sellerId, this.forceColumns});
 
   @override
   State<_ProductGrid> createState() => _ProductGridState();
@@ -1232,88 +1410,92 @@ class _ProductGridState extends State<_ProductGrid> {
             ),
           );
         }
-        return FutureBuilder<
-            Map<String, ({double avg, int count})>>(
+        return FutureBuilder<Map<String, ({double avg, int count})>>(
           future: _ratingsFuture,
           builder: (context, ratingsSnap) {
             final ratings = ratingsSnap.data ?? {};
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final crossAxisCount =
-                      Breakpoints.productGridColumns(context);
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: 0.58,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: list.length,
-                    itemBuilder: (ctx, i) {
-                      final p = list[i];
-                      final canAddToOrder = () {
-                        final u = ctx.read<AppState>().user;
-                        return u != null &&
-                            !u.isGuest &&
-                            u.id != widget.sellerId &&
-                            p.isAvailable;
-                      }();
-                      final ratingStats = ratings[p.id];
-                      return Selector<FavoritesProvider, bool>(
-                        selector: (_, fav) => fav.isFavorite(p.id),
-                        builder: (_, isFavorite, __) {
-                          final user = ctx.read<AppState>().user;
-                          final canFavorite =
-                              user != null && !user.isGuest;
-                          final favorites =
-                              ctx.read<FavoritesProvider>();
-                          return ProductGridTile(
-                            product: p,
-                            isFavorite: canFavorite ? isFavorite : null,
-                            onFavoriteToggle: canFavorite
-                                ? () => favorites.toggle(user.id, p.id)
-                                : null,
-                            onAddToOrder: canAddToOrder
-                                ? () {
-                                    showModalBottomSheet<void>(
-                                      context: ctx,
-                                      builder: (sheetContext) =>
-                                          _AddToOrderSheet(
-                                        product: p,
-                                        sellerId: widget.sellerId,
-                                        cart: ctx.read<CartProvider>(),
-                                        onAdded: () {
-                                          if (!ctx.mounted) return;
-                                          ScaffoldMessenger.of(ctx)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: const Text(
-                                                  'Proizvod je dodat u porudžbinu.'),
-                                              action: SnackBarAction(
-                                                label: 'Pregled',
-                                                onPressed: () => ctx.push(
-                                                    '/checkout-seller/${widget.sellerId}'),
-                                              ),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isLargeTablet = Breakpoints.isLargeTablet(context);
+                final isSmallTablet = Breakpoints.isSmallTablet(context);
+                final crossAxisCount = widget.forceColumns ??
+                    Breakpoints.productGridColumns(context);
+                const gridSpacing = 6.0;
+                final tileWidth = (constraints.maxWidth -
+                        (crossAxisCount - 1) * gridSpacing) /
+                    crossAxisCount;
+                final imageHeight = (tileWidth * 0.78).clamp(
+                  isLargeTablet ? 132.0 : 120.0,
+                  isLargeTablet ? 200.0 : (isSmallTablet ? 194.0 : 190.0),
+                );
+                final tileHeight = imageHeight +
+                    (isLargeTablet ? 178.0 : (isSmallTablet ? 184.0 : 190.0));
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisExtent: tileHeight,
+                    crossAxisSpacing: gridSpacing,
+                    mainAxisSpacing: gridSpacing,
+                  ),
+                  itemCount: list.length,
+                  itemBuilder: (ctx, i) {
+                    final p = list[i];
+                    final canAddToOrder = () {
+                      final u = ctx.read<AppState>().user;
+                      return u != null &&
+                          !u.isGuest &&
+                          u.id != widget.sellerId &&
+                          p.isAvailable;
+                    }();
+                    final ratingStats = ratings[p.id];
+                    return Selector<FavoritesProvider, bool>(
+                      selector: (_, fav) => fav.isFavorite(p.id),
+                      builder: (_, isFavorite, __) {
+                        final user = ctx.read<AppState>().user;
+                        final canFavorite = user != null && !user.isGuest;
+                        final favorites = ctx.read<FavoritesProvider>();
+                        return ProductGridTile(
+                          product: p,
+                          isFavorite: canFavorite ? isFavorite : null,
+                          onFavoriteToggle: canFavorite
+                              ? () => favorites.toggle(user.id, p.id)
+                              : null,
+                          onAddToOrder: canAddToOrder
+                              ? () {
+                                  showModalBottomSheet<void>(
+                                    context: ctx,
+                                    builder: (sheetContext) => _AddToOrderSheet(
+                                      product: p,
+                                      sellerId: widget.sellerId,
+                                      cart: ctx.read<CartProvider>(),
+                                      onAdded: () {
+                                        if (!ctx.mounted) return;
+                                        ScaffoldMessenger.of(ctx).showSnackBar(
+                                          SnackBar(
+                                            content: const Text(
+                                                'Proizvod je dodat u porudžbinu.'),
+                                            action: SnackBarAction(
+                                              label: 'Pregled',
+                                              onPressed: () => ctx.push(
+                                                  '/checkout-seller/${widget.sellerId}'),
                                             ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  }
-                                : null,
-                            avgRating: ratingStats?.avg,
-                            reviewCount: ratingStats?.count,
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                }
+                              : null,
+                          avgRating: ratingStats?.avg,
+                          reviewCount: ratingStats?.count,
+                        );
+                      },
+                    );
+                  },
+                );
+              },
             );
           },
         );
@@ -1366,7 +1548,10 @@ class _AddToOrderSheetState extends State<_AddToOrderSheet> {
         children: [
           Text(
             p.name,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(p.priceFormatted, style: TextStyle(color: Colors.grey.shade600)),
@@ -1379,7 +1564,9 @@ class _AddToOrderSheetState extends State<_AddToOrderSheet> {
                     ? null
                     : () => setState(() {
                           final next = _quantity - step;
-                          _quantity = next < p.minOrderKg ? p.minOrderKg : next.clamp(p.minOrderKg, max);
+                          _quantity = next < p.minOrderKg
+                              ? p.minOrderKg
+                              : next.clamp(p.minOrderKg, max);
                         }),
                 icon: const Icon(Icons.remove),
               ),
@@ -1392,7 +1579,8 @@ class _AddToOrderSheetState extends State<_AddToOrderSheet> {
               IconButton.filled(
                 onPressed: _quantity >= max
                     ? null
-                    : () => setState(() => _quantity = (_quantity + step).clamp(p.minOrderKg, max)),
+                    : () => setState(() => _quantity =
+                        (_quantity + step).clamp(p.minOrderKg, max)),
                 icon: const Icon(Icons.add),
               ),
             ],
@@ -1441,7 +1629,10 @@ class _SellerOrderDraftBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border(top: BorderSide(color: Colors.grey.shade300)),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, -2))],
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 6, offset: Offset(0, -2))
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1450,16 +1641,22 @@ class _SellerOrderDraftBar extends StatelessWidget {
             if (hasDraft) ...[
               Text(
                 '${draft.length} proizvoda u porudžbini kod ovog prodavca',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
               FutureBuilder<List<({ProductModel product, double quantity})>>(
-                future: context.read<CartProvider>().getProductsBySeller(sellerId),
+                future:
+                    context.read<CartProvider>().getProductsBySeller(sellerId),
                 builder: (_, snap) {
                   final items = snap.data ?? [];
                   if (items.isEmpty) return const SizedBox.shrink();
-                  final preview = items.take(3).map((e) => e.product.name).join(', ');
-                  final suffix = items.length > 3 ? ' +${items.length - 3}' : '';
+                  final preview =
+                      items.take(3).map((e) => e.product.name).join(', ');
+                  final suffix =
+                      items.length > 3 ? ' +${items.length - 3}' : '';
                   return Text(
                     '$preview$suffix',
                     maxLines: 1,
@@ -1482,19 +1679,23 @@ class _SellerOrderDraftBar extends StatelessWidget {
                   final hasPhone = seller.phone?.trim().isNotEmpty == true;
                   final chatButton = OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: () async {
                       try {
-                        final convId = await ChatService().getOrCreateConversation(user.id, sellerId);
+                        final convId = await ChatService()
+                            .getOrCreateConversation(user.id, sellerId);
                         if (context.mounted) context.push('/chat/$convId');
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+                            SnackBar(
+                                content: Text('Greška: $e'),
+                                backgroundColor: Colors.red),
                           );
                         }
                       }
@@ -1520,4 +1721,3 @@ class _SellerOrderDraftBar extends StatelessWidget {
     );
   }
 }
-

@@ -134,6 +134,11 @@ ThemeData _buildBaseTheme({required bool compact}) {
         color: Colors.white,
       ),
     ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white60,
+      indicatorColor: Colors.white,
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF2E7D32),

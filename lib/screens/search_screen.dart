@@ -44,6 +44,7 @@ class _SearchScreenState extends State<SearchScreen> {
   int _querySeq = 0;
   String? _searchError;
   late Future<List<String>> _historyFuture;
+  String? _currentSellerIdToExclude;
 
   @override
   void initState() {
@@ -72,6 +73,8 @@ class _SearchScreenState extends State<SearchScreen> {
     if (user != null && !user.isGuest && !favorites.isLoaded) {
       favorites.load(user.id);
     }
+    _currentSellerIdToExclude =
+        (user != null && user.isSeller) ? user.id : null;
   }
 
   void _onScroll() {
@@ -98,6 +101,7 @@ class _SearchScreenState extends State<SearchScreen> {
         region: _region,
         availableNow: _availableNow,
         searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
+        excludeSellerId: _currentSellerIdToExclude,
         sort: _sort,
         limit: productsPageSize,
         offset: 0,
@@ -242,11 +246,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight:
-                        selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    color:
+                        selected ? Theme.of(context).colorScheme.primary : null,
                   ),
                 ),
               ],
@@ -271,14 +273,12 @@ class _SearchScreenState extends State<SearchScreen> {
               Text('Istorija:',
                   style: TextStyle(
                       fontSize: 12,
-                      color:
-                          Theme.of(context).colorScheme.onSurfaceVariant)),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
               const SizedBox(width: 8),
               ...history.take(5).map((h) => Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ActionChip(
-                      label:
-                          Text(h, style: const TextStyle(fontSize: 12)),
+                      label: Text(h, style: const TextStyle(fontSize: 12)),
                       onPressed: () {
                         _searchController.text = h;
                         _applySearchImmediate(h);
@@ -303,8 +303,7 @@ class _SearchScreenState extends State<SearchScreen> {
             value: _sort.label,
             options: ProductSort.values.map((s) => s.label).toList(),
             onSelected: (v) {
-              final idx =
-                  ProductSort.values.indexWhere((s) => s.label == v);
+              final idx = ProductSort.values.indexWhere((s) => s.label == v);
               if (idx >= 0) {
                 setState(() {
                   _sort = ProductSort.values[idx];
@@ -371,7 +370,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildEmptyState() {
-    final hasFilters = _category != null || _region != null || _availableNow == true;
+    final hasFilters =
+        _category != null || _region != null || _availableNow == true;
     final subtitle = hasFilters
         ? 'Pokušajte da uklonite aktivne filtere ili promenite pojam pretrage.'
         : 'Probajte drugi naziv ili pogledajte sve proizvode.';
@@ -399,7 +399,11 @@ class _SearchScreenState extends State<SearchScreen> {
     final user = context.watch<AppState>().user;
     final categoriesProvider = context.watch<CategoriesProvider>();
     final topCategories = categoriesProvider.topCategories.take(8).toList();
-    final isWide = Breakpoints.isDesktop(context);
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final isWide = Breakpoints.isDesktop(context) || isLargeTablet;
+    final mobileCategoryColumns = isSmallTablet ? 4 : 3;
+    final mobileResultsAsGrid = isSmallTablet;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE9E9E9),
@@ -475,43 +479,43 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                         child: Column(
-                        children: [
-                          _buildHistoryChips(),
-                          _buildFilterChips(context),
-                          Expanded(
-                            child: _loading
-                                ? const ProductListSkeleton()
-                                : _products.isEmpty
-                                    ? _buildEmptyState()
-                                    : RefreshIndicator(
-                                        onRefresh: _onRefresh,
-                                        child: GridView.builder(
-                                          controller: _scrollController,
-                                          padding: const EdgeInsets.all(16),
-                                          gridDelegate:
-                                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: 4,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 380,
+                          children: [
+                            _buildHistoryChips(),
+                            _buildFilterChips(context),
+                            Expanded(
+                              child: _loading
+                                  ? const ProductListSkeleton()
+                                  : _products.isEmpty
+                                      ? _buildEmptyState()
+                                      : RefreshIndicator(
+                                          onRefresh: _onRefresh,
+                                          child: GridView.builder(
+                                            controller: _scrollController,
+                                            padding: const EdgeInsets.all(16),
+                                            gridDelegate:
+                                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 4,
+                                              crossAxisSpacing: 12,
+                                              mainAxisSpacing: 12,
+                                              mainAxisExtent: 380,
+                                            ),
+                                            itemCount: _products.length +
+                                                (_loadingMore ? 4 : 0),
+                                            itemBuilder: (_, i) {
+                                              if (i >= _products.length) {
+                                                return const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                            strokeWidth: 2));
+                                              }
+                                              return _buildProductCard(
+                                                  context, i, user);
+                                            },
                                           ),
-                                          itemCount: _products.length +
-                                              (_loadingMore ? 4 : 0),
-                                          itemBuilder: (_, i) {
-                                            if (i >= _products.length) {
-                                              return const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                          strokeWidth: 2));
-                                            }
-                                            return _buildProductCard(
-                                                context, i, user);
-                                          },
                                         ),
-                                      ),
-                          ),
-                        ],
-                      ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -534,15 +538,14 @@ class _SearchScreenState extends State<SearchScreen> {
                           GridView.count(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 4,
+                            crossAxisCount: mobileCategoryColumns,
                             mainAxisSpacing: 8,
                             crossAxisSpacing: 8,
-                            childAspectRatio: 0.9,
+                            childAspectRatio: isSmallTablet ? 1.0 : 0.9,
                             children: topCategories
                                 .map((cat) => InkWell(
                                       onTap: () {
-                                        setState(
-                                            () => _category = cat.name);
+                                        setState(() => _category = cat.name);
                                         _onFilterChanged();
                                       },
                                       borderRadius: BorderRadius.circular(12),
@@ -601,37 +604,66 @@ class _SearchScreenState extends State<SearchScreen> {
                                   onRetry: _loadFirstPage,
                                 )
                               : _products.isEmpty
-                              ? _buildEmptyState()
-                              : RefreshIndicator(
-                                  onRefresh: _onRefresh,
-                                  child: ListView.builder(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount: _products.length +
-                                        (_loadingMore ? 1 : 0),
-                                    itemBuilder: (_, i) {
-                                      if (i == _products.length) {
-                                        return const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 16),
-                                          child: Center(
-                                              child: SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 2),
-                                          )),
-                                        );
-                                      }
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 16),
-                                        child: _buildProductCard(
-                                            context, i, user),
-                                      );
-                                    },
-                                  ),
-                                ),
+                                  ? _buildEmptyState()
+                                  : RefreshIndicator(
+                                      onRefresh: _onRefresh,
+                                      child: mobileResultsAsGrid
+                                          ? GridView.builder(
+                                              controller: _scrollController,
+                                              padding: const EdgeInsets.all(16),
+                                              gridDelegate:
+                                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: 2,
+                                                crossAxisSpacing: 12,
+                                                mainAxisSpacing: 12,
+                                                mainAxisExtent: 348,
+                                              ),
+                                              itemCount: _products.length +
+                                                  (_loadingMore ? 2 : 0),
+                                              itemBuilder: (_, i) {
+                                                if (i >= _products.length) {
+                                                  return const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  );
+                                                }
+                                                return _buildProductCard(
+                                                    context, i, user);
+                                              },
+                                            )
+                                          : ListView.builder(
+                                              controller: _scrollController,
+                                              padding: const EdgeInsets.all(16),
+                                              itemCount: _products.length +
+                                                  (_loadingMore ? 1 : 0),
+                                              itemBuilder: (_, i) {
+                                                if (i == _products.length) {
+                                                  return const Padding(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            vertical: 16),
+                                                    child: Center(
+                                                        child: SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                              strokeWidth: 2),
+                                                    )),
+                                                  );
+                                                }
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom: 16),
+                                                  child: _buildProductCard(
+                                                      context, i, user),
+                                                );
+                                              },
+                                            ),
+                                    ),
                     ),
                   ],
                 ),

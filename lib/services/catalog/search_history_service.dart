@@ -2,6 +2,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/logger_service.dart';
 
 class SearchHistoryService {
+  static final SearchHistoryService _instance = SearchHistoryService._();
+  factory SearchHistoryService() => _instance;
+  SearchHistoryService._();
+
   static const _storageKey = 'mleko_search_history';
   static const _maxItems = 10;
 

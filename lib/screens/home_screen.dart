@@ -25,6 +25,12 @@ import '../widgets/cache_status_widget.dart';
 import '../widgets/app_network_image.dart';
 import '../widgets/product_card.dart';
 
+typedef HomeProductsData = ({
+  List<ProductModel> products,
+  Map<String, int> salesCounts,
+  Map<String, ({double avg, int count})> ratings,
+});
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -38,12 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final _refreshController = StreamController<void>.broadcast();
   final _productsService = ProductsService();
   final _ordersService = OrdersService();
-  Stream<
-      ({
-        List<ProductModel> products,
-        Map<String, int> salesCounts,
-        Map<String, ({double avg, int count})> ratings
-      })>? _homeProductsStream;
+  Stream<HomeProductsData>? _homeProductsStream;
+  StreamSubscription<HomeProductsData>? _homeProductsSubscription;
+  HomeProductsData? _latestHomeData;
   _CarouselFilter _carouselFilter = _CarouselFilter.najnovije;
   Future<SellerStats>? _sellerStatsFuture;
   Future<List<({ProductModel product, int salesCount})>>?
@@ -82,14 +85,21 @@ class _HomeScreenState extends State<HomeScreen> {
           _ordersService.getSellerPopularProducts(user.id, limit: 5);
     }
     final loc = context.read<LocationProvider>();
-    _homeProductsStream ??= _productsService.getHomeProducts(
-      regionNotifier: loc.regionNotifier,
-      refreshTrigger: _refreshController.stream,
-    );
+    if (_homeProductsStream == null) {
+      _homeProductsStream = _productsService.getHomeProducts(
+        regionNotifier: loc.regionNotifier,
+        refreshTrigger: _refreshController.stream,
+      );
+      _homeProductsSubscription = _homeProductsStream!.listen((data) {
+        if (!mounted) return;
+        setState(() => _latestHomeData = data);
+      });
+    }
   }
 
   @override
   void dispose() {
+    _homeProductsSubscription?.cancel();
     _refreshController.close();
     super.dispose();
   }
@@ -103,22 +113,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locationProvider = context.watch<LocationProvider>();
-    final categoriesProvider = context.watch<CategoriesProvider>();
-    final topCategories = categoriesProvider.topCategories.take(8).toList();
-    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
-    final unreadCount = context.select<AppState, int>((s) => s.unreadNotificationCount);
+    final selectedRegion =
+        context.select<LocationProvider, String?>((p) => p.selectedRegion);
+    final topCategories = context.select<CategoriesProvider, List>(
+        (p) => p.topCategories.take(8).toList());
+    final isSeller =
+        context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
+    final unreadCount =
+        context.select<AppState, int>((s) => s.unreadNotificationCount);
     final isWide = Breakpoints.isDesktop(context);
+    final isTablet = Breakpoints.isTablet(context);
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isTabletLayout = isTablet && !isWide;
+    final outerHorizontalPadding =
+        isWide ? 12.0 : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 10.0));
+    final sectionSpacing =
+        isWide ? 12.0 : (isLargeTablet ? 16.0 : (isSmallTablet ? 14.0 : 12.0));
+    final compactSpacing = isWide ? 8.0 : 6.0;
+    final sidePanelSpacing =
+        isWide ? 12.0 : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 10.0));
+    final productGridExtent = isWide
+        ? 364.0
+        : (isLargeTablet ? 352.0 : (isSmallTablet ? 344.0 : 368.0));
+    final categoryTileExtent =
+        isWide ? 52.0 : (isLargeTablet ? 54.0 : (isTablet ? 58.0 : 58.0));
     final stream = _homeProductsStream;
     if (stream == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text(AppConstants.appName, style: TextStyle(color: Colors.white))),
+        appBar: AppBar(
+            title: const Text(AppConstants.appName,
+                style: TextStyle(color: Colors.white))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppConstants.appName, style: TextStyle(color: Colors.white)),
+        title: const Text(AppConstants.appName,
+            style: TextStyle(color: Colors.white)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 4),
@@ -136,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.only(right: 4),
             child: IconButton(
               icon: const Icon(Icons.location_on),
-              tooltip: locationProvider.selectedRegion ?? 'Izaberi lokaciju',
+              tooltip: selectedRegion ?? 'Izaberi lokaciju',
               onPressed: () => _showLocationPicker(context),
             ),
           ),
@@ -162,7 +194,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                    padding: EdgeInsets.fromLTRB(
+                      outerHorizontalPadding,
+                      12,
+                      outerHorizontalPadding,
+                      4,
+                    ),
                     child: isWide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,62 +209,105 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: topCategories
-                                          .map((cat) => Semantics(
-                                                button: true,
-                                                label: 'Kategorija ${cat.name}',
-                                                child: ActionChip(
-                                                  avatar: buildCategoryIcon(
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 6,
+                                        mainAxisSpacing: 6,
+                                        mainAxisExtent: 52,
+                                      ),
+                                      itemCount: topCategories.length,
+                                      itemBuilder: (context, index) {
+                                        final cat = topCategories[index];
+                                        return Semantics(
+                                          button: true,
+                                          label: 'Kategorija ${cat.name}',
+                                          child: Card(
+                                            margin: EdgeInsets.zero,
+                                            clipBehavior: Clip.antiAlias,
+                                            child: InkWell(
+                                              onTap: () => context.push(
+                                                  '/categories/${cat.id}',
+                                                  extra: cat),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 6),
+                                                child: Row(
+                                                  children: [
+                                                    buildCategoryIcon(
                                                       cat.icon,
-                                                      size: 18,
+                                                      size: 22,
                                                       color: Theme.of(context)
                                                           .colorScheme
-                                                          .primary),
-                                                  label: Text(cat.name),
-                                                  onPressed: () => context.push(
-                                                      '/categories/${cat.id}',
-                                                      extra: cat),
+                                                          .primary,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        cat.name,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .bodyMedium
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ))
-                                          .toList(),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                     if (isSeller) ...[
-                                      const SizedBox(height: 8),
-                                      _SellerDashboardSliver(
-                                        statsFuture: _sellerStatsFuture,
-                                        popularFuture: _popularProductsFuture,
+                                      SizedBox(height: compactSpacing),
+                                      RepaintBoundary(
+                                        child: _SellerDashboardSliver(
+                                          statsFuture: _sellerStatsFuture,
+                                          popularFuture: _popularProductsFuture,
+                                        ),
                                       ),
                                     ],
-                                    const SizedBox(height: 16),
-                                    StreamBuilder<
-                                        ({
-                                          List<ProductModel> products,
-                                          Map<String, int> salesCounts,
-                                          Map<String, ({double avg, int count})> ratings
-                                        })>(
+                                    SizedBox(height: sectionSpacing),
+                                    StreamBuilder<HomeProductsData>(
+                                      initialData: _latestHomeData,
                                       stream: stream,
                                       builder: (context, snap) {
                                         if (snap.hasError) {
                                           return AppErrorRetry(
-                                            message: 'Greška pri učitavanju proizvoda.',
+                                            message:
+                                                'Greška pri učitavanju proizvoda.',
                                             detail: snap.error?.toString(),
-                                            onRetry: () => _refreshController.add(null),
+                                            onRetry: () =>
+                                                _refreshController.add(null),
                                           );
                                         }
                                         if (snap.connectionState ==
                                             ConnectionState.waiting) {
                                           return const Padding(
-                                            padding: EdgeInsets.only(bottom: 24),
+                                            padding:
+                                                EdgeInsets.only(bottom: 24),
                                             child: ProductCarouselSkeleton(),
                                           );
                                         }
                                         final list = snap.data?.products ?? [];
                                         final salesCounts =
                                             snap.data?.salesCounts ?? {};
-                                        final ratings = snap.data?.ratings ?? {};
+                                        final ratings =
+                                            snap.data?.ratings ?? {};
                                         final newProducts = list
                                             .where((p) =>
                                                 DateTime.now()
@@ -238,17 +318,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                         final popularProducts = list
                                             .where((p) =>
                                                 (salesCounts[p.id] ?? 0) >=
-                                                AppConstants.popularProductMinSales)
+                                                AppConstants
+                                                    .popularProductMinSales)
                                             .toList();
-                                        final displayList =
-                                            _carouselFilter ==
-                                                    _CarouselFilter.najnovije
-                                                ? (newProducts.isNotEmpty
-                                                    ? newProducts
-                                                    : list)
-                                                : (popularProducts.isNotEmpty
-                                                    ? popularProducts
-                                                    : list);
+                                        final displayList = _carouselFilter ==
+                                                _CarouselFilter.najnovije
+                                            ? (newProducts.isNotEmpty
+                                                ? newProducts
+                                                : list)
+                                            : (popularProducts.isNotEmpty
+                                                ? popularProducts
+                                                : list);
                                         _warmupCarouselImages(displayList);
                                         final user = context.select<AppState,
                                             UserModel?>((s) => s.user);
@@ -260,16 +340,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                           children: [
                                             Row(
                                               children: [
-                                                SegmentedButton<_CarouselFilter>(
+                                                SegmentedButton<
+                                                    _CarouselFilter>(
                                                   segments: const [
                                                     ButtonSegment(
                                                         value: _CarouselFilter
                                                             .najnovije,
-                                                        label: Text('Najnovije')),
+                                                        label:
+                                                            Text('Najnovije')),
                                                     ButtonSegment(
                                                         value: _CarouselFilter
                                                             .popularno,
-                                                        label: Text('Popularno')),
+                                                        label:
+                                                            Text('Popularno')),
                                                   ],
                                                   selected: {_carouselFilter},
                                                   onSelectionChanged: (s) =>
@@ -279,17 +362,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(height: 12),
+                                            SizedBox(height: sidePanelSpacing),
                                             GridView.builder(
                                               shrinkWrap: true,
                                               physics:
                                                   const NeverScrollableScrollPhysics(),
                                               gridDelegate:
-                                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount: 3,
-                                                mainAxisSpacing: 12,
-                                                crossAxisSpacing: 12,
-                                                mainAxisExtent: 380,
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount:
+                                                    Breakpoints.isDesktop(
+                                                            context)
+                                                        ? 3
+                                                        : Breakpoints
+                                                            .productGridColumns(
+                                                                context),
+                                                mainAxisSpacing: 6,
+                                                crossAxisSpacing: 6,
+                                                mainAxisExtent:
+                                                    productGridExtent,
                                               ),
                                               itemCount:
                                                   displayList.take(6).length,
@@ -297,19 +387,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 final product = displayList[i];
                                                 final rating =
                                                     ratings[product.id];
-                                                return Selector<FavoritesProvider,
-                                                    bool>(
-                                                  selector: (_, fav) =>
-                                                      fav.isFavorite(product.id),
+                                                return Selector<
+                                                    FavoritesProvider, bool>(
+                                                  selector: (_, fav) => fav
+                                                      .isFavorite(product.id),
                                                   builder:
                                                       (_, isFavorite, __) =>
                                                           ProductCard(
                                                     product: product,
-                                                    isPopular:
-                                                        (salesCounts[product.id] ??
-                                                                0) >=
-                                                            AppConstants
-                                                                .popularProductMinSales,
+                                                    isPopular: (salesCounts[
+                                                                product.id] ??
+                                                            0) >=
+                                                        AppConstants
+                                                            .popularProductMinSales,
                                                     isFavorite: canFavorite
                                                         ? isFavorite
                                                         : null,
@@ -326,12 +416,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 );
                                               },
                                             ),
-                                            const SizedBox(height: 8),
+                                            SizedBox(height: compactSpacing),
                                             CacheStatusIndicator(
                                               onRefresh: () =>
                                                   _refreshController.add(null),
                                             ),
-                                            const SizedBox(height: 16),
+                                            SizedBox(height: sectionSpacing),
                                           ],
                                         );
                                       },
@@ -339,11 +429,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(width: sectionSpacing),
                               Expanded(
                                 flex: 35,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     TextField(
                                       readOnly: true,
@@ -353,18 +444,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                         prefixIcon: Icon(Icons.search),
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
-                                    _HomeSidePanel(
-                                      homeProductsStream: stream,
-                                      isSeller: isSeller,
+                                    SizedBox(height: sidePanelSpacing),
+                                    RepaintBoundary(
+                                      child: _HomeSidePanel(
+                                        homeProductsStream: stream,
+                                        initialData: _latestHomeData,
+                                        isSeller: isSeller,
+                                      ),
                                     ),
-                                    if (locationProvider.selectedRegion != null) ...[
-                                      const SizedBox(height: 16),
-                                      _SellersNearYouSection(
-                                          region: locationProvider.selectedRegion!),
+                                    if (selectedRegion != null) ...[
+                                      SizedBox(height: sectionSpacing),
+                                      RepaintBoundary(
+                                        child: _SellersNearYouSection(
+                                            region: selectedRegion),
+                                      ),
                                     ],
-                                    const SizedBox(height: 16),
-                                    _MapCard(),
+                                    SizedBox(height: sectionSpacing),
+                                    RepaintBoundary(child: _MapCard()),
                                   ],
                                 ),
                               ),
@@ -380,279 +476,354 @@ class _HomeScreenState extends State<HomeScreen> {
                                   prefixIcon: Icon(Icons.search),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: sectionSpacing),
                               Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Kategorije',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(fontWeight: FontWeight.bold)),
-                                        TextButton(
-                                          onPressed: () => context.push('/categories'),
-                                          child: const Text('Vidi sve'),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    GridView.builder(
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: topCategories.length,
-                                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        mainAxisSpacing: 4,
-                                        crossAxisSpacing: 4,
-                                        mainAxisExtent: 64,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Kategorije',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
-                                      itemBuilder: (context, index) {
-                                        final cat = topCategories[index];
-                                        return Semantics(
-                                          button: true,
-                                          label: 'Kategorija ${cat.name}',
-                                          child: InkWell(
-                                            onTap: () => context.push(
-                                                '/categories/${cat.id}',
-                                                extra: cat),
-                                            borderRadius: BorderRadius.circular(12),
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(12),
-                                              child: Row(
-                                                children: [
-                                                  buildCategoryIcon(
-                                                    cat.icon,
-                                                    size: 30,
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .primary,
+                                      TextButton(
+                                        onPressed: () =>
+                                            context.push('/categories'),
+                                        child: const Text('Vidi sve'),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: compactSpacing),
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: topCategories.length,
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: isLargeTablet
+                                          ? 4
+                                          : (isSmallTablet ? 3 : 2),
+                                      mainAxisSpacing: 6,
+                                      crossAxisSpacing: 6,
+                                      mainAxisExtent: isTabletLayout
+                                          ? categoryTileExtent
+                                          : categoryTileExtent,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final cat = topCategories[index];
+                                      return Semantics(
+                                        button: true,
+                                        label: 'Kategorija ${cat.name}',
+                                        child: InkWell(
+                                          onTap: () => context.push(
+                                            '/categories/${cat.id}',
+                                            extra: cat,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 8,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                buildCategoryIcon(
+                                                  cat.icon,
+                                                  size: isLargeTablet
+                                                      ? 22
+                                                      : (isSmallTablet
+                                                          ? 24
+                                                          : 26),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    cat.name,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
-                                                  const SizedBox(width: 10),
-                                                  Expanded(
-                                                    child: Text(
-                                                      cat.name,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium
-                                                          ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight.w500),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        );
-                                      },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: sectionSpacing),
+                              if (isTabletLayout) ...[
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: isLargeTablet ? 6 : 5,
+                                      child: RepaintBoundary(
+                                        child: _HomeSidePanel(
+                                          homeProductsStream: stream,
+                                          initialData: _latestHomeData,
+                                          isSeller: isSeller,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: sectionSpacing),
+                                    Expanded(
+                                      flex: isLargeTablet ? 4 : 5,
+                                      child: RepaintBoundary(
+                                        child: _MapCard(),
+                                      ),
                                     ),
                                   ],
                                 ),
-                              const SizedBox(height: 16),
-                              _HomeSidePanel(
-                                homeProductsStream: stream,
-                                isSeller: isSeller,
-                              ),
+                                if (selectedRegion != null) ...[
+                                  SizedBox(height: sectionSpacing),
+                                  RepaintBoundary(
+                                    child: _SellersNearYouSection(
+                                      region: selectedRegion,
+                                    ),
+                                  ),
+                                ],
+                              ] else ...[
+                                RepaintBoundary(
+                                  child: _HomeSidePanel(
+                                    homeProductsStream: stream,
+                                    initialData: _latestHomeData,
+                                    isSeller: isSeller,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                   ),
                 ),
                 if (!isWide && isSeller)
                   SliverToBoxAdapter(
-                    child: _SellerDashboardSliver(
-                        statsFuture: _sellerStatsFuture,
-                        popularFuture: _popularProductsFuture),
+                    child: RepaintBoundary(
+                      child: _SellerDashboardSliver(
+                          statsFuture: _sellerStatsFuture,
+                          popularFuture: _popularProductsFuture),
+                    ),
                   ),
                 if (!isWide)
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),
                 if (!isWide)
-                StreamBuilder<
-                    ({
-                      List<ProductModel> products,
-                      Map<String, int> salesCounts,
-                      Map<String, ({double avg, int count})> ratings
-                    })>(
-                  stream: stream,
-                  builder: (context, snap) {
-                    if (snap.hasError) {
-                      return SliverToBoxAdapter(
-                        child: AppErrorRetry(
-                          message: 'Greška pri učitavanju proizvoda.',
-                          detail: snap.error?.toString(),
-                          onRetry: () => _refreshController.add(null),
-                        ),
-                      );
-                    }
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: 24),
-                          child: ProductCarouselSkeleton(),
-                        ),
-                      );
-                    }
-                    final list = snap.data?.products ?? [];
-                    final salesCounts = snap.data?.salesCounts ?? {};
-                    final ratings = snap.data?.ratings ?? {};
-                    final newProducts = list
-                        .where((p) =>
-                            DateTime.now().difference(p.createdAt).inDays <
-                            AppConstants.newProductDays)
-                        .toList();
-                    final popularProducts = list
-                        .where((p) =>
-                            (salesCounts[p.id] ?? 0) >=
-                            AppConstants.popularProductMinSales)
-                        .toList();
-                    final displayList = _carouselFilter ==
-                            _CarouselFilter.najnovije
-                        ? (newProducts.isNotEmpty ? newProducts : list)
-                        : (popularProducts.isNotEmpty ? popularProducts : list);
-                    _warmupCarouselImages(displayList);
-                    final user = context.select<AppState, UserModel?>((s) => s.user);
-                    final canFavorite = user != null && !user.isGuest;
-                    return SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                SegmentedButton<_CarouselFilter>(
-                                  segments: const [
-                                    ButtonSegment(
-                                        value: _CarouselFilter.najnovije,
-                                        label: Text('Najnovije')),
-                                    ButtonSegment(
-                                        value: _CarouselFilter.popularno,
-                                        label: Text('Popularno')),
-                                  ],
-                                  selected: {_carouselFilter},
-                                  onSelectionChanged: (s) =>
-                                      setState(() => _carouselFilter = s.first),
-                                ),
-                              ],
-                            ),
+                  StreamBuilder<HomeProductsData>(
+                    initialData: _latestHomeData,
+                    stream: stream,
+                    builder: (context, snap) {
+                      if (snap.hasError) {
+                        return SliverToBoxAdapter(
+                          child: AppErrorRetry(
+                            message: 'Greška pri učitavanju proizvoda.',
+                            detail: snap.error?.toString(),
+                            onRetry: () => _refreshController.add(null),
                           ),
-                          const SizedBox(height: 12),
-                          if (isWide)
+                        );
+                      }
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: 24),
+                            child: ProductCarouselSkeleton(),
+                          ),
+                        );
+                      }
+                      final list = snap.data?.products ?? [];
+                      final salesCounts = snap.data?.salesCounts ?? {};
+                      final ratings = snap.data?.ratings ?? {};
+                      final newProducts = list
+                          .where((p) =>
+                              DateTime.now().difference(p.createdAt).inDays <
+                              AppConstants.newProductDays)
+                          .toList();
+                      final popularProducts = list
+                          .where((p) =>
+                              (salesCounts[p.id] ?? 0) >=
+                              AppConstants.popularProductMinSales)
+                          .toList();
+                      final displayList =
+                          _carouselFilter == _CarouselFilter.najnovije
+                              ? (newProducts.isNotEmpty ? newProducts : list)
+                              : (popularProducts.isNotEmpty
+                                  ? popularProducts
+                                  : list);
+                      _warmupCarouselImages(displayList);
+                      final user =
+                          context.select<AppState, UserModel?>((s) => s.user);
+                      final canFavorite = user != null && !user.isGuest;
+                      return SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 380,
-                                ),
-                                itemCount: displayList.take(6).length,
-                                itemBuilder: (context, i) {
-                                  final product = displayList[i];
-                                  final rating = ratings[product.id];
-                                  return Selector<FavoritesProvider, bool>(
-                                    selector: (_, fav) =>
-                                        fav.isFavorite(product.id),
-                                    builder: (_, isFavorite, __) =>
-                                        ProductCard(
-                                      product: product,
-                                      isPopular: (salesCounts[product.id] ??
-                                              0) >=
-                                          AppConstants.popularProductMinSales,
-                                      isFavorite:
-                                          canFavorite ? isFavorite : null,
-                                      onFavoriteToggle: canFavorite
-                                          ? () => context
-                                              .read<FavoritesProvider>()
-                                              .toggle(user.id, product.id)
-                                          : null,
-                                      avgRating: rating?.avg,
-                                      reviewCount: rating?.count,
-                                    ),
-                                  );
-                                },
+                              padding: EdgeInsets.symmetric(
+                                  horizontal:
+                                      Breakpoints.horizontalPadding(context)),
+                              child: Row(
+                                children: [
+                                  SegmentedButton<_CarouselFilter>(
+                                    segments: const [
+                                      ButtonSegment(
+                                          value: _CarouselFilter.najnovije,
+                                          label: Text('Najnovije')),
+                                      ButtonSegment(
+                                          value: _CarouselFilter.popularno,
+                                          label: Text('Popularno')),
+                                    ],
+                                    selected: {_carouselFilter},
+                                    onSelectionChanged: (s) => setState(
+                                        () => _carouselFilter = s.first),
+                                  ),
+                                ],
                               ),
-                            )
-                          else
-                            CarouselSlider(
-                              items: displayList.map((product) {
-                                final rating = ratings[product.id];
-                                return Builder(
-                                  builder: (context) {
+                            ),
+                            SizedBox(height: sidePanelSpacing),
+                            if (isWide || isTabletLayout)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal:
+                                        Breakpoints.horizontalPadding(context)),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount:
+                                        isWide ? 3 : (isLargeTablet ? 3 : 2),
+                                    mainAxisSpacing: 8,
+                                    crossAxisSpacing: 8,
+                                    mainAxisExtent: isWide
+                                        ? 364
+                                        : (isLargeTablet ? 348 : 356),
+                                  ),
+                                  itemCount: displayList.take(6).length,
+                                  itemBuilder: (context, i) {
+                                    final product = displayList[i];
+                                    final rating = ratings[product.id];
                                     return Selector<FavoritesProvider, bool>(
                                       selector: (_, fav) =>
                                           fav.isFavorite(product.id),
-                                      builder: (_, isFavorite, __) => Container(
-                                        width:
-                                            MediaQuery.of(context).size.width,
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 5),
-                                        child: _PopularProductCard(
-                                          product: product,
-                                          isNew: DateTime.now()
-                                                  .difference(product.createdAt)
-                                                  .inDays <
-                                              AppConstants.newProductDays,
-                                          isPopular:
-                                              (salesCounts[product.id] ?? 0) >=
-                                                  AppConstants
-                                                      .popularProductMinSales,
-                                          isFavorite:
-                                              canFavorite ? isFavorite : null,
-                                          onFavoriteToggle: canFavorite
-                                              ? () => context
-                                                  .read<FavoritesProvider>()
-                                                  .toggle(user.id, product.id)
-                                              : null,
-                                          avgRating: rating?.avg,
-                                          reviewCount: rating?.count,
-                                        ),
+                                      builder: (_, isFavorite, __) =>
+                                          ProductCard(
+                                        product: product,
+                                        isPopular: (salesCounts[product.id] ??
+                                                0) >=
+                                            AppConstants.popularProductMinSales,
+                                        isFavorite:
+                                            canFavorite ? isFavorite : null,
+                                        onFavoriteToggle: canFavorite
+                                            ? () => context
+                                                .read<FavoritesProvider>()
+                                                .toggle(user.id, product.id)
+                                            : null,
+                                        avgRating: rating?.avg,
+                                        reviewCount: rating?.count,
                                       ),
                                     );
                                   },
-                                );
-                              }).toList(),
-                              options: CarouselOptions(
-                                height: 220,
-                                aspectRatio: 16 / 9,
-                                viewportFraction: 0.85,
-                                initialPage: 0,
-                                enableInfiniteScroll: list.length > 1,
-                                reverse: false,
-                                autoPlay: list.length > 1,
-                                autoPlayInterval: const Duration(seconds: 3),
-                                autoPlayAnimationDuration:
-                                    const Duration(milliseconds: 800),
-                                autoPlayCurve: Curves.fastOutSlowIn,
-                                enlargeCenterPage: true,
-                                enlargeFactor: 0.2,
-                                scrollDirection: Axis.horizontal,
+                                ),
+                              )
+                            else
+                              CarouselSlider(
+                                items: displayList.map((product) {
+                                  final rating = ratings[product.id];
+                                  return Builder(
+                                    builder: (context) {
+                                      return Selector<FavoritesProvider, bool>(
+                                        selector: (_, fav) =>
+                                            fav.isFavorite(product.id),
+                                        builder: (_, isFavorite, __) =>
+                                            Container(
+                                          width:
+                                              MediaQuery.of(context).size.width,
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 5),
+                                          child: _PopularProductCard(
+                                            product: product,
+                                            isNew: DateTime.now()
+                                                    .difference(
+                                                        product.createdAt)
+                                                    .inDays <
+                                                AppConstants.newProductDays,
+                                            isPopular:
+                                                (salesCounts[product.id] ??
+                                                        0) >=
+                                                    AppConstants
+                                                        .popularProductMinSales,
+                                            isFavorite:
+                                                canFavorite ? isFavorite : null,
+                                            onFavoriteToggle: canFavorite
+                                                ? () => context
+                                                    .read<FavoritesProvider>()
+                                                    .toggle(user.id, product.id)
+                                                : null,
+                                            avgRating: rating?.avg,
+                                            reviewCount: rating?.count,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }).toList(),
+                                options: CarouselOptions(
+                                  height: 204,
+                                  aspectRatio: 16 / 9,
+                                  viewportFraction: 0.85,
+                                  initialPage: 0,
+                                  enableInfiniteScroll: list.length > 1,
+                                  reverse: false,
+                                  autoPlay: list.length > 1,
+                                  autoPlayInterval: const Duration(seconds: 3),
+                                  autoPlayAnimationDuration:
+                                      const Duration(milliseconds: 800),
+                                  autoPlayCurve: Curves.fastOutSlowIn,
+                                  enlargeCenterPage: true,
+                                  enlargeFactor: 0.14,
+                                  scrollDirection: Axis.horizontal,
+                                ),
                               ),
+                            if (!isTabletLayout && selectedRegion != null) ...[
+                              SizedBox(height: sectionSpacing),
+                              RepaintBoundary(
+                                child: _SellersNearYouSection(
+                                    region: selectedRegion),
+                              ),
+                            ],
+                            if (!isTabletLayout) ...[
+                              SizedBox(height: sectionSpacing),
+                              RepaintBoundary(child: _MapCard()),
+                            ],
+                            SizedBox(height: compactSpacing),
+                            CacheStatusIndicator(
+                              onRefresh: () => _refreshController.add(null),
                             ),
-                          if (locationProvider.selectedRegion != null) ...[
-                            const SizedBox(height: 20),
-                            _SellersNearYouSection(
-                                region: locationProvider.selectedRegion!),
+                            SizedBox(height: sectionSpacing),
                           ],
-                          const SizedBox(height: 16),
-                          _MapCard(),
-                          const SizedBox(height: 8),
-                          CacheStatusIndicator(
-                            onRefresh: () => _refreshController.add(null),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -722,18 +893,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
 class _HomeSidePanel extends StatefulWidget {
-  final Stream<
-      ({
-        List<ProductModel> products,
-        Map<String, int> salesCounts,
-        Map<String, ({double avg, int count})> ratings
-      })> homeProductsStream;
+  final Stream<HomeProductsData> homeProductsStream;
+  final HomeProductsData? initialData;
   final bool isSeller;
 
   const _HomeSidePanel({
     required this.homeProductsStream,
+    this.initialData,
     required this.isSeller,
   });
 
@@ -761,7 +928,10 @@ class _HomeSidePanelState extends State<_HomeSidePanel>
   @override
   Widget build(BuildContext context) {
     final children = [
-      _TopProductsList(homeProductsStream: widget.homeProductsStream),
+      _TopProductsList(
+        homeProductsStream: widget.homeProductsStream,
+        initialData: widget.initialData,
+      ),
       _FavoriteFarmsList(tabController: _tabController),
     ];
     return Card(
@@ -780,7 +950,7 @@ class _HomeSidePanelState extends State<_HomeSidePanel>
           // StreamBuilder u „Najprodavaniji“ ne gubi pretplatu na home stream.
           // Inače broadcast stream ne replay-uje poslednji event → večiti spinner.
           SizedBox(
-            height: 260,
+            height: 236,
             child: IndexedStack(
               index: _tabController.index,
               sizing: StackFit.expand,
@@ -794,23 +964,18 @@ class _HomeSidePanelState extends State<_HomeSidePanel>
 }
 
 class _TopProductsList extends StatelessWidget {
-  final Stream<
-      ({
-        List<ProductModel> products,
-        Map<String, int> salesCounts,
-        Map<String, ({double avg, int count})> ratings
-      })> homeProductsStream;
+  final Stream<HomeProductsData> homeProductsStream;
+  final HomeProductsData? initialData;
 
-  const _TopProductsList({required this.homeProductsStream});
+  const _TopProductsList({
+    required this.homeProductsStream,
+    this.initialData,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<
-        ({
-          List<ProductModel> products,
-          Map<String, int> salesCounts,
-          Map<String, ({double avg, int count})> ratings
-        })>(
+    return StreamBuilder<HomeProductsData>(
+      initialData: initialData,
       stream: homeProductsStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
@@ -1154,72 +1319,70 @@ class _SellerDashboardSliver extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FutureBuilder<SellerStats>(
-            future: statsFuture,
-            builder: (context, statsSnap) {
-              final stats = statsSnap.data;
-              if (stats == null) return const SizedBox.shrink();
-              return Card(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _SellerStatItem(
-                          label: 'Na čekanju',
-                          value: '${stats.pendingCount}',
-                          icon: Icons.pending),
-                      _SellerStatItem(
-                          label: 'Ukupno',
-                          value: '${stats.totalCount}',
-                          icon: Icons.receipt_long),
-                      _SellerStatItem(
-                          label: 'Prihod',
-                          value: '${stats.revenue.toStringAsFixed(0)} RSD',
-                          icon: Icons.monetization_on),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          FutureBuilder<List<({ProductModel product, int salesCount})>>(
-            future: popularFuture,
-            builder: (context, popSnap) {
-              final list = popSnap.data ?? [];
-              if (list.isEmpty) return const SizedBox.shrink();
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          future: statsFuture,
+          builder: (context, statsSnap) {
+            final stats = statsSnap.data;
+            if (stats == null) return const SizedBox.shrink();
+            return Card(
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Text('Popularni proizvodi',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade700)),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 100,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: list.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (_, i) {
-                          final item = list[i];
-                          return _SellerPopularProductChip(
-                              product: item.product,
-                              salesCount: item.salesCount);
-                        },
-                      ),
-                    ),
+                    _SellerStatItem(
+                        label: 'Na čekanju',
+                        value: '${stats.pendingCount}',
+                        icon: Icons.pending),
+                    _SellerStatItem(
+                        label: 'Ukupno',
+                        value: '${stats.totalCount}',
+                        icon: Icons.receipt_long),
+                    _SellerStatItem(
+                        label: 'Prihod',
+                        value: '${stats.revenue.toStringAsFixed(0)} RSD',
+                        icon: Icons.monetization_on),
                   ],
                 ),
-              );
-            },
-          ),
-        ],
-      );
+              ),
+            );
+          },
+        ),
+        FutureBuilder<List<({ProductModel product, int salesCount})>>(
+          future: popularFuture,
+          builder: (context, popSnap) {
+            final list = popSnap.data ?? [];
+            if (list.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Popularni proizvodi',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700)),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 92,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: list.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (_, i) {
+                        final item = list[i];
+                        return _SellerPopularProductChip(
+                            product: item.product, salesCount: item.salesCount);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -1361,11 +1524,11 @@ class _SellersNearYouSection extends StatelessWidget {
                 );
               }
               return SizedBox(
-                height: 100,
+                height: 92,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: sellers.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, i) {
                     final seller = sellers[i];
                     final name =
@@ -1426,7 +1589,7 @@ class _MapCard extends StatelessWidget {
           onTap: () => context.push('/sellers-map'),
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(
@@ -1452,7 +1615,7 @@ class _MapCard extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Theme.of(context)
                         .colorScheme
@@ -1461,9 +1624,9 @@ class _MapCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.map,
-                      size: 32, color: Theme.of(context).colorScheme.primary),
+                      size: 28, color: Theme.of(context).colorScheme.primary),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1643,7 +1806,9 @@ class _PopularProductCard extends StatelessWidget {
                       top: 8,
                       right: 8,
                       child: IconButton(
-                        tooltip: isFavorite == true ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
+                        tooltip: isFavorite == true
+                            ? 'Ukloni iz omiljenih'
+                            : 'Dodaj u omiljene',
                         icon: Icon(
                           isFavorite == true
                               ? Icons.favorite

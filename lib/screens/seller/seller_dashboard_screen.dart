@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../core/responsive.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -116,15 +117,20 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Dodaj proizvod'),
       ),
-      body: Column(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: EdgeInsets.fromLTRB(Breakpoints.horizontalPadding(context), 12, Breakpoints.horizontalPadding(context), 4),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   'Pregled prodaje',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -133,6 +139,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'Brzi pregled aktivnih porudžbina, ukupnog broja i prihoda.',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
@@ -295,6 +302,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

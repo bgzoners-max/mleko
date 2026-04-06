@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/responsive.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
 
@@ -64,8 +65,12 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Podešavanja')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
+          child: ListView(
+        padding: EdgeInsets.all(Breakpoints.horizontalPadding(context)),
         children: [
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),
@@ -121,14 +126,21 @@ class SettingsScreen extends StatelessWidget {
             ),
             const Divider(height: 1),
           ],
+          if (user.isAdmin) ...[
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings_outlined),
+              title: const Text('Admin panel'),
+              subtitle: const Text('Tiketi podrške'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push('/admin/tickets'),
+            ),
+            const Divider(height: 1),
+          ],
           ListTile(
             leading: const Icon(Icons.support_outlined),
             title: const Text('Podrška / prijava problema'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Kontakt: support@mleko.rs (MVP)')),
-              );
-            },
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/support'),
           ),
           const Divider(height: 1),
           ListTile(
@@ -185,6 +197,8 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ],
+          ),
+        ),
       ),
     );
   }

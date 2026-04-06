@@ -5,6 +5,7 @@ class Category {
   final String? icon;
   final int order;
   final String? parentId;
+  final String? section;
 
   const Category({
     required this.id,
@@ -13,6 +14,7 @@ class Category {
     this.icon,
     this.order = 0,
     this.parentId,
+    this.section,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Category {
       icon: json['icon'] as String?,
       order: (json['order'] as num?)?.toInt() ?? 0,
       parentId: json['parent_id'] as String?,
+      section: json['section'] as String?,
     );
   }
 
@@ -34,6 +37,7 @@ class Category {
       'icon': icon,
       'order': order,
       'parent_id': parentId,
+      'section': section,
     };
   }
 }

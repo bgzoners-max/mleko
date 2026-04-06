@@ -39,19 +39,49 @@ class ProductListSkeleton extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Container(width: 60, height: 20, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                          Container(
+                              width: 60,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                  color: baseColor,
+                                  borderRadius: BorderRadius.circular(4))),
                           const SizedBox(width: 8),
-                          Container(width: 50, height: 20, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                          Container(
+                              width: 50,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                  color: baseColor,
+                                  borderRadius: BorderRadius.circular(4))),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Container(width: double.infinity, height: 18, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                      Container(
+                          width: double.infinity,
+                          height: 18,
+                          decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 6),
-                      Container(width: 120, height: 16, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                      Container(
+                          width: 120,
+                          height: 16,
+                          decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 6),
-                      Container(width: 80, height: 14, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                      Container(
+                          width: 80,
+                          height: 14,
+                          decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 12),
-                      Container(width: double.infinity, height: 40, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(8))),
+                      Container(
+                          width: double.infinity,
+                          height: 40,
+                          decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(8))),
                     ],
                   ),
                 ),
@@ -74,37 +104,40 @@ class SellerProductListSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     const baseColor = _shimmerBaseColor;
     const highlightColor = _shimmerHighlightColor;
-    return ListView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: itemCount,
-      itemBuilder: (_, i) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Shimmer.fromColors(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          child: Card(
-            child: ListTile(
-              leading: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
-              ),
-              title: Container(
-                height: 16,
-                width: 150,
-                decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
-              ),
-              subtitle: Container(
-                height: 12,
-                width: 80,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
-              ),
-              trailing: Container(
-                width: 48,
-                height: 24,
-                decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
-              ),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => Shimmer.fromColors(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Card(
+          child: ListTile(
+            leading: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                  color: baseColor, borderRadius: BorderRadius.circular(4)),
+            ),
+            title: Container(
+              height: 16,
+              width: 150,
+              decoration: BoxDecoration(
+                  color: baseColor, borderRadius: BorderRadius.circular(4)),
+            ),
+            subtitle: Container(
+              height: 12,
+              width: 80,
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                  color: baseColor, borderRadius: BorderRadius.circular(4)),
+            ),
+            trailing: Container(
+              width: 48,
+              height: 24,
+              decoration: BoxDecoration(
+                  color: baseColor, borderRadius: BorderRadius.circular(4)),
             ),
           ),
         ),
@@ -147,30 +180,62 @@ class OrderListSkeleton extends StatelessWidget {
                       Container(
                         width: 40,
                         height: 40,
-                        decoration: const BoxDecoration(color: baseColor, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(
+                            color: baseColor, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(width: 120, height: 14, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                            Container(
+                                width: 120,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                    color: baseColor,
+                                    borderRadius: BorderRadius.circular(4))),
                             const SizedBox(height: 6),
-                            Container(width: 80, height: 12, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                            Container(
+                                width: 80,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                    color: baseColor,
+                                    borderRadius: BorderRadius.circular(4))),
                           ],
                         ),
                       ),
-                      Container(width: 70, height: 24, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(12))),
+                      Container(
+                          width: 70,
+                          height: 24,
+                          decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(12))),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Container(width: double.infinity, height: 1, color: baseColor),
+                  Container(
+                      width: double.infinity, height: 1, color: baseColor),
                   const SizedBox(height: 12),
-                  Container(width: 180, height: 14, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                      width: 180,
+                      height: 14,
+                      decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(4))),
                   const SizedBox(height: 8),
-                  Container(width: 100, height: 12, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                      width: 100,
+                      height: 12,
+                      decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(4))),
                   const SizedBox(height: 8),
-                  Container(width: 140, height: 12, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                      width: 140,
+                      height: 12,
+                      decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(4))),
                 ],
               ),
             ),
@@ -199,9 +264,19 @@ class ProductCarouselSkeleton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Container(width: 90, height: 36, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(8))),
+                Container(
+                    width: 90,
+                    height: 36,
+                    decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(8))),
                 const SizedBox(width: 8),
-                Container(width: 90, height: 36, decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(8))),
+                Container(
+                    width: 90,
+                    height: 36,
+                    decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(8))),
               ],
             ),
           ),
@@ -227,7 +302,8 @@ class ProductCarouselSkeleton extends StatelessWidget {
                       child: Container(
                         decoration: const BoxDecoration(
                           color: baseColor,
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(12)),
                         ),
                       ),
                     ),
@@ -236,9 +312,19 @@ class ProductCarouselSkeleton extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(width: 120, height: 14, decoration: BoxDecoration(color: highlightColor, borderRadius: BorderRadius.circular(4))),
+                          Container(
+                              width: 120,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                  color: highlightColor,
+                                  borderRadius: BorderRadius.circular(4))),
                           const SizedBox(height: 4),
-                          Container(width: 80, height: 12, decoration: BoxDecoration(color: highlightColor, borderRadius: BorderRadius.circular(4))),
+                          Container(
+                              width: 80,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                  color: highlightColor,
+                                  borderRadius: BorderRadius.circular(4))),
                         ],
                       ),
                     ),
@@ -293,13 +379,15 @@ class CategoryGridSkeleton extends StatelessWidget {
                 Container(
                   height: 14,
                   width: 80,
-                  decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                      color: baseColor, borderRadius: BorderRadius.circular(4)),
                 ),
                 const SizedBox(height: 6),
                 Container(
                   height: 12,
                   width: 60,
-                  decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(
+                      color: baseColor, borderRadius: BorderRadius.circular(4)),
                 ),
               ],
             ),
@@ -331,25 +419,29 @@ class NotificationListSkeleton extends StatelessWidget {
           leading: Container(
             width: 44,
             height: 44,
-            decoration: const BoxDecoration(color: baseColor, shape: BoxShape.circle),
+            decoration:
+                const BoxDecoration(color: baseColor, shape: BoxShape.circle),
           ),
           title: Container(
             height: 14,
             width: 160,
-            decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+                color: baseColor, borderRadius: BorderRadius.circular(4)),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Container(
               height: 12,
               width: 220,
-              decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(
+                  color: baseColor, borderRadius: BorderRadius.circular(4)),
             ),
           ),
           trailing: Container(
             width: 48,
             height: 12,
-            decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+                color: baseColor, borderRadius: BorderRadius.circular(4)),
           ),
         ),
       ),
@@ -375,29 +467,34 @@ class ConversationListSkeleton extends StatelessWidget {
         itemCount: itemCount,
         separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (_, i) => ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: Container(
             width: 48,
             height: 48,
-            decoration: const BoxDecoration(color: baseColor, shape: BoxShape.circle),
+            decoration:
+                const BoxDecoration(color: baseColor, shape: BoxShape.circle),
           ),
           title: Container(
             height: 14,
             width: 130,
-            decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+                color: baseColor, borderRadius: BorderRadius.circular(4)),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Container(
               height: 12,
               width: 200,
-              decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(
+                  color: baseColor, borderRadius: BorderRadius.circular(4)),
             ),
           ),
           trailing: Container(
             width: 40,
             height: 12,
-            decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+                color: baseColor, borderRadius: BorderRadius.circular(4)),
           ),
         ),
       ),
@@ -696,43 +793,57 @@ class ProductDetailSkeleton extends StatelessWidget {
                       Container(
                         height: 24,
                         width: 200,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(6)),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         height: 22,
                         width: 120,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(6)),
                       ),
                       const SizedBox(height: 16),
                       Container(
                         height: 16,
                         width: 80,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(4)),
                       ),
                       const SizedBox(height: 6),
                       Container(
                         height: 14,
                         width: double.infinity,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(4)),
                       ),
                       const SizedBox(height: 6),
                       Container(
                         height: 14,
                         width: MediaQuery.of(context).size.width * 0.5,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(4)),
                       ),
                       const SizedBox(height: 16),
                       Container(
                         height: 48,
                         width: double.infinity,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(8)),
                       ),
                       const SizedBox(height: 24),
                       Container(
                         height: 18,
                         width: 180,
-                        decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(4)),
                       ),
                       const SizedBox(height: 12),
                       ...List.generate(
@@ -744,7 +855,9 @@ class ProductDetailSkeleton extends StatelessWidget {
                               Container(
                                 width: 56,
                                 height: 56,
-                                decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(8)),
+                                decoration: BoxDecoration(
+                                    color: baseColor,
+                                    borderRadius: BorderRadius.circular(8)),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -754,13 +867,20 @@ class ProductDetailSkeleton extends StatelessWidget {
                                     Container(
                                       height: 14,
                                       width: double.infinity,
-                                      decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                                      decoration: BoxDecoration(
+                                          color: baseColor,
+                                          borderRadius:
+                                              BorderRadius.circular(4)),
                                     ),
                                     const SizedBox(height: 6),
                                     Container(
                                       height: 12,
-                                      width: MediaQuery.of(context).size.width * 0.3,
-                                      decoration: BoxDecoration(color: baseColor, borderRadius: BorderRadius.circular(4)),
+                                      width: MediaQuery.of(context).size.width *
+                                          0.3,
+                                      decoration: BoxDecoration(
+                                          color: baseColor,
+                                          borderRadius:
+                                              BorderRadius.circular(4)),
                                     ),
                                   ],
                                 ),

@@ -196,7 +196,11 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
           ],
         ),
       ),
-      body: AnimatedSwitcher(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: AnimatedSwitcher(
         duration: Duration(
           milliseconds: context.watch<AppSettingsProvider>().animationsEnabled ? 250 : 0,
         ),
@@ -205,6 +209,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
         child: KeyedSubtree(
           key: ValueKey<int>(_tabController.index),
           child: _buildTabContent(),
+        ),
+      ),
         ),
       ),
     );

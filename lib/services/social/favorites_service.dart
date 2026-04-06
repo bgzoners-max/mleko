@@ -4,6 +4,10 @@ import '../../models/product_model.dart';
 import '../core/logger_service.dart';
 
 class FavoritesService {
+  static final FavoritesService _instance = FavoritesService._();
+  factory FavoritesService() => _instance;
+  FavoritesService._();
+
   final _client = Supabase.instance.client;
 
   bool _isMissingFavoritesTableError(Object e) {
@@ -126,10 +130,14 @@ class FavoritesService {
       final products = await getFavoriteProducts(userId);
       yield products;
       if (refreshTrigger != null) {
-        await Future.any([
-          Future.delayed(const Duration(seconds: 5)),
-          refreshTrigger.first,
-        ]);
+        try {
+          await Future.any([
+            Future.delayed(const Duration(seconds: 5)),
+            refreshTrigger.first,
+          ]);
+        } on StateError {
+          return;
+        }
       } else {
         await Future.delayed(const Duration(seconds: 5));
       }

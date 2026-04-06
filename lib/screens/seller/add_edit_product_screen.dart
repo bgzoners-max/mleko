@@ -189,7 +189,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     });
     List<String> imageUrls = List.from(_imageUrls);
     try {
-      final user = context.read<AppState>().user!;
       for (var i = 0; i < _newImageBytes.length; i++) {
         final url = await _storageService.uploadProductImage(
             user.id, _newImageBytes[i], imageUrls.length + i);

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/core/logger_service.dart';
+
 const _keyThemeMode = 'mleko_theme_mode'; // 0=system, 1=light, 2=dark
 const _keyAnimationsEnabled = 'mleko_animations_enabled';
 const _keyFontScale = 'mleko_font_scale';
@@ -142,7 +144,9 @@ class AppSettingsProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyThemeMode, _themeModeToInt(value));
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('Failed to save theme mode', extra: {'error': e.toString()});
+    }
   }
 
   Future<void> setAnimationsEnabled(bool value) async {
@@ -152,7 +156,9 @@ class AppSettingsProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyAnimationsEnabled, value);
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('Failed to save animations setting', extra: {'error': e.toString()});
+    }
   }
 
   Future<void> setFontScale(double value) async {
@@ -163,7 +169,9 @@ class AppSettingsProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_keyFontScale, clamped);
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('Failed to save font scale', extra: {'error': e.toString()});
+    }
   }
 
   Future<void> setCompactMode(bool value) async {
@@ -173,6 +181,8 @@ class AppSettingsProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyCompactMode, value);
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('Failed to save compact mode', extra: {'error': e.toString()});
+    }
   }
 }

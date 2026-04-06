@@ -4,6 +4,10 @@ import '../../models/product_model.dart';
 import '../../models/user_model.dart';
 
 class FavoriteSellersService {
+  static final FavoriteSellersService _instance = FavoriteSellersService._();
+  factory FavoriteSellersService() => _instance;
+  FavoriteSellersService._();
+
   final _client = Supabase.instance.client;
 
   Future<List<String>> getFavoriteSellerIds(String userId) async {
@@ -51,11 +55,12 @@ class FavoriteSellersService {
   }
 
   Future<int> getFollowersCount(String sellerId) async {
-    final list = await _client
+    final response = await _client
         .from('favorite_sellers')
-        .select('id')
-        .eq('seller_id', sellerId);
-    return (list as List).length;
+        .select()
+        .eq('seller_id', sellerId)
+        .count(CountOption.exact);
+    return response.count;
   }
 
   /// Jedan RPC umesto getFavoriteSellerIds + profiles.inFilter

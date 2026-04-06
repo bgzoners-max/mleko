@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/user_model.dart';
@@ -38,9 +39,11 @@ class AuthService {
     String? farmName,
     String? location,
   }) async {
+    final redirectTo = kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
     await Supabase.instance.client.auth.signUp(
       email: email,
       password: password,
+      emailRedirectTo: redirectTo,
       data: {
         'email': email,
         'display_name': displayName,
@@ -53,6 +56,31 @@ class AuthService {
     );
     // Profil se kreira automatski triggerom handle_new_user u Supabase
     // (čita podatke iz user_metadata) - nema RLS problema
+  }
+
+  Future<void> resendConfirmationEmail(String email) async {
+    final redirectTo = kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
+    await Supabase.instance.client.auth.resend(
+      type: OtpType.signup,
+      email: email,
+      emailRedirectTo: redirectTo,
+    );
+  }
+
+  Future<bool> checkEmailExists(String email) async {
+    final result = await Supabase.instance.client
+        .rpc('check_email_exists', params: {'p_email': email.trim().toLowerCase()});
+    return result as bool;
+  }
+
+  Future<bool> checkPhoneExists(String phone) async {
+    final trimmed = phone.trim();
+    final res = await Supabase.instance.client
+        .from('profiles')
+        .select('id')
+        .eq('phone', trimmed)
+        .maybeSingle();
+    return res != null;
   }
 
   Future<void> signInAsGuest() async {

@@ -87,7 +87,8 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
   Future<void> _load(Map<String, double> productQuantities) async {
     final productsService = ProductsService();
     // Batch load umesto N+1 petlje
-    final products = await productsService.getProductsByIds(productQuantities.keys.toList());
+    final products =
+        await productsService.getProductsByIds(productQuantities.keys.toList());
     final items = <({ProductModel product, double quantity})>[];
     for (final e in productQuantities.entries) {
       final p = products[e.key];
@@ -410,6 +411,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     final theme = Theme.of(context);
     final totalRsd = _totalAmount.toStringAsFixed(0);
     final isOffline = context.select<AppState, bool>((s) => s.isOffline);
+    final user = context.select<AppState, UserModel?>((s) => s.user);
     final canSubmit = !_sending &&
         _items.isNotEmpty &&
         !_items.any((i) => !i.product.isAvailable);
@@ -474,7 +476,11 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                 ),
               ),
             ),
-      body: SafeArea(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
@@ -518,7 +524,8 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                   final e = _items[i];
                   final p = e.product;
                   final step = p.quantityStep;
-                  final itemTotal = (p.pricePerKg * e.quantity).toStringAsFixed(0);
+                  final itemTotal =
+                      (p.pricePerKg * e.quantity).toStringAsFixed(0);
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: Padding(
@@ -539,7 +546,8 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                                 Text(
                                   '${p.formatQuantity(e.quantity)} × ${p.priceFormatted} = $itemTotal RSD',
                                   style: TextStyle(
-                                      color: Colors.grey.shade600, fontSize: 12),
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12),
                                 ),
                               ],
                             ),
@@ -637,24 +645,19 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                 decoration:
                     const InputDecoration(labelText: 'Kontakt telefon *'),
               ),
-              Builder(
-                builder: (ctx) {
-                  final user = context.select<AppState, UserModel?>((s) => s.user);
-                  if (user == null) return const SizedBox.shrink();
-                  return CheckboxListTile(
-                    value: _savePhoneToProfile,
-                    onChanged: (v) =>
-                        setState(() => _savePhoneToProfile = v ?? false),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text(
-                      'Sačuvaj ovaj broj u profilu',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                  );
-                },
-              ),
+              if (user != null)
+                CheckboxListTile(
+                  value: _savePhoneToProfile,
+                  onChanged: (v) =>
+                      setState(() => _savePhoneToProfile = v ?? false),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text(
+                    'Sačuvaj ovaj broj u profilu',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -681,6 +684,8 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
               const SizedBox(height: 80),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );

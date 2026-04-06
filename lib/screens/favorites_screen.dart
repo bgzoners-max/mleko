@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../providers/app_state.dart';
 import '../providers/favorites_provider.dart';
@@ -80,6 +81,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
+    final isDesktop = Breakpoints.isDesktop(context);
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isGridLayout = isDesktop || isLargeTablet;
+    final contentPadding = Breakpoints.horizontalPadding(context);
+    final gridColumns = isDesktop ? 3 : 2;
+    final gridExtent = isDesktop ? 372.0 : 360.0;
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Omiljeni proizvodi')),
@@ -87,9 +94,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.favorite_border, size: 64, color: Colors.grey.shade400),
+              Icon(Icons.favorite_border,
+                  size: 64, color: Colors.grey.shade400),
               const SizedBox(height: 16),
-              Text('Prijavite se da sačuvate omiljene proizvode', style: TextStyle(color: Colors.grey.shade600)),
+              Text('Prijavite se da sačuvate omiljene proizvode',
+                  style: TextStyle(color: Colors.grey.shade600)),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: () => context.go('/login'),
@@ -115,24 +124,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               onRetry: () => _refreshController.add(null),
             );
           }
-          if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
+          if (snap.connectionState == ConnectionState.waiting &&
+              !snap.hasData) {
             return const ProductListSkeleton();
           }
           final list = snap.data ?? [];
           if (list.isEmpty) {
             return RefreshIndicator(
               onRefresh: _onRefresh,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height - 200,
-                  child: AppEmptyState(
-                    icon: Icons.favorite_border,
-                    title: 'Nemate omiljenih proizvoda',
-                    subtitle: 'Dodajte srcem na karticama proizvoda da ih nađete brzo ovde.',
-                    ctaLabel: 'Pretraži proizvode',
-                    ctaIcon: Icons.search,
-                    onCtaPressed: () => context.go('/'),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: constraints.maxHeight,
+                    child: AppEmptyState(
+                      icon: Icons.favorite_border,
+                      title: 'Nemate omiljenih proizvoda',
+                      subtitle:
+                          'Dodajte srcem na karticama proizvoda da ih nađete brzo ovde.',
+                      ctaLabel: 'Pretraži proizvode',
+                      ctaIcon: Icons.search,
+                      onCtaPressed: () => context.go('/'),
+                    ),
                   ),
                 ),
               ),
@@ -142,37 +155,82 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           final hasMore = list.length > _displayCount;
           return RefreshIndicator(
             onRefresh: _onRefresh,
-            child: ListView.builder(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: visible.length + (hasMore ? 1 : 0),
-              itemBuilder: (_, i) {
-                if (i == visible.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final p = visible[i];
-                return Selector<FavoritesProvider, bool>(
-                  selector: (_, fav) => fav.isFavorite(p.id),
-                  builder: (_, isFavorite, __) {
-                    final user = context.watch<AppState>().user;
-                    final favorites = context.read<FavoritesProvider>();
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: ProductCard(
-                        product: p,
-                        isFavorite: isFavorite,
-                        onFavoriteToggle: user != null && !user.isGuest
-                            ? () => favorites.toggle(user.id, p.id)
-                            : null,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: Breakpoints.maxContentWidth(context)),
+                child: isGridLayout
+                    ? GridView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.all(contentPadding),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: gridColumns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          mainAxisExtent: gridExtent,
+                        ),
+                        itemCount: visible.length + (hasMore ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          if (i == visible.length) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          final p = visible[i];
+                          return Selector<FavoritesProvider, bool>(
+                            selector: (_, fav) => fav.isFavorite(p.id),
+                            builder: (_, isFavorite, __) {
+                              final user = context.watch<AppState>().user;
+                              final favorites =
+                                  context.read<FavoritesProvider>();
+                              return ProductCard(
+                                product: p,
+                                isFavorite: isFavorite,
+                                onFavoriteToggle: user != null && !user.isGuest
+                                    ? () => favorites.toggle(user.id, p.id)
+                                    : null,
+                              );
+                            },
+                          );
+                        },
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.all(contentPadding),
+                        itemCount: visible.length + (hasMore ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          if (i == visible.length) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          final p = visible[i];
+                          return Selector<FavoritesProvider, bool>(
+                            selector: (_, fav) => fav.isFavorite(p.id),
+                            builder: (_, isFavorite, __) {
+                              final user = context.watch<AppState>().user;
+                              final favorites =
+                                  context.read<FavoritesProvider>();
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: ProductCard(
+                                  product: p,
+                                  isFavorite: isFavorite,
+                                  onFavoriteToggle: user != null &&
+                                          !user.isGuest
+                                      ? () => favorites.toggle(user.id, p.id)
+                                      : null,
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
-                    );
-                  },
-                );
-              },
+              ),
             ),
           );
         },
@@ -180,4 +238,3 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 }
-

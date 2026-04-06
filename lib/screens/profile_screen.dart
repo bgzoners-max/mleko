@@ -4,9 +4,19 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
+import 'settings_screen.dart';
+import 'favorites_screen.dart';
+import 'favorite_sellers_screen.dart';
+import 'notifications_screen.dart';
+import 'conversations_screen.dart';
+import 'categories_screen.dart';
+import 'seller/becoming_seller_screen.dart';
+import 'buyer/buyer_reviews_hub_screen.dart';
+import 'seller/seller_reviews_screen.dart';
 
 const _kSellerTags = [
   'Bio sertifikat',
@@ -19,8 +29,23 @@ const _kSellerTags = [
   'Sezonski',
 ];
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _panelNavKey = GlobalKey<NavigatorState>();
+  String? _activeSection;
+
+  void _showInPanel(String section, Widget screen) {
+    setState(() => _activeSection = section);
+    _panelNavKey.currentState?.pushReplacement(
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,145 +70,347 @@ class ProfileScreen extends StatelessWidget {
         ),
       );
     }
+    final isWide =
+        Breakpoints.isLargeTablet(context) || Breakpoints.isDesktop(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (user.isSeller) _SellerProfilePhotoSection(user: user),
-          if (user.isSeller) _SellerGallerySection(user: user),
-          _ProfileDataCard(user: user),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Podešavanja'),
-            subtitle: const Text('Obaveštenja, prodavac, podrška'),
-            onTap: () => context.push('/settings'),
-          ),
-          if (!user.isGuest)
-            ListTile(
-              leading: const Icon(Icons.rate_review_outlined),
-              title: const Text('Recenzije'),
-              subtitle: Text(
-                user.isSeller
-                    ? 'Ocene kupaca i tvoji odgovori'
-                    : 'Primljene i ostavljene ocene (međusobno ocenjivanje)',
-              ),
-              onTap: () {
-                if (user.isSeller) {
-                  context.push('/seller/${user.id}/reviews');
-                } else {
-                  context.push('/buyer/${user.id}/reviews');
-                }
-              },
-            ),
-          const Divider(height: 1),
-          if (user.isSeller) ...[
-            if (!user.isGuest)
-              ListTile(
-                leading: const Icon(Icons.chat),
-                title: const Text('Poruke'),
-                onTap: () => context.push('/conversations'),
-              ),
-            if (!user.isGuest)
-              ListTile(
-                leading: const Icon(Icons.notifications),
-                title: const Text('Obaveštenja'),
-                onTap: () => context.push('/notifications'),
-              ),
-            ListTile(
-              leading: const Icon(Icons.location_on),
-              title: const Text('Lokacija za mapu'),
-              subtitle: Text(user.lat != null && user.lng != null
-                  ? 'Lokacija postavljena'
-                  : 'Odaberi na mapi da te kupci vide'),
-              onTap: () => context.push('/seller-settings'),
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text('Omiljeni proizvodi'),
-              onTap: () => context.push('/favorites'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.people),
-              title: const Text('Pratim prodavce'),
-              onTap: () => context.push('/favorite-sellers'),
-            ),
-            if (!user.isGuest)
-              ListTile(
-                leading: const Icon(Icons.notifications),
-                title: const Text('Obaveštenja'),
-                onTap: () => context.push('/notifications'),
-              ),
-          ],
-          if (!user.isGuest && !user.isSeller)
-            ListTile(
-              leading: const Icon(Icons.chat),
-              title: const Text('Poruke'),
-              onTap: () => context.push('/conversations'),
-            ),
-          ListTile(
-            leading: const Icon(Icons.map),
-            title: const Text('Prodavci na mapi'),
-            onTap: () => context.push('/sellers-map'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.category),
-            title: const Text('Kategorije'),
-            onTap: () => context.push('/categories'),
-          ),
-          if (!user.isSeller && !user.isGuest) ...[
-            ListTile(
-              leading: const Icon(Icons.store),
-              title: const Text('Postani prodavac'),
-              onTap: () => context.push('/becoming-seller'),
-            ),
-          ] else if (user.isGuest) ...[
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('Da bi postao prodavac, registruj nalog'),
-              subtitle: const Text('Gost može samo da pregleda proizvode.'),
-              onTap: () => context.push('/register'),
-            ),
-          ],
-          ListTile(
-            leading: const Icon(Icons.support),
-            title: const Text('Podrška / prijava problema'),
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Kontakt: support@mleko.rs (MVP)'))),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Odjavi se'),
-            onTap: () async {
-              final ok = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Odjavi se?'),
-                  content:
-                      const Text('Da li ste sigurni da želite da se odjavite?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Odustani'),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints:
+              BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
+          child:
+              isWide ? _buildWide(context, user) : _buildNarrow(context, user),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWide(BuildContext context, UserModel user) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          flex: 3,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 200, maxWidth: 420),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                children: [
+                  if (user.isSeller) ...[
+                    _SellerProfilePhotoSection(user: user),
+                    const SizedBox(height: 6),
+                    _SellerGallerySection(user: user),
+                    const SizedBox(height: 6),
+                  ],
+                  _ProfileDataCard(user: user),
+                  const SizedBox(height: 6),
+                  if (user.isSeller) ...[
+                    _MiniStoreCard(user: user),
+                    const SizedBox(height: 6),
+                  ],
+                  Card(
+                    child: Column(
+                      children: _buildNavItems(context, user, isWide: true),
                     ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Odjavi se'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const VerticalDivider(width: 1),
+        Flexible(
+          flex: 7,
+          child: HeroControllerScope.none(
+            child: Navigator(
+              key: _panelNavKey,
+              onGenerateRoute: (_) => MaterialPageRoute(
+                builder: (_) => const _PanelPlaceholder(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNarrow(BuildContext context, UserModel user) {
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final profileCards = [
+      if (user.isSeller) _SellerProfilePhotoSection(user: user),
+      if (user.isSeller) _SellerGallerySection(user: user),
+      _ProfileDataCard(user: user),
+    ];
+    return ListView(
+      padding: EdgeInsets.all(isSmallTablet ? 12 : 8),
+      children: [
+        ...profileCards,
+        SizedBox(height: isSmallTablet ? 12 : 8),
+        if (user.isSeller) ...[
+          _MiniStoreCard(user: user),
+          SizedBox(height: isSmallTablet ? 8 : 4),
+        ],
+        ..._buildNavItems(context, user, isWide: false),
+      ],
+    );
+  }
+
+  List<Widget> _buildNavItems(BuildContext context, UserModel user,
+      {required bool isWide}) {
+    void push(String route) => context.push(route);
+    void openPanel(String section, Widget screen) =>
+        _showInPanel(section, screen);
+    bool isActive(String section) => isWide && _activeSection == section;
+
+    return [
+      ListTile(
+        leading: const Icon(Icons.settings_outlined),
+        title: const Text('Podešavanja'),
+        subtitle: const Text('Obaveštenja, prodavac, podrška'),
+        selected: isActive('settings'),
+        onTap: () => isWide
+            ? openPanel('settings', const SettingsScreen())
+            : push('/settings'),
+      ),
+      if (!user.isGuest)
+        ListTile(
+          leading: const Icon(Icons.rate_review_outlined),
+          title: const Text('Recenzije'),
+          subtitle: Text(
+            user.isSeller
+                ? 'Ocene kupaca i tvoji odgovori'
+                : 'Primljene i ostavljene ocene (međusobno ocenjivanje)',
+          ),
+          selected: isActive('reviews'),
+          onTap: () {
+            if (isWide) {
+              openPanel(
+                'reviews',
+                user.isSeller
+                    ? SellerReviewsScreen(sellerId: user.id)
+                    : BuyerReviewsHubScreen(buyerId: user.id),
+              );
+            } else {
+              if (user.isSeller) {
+                push('/seller/${user.id}/reviews');
+              } else {
+                push('/buyer/${user.id}/reviews');
+              }
+            }
+          },
+        ),
+      const Divider(height: 1),
+      if (user.isSeller) ...[
+        if (!user.isGuest)
+          ListTile(
+            leading: const Icon(Icons.chat),
+            title: const Text('Poruke'),
+            selected: isActive('messages'),
+            onTap: () => isWide
+                ? openPanel('messages', const ConversationsScreen())
+                : push('/conversations'),
+          ),
+        if (!user.isGuest)
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text('Obaveštenja'),
+            selected: isActive('notifications'),
+            onTap: () => isWide
+                ? openPanel('notifications', const NotificationsScreen())
+                : push('/notifications'),
+          ),
+        ListTile(
+          leading: const Icon(Icons.location_on),
+          title: const Text('Lokacija za mapu'),
+          subtitle: Text(user.lat != null && user.lng != null
+              ? 'Lokacija postavljena'
+              : 'Odaberi na mapi da te kupci vide'),
+          onTap: () => push('/seller-settings'),
+        ),
+      ] else ...[
+        ListTile(
+          leading: const Icon(Icons.favorite),
+          title: const Text('Omiljeni proizvodi'),
+          selected: isActive('favorites'),
+          onTap: () => isWide
+              ? openPanel('favorites', const FavoritesScreen())
+              : push('/favorites'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.people),
+          title: const Text('Pratim prodavce'),
+          selected: isActive('favorite-sellers'),
+          onTap: () => isWide
+              ? openPanel('favorite-sellers', const FavoriteSellersScreen())
+              : push('/favorite-sellers'),
+        ),
+        if (!user.isGuest)
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text('Obaveštenja'),
+            selected: isActive('notifications'),
+            onTap: () => isWide
+                ? openPanel('notifications', const NotificationsScreen())
+                : push('/notifications'),
+          ),
+      ],
+      if (!user.isGuest && !user.isSeller)
+        ListTile(
+          leading: const Icon(Icons.chat),
+          title: const Text('Poruke'),
+          selected: isActive('messages'),
+          onTap: () => isWide
+              ? openPanel('messages', const ConversationsScreen())
+              : push('/conversations'),
+        ),
+      ListTile(
+        leading: const Icon(Icons.map),
+        title: const Text('Prodavci na mapi'),
+        onTap: () => push('/sellers-map'),
+      ),
+      ListTile(
+        leading: const Icon(Icons.category),
+        title: const Text('Kategorije'),
+        selected: isActive('categories'),
+        onTap: () => isWide
+            ? openPanel('categories', const CategoriesScreen())
+            : push('/categories'),
+      ),
+      if (!user.isSeller && !user.isGuest) ...[
+        ListTile(
+          leading: const Icon(Icons.store),
+          title: const Text('Postani prodavac'),
+          selected: isActive('becoming-seller'),
+          onTap: () => isWide
+              ? openPanel('becoming-seller', const BecomingSellerScreen())
+              : push('/becoming-seller'),
+        ),
+      ] else if (user.isGuest) ...[
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('Da bi postao prodavac, registruj nalog'),
+          subtitle: const Text('Gost može samo da pregleda proizvode.'),
+          onTap: () => push('/register'),
+        ),
+      ],
+      ListTile(
+        leading: const Icon(Icons.support),
+        title: const Text('Podrška / prijava problema'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/support'),
+      ),
+      const Divider(),
+      ListTile(
+        leading: const Icon(Icons.logout),
+        title: const Text('Odjavi se'),
+        onTap: () async {
+          final ok = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Odjavi se?'),
+              content:
+                  const Text('Da li ste sigurni da želite da se odjavite?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Odustani'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Odjavi se'),
+                ),
+              ],
+            ),
+          );
+          if (ok == true && context.mounted) {
+            await context.read<AppState>().authService.signOut();
+            if (context.mounted) context.go('/login');
+          }
+        },
+      ),
+    ];
+  }
+}
+
+class _PanelPlaceholder extends StatelessWidget {
+  const _PanelPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.touch_app_outlined, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Odaberite stavku iz menija',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniStoreCard extends StatelessWidget {
+  final UserModel user;
+  const _MiniStoreCard({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.go('/search'),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.storefront_outlined,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mini prodavnica',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user.farmName ?? 'Moji proizvodi i porudžbine',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.grey.shade600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-              );
-              if (ok == true && context.mounted) {
-                await context.read<AppState>().authService.signOut();
-                if (context.mounted) context.go('/login');
-              }
-            },
+              ),
+              const Icon(Icons.chevron_right),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -273,9 +500,8 @@ class _SellerProfilePhotoContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUser = context.watch<AppState>().user ?? user;
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         child: Row(
           children: [
             Stack(
@@ -325,14 +551,14 @@ class _SellerProfilePhotoContent extends StatelessWidget {
                   Text(currentUser.farmName ?? 'Gazdinstvo',
                       style: Theme.of(context).textTheme.titleMedium),
                   if (followersCount > 0) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text('$followersCount pratilaca',
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall
                             ?.copyWith(color: Colors.grey.shade600)),
                   ],
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     loading
                         ? 'Učitavanje…'
@@ -371,7 +597,7 @@ class _ProfileDataCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -394,19 +620,19 @@ class _ProfileDataCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             if (user.createdAt != null) ...[
               Text(
                 'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(user.createdAt!)}',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 2),
             ],
             if (user.displayName != null)
               _DataRow(label: 'Ime', value: user.displayName!),
             if (user.phone != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
                   children: [
                     RichText(
@@ -422,11 +648,17 @@ class _ProfileDataCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Tooltip(
-                      message: user.phonePublic ? 'Vidljivo svima' : 'Vidljivo samo tebi',
+                      message: user.phonePublic
+                          ? 'Vidljivo svima'
+                          : 'Vidljivo samo tebi',
                       child: Icon(
-                        user.phonePublic ? Icons.lock_open_outlined : Icons.lock_outline,
+                        user.phonePublic
+                            ? Icons.lock_open_outlined
+                            : Icons.lock_outline,
                         size: 13,
-                        color: user.phonePublic ? Colors.green.shade600 : Colors.grey.shade500,
+                        color: user.phonePublic
+                            ? Colors.green.shade600
+                            : Colors.grey.shade500,
                       ),
                     ),
                   ],
@@ -435,7 +667,7 @@ class _ProfileDataCard extends StatelessWidget {
             if (user.city != null) _DataRow(label: 'Grad', value: user.city!),
             if (user.address != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
                   children: [
                     RichText(
@@ -463,7 +695,7 @@ class _ProfileDataCard extends StatelessWidget {
             if (user.isSeller && user.farmName != null)
               _DataRow(label: 'Gazdinstvo', value: user.farmName!),
             if (user.isSeller && user.sellerTags.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 2),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
@@ -501,7 +733,7 @@ class _DataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 2),
       child: RichText(
         text: TextSpan(
           style: DefaultTextStyle.of(context).style,
@@ -700,7 +932,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   helperStyle: TextStyle(color: Colors.grey.shade600),
                   suffixIcon: Tooltip(
                     message: 'Adresa nije javno vidljiva',
-                    child: Icon(Icons.lock_outline, size: 18, color: Colors.grey.shade500),
+                    child: Icon(Icons.lock_outline,
+                        size: 18, color: Colors.grey.shade500),
                   ),
                 ),
                 textCapitalization: TextCapitalization.sentences,
@@ -833,9 +1066,8 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
     final urls = currentUser.farmGalleryUrls;
     final displayUrls = _galleryUrls.isNotEmpty ? _galleryUrls : urls;
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -844,10 +1076,10 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             Text('Fotografije farme, stoke ili proizvodnje.',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             Wrap(
               spacing: 8,
               runSpacing: 8,

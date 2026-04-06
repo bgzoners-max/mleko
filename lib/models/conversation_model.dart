@@ -12,6 +12,8 @@ class ConversationModel {
   final String? lastMessageBody;
   final DateTime? lastMessageAt;
   final int unreadCount;
+  final bool isFavorite;
+  final bool hidden;
 
   const ConversationModel({
     required this.id,
@@ -25,6 +27,8 @@ class ConversationModel {
     this.lastMessageBody,
     this.lastMessageAt,
     this.unreadCount = 0,
+    this.isFavorite = false,
+    this.hidden = false,
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
@@ -61,6 +65,8 @@ class ConversationModel {
       lastMessageBody: lastBody,
       lastMessageAt: parseDateOrNull(lastAt),
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+      isFavorite: (json['is_favorite'] as bool?) ?? false,
+      hidden: (json['hidden'] as bool?) ?? false,
     );
   }
 

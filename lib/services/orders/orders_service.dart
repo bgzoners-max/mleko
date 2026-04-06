@@ -32,6 +32,10 @@ class BuyerSellerStats {
 }
 
 class OrdersService {
+  static final OrdersService _instance = OrdersService._();
+  factory OrdersService() => _instance;
+  OrdersService._();
+
   final _client = Supabase.instance.client;
 
   /// Vrednost [statusFilter] za listu „aktivnih” porudžbina: sve osim kupčeve ručne arhive (`arhivirano`).
@@ -292,6 +296,7 @@ class OrdersService {
       } catch (e, st) {
         LoggerService.error('Failed to refetch orders stream', e,
             stackTrace: st);
+        if (!controller.isClosed) controller.addError(e, st);
       }
     }
 

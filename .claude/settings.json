@@ -16,11 +16,28 @@
       "Bash(supabase db:*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080)",
       "Bash(flutter clean:*)",
-      "Bash(start python:*)"
+      "Bash(start python:*)",
+      "Bash(wc -l /c/dev/mleko/lib/screens/*.dart /c/dev/mleko/lib/screens/*/*.dart)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 8128 /F)",
+      "Bash(cmd /c \"taskkill /F /IM dart.exe 2>nul & exit 0\")",
+      "Bash(start cmd:*)",
+      "Bash(sed -n '80,130p' c:/dev/mleko/lib/screens/favorites_screen.dart)",
+      "Bash(sed -n '30,70p' c:/dev/mleko/lib/screens/favorite_sellers_screen.dart)",
+      "Bash(sed -n '22,50p' c:/dev/mleko/lib/screens/categories_screen.dart)",
+      "Bash(sed -n '58,100p' c:/dev/mleko/lib/screens/seller/becoming_seller_screen.dart)",
+      "Bash(sed -n '58,110p' c:/dev/mleko/lib/screens/buyer/buyer_reviews_hub_screen.dart)",
+      "Bash(dart analyze:*)",
+      "Bash(pkill -f \"flutter run\")",
+      "Bash(pkill -f \"dart\")",
+      "Bash(npx supabase:*)",
+      "Bash(taskkill /F /IM chrome.exe)",
+      "Bash(taskkill /F /IM flutter.exe)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Silent\\.claude\\projects\\c--dev-mleko\\memory",
-      "c:\\dev"
+      "c:\\dev",
+      "\\tmp"
     ]
   }
 }

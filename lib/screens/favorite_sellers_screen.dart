@@ -51,7 +51,11 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pratim prodavce')),
-      body: FutureBuilder<List<UserModel>>(
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: FutureBuilder<List<UserModel>>(
         future: _sellersFuture,
         builder: (context, snap) {
           if (snap.hasError) {
@@ -105,6 +109,8 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
             },
           );
         },
+          ),
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/responsive.dart';
 import '../models/category.dart';
 import '../models/product_model.dart';
 import 'package:mleko/services/services.dart';
@@ -186,16 +187,27 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
 
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: CustomScrollView(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.isDesktop(context) ? 800 : Breakpoints.maxContentWidth(context),
+          ),
+          child: CustomScrollView(
         controller: _scrollController,
         slivers: [
           // Subcategories grid
           if (_categories.isNotEmpty)
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+              padding: EdgeInsets.fromLTRB(
+                Breakpoints.horizontalPadding(context),
+                16,
+                Breakpoints.horizontalPadding(context),
+                8,
+              ),
               sliver: SliverGrid(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                  crossAxisCount: 3,
                   mainAxisSpacing: 4,
                   crossAxisSpacing: 4,
                   mainAxisExtent: 64,
@@ -299,13 +311,16 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              sliver: SliverList(
+              padding: EdgeInsets.symmetric(horizontal: Breakpoints.horizontalPadding(context)),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.65,
+                ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ProductCard(product: _products[index]),
-                  ),
+                  (context, index) => ProductCard(product: _products[index]),
                   childCount: _products.length,
                 ),
               ),
@@ -323,6 +338,8 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
           // Bottom padding
           const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
+          ),
+        ),
       ),
     );
   }
