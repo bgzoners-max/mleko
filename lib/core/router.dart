@@ -37,6 +37,7 @@ import '../screens/admin/admin_ticket_detail_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/child_categories_screen.dart';
 import '../screens/terms_screen.dart';
+import '../screens/landing_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
 
@@ -68,8 +69,9 @@ GoRouter createRouter(AppState appState) {
       if (appState.user == null &&
           !loc.startsWith('/login') &&
           !loc.startsWith('/register') &&
-          !loc.startsWith('/onboarding')) {
-        return '/login';
+          !loc.startsWith('/onboarding') &&
+          loc != '/landing') {
+        return '/landing';
       }
 
       // Gost (anonymous) može samo da gleda proizvode, ne i da naručuje
@@ -267,6 +269,10 @@ GoRouter createRouter(AppState appState) {
       GoRoute(
         path: '/terms',
         builder: (_, __) => const TermsScreen(),
+      ),
+      GoRoute(
+        path: '/landing',
+        builder: (_, __) => const LandingScreen(),
       ),
       GoRoute(
         path: '/verify-email',
