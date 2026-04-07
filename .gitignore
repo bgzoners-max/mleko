@@ -53,3 +53,5 @@ service-account*.json
 # Lokalne rezervne kopije (veliki fajlovi; vidi backups/README.md)
 backups/*.bundle
 backups/*.zip
+
+.vercel
