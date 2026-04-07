@@ -61,7 +61,8 @@ class _LandingScreenState extends State<LandingScreen> {
           children: [
             _Header(isWide: isWide),
             _HeroSection(isWide: isWide, theme: theme),
-            _MissionSection(theme: theme),
+            const _TrustSection(),
+            const _HowItWorksSection(),
             _WaitlistSection(
               emailCtrl: _emailCtrl,
               submitting: _submitting,
@@ -164,7 +165,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Text(
-            'Direktno od proizvođača\ndo Vašeg stola',
+            'Direktno sa sela\nna vaš sto',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
@@ -176,7 +177,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Naše selo je naša snaga.\nPovežite se direktno sa domaćim gazdinstvima i uživajte u svežim, domaćim proizvodima.',
+            'Vaša oaza domaće hrane — povežite se sa proverenim proizvođačima i uživajte u svežim, pravim ukusima.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.88),
@@ -202,13 +203,7 @@ class _HeroSection extends StatelessWidget {
                 child: const Text('Registrujte se'),
               ),
               OutlinedButton(
-                onPressed: () {
-                  Scrollable.ensureVisible(
-                    context,
-                    duration: const Duration(milliseconds: 400),
-                  );
-                  // scroll to waitlist via key handled below
-                },
+                onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white, width: 1.5),
@@ -216,9 +211,19 @@ class _HeroSection extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
-                child: const Text('Prijavite se za obaveštenje'),
+                child: const Text('Obavestite me kada platforma startuje'),
               ),
             ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Bez posrednika  •  Provereni proizvođači  •  Domaće i sveže',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 13,
+              letterSpacing: 0.3,
+            ),
           ),
         ],
       ),
@@ -226,9 +231,8 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-class _MissionSection extends StatelessWidget {
-  final ThemeData theme;
-  const _MissionSection({required this.theme});
+class _TrustSection extends StatelessWidget {
+  const _TrustSection();
 
   @override
   Widget build(BuildContext context) {
@@ -237,87 +241,169 @@ class _MissionSection extends StatelessWidget {
       color: const Color(0xFFF9F6F0),
       padding: EdgeInsets.symmetric(
         horizontal: isWide ? 64 : 24,
-        vertical: 56,
+        vertical: 48,
       ),
-      child: Column(
-        children: [
-          Text(
-            'Zašto Domaći market?',
-            style: theme.textTheme.displayMedium?.copyWith(
-              color: const Color(0xFF1B5E20),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          const Wrap(
-            spacing: 24,
-            runSpacing: 24,
-            alignment: WrapAlignment.center,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
+          child: Column(
             children: [
-              _FeatureCard(
-                icon: Icons.agriculture,
-                title: 'Direktno od gazdinstva',
-                body: 'Bez posrednika. Kupujete direktno od porodičnih gazdinstava i malih proizvođača.',
+              const Text(
+                'Domaći market je platforma gde će biti:',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1B1B1B),
+                ),
               ),
-              _FeatureCard(
-                icon: Icons.verified_outlined,
-                title: 'Provereni proizvođači',
-                body: 'Svaki prodavac prolazi verifikaciju. Znate tačno od koga kupujete.',
-              ),
-              _FeatureCard(
-                icon: Icons.local_shipping_outlined,
-                title: 'Sveže i domaće',
-                body: 'Mleko, sir, med, povrće, voće — sve što se nekada nabavljalo od komšije.',
+              const SizedBox(height: 24),
+              const _CheckItem('Provereni proizvođači'),
+              const SizedBox(height: 12),
+              const _CheckItem('Direktna kupovina bez preprodavaca'),
+              const SizedBox(height: 12),
+              const _CheckItem('Transparentno poreklo proizvoda'),
+              const SizedBox(height: 28),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Uskoro dostupno u celoj Srbiji',
+                  style: TextStyle(
+                    color: Color(0xFF1B5E20),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _FeatureCard extends StatelessWidget {
-  final IconData icon;
+class _CheckItem extends StatelessWidget {
+  final String text;
+  const _CheckItem(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 22),
+        const SizedBox(width: 10),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 16, color: Color(0xFF37434F)),
+        ),
+      ],
+    );
+  }
+}
+
+class _HowItWorksSection extends StatelessWidget {
+  const _HowItWorksSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 800;
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.symmetric(
+        horizontal: isWide ? 64 : 24,
+        vertical: 48,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            children: [
+              const Text(
+                'Kako funkcioniše?',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1B1B1B),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Jednostavno, bez filozofije.',
+                style: TextStyle(fontSize: 14, color: Color(0xFF78909C)),
+              ),
+              const SizedBox(height: 36),
+              isWide
+                  ? const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _StepCard(step: '1', title: 'Pronađite proizvođača', icon: Icons.search)),
+                        SizedBox(width: 16),
+                        Expanded(child: _StepCard(step: '2', title: 'Izaberite proizvode', icon: Icons.shopping_basket_outlined)),
+                        SizedBox(width: 16),
+                        Expanded(child: _StepCard(step: '3', title: 'Dogovorite kupovinu ili dostavu', icon: Icons.handshake_outlined)),
+                      ],
+                    )
+                  : const Column(
+                      children: [
+                        _StepCard(step: '1', title: 'Pronađite proizvođača', icon: Icons.search),
+                        SizedBox(height: 16),
+                        _StepCard(step: '2', title: 'Izaberite proizvode', icon: Icons.shopping_basket_outlined),
+                        SizedBox(height: 16),
+                        _StepCard(step: '3', title: 'Dogovorite kupovinu ili dostavu', icon: Icons.handshake_outlined),
+                      ],
+                    ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StepCard extends StatelessWidget {
+  final String step;
   final String title;
-  final String body;
-  const _FeatureCard({required this.icon, required this.title, required this.body});
+  final IconData icon;
+  const _StepCard({required this.step, required this.title, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 260,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFFF9F6F0),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFF1B5E20),
+              borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(icon, color: const Color(0xFF1B5E20), size: 28),
+            child: Center(
+              child: Text(
+                step,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1B5E20))),
-          const SizedBox(height: 8),
-          Text(body,
-              style: const TextStyle(
-                  fontSize: 14, height: 1.5, color: Color(0xFF37434F))),
+          const SizedBox(height: 14),
+          Icon(icon, color: const Color(0xFF2E7D32), size: 30),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1B1B1B)),
+          ),
         ],
       ),
     );
