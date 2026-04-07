@@ -32,7 +32,8 @@
       "Bash(pkill -f \"dart\")",
       "Bash(npx supabase:*)",
       "Bash(taskkill /F /IM chrome.exe)",
-      "Bash(taskkill /F /IM flutter.exe)"
+      "Bash(taskkill /F /IM flutter.exe)",
+      "Bash(dart run:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Silent\\.claude\\projects\\c--dev-mleko\\memory",

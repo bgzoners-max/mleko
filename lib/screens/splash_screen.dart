@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,7 +16,8 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
-      context.go('/landing');
+      final session = Supabase.instance.client.auth.currentSession;
+      context.go(session != null ? '/' : '/landing');
     });
   }
 

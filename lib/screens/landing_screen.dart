@@ -12,15 +12,25 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen> {
   final _emailCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
+  final _waitlistKey = GlobalKey();
   bool _submitting = false;
   bool _submitted = false;
   String? _error;
 
   static final _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
+  void _scrollToWaitlist() {
+    final ctx = _waitlistKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+    }
+  }
+
   @override
   void dispose() {
     _emailCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -56,14 +66,16 @@ class _LandingScreenState extends State<LandingScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F6F0),
       body: SingleChildScrollView(
+        controller: _scrollCtrl,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Header(isWide: isWide),
-            _HeroSection(isWide: isWide, theme: theme),
+            _HeroSection(isWide: isWide, theme: theme, onWaitlistTap: _scrollToWaitlist),
             const _TrustSection(),
             const _HowItWorksSection(),
             _WaitlistSection(
+              key: _waitlistKey,
               emailCtrl: _emailCtrl,
               submitting: _submitting,
               submitted: _submitted,
@@ -128,7 +140,8 @@ class _Header extends StatelessWidget {
 class _HeroSection extends StatelessWidget {
   final bool isWide;
   final ThemeData theme;
-  const _HeroSection({required this.isWide, required this.theme});
+  final VoidCallback onWaitlistTap;
+  const _HeroSection({required this.isWide, required this.theme, required this.onWaitlistTap});
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +160,12 @@ class _HeroSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Image.asset(
+            'assets/images/logo.png',
+            width: isWide ? 180 : 140,
+            height: isWide ? 180 : 140,
+          ),
+          const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
@@ -177,7 +196,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Vaša oaza domaće hrane — povežite se sa proverenim proizvođačima i uživajte u svežim, pravim ukusima.',
+            'Vaša oaza domaće hrane — povežite se sa proverenim proizvođačima i uživajte u pravim ukusima.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.88),
@@ -203,7 +222,7 @@ class _HeroSection extends StatelessWidget {
                 child: const Text('Registrujte se'),
               ),
               OutlinedButton(
-                onPressed: () {},
+                onPressed: onWaitlistTap,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white, width: 1.5),
@@ -419,6 +438,7 @@ class _WaitlistSection extends StatelessWidget {
   final ThemeData theme;
 
   const _WaitlistSection({
+    super.key,
     required this.emailCtrl,
     required this.submitting,
     required this.submitted,

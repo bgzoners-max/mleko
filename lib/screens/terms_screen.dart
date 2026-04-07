@@ -75,12 +75,12 @@ class _TermsContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        Text('USLOVI KORIŠĆENJA – „Naše selo"',
+        Text('USLOVI KORIŠĆENJA – „Domaći market"',
             style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
 
         // 1
         section('1', 'Opšte odredbe', [
-          'Dobrodošli na platformu „Naše selo" (u daljem tekstu: Platforma), koja omogućava povezivanje proizvođača domaćih proizvoda i krajnjih kupaca.',
+          'Dobrodošli na platformu „Domaći market" (u daljem tekstu: Platforma), koja omogućava povezivanje proizvođača domaćih proizvoda i krajnjih kupaca.',
           'Korišćenjem Platforme, korisnik potvrđuje da je pročitao, razumeo i prihvatio ove Uslove korišćenja.',
         ]),
 
@@ -91,7 +91,7 @@ class _TermsContent extends StatelessWidget {
             const SizedBox(height: 24),
             Text('2. Opis usluge', style: heading),
             const SizedBox(height: 8),
-            Text('Platforma „Naše selo" omogućava:', style: body),
+            Text('Platforma „Domaći market" omogućava:', style: body),
             const SizedBox(height: 4),
             bullet('registraciju domaćinstava i proizvođača'),
             bullet('objavljivanje i pregled ponude proizvoda'),
@@ -144,7 +144,7 @@ class _TermsContent extends StatelessWidget {
             const SizedBox(height: 24),
             Text('5. Ograničenje odgovornosti platforme', style: heading),
             const SizedBox(height: 8),
-            Text('Platforma „Naše selo":', style: body),
+            Text('Platforma „Domaći market":', style: body),
             const SizedBox(height: 4),
             bullet('ne garantuje kvalitet, bezbednost niti ispravnost proizvoda'),
             bullet('ne snosi odgovornost za eventualne štete nastale korišćenjem proizvoda'),
