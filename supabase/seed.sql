@@ -113,7 +113,7 @@ SELECT p.id, 'Sir', 'Domaći kravlji sir', 1200, 0.5, 0.5, 50,
   'Beograd, Zemun', true, true
 FROM public.profiles p WHERE p.email = 'prodavac1@test.rs' AND p.role = 'seller'
 UNION ALL
-SELECT p.id, 'Kobasice', 'Domaće dimljene kobasice', 1500, 0.5, 30,
+SELECT p.id, 'Kobasice', 'Domaće dimljene kobasice', 1500, 0.5, 0.5, 30,
   'Dimljene na bukovom drvetu, bez konzervansa.',
   ARRAY['https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Beograd, Zemun', true, true
