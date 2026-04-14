@@ -37,6 +37,7 @@ dependencies:
   share_plus: ^12.0.1
   shimmer: ^3.0.0
   shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.2.4
   workmanager: ^0.9.0+3
   flutter_dotenv: ^6.0.0
   flutter_map: ^8.2.2
@@ -54,6 +55,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/categories/
     - assets/icon/
     - assets/.env
 

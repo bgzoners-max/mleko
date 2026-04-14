@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
-import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
@@ -144,27 +143,25 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       final appState = context.read<AppState>();
       final isOnline = appState.isOnline;
       final phone = _phoneController.text.trim();
+      final note = _noteController.text.trim();
+      final buyerCity = _cityController.text.trim();
+      final buyerAddress = _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim();
 
       if (isOnline) {
-        // Online mode: Send order to server
-        final order = OrderModel(
-          id: '',
+        final orderId = await OrdersService().createSingleProductOrder(
           buyerId: user.id,
           sellerId: widget.product.sellerId,
           productId: widget.product.id,
           productName: widget.product.name,
           quantityKg: qty,
           unitType: widget.product.unitType,
-          note: _noteController.text.trim(),
-          buyerCity: _cityController.text.trim(),
+          note: note,
+          buyerCity: buyerCity,
           buyerPhone: phone,
-          buyerAddress: _addressController.text.trim().isEmpty
-              ? null
-              : _addressController.text.trim(),
-          status: OrderStatus.sent,
-          createdAt: DateTime.now(),
+          buyerAddress: buyerAddress,
         );
-        final orderId = await OrdersService().createOrder(order);
         if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
           await UsersService().updatePhone(user.id, phone);
           await appState.refreshUser();
@@ -190,11 +187,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           productName: widget.product.name,
           quantityKg: qty,
           unitType: widget.product.unitType,
-          note: _noteController.text.trim(),
-          buyerCity: _cityController.text.trim(),
-          buyerAddress: _addressController.text.trim().isEmpty
-              ? null
-              : _addressController.text.trim(),
+          note: note,
+          buyerCity: buyerCity,
+          buyerAddress: buyerAddress,
           buyerPhone: phone,
           preferCall: false,
           pickupOptions: [],

@@ -8,8 +8,12 @@ import 'users_service.dart';
 class AuthService {
   final UsersService _users = UsersService();
 
+  String get _authRedirectTo =>
+      kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
+
   User? get currentSupabaseUser => Supabase.instance.client.auth.currentUser;
-  Stream<AuthState> get authStateChanges => Supabase.instance.client.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges =>
+      Supabase.instance.client.auth.onAuthStateChange;
 
   Future<UserModel?> getCurrentUser() async {
     final u = Supabase.instance.client.auth.currentUser;
@@ -26,7 +30,8 @@ class AuthService {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
-    await Supabase.instance.client.auth.signInWithPassword(email: email, password: password);
+    await Supabase.instance.client.auth
+        .signInWithPassword(email: email, password: password);
   }
 
   Future<void> registerWithEmail(
@@ -39,11 +44,10 @@ class AuthService {
     String? farmName,
     String? location,
   }) async {
-    final redirectTo = kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
     await Supabase.instance.client.auth.signUp(
       email: email,
       password: password,
-      emailRedirectTo: redirectTo,
+      emailRedirectTo: _authRedirectTo,
       data: {
         'email': email,
         'display_name': displayName,
@@ -59,17 +63,16 @@ class AuthService {
   }
 
   Future<void> resendConfirmationEmail(String email) async {
-    final redirectTo = kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
     await Supabase.instance.client.auth.resend(
       type: OtpType.signup,
       email: email,
-      emailRedirectTo: redirectTo,
+      emailRedirectTo: _authRedirectTo,
     );
   }
 
   Future<bool> checkEmailExists(String email) async {
-    final result = await Supabase.instance.client
-        .rpc('check_email_exists', params: {'p_email': email.trim().toLowerCase()});
+    final result = await Supabase.instance.client.rpc('check_email_exists',
+        params: {'p_email': email.trim().toLowerCase()});
     return result as bool;
   }
 
@@ -92,7 +95,10 @@ class AuthService {
   }
 
   Future<void> sendPasswordReset(String email) async {
-    await Supabase.instance.client.auth.resetPasswordForEmail(email);
+    await Supabase.instance.client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: _authRedirectTo,
+    );
   }
 
   Future<void> signOut() async {

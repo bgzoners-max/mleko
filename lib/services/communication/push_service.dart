@@ -5,9 +5,12 @@ import 'dart:io' show Platform;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/notification_types.dart';
 import '../../firebase_options.dart';
@@ -164,12 +167,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class PushService {
   final _client = Supabase.instance.client;
+  static const _installationIdKey = 'mleko_push_installation_id';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  static const Uuid _uuid = Uuid();
 
   // Ovi listener-i moraju imati životni ciklus, da ne dođe do duplih listen-ova
   // (npr. pri login/logout-u) i registracije tokena za pogrešan korisnika.
   static StreamSubscription<String>? _onTokenRefreshSub;
   static StreamSubscription<RemoteMessage>? _onMessageSub;
   static StreamSubscription<RemoteMessage>? _onMessageOpenedSub;
+  static int _registrationGeneration = 0;
+  static String? _registeredUserId;
 
   static void Function(RemoteMessage)? _foregroundHandler;
   static void Function(RemoteMessage)? _messageOpenedHandler;
@@ -178,6 +186,62 @@ class PushService {
 
   static Future<void> _cancelSub<T>(StreamSubscription<T>? sub) async {
     await sub?.cancel();
+  }
+
+  static Future<String> _getInstallationId() async {
+    try {
+      final secureValue = await _secureStorage.read(key: _installationIdKey);
+      if (secureValue != null && secureValue.isNotEmpty) {
+        return secureValue;
+      }
+    } catch (_) {
+      // Fallback below.
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final prefsValue = prefs.getString(_installationIdKey);
+    if (prefsValue != null && prefsValue.isNotEmpty) {
+      try {
+        await _secureStorage.write(key: _installationIdKey, value: prefsValue);
+        await prefs.remove(_installationIdKey);
+      } catch (_) {
+        // Keep the fallback copy if secure storage write fails.
+      }
+      return prefsValue;
+    }
+
+    final installationId = _uuid.v4();
+    try {
+      await _secureStorage.write(
+        key: _installationIdKey,
+        value: installationId,
+      );
+    } catch (_) {
+      await prefs.setString(_installationIdKey, installationId);
+    }
+    return installationId;
+  }
+
+  Future<void> _removeOtherUsersForInstallation(
+    String installationId,
+    String userId,
+  ) async {
+    await _client
+        .from('user_push_tokens')
+        .delete()
+        .eq('installation_id', installationId)
+        .neq('user_id', userId);
+  }
+
+  static bool _isCurrentRegistration(int generation, String userId) {
+    return generation == _registrationGeneration && _registeredUserId == userId;
+  }
+
+  static Future<void> clearRegistrationState() async {
+    _registrationGeneration++;
+    _registeredUserId = null;
+    await _cancelSub(_onTokenRefreshSub);
+    _onTokenRefreshSub = null;
   }
 
   static Future<void> initialize() async {
@@ -326,9 +390,17 @@ class PushService {
   Future<void> registerToken(String userId) async {
     if (kIsWeb) return;
     try {
+      final generation = ++_registrationGeneration;
+      _registeredUserId = userId;
+      await _cancelSub(_onTokenRefreshSub);
+      _onTokenRefreshSub = null;
+      final installationId = await _getInstallationId();
+      if (!_isCurrentRegistration(generation, userId)) return;
+
       LoggerService.debug('PushService: STARTING token registration',
           extra: {'user_id': userId});
       final granted = await ensureNotificationPermission();
+      if (!_isCurrentRegistration(generation, userId)) return;
       LoggerService.debug('PushService: Permission check',
           extra: {'granted': granted});
       if (!granted) {
@@ -336,10 +408,10 @@ class PushService {
         return;
       }
       var token = await FirebaseMessaging.instance.getToken();
+      if (!_isCurrentRegistration(generation, userId)) return;
       final hasToken = token?.isNotEmpty ?? false;
       LoggerService.debug('PushService: Got initial token', extra: {
         'has_token': hasToken,
-        'token_preview': token?.substring(0, 20)
       });
 
       // Retry logika - ako je null, probaj do 3 puta
@@ -348,6 +420,7 @@ class PushService {
         await Future.delayed(const Duration(milliseconds: 500));
         token = await FirebaseMessaging.instance.getToken();
         retries++;
+        if (!_isCurrentRegistration(generation, userId)) return;
       }
 
       if (token == null || token.isEmpty) {
@@ -365,23 +438,36 @@ class PushService {
           'PushService: Got valid token, uploading to database');
 
       final platform = Platform.isIOS ? 'ios' : 'android';
+      await _removeOtherUsersForInstallation(installationId, userId);
+      if (!_isCurrentRegistration(generation, userId)) return;
       await _client.from('user_push_tokens').upsert(
         {
           'user_id': userId,
+          'installation_id': installationId,
           'token': token,
           'platform': platform,
+          'updated_at': DateTime.now().toIso8601String(),
         },
-        onConflict: 'user_id,token',
+        onConflict: 'user_id,installation_id',
       );
+      if (!_isCurrentRegistration(generation, userId)) return;
 
       // Jedan aktivan refresh listener važi za aktuelnog korisnika.
-      await _cancelSub(_onTokenRefreshSub);
       _onTokenRefreshSub =
           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        if (!_isCurrentRegistration(generation, userId)) {
+          return;
+        }
         try {
           await _client.from('user_push_tokens').upsert(
-            {'user_id': userId, 'token': newToken, 'platform': platform},
-            onConflict: 'user_id,token',
+            {
+              'user_id': userId,
+              'installation_id': installationId,
+              'token': newToken,
+              'platform': platform,
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+            onConflict: 'user_id,installation_id',
           );
         } catch (e, st) {
           LoggerService.error('Failed to update refreshed push token', e,
@@ -397,18 +483,20 @@ class PushService {
   Future<void> unregisterToken(String userId) async {
     if (kIsWeb) return;
     try {
+      final generation = ++_registrationGeneration;
+      _registeredUserId = null;
+      final installationId = await _getInstallationId();
+
       // Prekini refresh upite pre brisanja tokena.
       await _cancelSub(_onTokenRefreshSub);
       _onTokenRefreshSub = null;
 
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        await _client
-            .from('user_push_tokens')
-            .delete()
-            .eq('user_id', userId)
-            .eq('token', token);
-      }
+      if (generation != _registrationGeneration) return;
+      await _client
+          .from('user_push_tokens')
+          .delete()
+          .eq('user_id', userId)
+          .eq('installation_id', installationId);
     } catch (e, st) {
       LoggerService.error('Failed to unregister push token', e, stackTrace: st);
     }

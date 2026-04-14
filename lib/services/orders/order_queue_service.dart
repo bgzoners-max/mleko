@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/seller_delivery_models.dart';
 import '../core/logger_service.dart';
@@ -19,12 +21,14 @@ class PendingOrder {
   final DeliveryMethod deliveryMethod;
   final String? deliveryCity;
   final String? deliveryPointId;
+  final String? deliverySlotId;
   final String? deliveryPointLabel;
   final String? deliveryAddress;
   final int? deliveryWeekday;
   final String? deliveryTimeFrom;
   final String? deliveryTimeTo;
   final double? deliveryFeeRsd;
+  final double? minOrderAmountRsd;
   final bool preferCall;
   final List<String> pickupOptions;
   final DateTime createdAt;
@@ -45,12 +49,14 @@ class PendingOrder {
     this.deliveryMethod = DeliveryMethod.agreement,
     this.deliveryCity,
     this.deliveryPointId,
+    this.deliverySlotId,
     this.deliveryPointLabel,
     this.deliveryAddress,
     this.deliveryWeekday,
     this.deliveryTimeFrom,
     this.deliveryTimeTo,
     this.deliveryFeeRsd,
+    this.minOrderAmountRsd,
     required this.preferCall,
     required this.pickupOptions,
     required this.createdAt,
@@ -74,12 +80,14 @@ class PendingOrder {
         'delivery_method': deliveryMethod.dbValue,
         'delivery_city': deliveryCity,
         'delivery_point_id': deliveryPointId,
+        'delivery_slot_id': deliverySlotId,
         'delivery_point_label': deliveryPointLabel,
         'delivery_address': deliveryAddress,
         'delivery_weekday': deliveryWeekday,
         'delivery_time_from': deliveryTimeFrom,
         'delivery_time_to': deliveryTimeTo,
         'delivery_fee_rsd': deliveryFeeRsd,
+        'min_order_amount_rsd': minOrderAmountRsd,
         'prefer_call': preferCall,
         'pickup_options': pickupOptions,
         'created_at': createdAt.toIso8601String(),
@@ -102,6 +110,7 @@ class PendingOrder {
             deliveryMethodFromDb(json['delivery_method'] as String?),
         deliveryCity: json['delivery_city'] as String?,
         deliveryPointId: json['delivery_point_id'] as String?,
+        deliverySlotId: json['delivery_slot_id'] as String?,
         deliveryPointLabel: json['delivery_point_label'] as String?,
         deliveryAddress: json['delivery_address'] as String?,
         deliveryWeekday: (json['delivery_weekday'] as num?)?.toInt(),
@@ -110,6 +119,7 @@ class PendingOrder {
         deliveryTimeTo:
             normalizeDeliveryTimeString(json['delivery_time_to'] as String?),
         deliveryFeeRsd: (json['delivery_fee_rsd'] as num?)?.toDouble(),
+        minOrderAmountRsd: (json['min_order_amount_rsd'] as num?)?.toDouble(),
         preferCall: json['prefer_call'] as bool,
         pickupOptions: List<String>.from(json['pickup_options'] as List),
         createdAt: DateTime.parse(json['created_at'] as String),
@@ -122,6 +132,7 @@ class PendingOrder {
 /// Servis za offline queue - čuvaj orders kada nema interneta
 class OrderQueueService {
   static const _storageKey = 'mleko_pending_orders';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   // Serializuje sve write operacije da spreči race condition na SharedPreferences.
   // Sve mutacije (add/mark/remove/clean) idu u red i izvršavaju se jedna po jedna.
@@ -203,12 +214,14 @@ class OrderQueueService {
           deliveryMethod: order.deliveryMethod,
           deliveryCity: order.deliveryCity,
           deliveryPointId: order.deliveryPointId,
+          deliverySlotId: order.deliverySlotId,
           deliveryPointLabel: order.deliveryPointLabel,
           deliveryAddress: order.deliveryAddress,
           deliveryWeekday: order.deliveryWeekday,
           deliveryTimeFrom: order.deliveryTimeFrom,
           deliveryTimeTo: order.deliveryTimeTo,
           deliveryFeeRsd: order.deliveryFeeRsd,
+          minOrderAmountRsd: order.minOrderAmountRsd,
           preferCall: order.preferCall,
           pickupOptions: order.pickupOptions,
           createdAt: order.createdAt,
@@ -258,7 +271,7 @@ class OrderQueueService {
   }
 
   Future<List<PendingOrder>> _loadOrders(SharedPreferences prefs) async {
-    final json = prefs.getString(_storageKey);
+    final json = await _readStoredJson(prefs);
     if (json == null || json.isEmpty) return [];
     final list = jsonDecode(json) as List;
     return list
@@ -269,6 +282,51 @@ class OrderQueueService {
   Future<void> _saveOrders(
       SharedPreferences prefs, List<PendingOrder> orders) async {
     final json = jsonEncode(orders.map((o) => o.toJson()).toList());
-    await prefs.setString(_storageKey, json);
+    await _writeStoredJson(prefs, json);
+  }
+
+  Future<String?> _readStoredJson(SharedPreferences prefs) async {
+    if (kIsWeb) {
+      return prefs.getString(_storageKey);
+    }
+
+    try {
+      final secureValue = await _secureStorage.read(key: _storageKey);
+      if (secureValue != null && secureValue.isNotEmpty) {
+        return secureValue;
+      }
+    } catch (e, st) {
+      LoggerService.warning(
+        'Secure storage read failed, falling back to legacy storage',
+        extra: {'error': e.toString(), 'stackTrace': st.toString()},
+      );
+    }
+
+    final legacyValue = prefs.getString(_storageKey);
+    if (legacyValue == null || legacyValue.isEmpty) {
+      return legacyValue;
+    }
+
+    try {
+      await _secureStorage.write(key: _storageKey, value: legacyValue);
+      await prefs.remove(_storageKey);
+    } catch (e, st) {
+      LoggerService.warning(
+        'Secure storage migration failed; legacy queue retained',
+        extra: {'error': e.toString(), 'stackTrace': st.toString()},
+      );
+    }
+
+    return legacyValue;
+  }
+
+  Future<void> _writeStoredJson(SharedPreferences prefs, String json) async {
+    if (kIsWeb) {
+      await prefs.setString(_storageKey, json);
+      return;
+    }
+
+    await _secureStorage.write(key: _storageKey, value: json);
+    await prefs.remove(_storageKey);
   }
 }

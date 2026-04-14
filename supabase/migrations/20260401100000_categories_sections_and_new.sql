@@ -13,10 +13,9 @@ WITH meso AS (SELECT id FROM public.categories WHERE slug = 'meso-i-preradjevine
 INSERT INTO public.categories (id, name, slug, icon, "order", parent_id)
 SELECT gen_random_uuid(), c.name, c.slug, c.icon, c.ord, meso.id
 FROM meso, (VALUES
-  ('Svježe meso',       'svjeze-meso',        '🥩', 10),
+  ('Sveže meso',        'sveze-meso',         '🥩', 10),
   ('Perad',             'perad',              '🍗', 20),
-  ('Janjetina i teletina', 'janjetina-teletina', '🐑', 30),
-  ('Mleveno meso',      'mleveno-meso',       '🫙', 40)
+  ('Jagnjetina i teletina', 'jagnjetina-teletina', '🐑', 30)
 ) AS c(name, slug, icon, ord)
 ON CONFLICT DO NOTHING;
 

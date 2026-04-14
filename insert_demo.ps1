@@ -37,7 +37,7 @@ function Insert-Product($category, $name, $price, $minOrder, $step, $qty, $unit)
 
 # 16 demo proizvoda sa ispravnim srpskim slovima
 Insert-Product "Mleko"                        "[ Primer oglasa ] Mle$([char]0x10d)ni proizvodi"           500  1    1    10  "L"
-Insert-Product "Svje$([char]0x17e)e meso"     "[ Primer oglasa ] Meso i prera$([char]0x111)evine"         800  1    1    10  "kg"
+Insert-Product "Sve$([char]0x17e)e meso"      "[ Primer oglasa ] Meso i prera$([char]0x111)evine"         800  1    1    10  "kg"
 Insert-Product "$([char]0x160)unke i pr$([char]0x161)ute"  "[ Primer oglasa ] Suhomesnato"              1200 0.5  0.5  10  "kg"
 Insert-Product "Ajvar i ljutenica"            "[ Primer oglasa ] Zimnica i namazi"                         600  0.5  0.5  10  "kg"
 Insert-Product "Med"                          "[ Primer oglasa ] Med i p$([char]0x10d)elarski"            1500 0.5  0.5  10  "kg"

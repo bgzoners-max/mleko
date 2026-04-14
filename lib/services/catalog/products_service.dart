@@ -370,6 +370,53 @@ class ProductsService {
     );
   }
 
+  Future<Map<String, int>> getCategoryCounts({
+    required List<String> categoryNames,
+    double? minPrice,
+    double? maxPrice,
+    String? region,
+    bool? availableNow,
+    String? searchQuery,
+    String? excludeSellerId,
+  }) async {
+    if (categoryNames.isEmpty) return const {};
+
+    final safeSearch = _sanitizeProductSearchInput(searchQuery);
+    final tokens =
+        safeSearch != null ? _nameSearchTokens(safeSearch) : const <String>[];
+
+    final futures = categoryNames.map((categoryName) async {
+      var query = _client
+          .from('products_with_ratings')
+          .select()
+          .eq('category', categoryName);
+
+      if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
+        query = query.neq('seller_id', excludeSellerId);
+      }
+      if (region != null && region.isNotEmpty) {
+        query = query.eq('location', region);
+      }
+      if (availableNow == true) {
+        query = query.eq('available_now', true);
+      }
+      if (minPrice != null) {
+        query = query.gte('price_per_kg', minPrice);
+      }
+      if (maxPrice != null) {
+        query = query.lte('price_per_kg', maxPrice);
+      }
+      for (final token in tokens) {
+        query = query.ilike('name', '%$token%');
+      }
+
+      final response = await _withRetry(() => query.count(CountOption.exact));
+      return MapEntry(categoryName, response.count);
+    });
+
+    return Map<String, int>.fromEntries(await Future.wait(futures));
+  }
+
   /// Najnoviji proizvodi za listu kategorija (parent category page).
   Future<({List<ProductModel> items, bool hasMore})> getProductsByCategories({
     required List<String> categoryNames,

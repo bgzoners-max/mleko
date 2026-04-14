@@ -80,8 +80,8 @@ GoRouter createRouter(AppState appState) {
           !loc.startsWith('/login') &&
           !loc.startsWith('/register') &&
           !loc.startsWith('/onboarding') &&
-          loc != '/landing') {
-        return '/landing';
+          loc != '/login') {
+        return '/login';
       }
 
       // Gost (anonymous) može samo da gleda proizvode, ne i da naručuje
@@ -399,13 +399,13 @@ class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.navigationShell});
 
   static const _sellerDestinations = [
-    (icon: Icons.home, label: 'Home'),
+    (icon: Icons.cottage, label: 'Home'),
     (icon: Icons.inventory_2, label: 'Moji proizvodi'),
     (icon: Icons.receipt_long, label: 'Porudžbine'),
     (icon: Icons.person, label: 'Profil'),
   ];
   static const _buyerDestinations = [
-    (icon: Icons.home, label: 'Home'),
+    (icon: Icons.cottage, label: 'Home'),
     (icon: Icons.search, label: 'Pretraga'),
     (icon: Icons.receipt_long, label: 'Porudžbine'),
     (icon: Icons.person, label: 'Profil'),

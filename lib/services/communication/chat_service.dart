@@ -17,6 +17,16 @@ class ChatService {
 
   static const typingStaleThreshold = Duration(seconds: 6);
 
+  Future<String?> _findConversationId(String buyerId, String sellerId) async {
+    final existing = await _client
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', buyerId)
+        .eq('seller_id', sellerId)
+        .maybeSingle();
+    return existing?['id'] as String?;
+  }
+
   // ─── Razgovori ─────────────────────────────────────────────────────────────
 
   /// Pronađi ili kreiraj razgovor između kupca i prodavca.
@@ -25,31 +35,37 @@ class ChatService {
     String sellerId, {
     String? orderId,
   }) async {
-    final existing = await _client
-        .from('conversations')
-        .select('id')
-        .eq('buyer_id', buyerId)
-        .eq('seller_id', sellerId)
-        .maybeSingle();
-    if (existing != null) {
-      final id = existing['id'] as String;
+    try {
+      final res = await _client
+          .from('conversations')
+          .upsert(
+            {
+              'buyer_id': buyerId,
+              'seller_id': sellerId,
+              if (orderId != null) 'order_id': orderId,
+            },
+            onConflict: 'buyer_id,seller_id',
+          )
+          .select('id')
+          .single();
+      return res['id'] as String;
+    } on PostgrestException catch (e, st) {
+      LoggerService.warning(
+        'Conversation upsert failed, retrying with fetch fallback',
+        extra: {'error': e.toString()},
+      );
+      final existingId = await _findConversationId(buyerId, sellerId);
+      if (existingId == null) {
+        LoggerService.error('Failed to create conversation', e, stackTrace: st);
+        rethrow;
+      }
       if (orderId != null) {
         await _client
             .from('conversations')
-            .update({'order_id': orderId}).eq('id', id);
+            .update({'order_id': orderId}).eq('id', existingId);
       }
-      return id;
+      return existingId;
     }
-    final res = await _client
-        .from('conversations')
-        .insert({
-          'buyer_id': buyerId,
-          'seller_id': sellerId,
-          if (orderId != null) 'order_id': orderId,
-        })
-        .select('id')
-        .single();
-    return res['id'] as String;
   }
 
   /// Učitava razgovore koristeći get_conversations_for_user RPC.
@@ -517,14 +533,15 @@ class ChatService {
   // ─── Info o razgovoru ──────────────────────────────────────────────────────
 
   /// Dohvata kompletne informacije o razgovoru sa imenima učesnika (jednom RPC-om)
-  Future<({
-    String? id,
-    String? buyerId,
-    String? sellerId,
-    String? orderId,
-    String buyerName,
-    String sellerName,
-  })> getConversationInfoWithProfiles(String conversationId) async {
+  Future<
+      ({
+        String? id,
+        String? buyerId,
+        String? sellerId,
+        String? orderId,
+        String buyerName,
+        String sellerName,
+      })> getConversationInfoWithProfiles(String conversationId) async {
     try {
       final result = await _client.rpc(
         'get_conversation_info_with_profile',
@@ -532,7 +549,14 @@ class ChatService {
       );
 
       if (result == null) {
-        return (id: null, buyerId: null, sellerId: null, orderId: null, buyerName: 'Korisnik', sellerName: 'Korisnik');
+        return (
+          id: null,
+          buyerId: null,
+          sellerId: null,
+          orderId: null,
+          buyerName: 'Korisnik',
+          sellerName: 'Korisnik'
+        );
       }
 
       final row = (result as List).first as Map<String, dynamic>;
@@ -545,8 +569,16 @@ class ChatService {
         sellerName: (row['seller_name'] as String?) ?? 'Prodavac',
       );
     } catch (e, st) {
-      LoggerService.error('Failed to load conversation info with profiles', e, stackTrace: st);
-      return (id: null, buyerId: null, sellerId: null, orderId: null, buyerName: 'Korisnik', sellerName: 'Korisnik');
+      LoggerService.error('Failed to load conversation info with profiles', e,
+          stackTrace: st);
+      return (
+        id: null,
+        buyerId: null,
+        sellerId: null,
+        orderId: null,
+        buyerName: 'Korisnik',
+        sellerName: 'Korisnik'
+      );
     }
   }
 

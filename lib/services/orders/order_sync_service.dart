@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../models/order_model.dart';
 import '../../models/seller_delivery_models.dart';
 import '../core/connectivity_service.dart';
 import '../core/logger_service.dart';
@@ -74,8 +73,10 @@ class OrderSyncService {
             continue;
           }
 
-          final order = OrderModel(
-            id: '',
+          final deliverySelection =
+              await _buildDeliverySelectionForSync(pending);
+
+          await _ordersService.createSingleProductOrder(
             buyerId: pending.buyerId,
             sellerId: pending.sellerId,
             productId: pending.productId,
@@ -87,19 +88,8 @@ class OrderSyncService {
             buyerPhone: pending.buyerPhone,
             buyerAddress: pending.buyerAddress,
             deliveryMethod: pending.deliveryMethod,
-            deliveryCity: pending.deliveryCity,
-            deliveryPointId: pending.deliveryPointId,
-            deliveryPointLabel: pending.deliveryPointLabel,
-            deliveryAddress: pending.deliveryAddress,
-            deliveryWeekday: pending.deliveryWeekday,
-            deliveryTimeFrom: pending.deliveryTimeFrom,
-            deliveryTimeTo: pending.deliveryTimeTo,
-            deliveryFeeRsd: pending.deliveryFeeRsd,
-            status: OrderStatus.sent,
-            createdAt: DateTime.now(),
+            deliverySelection: deliverySelection,
           );
-
-          await _ordersService.createOrder(order);
           await _queueService.markAsSynced(pending.id);
           syncedCount++;
 
@@ -138,6 +128,95 @@ class OrderSyncService {
             extra: {'error': e.toString(), 'stackTrace': st.toString()});
       }
     }
+  }
+
+  Future<DeliverySelectionModel?> _buildDeliverySelectionForSync(
+    PendingOrder pending,
+  ) async {
+    if (pending.deliveryMethod != DeliveryMethod.sellerDelivery) {
+      return null;
+    }
+
+    final pointId = pending.deliveryPointId;
+    final city = pending.deliveryCity;
+    final pointLabel = pending.deliveryPointLabel;
+    final address = pending.deliveryAddress;
+    final weekday = pending.deliveryWeekday;
+    final timeFrom = pending.deliveryTimeFrom;
+    final timeTo = pending.deliveryTimeTo;
+
+    if ([pointId, city, pointLabel, address, timeFrom, timeTo]
+            .any((value) => value == null || value.isEmpty) ||
+        weekday == null) {
+      throw Exception(
+        'Offline seller-delivery porudžbina nema kompletne podatke za termin.',
+      );
+    }
+
+    final resolvedPointId = pointId!;
+    final resolvedCity = city!;
+    final resolvedPointLabel = pointLabel!;
+    final resolvedAddress = address!;
+    final resolvedWeekday = weekday;
+    final resolvedTimeFrom = timeFrom!;
+    final resolvedTimeTo = timeTo!;
+
+    var slotId = pending.deliverySlotId;
+    double? minOrderAmountRsd = pending.minOrderAmountRsd;
+    double? deliveryFeeRsd = pending.deliveryFeeRsd;
+
+    if (slotId == null || slotId.isEmpty) {
+      final slot = await _resolveLegacyDeliverySlot(
+        pointId: resolvedPointId,
+        weekday: resolvedWeekday,
+        timeFrom: resolvedTimeFrom,
+        timeTo: resolvedTimeTo,
+      );
+      slotId = slot['id'] as String?;
+      minOrderAmountRsd ??= (slot['min_order_amount_rsd'] as num?)?.toDouble();
+      deliveryFeeRsd ??= (slot['delivery_fee_rsd'] as num?)?.toDouble();
+    }
+
+    if (slotId == null || slotId.isEmpty) {
+      throw Exception(
+        'Offline seller-delivery porudžbina ne može da pronađe termin za sinhronizaciju.',
+      );
+    }
+
+    return DeliverySelectionModel(
+      method: DeliveryMethod.sellerDelivery,
+      pointId: resolvedPointId,
+      slotId: slotId,
+      city: resolvedCity,
+      pointLabel: resolvedPointLabel,
+      address: resolvedAddress,
+      weekday: resolvedWeekday,
+      timeFrom: resolvedTimeFrom,
+      timeTo: resolvedTimeTo,
+      deliveryFeeRsd: deliveryFeeRsd,
+      minOrderAmountRsd: minOrderAmountRsd,
+    );
+  }
+
+  Future<Map<String, dynamic>> _resolveLegacyDeliverySlot({
+    required String pointId,
+    required int weekday,
+    required String timeFrom,
+    required String timeTo,
+  }) async {
+    final slot = await _client
+        .from('seller_delivery_slots')
+        .select('id, delivery_fee_rsd, min_order_amount_rsd')
+        .eq('delivery_point_id', pointId)
+        .eq('weekday', weekday)
+        .eq('time_from', timeFrom)
+        .eq('time_to', timeTo)
+        .eq('is_active', true)
+        .maybeSingle();
+
+    return slot is Map<String, dynamic>
+        ? slot
+        : Map<String, dynamic>.from(slot as Map? ?? const {});
   }
 
   Future<String?> _findDuplicateOrderId(PendingOrder pending) async {

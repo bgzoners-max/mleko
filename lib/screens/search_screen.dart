@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/responsive.dart';
@@ -35,6 +36,7 @@ class _SearchScreenState extends State<SearchScreen> {
   ProductSort _sort = ProductSort.dateDesc;
   Map<String, int> _salesCounts = {};
   Map<String, ({double avg, int count})> _ratings = {};
+  Map<String, int> _categoryCounts = {};
 
   List<ProductModel> _products = [];
   int _offset = 0;
@@ -45,6 +47,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _searchError;
   late Future<List<String>> _historyFuture;
   String? _currentSellerIdToExclude;
+  String _lastCategoryCountRequestKey = '';
 
   @override
   void initState() {
@@ -208,53 +211,77 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  Widget _buildCategoryItem(BuildContext context, dynamic cat) {
+  Future<void> _loadCategoryCounts(List<dynamic> categories,
+      {required String requestKey}) async {
+    if (categories.isEmpty) {
+      if (mounted && requestKey == _lastCategoryCountRequestKey) {
+        setState(() => _categoryCounts = {});
+      }
+      return;
+    }
+
+    try {
+      final counts = await _productsService.getCategoryCounts(
+        categoryNames:
+            categories.map<String>((cat) => cat.name as String).toList(),
+        region: _region,
+        availableNow: _availableNow,
+        searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
+        excludeSellerId: _currentSellerIdToExclude,
+      );
+      if (!mounted || requestKey != _lastCategoryCountRequestKey) return;
+      setState(() => _categoryCounts = counts);
+    } catch (_) {
+      if (!mounted || requestKey != _lastCategoryCountRequestKey) return;
+      setState(() => _categoryCounts = {});
+    }
+  }
+
+  void _scheduleCategoryCountReload(List<dynamic> categories) {
+    final requestKey = [
+      categories.map((cat) => cat.name).join('|'),
+      _region ?? '',
+      _availableNow == true ? '1' : '0',
+      _currentSellerIdToExclude ?? '',
+      _debouncedQuery,
+    ].join('::');
+
+    if (requestKey == _lastCategoryCountRequestKey) return;
+    _lastCategoryCountRequestKey = requestKey;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_loadCategoryCounts(categories, requestKey: requestKey));
+    });
+  }
+
+  Widget _buildCategoryItem(BuildContext context, dynamic cat,
+      {bool fullWidth = false}) {
     final selected = _category == cat.name;
-    return InkWell(
+    return _CategoryPill(
+      label: cat.name,
+      count: _categoryCounts[cat.name],
+      icon: cat.icon,
+      selected: selected,
+      fullWidth: fullWidth,
       onTap: () {
         setState(() => _category = selected ? null : cat.name);
         _onFilterChanged();
       },
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? Theme.of(context).colorScheme.primaryContainer
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                buildCategoryIcon(
-                  cat.icon,
-                  size: 28,
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  cat.name,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color:
-                        selected ? Theme.of(context).colorScheme.primary : null,
-                  ),
-                ),
-              ],
-            ),
+    );
+  }
+
+  Widget _buildMobileCategories(
+      BuildContext context, List<dynamic> categories) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var index = 0; index < categories.length; index++) ...[
+            _buildCategoryItem(context, categories[index]),
+            if (index != categories.length - 1) const SizedBox(width: 8),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -399,11 +426,11 @@ class _SearchScreenState extends State<SearchScreen> {
     final user = context.watch<AppState>().user;
     final categoriesProvider = context.watch<CategoriesProvider>();
     final topCategories = categoriesProvider.topCategories.take(8).toList();
+    _scheduleCategoryCountReload(topCategories);
     final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final contentPadding = Breakpoints.horizontalPadding(context);
-    final mobileCategoryColumns = isLargeTablet ? 4 : (isSmallTablet ? 4 : 3);
     final mobileResultsAsGrid = isSmallTablet || isLargeTablet;
     final stackedResultColumns = isLargeTablet ? 3 : 2;
     final stackedGridExtent = isLargeTablet ? 336.0 : 348.0;
@@ -477,8 +504,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                       .titleSmall
                                       ?.copyWith(fontWeight: FontWeight.bold)),
                             ),
-                            ...topCategories
-                                .map((cat) => _buildCategoryItem(context, cat)),
+                            ...topCategories.map(
+                              (cat) => Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                child: _buildCategoryItem(context, cat,
+                                    fullWidth: true),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -556,60 +589,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   .titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: mobileCategoryColumns,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: isSmallTablet ? 1.0 : 0.9,
-                            children: topCategories
-                                .map((cat) => InkWell(
-                                      onTap: () {
-                                        setState(() => _category = cat.name);
-                                        _onFilterChanged();
-                                      },
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        children: [
-                                          buildCategoryIcon(
-                                            cat.icon,
-                                            size: 36,
-                                            color: _category == cat.name
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            cat.name,
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: _category == cat.name
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: _category == cat.name
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                  : null,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ))
-                                .toList(),
-                          ),
+                          _buildMobileCategories(context, topCategories),
                         ],
                       ),
                     ),
@@ -696,6 +676,108 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                   ],
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryPill extends StatefulWidget {
+  final String label;
+  final int? count;
+  final String? icon;
+  final bool selected;
+  final bool fullWidth;
+  final VoidCallback onTap;
+
+  const _CategoryPill({
+    required this.label,
+    required this.count,
+    required this.icon,
+    required this.selected,
+    required this.fullWidth,
+    required this.onTap,
+  });
+
+  @override
+  State<_CategoryPill> createState() => _CategoryPillState();
+}
+
+class _CategoryPillState extends State<_CategoryPill> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = const Color(0xFF1F5A3B);
+    final selected = widget.selected;
+    final hasCount = widget.count != null;
+    final foregroundColor = selected ? Colors.white : const Color(0xFF244030);
+    final backgroundColor = selected
+        ? activeColor
+        : (_hovered ? const Color(0xFFE6F0E9) : Colors.white);
+    final borderColor = selected
+        ? activeColor
+        : (_hovered ? const Color(0xFF7FA489) : const Color(0xFFD6E1D9));
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            width: widget.fullWidth ? double.infinity : null,
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.fullWidth ? 14 : 16,
+              vertical: widget.fullWidth ? 12 : 10,
+            ),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: borderColor),
+              boxShadow: _hovered || selected
+                  ? [
+                      BoxShadow(
+                        color: selected
+                            ? activeColor.withValues(alpha: 0.24)
+                            : const Color(0x1A244030),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Row(
+              mainAxisSize:
+                  widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
+              children: [
+                buildCategoryIcon(
+                  widget.icon,
+                  size: 18,
+                  color: foregroundColor,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: widget.fullWidth ? 1 : 0,
+                  child: Text(
+                    hasCount
+                        ? '${widget.label} (${widget.count})'
+                        : widget.label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

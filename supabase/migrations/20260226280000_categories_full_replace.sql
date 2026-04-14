@@ -15,7 +15,7 @@ WITH parents AS (
   INSERT INTO public.categories (id, name, slug, icon, "order", parent_id)
   VALUES
     (gen_random_uuid(), 'Mlečni proizvodi',        'mlecni-proizvodi',        '🥛',  10, NULL),
-    (gen_random_uuid(), 'Suhomesnato',             'suhomesnato',             '🥩',  20, NULL),
+    (gen_random_uuid(), 'Suhomesnato',             'suhomesnato',             '🍖',  20, NULL),
     (gen_random_uuid(), 'Slatko i džemovi',        'slatko-i-dzemovi',        '🍯',  30, NULL),
     (gen_random_uuid(), 'Sokovi i pića',           'sokovi-i-pica',           '🧃',  40, NULL),
     (gen_random_uuid(), 'Zimnica i namazi',        'zimnica-i-namazi',        '🫙',  50, NULL),
@@ -40,10 +40,10 @@ JOIN (VALUES
   ('mlecni-proizvodi','Sir',                   'sir',                   '🧀',  30),
   ('mlecni-proizvodi','Kajmak',                'kajmak',                '🧈',  40),
   ('mlecni-proizvodi','Pavlaka i namazi',      'pavlaka-i-namazi',      '🥄',  50),
-  ('suhomesnato','Šunke i pršute',             'sunke-i-prsute',        '🍖',  10),
+  ('suhomesnato','Šunke i pršute',             'sunke-i-prsute',        'sunka_asset',  10),
   ('suhomesnato','Kobasice',                   'kobasice',              '🌭',  20),
-  ('suhomesnato','Slanina i panceta',          'slanina-i-panceta',     '🥓',  30),
-  ('suhomesnato','Čvarci',                     'cvarci',                '🥩',  40),
+  ('suhomesnato','Slanina i pančeta',          'slanina-i-panceta',     'slanina_asset',  30),
+  ('suhomesnato','Čvarci',                     'cvarci',                'cvarci_asset',  40),
   ('suhomesnato','Pečenice i vrat',            'pecenice-i-vrat',       '🍖',  50),
   ('slatko-i-dzemovi','Džemovi',               'dzemovi',               '🍓',  10),
   ('slatko-i-dzemovi','Slatko (tradicionalno)','slatko-tradicionalno', '🍒',  20),

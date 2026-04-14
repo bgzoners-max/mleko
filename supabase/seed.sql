@@ -152,7 +152,7 @@ SELECT p.id, 'Kajmak', 'Domaći kajmak', 1400, 0.2, 0.2, 20,
 FROM public.profiles p WHERE p.email = 'prodavac3@test.rs' AND p.role = 'seller';
 
 INSERT INTO public.products (seller_id, category, name, price_per_kg, min_order_kg, order_step, available_kg, description, image_urls, pickup_options, location, is_domestic, available_now)
-SELECT p.id, 'Slanina i panceta', 'Domaća slanina', 1800, 0.3, 0.3, 20,
+SELECT p.id, 'Slanina i pančeta', 'Domaća slanina', 1800, 0.3, 0.3, 20,
   'Suhomesnata slanina, dimljena na tradicionalan način.',
   ARRAY['https://images.unsplash.com/photo-1542838132-92c53300491e?w=400'],
   ARRAY['Preuzimanje na farmi'], 'Niš, Palilula', true, true

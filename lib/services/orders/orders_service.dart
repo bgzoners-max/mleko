@@ -164,13 +164,38 @@ class OrdersService {
 
   // ─── Kreiranje porudžbine ─────────────────────────────────────────────────
 
-  Future<String> createOrder(OrderModel order) async {
-    final res = await _client
-        .from('orders')
-        .insert(order.toJson())
-        .select('id')
-        .single();
-    return res['id'] as String;
+  Future<String> createSingleProductOrder({
+    required String buyerId,
+    required String sellerId,
+    required String productId,
+    required String productName,
+    required double quantityKg,
+    required String unitType,
+    required String note,
+    required String buyerCity,
+    required String buyerPhone,
+    String? buyerAddress,
+    DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
+    DeliverySelectionModel? deliverySelection,
+  }) {
+    return createOrderWithItems(
+      buyerId: buyerId,
+      sellerId: sellerId,
+      items: [
+        OrderItemModel(
+          productId: productId,
+          productName: productName,
+          quantityKg: quantityKg,
+          unitType: unitType,
+        ),
+      ],
+      note: note,
+      buyerCity: buyerCity,
+      buyerPhone: buyerPhone,
+      buyerAddress: buyerAddress,
+      deliveryMethod: deliveryMethod,
+      deliverySelection: deliverySelection,
+    );
   }
 
   Future<String> createOrderWithItems({
@@ -192,12 +217,14 @@ class OrdersService {
     final products = await _client
         .from('products')
         .select(
-            'id, seller_id, name, category, unit_type, min_order_kg, order_step')
+            'id, seller_id, name, category, unit_type, min_order_kg, order_step, price_per_kg')
         .inFilter('id', productIds);
     final productMap = {
       for (final p in (products as List).cast<Map<String, dynamic>>())
         (p['id'] as String): p,
     };
+
+    var orderTotal = 0.0;
 
     for (final item in items) {
       final product = productMap[item.productId];
@@ -229,12 +256,10 @@ class OrdersService {
           '$name: količina mora biti od minimuma i u koracima od ${ProductModel.formatQuantityWithUnit(step, normalizedUnit)}.',
         );
       }
-    }
 
-    final orderTotal = items.fold<double>(
-      0,
-      (sum, item) => sum + (item.unitPrice * item.quantityKg),
-    );
+      final unitPrice = (product['price_per_kg'] as num?)?.toDouble() ?? 0;
+      orderTotal += unitPrice * item.quantityKg;
+    }
 
     if (deliveryMethod == DeliveryMethod.sellerDelivery) {
       if (deliverySelection == null) {

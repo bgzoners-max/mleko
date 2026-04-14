@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 /// Centralizovana upravljanja image cache-om – pregled i kontrola memorije.
 class ImageCacheService {
   static final ImageCacheService _instance = ImageCacheService._internal();
+  static final _cacheManager = CachedNetworkImageProvider.defaultCacheManager;
 
   factory ImageCacheService() => _instance;
 
@@ -11,23 +12,25 @@ class ImageCacheService {
 
   /// Očisti entire disk i memory cache – koristi nakon sign-out ili veće osvežavanja.
   Future<void> clearAllCaches() async {
-    await CachedNetworkImage.evictFromCache('');
-    await CachedNetworkImageProvider.defaultCacheManager.emptyCache();
+    await _cacheManager.emptyCache();
     imageCache.clear();
     imageCache.clearLiveImages();
   }
 
   /// Očisti samo disk cache (memorija se očisti automatski nakon vremena).
   Future<void> clearDiskCache() async {
-    await CachedNetworkImageProvider.defaultCacheManager.emptyCache();
+    await _cacheManager.emptyCache();
   }
 
   /// Očisti specifičnu sliku iz cache-a (disk + memory).
   Future<bool> evictImage(String imageUrl) async {
+    if (imageUrl.trim().isEmpty) {
+      return false;
+    }
     try {
       await CachedNetworkImage.evictFromCache(imageUrl);
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }

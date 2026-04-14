@@ -1,11 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent, AuthState, Supabase, PostgresChangeEvent, PostgresChangeFilter, PostgresChangeFilterType, RealtimeChannel;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show
+        AuthChangeEvent,
+        AuthState,
+        Supabase,
+        PostgresChangeEvent,
+        PostgresChangeFilter,
+        PostgresChangeFilterType,
+        RealtimeChannel;
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../services/media/image_cache_service.dart';
-
 
 class AppState extends ChangeNotifier {
   final AuthService _auth = AuthService();
@@ -17,6 +24,7 @@ class AppState extends ChangeNotifier {
   StreamSubscription? _authSubscription;
   late final VoidCallback _connectivityListener;
   RealtimeChannel? _notifChannel;
+  int _authEventVersion = 0;
 
   UserModel? _user;
   bool _authChecked = false;
@@ -38,6 +46,7 @@ class AppState extends ChangeNotifier {
     _justConfirmedEmail = false;
     notifyListeners();
   }
+
   bool get isOnline => _connectivity.isOnline;
   bool get isOffline => _connectivity.isOffline;
   AuthService get authService => _auth;
@@ -58,29 +67,66 @@ class AppState extends ChangeNotifier {
   }
 
   void _initAuth() {
-    _authSubscription = _auth.authStateChanges.listen((AuthState authState) async {
+    _authSubscription =
+        _auth.authStateChanges.listen((AuthState authState) async {
+      final authVersion = ++_authEventVersion;
+      final sessionUserId = authState.session?.user.id;
+
       if (authState.session == null) {
+        await PushService.clearRegistrationState();
+        if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
         _user = null;
         _unreadNotificationCount = 0;
         _notifChannel?.unsubscribe();
+        _notifChannel = null;
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
+        if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
       } else {
         if (_pendingEmailVerification &&
             authState.event == AuthChangeEvent.signedIn) {
           _justConfirmedEmail = true;
           _pendingEmailVerification = false;
         }
-        _user = await _auth.getCurrentUser();
+
+        final resolvedUser = await _auth.getCurrentUser();
+        if (!_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
+          return;
+        }
+
+        _user = resolvedUser;
         if (_user != null && !_user!.isGuest) {
           await PushService().registerToken(_user!.id);
+          if (!_isCurrentAuthEvent(authVersion,
+              expectedUserId: sessionUserId)) {
+            return;
+          }
           await _loadUnreadCount();
+          if (!_isCurrentAuthEvent(authVersion,
+              expectedUserId: sessionUserId)) {
+            return;
+          }
           _subscribeToNotifications();
+        } else {
+          await PushService.clearRegistrationState();
+          if (!_isCurrentAuthEvent(authVersion,
+              expectedUserId: sessionUserId)) {
+            return;
+          }
+          _unreadNotificationCount = 0;
+          _notifChannel?.unsubscribe();
+          _notifChannel = null;
         }
       }
       _authChecked = true;
       notifyListeners();
     });
+  }
+
+  bool _isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) {
+    if (authVersion != _authEventVersion) return false;
+    final currentUserId = Supabase.instance.client.auth.currentSession?.user.id;
+    return currentUserId == expectedUserId;
   }
 
   void _initConnectivity() {
@@ -92,7 +138,8 @@ class AppState extends ChangeNotifier {
 
   Future<void> _loadUnreadCount() async {
     if (_user == null || _user!.isGuest) return;
-    _unreadNotificationCount = await NotificationsService().getUnreadCount(_user!.id);
+    _unreadNotificationCount =
+        await NotificationsService().getUnreadCount(_user!.id);
     notifyListeners();
   }
 
@@ -121,8 +168,10 @@ class AppState extends ChangeNotifier {
     }
 
     try {
-      LoggerService.debug('Subscribing to notifications', extra: {'user_id': userId});
-      _notifChannel = client.channel('notifications-$userId')
+      LoggerService.debug('Subscribing to notifications',
+          extra: {'user_id': userId});
+      _notifChannel = client
+          .channel('notifications-$userId')
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
@@ -193,4 +242,3 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 }
-

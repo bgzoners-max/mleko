@@ -97,7 +97,7 @@ class _AuthConfirmedScreenState extends State<AuthConfirmedScreen> {
                 const SizedBox(height: 48),
                 FilledButton.icon(
                   onPressed: _goHome,
-                  icon: const Icon(Icons.home_outlined),
+                  icon: const Icon(Icons.cottage_outlined),
                   label: Text('Idi na početnu ($_countdown)'),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),

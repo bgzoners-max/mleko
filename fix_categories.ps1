@@ -18,7 +18,7 @@ function Patch-Product($id, $cat) {
   Write-Host "OK: $id -> $cat"
 }
 
-Patch-Product "96a1ed31-39de-4645-b6ba-8bcbf176fe0c" "Svje$([char]0x017e)e meso"
+Patch-Product "96a1ed31-39de-4645-b6ba-8bcbf176fe0c" "Sve$([char]0x017e)e meso"
 Patch-Product "792c86c1-fdb8-4a51-88ff-6c01d9593191" "$([char]0x160)unke i pr$([char]0x161)ute"
 Patch-Product "52a99a73-6f54-42b6-acb2-bb422e6e5093" "Sve$([char]0x17e)e vo$([char]0x107)e"
 Patch-Product "f305f067-d2d3-493c-9254-ad25b15f7a02" "Koko$([char]0x161)ija jaja"

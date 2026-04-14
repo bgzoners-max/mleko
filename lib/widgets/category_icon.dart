@@ -2,12 +2,36 @@ import 'package:flutter/material.dart';
 
 import 'emoji_text.dart';
 
-/// Prikazuje ikonu kategorije – emoji (🥛, 🍯) ili Material ikonu
+const _categoryAssetIcons = {
+  'cvarci_asset': 'assets/images/categories/cvarci.png',
+  'slanina_asset': 'assets/images/categories/slanina.png',
+  'sunka_asset': 'assets/images/categories/sunka.png',
+};
+
+String _normalizeCategoryIconName(String iconName) =>
+    iconName.trim().toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+
+/// Prikazuje ikonu kategorije - emoji (🥛, 🍯) ili Material ikonu
 Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
   if (iconName == null || iconName.isEmpty) {
     return Icon(Icons.category, size: size, color: color);
   }
-  final lower = iconName.toLowerCase();
+  final lower = _normalizeCategoryIconName(iconName);
+  final assetPath = _categoryAssetIcons[lower];
+  if (assetPath != null) {
+    return Image.asset(
+      assetPath,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (_, __, ___) => Icon(
+        Icons.category,
+        size: size,
+        color: color,
+      ),
+    );
+  }
   final knownIcons = [
     'eco',
     'restaurant',

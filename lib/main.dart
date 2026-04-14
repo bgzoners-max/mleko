@@ -19,6 +19,7 @@ import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/location_provider.dart';
+import 'services/orders/background_sync_service.dart';
 import 'services/orders/sync_manager.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
@@ -142,6 +143,16 @@ void main() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
+
+  try {
+    await BackgroundSyncService.initialize();
+    await BackgroundSyncService.registerPeriodicOrderSync();
+  } catch (e, st) {
+    LoggerService.warning(
+      'Background order sync setup failed',
+      extra: {'error': e.toString(), 'stackTrace': st.toString()},
+    );
+  }
 
   final appState = AppState();
   final appSettings = AppSettingsProvider();

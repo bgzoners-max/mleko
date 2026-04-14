@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -12,8 +13,14 @@ import 'orders_service.dart';
 class BackgroundSyncService {
   static const _periodicTaskUniqueName = 'mleko.periodic.order.sync';
 
+  static bool get _isSupportedPlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
   static Future<void> initialize() async {
-    if (kIsWeb) {
+    if (!_isSupportedPlatform) {
       return;
     }
     await Workmanager().initialize(
@@ -22,7 +29,7 @@ class BackgroundSyncService {
   }
 
   static Future<void> registerPeriodicOrderSync() async {
-    if (kIsWeb) {
+    if (!_isSupportedPlatform) {
       return;
     }
     await Workmanager().registerPeriodicTask(
@@ -72,6 +79,8 @@ class BackgroundSyncService {
     } catch (_) {
       // Supabase is not initialized in this isolate.
     }
+
+    await SupabaseConfig.load();
 
     await Supabase.initialize(
       url: SupabaseConfig.url,
