@@ -11,17 +11,28 @@ ALTER TABLE public.support_tickets
   ADD COLUMN IF NOT EXISTS body text,
   ADD COLUMN IF NOT EXISTS admin_note text;
 
-UPDATE public.support_tickets
-SET user_email = COALESCE(user_email, email)
-WHERE user_email IS NULL;
-
-UPDATE public.support_tickets
-SET body = COALESCE(body, message)
-WHERE body IS NULL;
-
-UPDATE public.support_tickets
-SET admin_note = COALESCE(admin_note, admin_reply)
-WHERE admin_note IS NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'support_tickets' AND column_name = 'email'
+  ) THEN
+    UPDATE public.support_tickets SET user_email = COALESCE(user_email, email) WHERE user_email IS NULL;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'support_tickets' AND column_name = 'message'
+  ) THEN
+    UPDATE public.support_tickets SET body = COALESCE(body, message) WHERE body IS NULL;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'support_tickets' AND column_name = 'admin_reply'
+  ) THEN
+    UPDATE public.support_tickets SET admin_note = COALESCE(admin_note, admin_reply) WHERE admin_note IS NULL;
+  END IF;
+END
+$$;
 
 UPDATE public.support_tickets
 SET category = 'ostalo'
