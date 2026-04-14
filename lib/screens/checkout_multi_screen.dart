@@ -863,25 +863,25 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                     const SizedBox(height: 8),
                     RadioListTile<DeliveryMethod>(
                       value: DeliveryMethod.agreement,
-                      groupValue: _deliveryMethod,
+                      groupValue: _deliveryMethod, // ignore: deprecated_member_use
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Dogovor sa domaćinom'),
                       subtitle:
                           const Text('Grad i adresa kupca se unose ručno.'),
-                      onChanged: (value) {
+                      onChanged: (value) { // ignore: deprecated_member_use
                         if (value == null) return;
                         setState(() => _deliveryMethod = value);
                       },
                     ),
                     RadioListTile<DeliveryMethod>(
                       value: DeliveryMethod.sellerDelivery,
-                      groupValue: _deliveryMethod,
+                      groupValue: _deliveryMethod, // ignore: deprecated_member_use
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Lična dostava domaćina'),
                       subtitle: const Text(
                         'Kupac bira grad, punkt i termin koje je prodavac definisao.',
                       ),
-                      onChanged: (value) {
+                      onChanged: (value) { // ignore: deprecated_member_use
                         if (value == null) return;
                         setState(() {
                           _deliveryMethod = value;

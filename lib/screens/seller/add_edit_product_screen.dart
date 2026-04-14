@@ -668,26 +668,26 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       const SizedBox(height: 8),
                       RadioListTile<ProductDeliveryMode>(
                         value: ProductDeliveryMode.none,
-                        groupValue: _deliveryMode,
+                        groupValue: _deliveryMode, // ignore: deprecated_member_use
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Bez lične dostave domaćina'),
                         subtitle: const Text(
                           'Koristite ovo ako proizvod nije za vašu organizovanu dostavu. Kupac se može dogovoriti sa vama direktno, ali ne bira vaše definisane punktove i termine.',
                         ),
-                        onChanged: (value) {
+                        onChanged: (value) { // ignore: deprecated_member_use
                           if (value == null) return;
                           setState(() => _deliveryMode = value);
                         },
                       ),
                       RadioListTile<ProductDeliveryMode>(
                         value: ProductDeliveryMode.allSellerPoints,
-                        groupValue: _deliveryMode,
+                        groupValue: _deliveryMode, // ignore: deprecated_member_use
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Na svim mojim lokacijama'),
                         subtitle: const Text(
                           'Koristite ovo ako ovaj proizvod može da ide na svaki vaš aktivan punkt dostave. Kupac bira bilo koji grad, adresu i termin koje ste već definisali.',
                         ),
-                        onChanged: _sellerDeliveryPoints.isEmpty
+                        onChanged: _sellerDeliveryPoints.isEmpty // ignore: deprecated_member_use
                             ? null
                             : (value) {
                                 if (value == null) return;
@@ -696,13 +696,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       ),
                       RadioListTile<ProductDeliveryMode>(
                         value: ProductDeliveryMode.selectedPoints,
-                        groupValue: _deliveryMode,
+                        groupValue: _deliveryMode, // ignore: deprecated_member_use
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Samo na izabranim lokacijama'),
                         subtitle: const Text(
                           'Koristite ovo kada proizvod nosite samo na određene gradove ili adrese. Ispod zatim čekirate tačne punktove na kojima je proizvod dostupan.',
                         ),
-                        onChanged: _sellerDeliveryPoints.isEmpty
+                        onChanged: _sellerDeliveryPoints.isEmpty // ignore: deprecated_member_use
                             ? null
                             : (value) {
                                 if (value == null) return;
