@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/responsive.dart';
 import '../models/buyer_review_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
@@ -120,101 +121,107 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
           body: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
+              constraints: BoxConstraints(
+                maxWidth: Breakpoints.formContentWidth(context),
+              ),
               child: RefreshIndicator(
-            onRefresh: () async => _retry(),
-            child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _BuyerHeaderCard(
-                user: user,
-                displayName: displayName,
-                ordersCount: ordersCount,
-                buyerId: widget.buyerId,
-                avgBuyerRating: avgBuyerRating,
-                buyerReviewCount: reviewsForBuyer.length,
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: ExpansionTile(
-                  initiallyExpanded: true,
-                  title: Text(
-                    'Recenzije koje je kupac dobio',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    'Ocene koje su prodavci ostavili kupcu',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  childrenPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                onRefresh: () async => _retry(),
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    if (reviewsForBuyer.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Center(
-                          child: Text(
-                            'Kupac još nema primljene recenzije.',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
+                    _BuyerHeaderCard(
+                      user: user,
+                      displayName: displayName,
+                      ordersCount: ordersCount,
+                      buyerId: widget.buyerId,
+                      avgBuyerRating: avgBuyerRating,
+                      buyerReviewCount: reviewsForBuyer.length,
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: ExpansionTile(
+                        initiallyExpanded: true,
+                        title: Text(
+                          'Recenzije koje je kupac dobio',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                      )
-                    else
-                      ...reviewsForBuyer.map(
-                        (r) => _BuyerReviewTile(
-                          review: r,
-                          sellerName: sellerNames[r.sellerId] ?? 'Prodavac',
+                        subtitle: Text(
+                          'Ocene koje su prodavci ostavili kupcu',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
                         ),
+                        childrenPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        children: [
+                          if (reviewsForBuyer.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: Text(
+                                  'Kupac još nema primljene recenzije.',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                            )
+                          else
+                            ...reviewsForBuyer.map(
+                              (r) => _BuyerReviewTile(
+                                review: r,
+                                sellerName:
+                                    sellerNames[r.sellerId] ?? 'Prodavac',
+                              ),
+                            ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: ExpansionTile(
+                        initiallyExpanded: false,
+                        title: Text(
+                          'Recenzije koje je kupac ostavio',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          'Ocene koje je kupac dao prodavcima',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                        childrenPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        children: [
+                          if (reviewsLeftByBuyer.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: Text(
+                                  'Kupac još nije ostavio recenzije.',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                            )
+                          else
+                            ...reviewsLeftByBuyer.map(
+                              (r) => _ReviewTile(
+                                review: r,
+                                sellerName:
+                                    sellerNames[r.sellerId] ?? 'Prodavac',
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Card(
-                child: ExpansionTile(
-                  initiallyExpanded: false,
-                  title: Text(
-                    'Recenzije koje je kupac ostavio',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    'Ocene koje je kupac dao prodavcima',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  childrenPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  children: [
-                    if (reviewsLeftByBuyer.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Center(
-                          child: Text(
-                            'Kupac još nije ostavio recenzije.',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                        ),
-                      )
-                    else
-                      ...reviewsLeftByBuyer.map(
-                        (r) => _ReviewTile(
-                          review: r,
-                          sellerName: sellerNames[r.sellerId] ?? 'Prodavac',
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
             ),
           ),
-              ),
-            ),
         );
       },
     );
@@ -495,8 +502,7 @@ class _ReviewTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: InkWell(
-                    onTap: () =>
-                        context.push('/seller/${review.sellerId}'),
+                    onTap: () => context.push('/seller/${review.sellerId}'),
                     borderRadius: BorderRadius.circular(6),
                     child: Row(
                       children: [
@@ -514,9 +520,7 @@ class _ReviewTile extends StatelessWidget {
                                 .titleSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                           ),
                         ),
@@ -579,8 +583,7 @@ class _BuyerReviewTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: InkWell(
-                    onTap: () =>
-                        context.push('/seller/${review.sellerId}'),
+                    onTap: () => context.push('/seller/${review.sellerId}'),
                     borderRadius: BorderRadius.circular(6),
                     child: Row(
                       children: [
@@ -598,9 +601,7 @@ class _BuyerReviewTile extends StatelessWidget {
                                 .titleSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                           ),
                         ),
@@ -650,4 +651,3 @@ class _BuyerReviewTile extends StatelessWidget {
     );
   }
 }
-

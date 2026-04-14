@@ -56,8 +56,23 @@ Preuzeti JSON stavi u secret `FCM_SERVICE_ACCOUNT_JSON`.
 
 1. Pokreni migracije: `supabase db push`
 2. Postavi secret (base64 – vidi FIREBASE_SETUP.md):
+
 3. Ažuriraj config:
+
 ```sql
 UPDATE public.edge_config SET value = 'https://YOUR_PROJECT_REF.supabase.co' WHERE key = 'functions_base_url';
 UPDATE public.edge_config SET value = 'YOUR_ANON_KEY' WHERE key = 'anon_key';
 ```
+
+## 5. Health check
+
+Za brzu produkcionu proveru koristi:
+
+```sql
+SELECT * FROM public.push_health_summary();
+SELECT * FROM public.push_user_health('USER_UUID'::uuid);
+SELECT * FROM public.push_health_dashboard;
+SELECT * FROM public.push_health_user_issues;
+```
+
+Ako summary vrati `health = 'stalled'`, proveri `pg_net` i poslednje redove u `net._http_response`.

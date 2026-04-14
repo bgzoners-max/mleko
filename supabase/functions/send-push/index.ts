@@ -2,6 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
+import type { Database } from "../../types/database.types.ts"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
 
   try {
     const requestId = crypto.randomUUID()
-    const supabase = createClient(
+    const supabase = createClient<Database>(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     )
@@ -246,7 +247,7 @@ Deno.serve(async (req) => {
         }
       } else {
         const isOrder = data.type === "new_order" || data.type === "order_status" || data.type === "order_status_changed";
-        const channelId = isOrder ? "orders_high" : "mleko_urgent";
+        const channelId = isOrder ? "orders_high_v2" : "mleko_urgent_v2";
         baseMessage.android = {
           priority: "HIGH",
           ttl: "86400s",

@@ -190,7 +190,7 @@ class ErrorSnackBar extends SnackBar {
             ],
           ),
           backgroundColor: _getColor(error.type),
-          behavior: SnackBarBehavior.floating,
+          behavior: SnackBarBehavior.fixed,
           duration: error.isRetryable
               ? const Duration(seconds: 5)
               : const Duration(seconds: 3),

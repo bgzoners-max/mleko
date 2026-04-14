@@ -46,7 +46,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       builder: (context, userSnap) {
         if (userSnap.hasError) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Proizvođač')),
+            appBar: AppBar(title: const Text('Prodajni profil')),
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -81,14 +81,14 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         }
         if (!userSnap.hasData) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Proizvođač')),
+            appBar: AppBar(title: const Text('Prodajni profil')),
             body: const BuyerProfileSkeleton(),
           );
         }
         final seller = userSnap.data;
         if (seller == null || !seller.isSeller) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Proizvođač')),
+            appBar: AppBar(title: const Text('Prodajni profil')),
             body: const Center(child: Text('Prodavac nije pronađen.')),
           );
         }
@@ -108,11 +108,11 @@ class _SellerProfileContent extends StatelessWidget {
     final draftCount = context.select<CartProvider, int>(
       (cart) => cart.getSellerDraft(seller.id).length,
     );
-    final sellerName = seller.farmName ?? 'Proizvođač';
+    final sellerName = seller.farmName ?? 'Prodavnica';
     final isDesktop = Breakpoints.isDesktop(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
-    final isWide = isDesktop || isLargeTablet;
+    final isWide = Breakpoints.useTwoPaneLayout(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(sellerName),
@@ -142,11 +142,9 @@ class _SellerProfileContent extends StatelessWidget {
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: isDesktop
-                        ? 1120.0
-                        : (isLargeTablet
-                            ? 980.0
-                            : Breakpoints.maxContentWidth(context)),
+                    maxWidth: isWide
+                        ? (isDesktop ? 1120.0 : 980.0)
+                        : Breakpoints.maxContentWidth(context),
                     minHeight: minHeight > 0 ? minHeight : 400,
                   ),
                   child: Column(
@@ -909,8 +907,7 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
         user != null && !user.isGuest && user.id != widget.sellerId;
     final isSeller =
         user != null && !user.isGuest && user.id == widget.sellerId;
-    final isWide =
-        Breakpoints.isLargeTablet(context) || Breakpoints.isDesktop(context);
+    final isWide = Breakpoints.useTwoPaneLayout(context);
     final cardPadding = Breakpoints.adaptiveDouble(
       context,
       phone: 16,

@@ -1,0 +1,16 @@
+.git/
+.vercel/
+.vscode/
+.idea/
+.dart_tool/
+.venv/
+node_modules/
+build/
+coverage/
+backups/
+flutter_*.log
+flutter_output.txt
+logs.txt
+hs_err_pid*
+replay_pid*
+*.log

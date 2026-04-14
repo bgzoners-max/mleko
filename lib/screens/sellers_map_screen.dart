@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/map_tiles.dart';
 
 /// Mapa prodavaca – prikazuje prodavce na mapi ako imaju koordinate.
 /// Srbija centar: ~44.0, 21.0
@@ -109,11 +110,9 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
               initialZoom: 6,
             ),
             children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'app.mleko',
-              ),
+              AppMapTiles.buildTileLayer(),
               MarkerLayer(markers: markers),
+              AppMapTiles.buildAttribution(),
             ],
           );
         },

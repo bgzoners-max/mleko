@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../core/haptic.dart';
 import '../core/profile_display_names.dart';
 import '../core/responsive.dart';
+import '../core/web_seo.dart';
 import '../models/product_model.dart';
 import '../models/product_reviews_data.dart';
 import '../providers/app_state.dart';
@@ -22,12 +23,13 @@ import '../widgets/skeleton.dart';
 import '../widgets/app_network_image.dart';
 
 void _shareProduct(BuildContext context, ProductModel product) {
-  final base = SupabaseConfig.shareBaseUrl.isNotEmpty
+  final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
       ? SupabaseConfig.shareBaseUrl
-      : (kIsWeb ? Uri.base.origin : 'https://mleko.rs');
-  final url = '$base/product/${product.id}';
+      : (kIsWeb ? Uri.base.origin : 'https://domacimarket.rs');
+  final base = rawBase.replaceAll(RegExp(r'/+$'), '');
+  final url = '$base/p/${product.id}';
   final text =
-      'Pogledaj ${product.name} – ${product.priceFormatted} na Naše Selo:\n$url';
+      'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:\n$url';
   SharePlus.instance.share(
     ShareParams(
       text: text,
@@ -168,6 +170,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _reviewsFuture = _loadReviewsFuture();
       });
 
+  String _buildProductMetaDescription(ProductModel product) {
+    final raw = [
+      product.name,
+      'Cena: ${product.priceFormatted}',
+      if (product.location.trim().isNotEmpty) 'Lokacija: ${product.location}',
+      if (product.description.trim().isNotEmpty) product.description.trim(),
+    ].join('. ');
+    final normalized = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.length <= 180) return normalized;
+    return '${normalized.substring(0, 177).trimRight()}...';
+  }
+
+  void _setProductMetadata(ProductModel? product) {
+    if (product == null) {
+      setPageMetadata(
+        title: 'Proizvod | Domaći market',
+        description:
+            'Pogledajte detalje proizvoda i lokalnu ponudu na Domaćem marketu.',
+        path: '/product/${widget.productId}',
+        type: 'product',
+      );
+      return;
+    }
+
+    setPageMetadata(
+      title: '${product.name} | Domaći market',
+      description: _buildProductMetaDescription(product),
+      path: '/product/${product.id}',
+      imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : null,
+      type: 'product',
+    );
+  }
+
   /// Gradi gallery sa slika + dots indicator
   Widget _buildGallery(ProductModel product, {double height = 220}) {
     final hasMultipleImages = product.imageUrls.length > 1;
@@ -191,9 +226,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       itemCount: product.imageUrls.length,
                       itemBuilder: (_, i) => AppNetworkImage(
                         imageUrl: product.imageUrls[i],
-                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
                         memCacheWidth: 800,
-                        memCacheHeight: 500,
+                        memCacheHeight: 600,
                         fadeInDuration: Duration.zero,
                       ),
                     ),
@@ -445,7 +481,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          'Pogledaj profil proizvođača',
+                          'Pogledaj prodajni profil',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
@@ -533,6 +569,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       quantity: product.minOrderKg,
     );
     if (!mounted) return;
+    final isWideLayout = MediaQuery.of(context).size.width >= 800;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Proizvod je dodat u korpu.'),
@@ -540,12 +577,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           label: 'Pregled',
           onPressed: () => context.push('/checkout-seller/${product.sellerId}'),
         ),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.only(
-          bottom: 16,
-          right: 16,
-          left: MediaQuery.of(context).size.width - 400 - 16,
-        ),
+        behavior:
+            isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
+        margin: isWideLayout
+            ? EdgeInsets.only(
+                bottom: 16,
+                right: 16,
+                left: MediaQuery.of(context).size.width - 400 - 16,
+              )
+            : null,
       ),
     );
   }
@@ -593,12 +633,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Row(
         children: [
           TextButton(
-            onPressed: () => context.push('/terms'),
+            onPressed: () => context.push('/uslovi-koriscenja'),
             child: const Text('Uslovi korišćenja'),
           ),
-          const SizedBox(width: 8),
           TextButton(
-            onPressed: () => context.push('/privacy'),
+            onPressed: () => context.push('/politika-privatnosti'),
             child: const Text('Politika privatnosti'),
           ),
         ],
@@ -608,11 +647,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildMobileLayout(ProductModel product) {
     final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSellerBanner(product.sellerId),
-        _buildGallery(product, height: isSmallTablet ? 280 : 220),
+        _buildGallery(
+          product,
+          height: isLargeTablet ? 360 : (isSmallTablet ? 280 : 220),
+        ),
         _buildInfoSection(product),
       ],
     );
@@ -620,13 +663,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWideLayout =
-        Breakpoints.isLargeTablet(context) || Breakpoints.isDesktop(context);
-    final maxWidth = Breakpoints.isDesktop(context)
-        ? 980.0
-        : (Breakpoints.isLargeTablet(context)
-            ? 920.0
-            : Breakpoints.maxContentWidth(context));
+    final isWideLayout = Breakpoints.useTwoPaneLayout(context);
+    final maxWidth = isWideLayout
+        ? (Breakpoints.isDesktop(context) ? 980.0 : 920.0)
+        : Breakpoints.maxContentWidth(context);
+    _setProductMetadata(null);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Proizvod'),
@@ -697,6 +738,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   'Moguće je da je proizvod obrisan ili trenutno nije dostupan.',
             );
           }
+          _setProductMetadata(product);
           _maybeScrollToReviewsOnLoad();
           return Center(
             child: ConstrainedBox(
@@ -1011,12 +1053,6 @@ class _MoreFromSellerSectionState extends State<_MoreFromSellerSection> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 12),
                 ),
-                const Spacer(),
-                if (all.length > 3)
-                  TextButton(
-                    onPressed: () => setState(() => _expanded = !_expanded),
-                    child: Text(_expanded ? 'Prikaži manje' : 'Prikaži sve'),
-                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1089,6 +1125,14 @@ class _MoreFromSellerSectionState extends State<_MoreFromSellerSection> {
                   )
                   .toList(),
             ),
+            if (all.length > 3)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                  child: Text(_expanded ? 'Prikaži manje' : 'Prikaži sve'),
+                ),
+              ),
           ],
         );
       },

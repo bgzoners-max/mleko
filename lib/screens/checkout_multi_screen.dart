@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/order_item_model.dart';
+import '../models/seller_delivery_models.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
@@ -181,6 +182,14 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
   bool _sending = false;
   String? _error;
   bool _savePhoneToProfile = false;
+  bool _deliveryLoading = true;
+  List<SellerDeliveryPointModel> _allDeliveryPoints = const [];
+  List<SellerDeliveryPointModel> _deliveryPoints = const [];
+  String? _deliveryRestrictionMessage;
+  DeliveryMethod _deliveryMethod = DeliveryMethod.agreement;
+  String? _selectedDeliveryCity;
+  SellerDeliveryPointModel? _selectedDeliveryPoint;
+  SellerDeliverySlotModel? _selectedDeliverySlot;
 
   @override
   void initState() {
@@ -199,6 +208,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
       }
       _savePhoneToProfile = user.phone == null || user.phone!.isEmpty;
     }
+    _loadDeliveryOptions();
   }
 
   @override
@@ -214,6 +224,182 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDeliveryOptions() async {
+    try {
+      final points = await SellerDeliveryService()
+          .getSellerDeliveryPoints(widget.sellerId, onlyActive: true);
+      if (!mounted) return;
+      setState(() {
+        _allDeliveryPoints = points;
+        _deliveryLoading = false;
+      });
+      _refreshDeliveryAvailability();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _allDeliveryPoints = const [];
+        _deliveryPoints = const [];
+        _deliveryLoading = false;
+        _deliveryRestrictionMessage = null;
+      });
+    }
+  }
+
+  Set<String> _allowedDeliveryPointIds() {
+    final allPointIds = _allDeliveryPoints.map((point) => point.id).toSet();
+    Set<String>? allowed;
+
+    for (final item in _items) {
+      switch (item.product.deliveryMode) {
+        case ProductDeliveryMode.none:
+          return <String>{};
+        case ProductDeliveryMode.allSellerPoints:
+          continue;
+        case ProductDeliveryMode.selectedPoints:
+          final ids = item.product.selectedDeliveryPointIds.toSet();
+          if (ids.isEmpty) return <String>{};
+          allowed = allowed == null ? ids : allowed.intersection(ids);
+      }
+    }
+
+    return allowed ?? allPointIds;
+  }
+
+  String? _buildDeliveryRestrictionMessage(Set<String> allowedIds) {
+    if (_items
+        .any((item) => item.product.deliveryMode == ProductDeliveryMode.none)) {
+      return 'Bar jedan proizvod ne podržava ličnu dostavu domaćina.';
+    }
+    if (_allDeliveryPoints.isNotEmpty && allowedIds.isEmpty) {
+      return 'Odabrani proizvodi nemaju zajedničku lokaciju za ličnu dostavu.';
+    }
+    return null;
+  }
+
+  void _refreshDeliveryAvailability() {
+    final allowedIds = _allowedDeliveryPointIds();
+    final filteredPoints = _allDeliveryPoints
+        .where((point) => allowedIds.contains(point.id))
+        .toList(growable: false);
+    final restrictionMessage = _buildDeliveryRestrictionMessage(allowedIds);
+
+    String? nextCity = _selectedDeliveryCity;
+    SellerDeliveryPointModel? nextPoint = _selectedDeliveryPoint;
+    SellerDeliverySlotModel? nextSlot = _selectedDeliverySlot;
+
+    if (filteredPoints.isEmpty) {
+      nextCity = null;
+      nextPoint = null;
+      nextSlot = null;
+    } else {
+      final availableCities = filteredPoints.map((point) => point.city).toSet();
+      if (nextCity == null || !availableCities.contains(nextCity)) {
+        nextCity = filteredPoints.first.city;
+      }
+
+      final cityPoints = filteredPoints
+          .where((point) => point.city == nextCity)
+          .toList(growable: false);
+
+      if (nextPoint == null ||
+          !cityPoints.any((point) => point.id == nextPoint!.id)) {
+        nextPoint =
+            cityPoints.isNotEmpty ? cityPoints.first : filteredPoints.first;
+      }
+
+      final activeSlots = nextPoint.activeSlots;
+      if (nextSlot == null ||
+          !activeSlots.any((slot) => slot.id == nextSlot!.id)) {
+        nextSlot = activeSlots.isNotEmpty ? activeSlots.first : null;
+      }
+    }
+
+    setState(() {
+      _deliveryPoints = filteredPoints;
+      _deliveryRestrictionMessage = restrictionMessage;
+      _selectedDeliveryCity = nextCity;
+      _selectedDeliveryPoint = nextPoint;
+      _selectedDeliverySlot = nextSlot;
+      if (filteredPoints.isEmpty) {
+        _deliveryMethod = DeliveryMethod.agreement;
+      }
+      if (_deliveryMethod == DeliveryMethod.sellerDelivery &&
+          nextCity != null) {
+        _cityController.text = nextCity;
+      }
+    });
+  }
+
+  bool get _hasSellerDeliveryOptions => _deliveryPoints.isNotEmpty;
+
+  List<String> get _deliveryCities {
+    final seen = <String>{};
+    final result = <String>[];
+    for (final point in _deliveryPoints) {
+      if (seen.add(point.city)) {
+        result.add(point.city);
+      }
+    }
+    return result;
+  }
+
+  List<SellerDeliveryPointModel> get _pointsForSelectedCity {
+    final city = _selectedDeliveryCity;
+    if (city == null) return const [];
+    return _deliveryPoints
+        .where((point) => point.city == city)
+        .toList(growable: false);
+  }
+
+  DeliverySelectionModel? get _deliverySelection {
+    if (_deliveryMethod != DeliveryMethod.sellerDelivery ||
+        _selectedDeliveryPoint == null ||
+        _selectedDeliverySlot == null) {
+      return null;
+    }
+    return DeliverySelectionModel.fromPointAndSlot(
+      _selectedDeliveryPoint!,
+      _selectedDeliverySlot!,
+    );
+  }
+
+  void _selectDeliveryCity(String? city) {
+    if (city == null) return;
+    final points =
+        _deliveryPoints.where((point) => point.city == city).toList();
+    final point = points.isNotEmpty ? points.first : null;
+    final slot = point != null && point.activeSlots.isNotEmpty
+        ? point.activeSlots.first
+        : null;
+    setState(() {
+      _selectedDeliveryCity = city;
+      _selectedDeliveryPoint = point;
+      _selectedDeliverySlot = slot;
+      _cityController.text = city;
+    });
+  }
+
+  void _selectDeliveryPoint(String? pointId) {
+    if (pointId == null) return;
+    final point = _pointsForSelectedCity.firstWhere(
+      (entry) => entry.id == pointId,
+    );
+    setState(() {
+      _selectedDeliveryPoint = point;
+      _selectedDeliverySlot =
+          point.activeSlots.isNotEmpty ? point.activeSlots.first : null;
+      _cityController.text = point.city;
+    });
+  }
+
+  void _selectDeliverySlot(String? slotId) {
+    if (slotId == null || _selectedDeliveryPoint == null) return;
+    final slot = _selectedDeliveryPoint!.activeSlots.firstWhere(
+      (entry) => entry.id == slotId,
+    );
+    setState(() => _selectedDeliverySlot = slot);
   }
 
   void _setQuantity(int index, double quantity) {
@@ -234,6 +420,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
           sellerId: widget.sellerId,
           productId: productId,
         );
+    _refreshDeliveryAvailability();
   }
 
   double get _totalAmount =>
@@ -288,6 +475,12 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
       setState(() => _error = 'Kontakt telefon je obavezan.');
       return;
     }
+    if (_deliveryMethod == DeliveryMethod.sellerDelivery &&
+        _deliverySelection == null) {
+      setState(() => _error =
+          'Izaberi grad, lokaciju i termin za ličnu dostavu domaćina.');
+      return;
+    }
     final user = context.read<AppState>().user;
     if (user == null) {
       setState(() => _error = 'Morate biti prijavljeni.');
@@ -314,9 +507,12 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
       final appState = context.read<AppState>();
       final isOnline = appState.isOnline;
       final note = _noteController.text.trim();
-      final buyerCity = _cityController.text.trim();
+      final buyerCity = _deliveryMethod == DeliveryMethod.sellerDelivery
+          ? (_selectedDeliveryCity ?? _cityController.text.trim())
+          : _cityController.text.trim();
       final buyerAddress = _addressController.text.trim();
       final phone = _phoneController.text.trim();
+      final deliverySelection = _deliverySelection;
 
       if (isOnline) {
         final orderItems = _items
@@ -337,6 +533,8 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
           buyerCity: buyerCity,
           buyerPhone: phone,
           buyerAddress: buyerAddress,
+          deliveryMethod: _deliveryMethod,
+          deliverySelection: deliverySelection,
         );
 
         await ChatService().getOrCreateConversation(user.id, widget.sellerId,
@@ -368,6 +566,15 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
             buyerCity: buyerCity,
             buyerAddress: buyerAddress,
             buyerPhone: phone,
+            deliveryMethod: _deliveryMethod,
+            deliveryCity: deliverySelection?.city,
+            deliveryPointId: deliverySelection?.pointId,
+            deliveryPointLabel: deliverySelection?.pointLabel,
+            deliveryAddress: deliverySelection?.address,
+            deliveryWeekday: deliverySelection?.weekday,
+            deliveryTimeFrom: deliverySelection?.timeFrom,
+            deliveryTimeTo: deliverySelection?.timeTo,
+            deliveryFeeRsd: deliverySelection?.deliveryFeeRsd,
             preferCall: false,
             pickupOptions: [],
             createdAt: DateTime.now(),
@@ -481,211 +688,360 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Tvoje odabrano',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              if (isOffline) ...[
-                const SizedBox(height: 8),
-                const OfflineReadOnlyBadge(),
-              ],
-              const SizedBox(height: 12),
-              if (_items.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    children: [
-                      Icon(Icons.shopping_basket_outlined,
-                          size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Nema stavki. Dodaj proizvode kod prodavca.',
-                        style: TextStyle(color: Colors.grey.shade600),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: () =>
-                            context.go('/seller/${widget.sellerId}'),
-                        icon: const Icon(Icons.store, size: 20),
-                        label: const Text('Nazad kod prodavca'),
-                      ),
-                    ],
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Tvoje odabrano',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                )
-              else ...[
-                ...List.generate(_items.length, (i) {
-                  final e = _items[i];
-                  final p = e.product;
-                  final step = p.quantityStep;
-                  final itemTotal =
-                      (p.pricePerKg * e.quantity).toStringAsFixed(0);
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                  if (isOffline) ...[
+                    const SizedBox(height: 8),
+                    const OfflineReadOnlyBadge(),
+                  ],
+                  const SizedBox(height: 12),
+                  if (_items.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p.name,
-                                  style: theme.textTheme.bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${p.formatQuantity(e.quantity)} × ${p.priceFormatted} = $itemTotal RSD',
-                                  style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12),
-                                ),
-                              ],
-                            ),
+                          Icon(Icons.shopping_basket_outlined,
+                              size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Nema stavki. Dodaj proizvode kod prodavca.',
+                            style: TextStyle(color: Colors.grey.shade600),
+                            textAlign: TextAlign.center,
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                context.go('/seller/${widget.sellerId}'),
+                            icon: const Icon(Icons.store, size: 20),
+                            label: const Text('Nazad kod prodavca'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    ...List.generate(_items.length, (i) {
+                      final e = _items[i];
+                      final p = e.product;
+                      final step = p.quantityStep;
+                      final itemTotal =
+                          (p.pricePerKg * e.quantity).toStringAsFixed(0);
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              IconButton(
-                                tooltip: 'Smanji količinu',
-                                icon: const Icon(Icons.remove_circle_outline),
-                                onPressed: e.quantity <= p.minOrderKg
-                                    ? null
-                                    : () => _setQuantity(i, e.quantity - step),
-                                style: IconButton.styleFrom(
-                                  minimumSize: const Size(40, 40),
-                                  padding: EdgeInsets.zero,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      p.name,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${p.formatQuantity(e.quantity)} × ${p.priceFormatted} = $itemTotal RSD',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              SizedBox(
-                                width: 48,
-                                child: Text(
-                                  p.formatQuantity(e.quantity),
-                                  style: theme.textTheme.bodyMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'Povećaj količinu',
-                                icon: const Icon(Icons.add_circle_outline),
-                                onPressed: () =>
-                                    _setQuantity(i, e.quantity + step),
-                                style: IconButton.styleFrom(
-                                  minimumSize: const Size(40, 40),
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'Ukloni proizvod',
-                                icon: Icon(Icons.delete_outline,
-                                    color: Colors.red.shade400),
-                                onPressed: () => _remove(i),
-                                style: IconButton.styleFrom(
-                                  minimumSize: const Size(40, 40),
-                                  padding: EdgeInsets.zero,
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'Smanji količinu',
+                                    icon:
+                                        const Icon(Icons.remove_circle_outline),
+                                    onPressed: e.quantity <= p.minOrderKg
+                                        ? null
+                                        : () =>
+                                            _setQuantity(i, e.quantity - step),
+                                    style: IconButton.styleFrom(
+                                      minimumSize: const Size(40, 40),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 48,
+                                    child: Text(
+                                      p.formatQuantity(e.quantity),
+                                      style: theme.textTheme.bodyMedium,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Povećaj količinu',
+                                    icon: const Icon(Icons.add_circle_outline),
+                                    onPressed: () =>
+                                        _setQuantity(i, e.quantity + step),
+                                    style: IconButton.styleFrom(
+                                      minimumSize: const Size(40, 40),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Ukloni proizvod',
+                                    icon: Icon(Icons.delete_outline,
+                                        color: Colors.red.shade400),
+                                    onPressed: () => _remove(i),
+                                    style: IconButton.styleFrom(
+                                      minimumSize: const Size(40, 40),
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 8),
+                    if (_totalQuantityLabel.isNotEmpty)
+                      Text(
+                        _totalQuantityLabel,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: Colors.grey.shade700),
+                      ),
+                    Text(
+                      _hasSellerDeliveryOptions
+                          ? 'Prodavac nudi i ličnu dostavu na izabranim lokacijama i terminima.'
+                          : 'Napomena: Cena dostave se dogovara sa domaćinom.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.grey.shade600),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Podaci za dostavu',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  if (!_deliveryLoading &&
+                      !_hasSellerDeliveryOptions &&
+                      _deliveryRestrictionMessage != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _deliveryRestrictionMessage!,
+                      style: TextStyle(color: Colors.orange.shade800),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                        labelText: 'Napomena (npr. Treba za subotu)'),
+                  ),
+                  if (_deliveryLoading) ...[
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(),
+                  ] else if (_hasSellerDeliveryOptions) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Način dostave',
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 8),
+                    RadioListTile<DeliveryMethod>(
+                      value: DeliveryMethod.agreement,
+                      groupValue: _deliveryMethod,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Dogovor sa domaćinom'),
+                      subtitle:
+                          const Text('Grad i adresa kupca se unose ručno.'),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() => _deliveryMethod = value);
+                      },
+                    ),
+                    RadioListTile<DeliveryMethod>(
+                      value: DeliveryMethod.sellerDelivery,
+                      groupValue: _deliveryMethod,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Lična dostava domaćina'),
+                      subtitle: const Text(
+                        'Kupac bira grad, punkt i termin koje je prodavac definisao.',
+                      ),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _deliveryMethod = value;
+                          if (_selectedDeliveryCity != null) {
+                            _cityController.text = _selectedDeliveryCity!;
+                          }
+                        });
+                      },
+                    ),
+                    if (_deliveryRestrictionMessage != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _deliveryRestrictionMessage!,
+                        style: TextStyle(color: Colors.orange.shade800),
+                      ),
+                    ],
+                    if (_deliveryMethod == DeliveryMethod.sellerDelivery) ...[
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedDeliveryCity,
+                        decoration: const InputDecoration(labelText: 'Grad'),
+                        items: _deliveryCities
+                            .map(
+                              (city) => DropdownMenuItem<String>(
+                                value: city,
+                                child: Text(city),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _selectDeliveryCity,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedDeliveryPoint?.id,
+                        decoration:
+                            const InputDecoration(labelText: 'Lokacija'),
+                        items: _pointsForSelectedCity
+                            .map(
+                              (point) => DropdownMenuItem<String>(
+                                value: point.id,
+                                child: Text(point.summaryLabel),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _selectDeliveryPoint,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedDeliverySlot?.id,
+                        decoration: const InputDecoration(labelText: 'Termin'),
+                        items: (_selectedDeliveryPoint?.activeSlots ?? const [])
+                            .map(
+                              (slot) => DropdownMenuItem<String>(
+                                value: slot.id,
+                                child: Text(
+                                  '${slot.weekdayLabel}, ${slot.timeRangeLabel}',
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _selectDeliverySlot,
+                      ),
+                      if (_deliverySelection != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _deliverySelection!.scheduleLabel,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_deliverySelection!.pointLabel}, ${_deliverySelection!.address}',
+                              ),
+                              if (_deliverySelection!.feeLabel != null)
+                                Text(
+                                    'Dostava: ${_deliverySelection!.feeLabel}'),
+                              if (_deliverySelection!.minOrderLabel != null)
+                                Text(
+                                  'Minimum za termin: ${_deliverySelection!.minOrderLabel}',
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ],
+                  const SizedBox(height: 12),
+                  if (_deliveryMethod != DeliveryMethod.sellerDelivery) ...[
+                    TextField(
+                      controller: _cityController,
+                      decoration:
+                          const InputDecoration(labelText: 'Grad kupca'),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: _addressController,
+                    decoration: InputDecoration(
+                      labelText:
+                          _deliveryMethod == DeliveryMethod.sellerDelivery
+                              ? 'Dodatna napomena za preuzimanje (opciono)'
+                              : 'Adresa (ulica i broj)',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration:
+                        const InputDecoration(labelText: 'Kontakt telefon *'),
+                  ),
+                  if (user != null)
+                    CheckboxListTile(
+                      value: _savePhoneToProfile,
+                      onChanged: (v) =>
+                          setState(() => _savePhoneToProfile = v ?? false),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: const Text(
+                        'Sačuvaj ovaj broj u profilu',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(_error!,
+                              style: TextStyle(color: Colors.red.shade800)),
+                          const SizedBox(height: 12),
+                          FilledButton.tonal(
+                            onPressed: _sending ? null : _submit,
+                            child: const Text('Pokušaj ponovo'),
                           ),
                         ],
                       ),
                     ),
-                  );
-                }),
-                const SizedBox(height: 8),
-                if (_totalQuantityLabel.isNotEmpty)
-                  Text(
-                    _totalQuantityLabel,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: Colors.grey.shade700),
-                  ),
-                Text(
-                  'Napomena: Cena dostave se dogovara sa domaćinom.',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: Colors.grey.shade600),
-                ),
-              ],
-              const SizedBox(height: 16),
-              Text(
-                'Podaci za dostavu',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                  ],
+                  const SizedBox(height: 80),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _noteController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                    labelText: 'Napomena (npr. Treba za subotu)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _cityController,
-                decoration: const InputDecoration(labelText: 'Grad kupca'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _addressController,
-                decoration:
-                    const InputDecoration(labelText: 'Adresa (ulica i broj)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration:
-                    const InputDecoration(labelText: 'Kontakt telefon *'),
-              ),
-              if (user != null)
-                CheckboxListTile(
-                  value: _savePhoneToProfile,
-                  onChanged: (v) =>
-                      setState(() => _savePhoneToProfile = v ?? false),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text(
-                    'Sačuvaj ovaj broj u profilu',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(_error!,
-                          style: TextStyle(color: Colors.red.shade800)),
-                      const SizedBox(height: 12),
-                      FilledButton.tonal(
-                        onPressed: _sending ? null : _submit,
-                        child: const Text('Pokušaj ponovo'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 80),
-            ],
+            ),
           ),
-        ),
-      ),
         ),
       ),
     );

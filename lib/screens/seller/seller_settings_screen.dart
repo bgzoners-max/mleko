@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../core/responsive.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
+import '../../widgets/seller_delivery_settings_tab.dart';
 
 /// Podešavanja prodavca: lokacija, priča, galerija
 class SellerSettingsScreen extends StatefulWidget {
@@ -29,7 +31,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() => setState(() {}));
     final user = context.read<AppState>().user;
     _storyController.text = user?.sellerStory ?? '';
@@ -190,6 +192,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
           onTap: (_) => HapticFeedback.selectionClick(),
           tabs: const [
             Tab(text: 'Lokacija'),
+            Tab(text: 'Lična dostava'),
             Tab(text: 'Priča'),
             Tab(text: 'Galerija'),
             Tab(text: 'Brzi odgovori')
@@ -199,18 +202,23 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
+          ),
           child: AnimatedSwitcher(
-        duration: Duration(
-          milliseconds: context.watch<AppSettingsProvider>().animationsEnabled ? 250 : 0,
-        ),
-        switchInCurve: Curves.easeIn,
-        switchOutCurve: Curves.easeOut,
-        child: KeyedSubtree(
-          key: ValueKey<int>(_tabController.index),
-          child: _buildTabContent(),
-        ),
-      ),
+            duration: Duration(
+              milliseconds:
+                  context.watch<AppSettingsProvider>().animationsEnabled
+                      ? 250
+                      : 0,
+            ),
+            switchInCurve: Curves.easeIn,
+            switchOutCurve: Curves.easeOut,
+            child: KeyedSubtree(
+              key: ValueKey<int>(_tabController.index),
+              child: _buildTabContent(),
+            ),
+          ),
         ),
       ),
     );
@@ -221,10 +229,12 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       case 0:
         return _buildLocationTab();
       case 1:
-        return _buildStoryTab();
+        return const SellerDeliverySettingsTab();
       case 2:
-        return _buildGalleryTab();
+        return _buildStoryTab();
       case 3:
+        return _buildGalleryTab();
+      case 4:
         return _buildQuickRepliesTab();
       default:
         return _buildLocationTab();
@@ -319,7 +329,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Napišite kratak tekst o gazdinstvu, tradiciji i načinu rada.',
+          Text(
+              'Napišite kratak tekst o svojoj ponudi, tradiciji i načinu rada.',
               style: TextStyle(color: Colors.grey.shade700)),
           const SizedBox(height: 24),
           TextField(
@@ -487,4 +498,3 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     );
   }
 }
-

@@ -2,7 +2,7 @@
 
 ## Tok podataka
 
-```
+```text
 [Trigger] → notifications (INSERT) → invoke_send_push (pg_net) → Edge Function send-push → FCM → uređaj
 ```
 
@@ -12,21 +12,21 @@
 
 ### Tabele
 
-| Tabela | Namena |
-|--------|--------|
-| `notifications` | In-app obaveštenja + izvor za push (trigger na INSERT) |
-| `user_push_tokens` | FCM tokeni po korisniku (više uređaja) |
-| `edge_config` | `functions_base_url`, `anon_key` za poziv Edge Function |
+| Tabela             | Namena                                                   |
+| ------------------ | -------------------------------------------------------- |
+| `notifications`    | In-app obaveštenja + izvor za push (trigger na INSERT)   |
+| `user_push_tokens` | FCM tokeni po korisniku (više uređaja)                   |
+| `edge_config`      | `functions_base_url`, `anon_key` za poziv Edge Function  |
 
 ### Triggeri koji ubacuju u `notifications`
 
-| Trigger | Tabela | Tip | Primaoc |
-|---------|--------|-----|---------|
-| `on_new_order` | orders (INSERT) | new_order | prodavac |
-| `on_order_status_change` | orders (UPDATE) | order_status | kupac |
-| `on_new_message` | messages (INSERT) | new_message | drugi učesnik razgovora |
-| `on_review_insert_notify_seller` | reviews (INSERT) | new_review | prodavac (dobio ocenu od kupca) |
-| `on_buyer_review_insert_notify_buyer` | buyer_reviews (INSERT) | new_buyer_review | kupac (dobio ocenu od prodavca) |
+| Trigger                               | Tabela                | Tip                | Primaoc                            |
+| ------------------------------------- | --------------------- | ------------------ | ---------------------------------- |
+| `on_new_order`                        | orders (INSERT)       | new_order          | prodavac                           |
+| `on_order_status_change`              | orders (UPDATE)       | order_status       | kupac                              |
+| `on_new_message`                      | messages (INSERT)     | new_message        | drugi učesnik razgovora            |
+| `on_review_insert_notify_seller`      | reviews (INSERT)      | new_review         | prodavac (dobio ocenu od kupca)    |
+| `on_buyer_review_insert_notify_buyer` | buyer_reviews (INSERT)| new_buyer_review   | kupac (dobio ocenu od prodavca)    |
 
 ### Trigger na `notifications`
 
@@ -72,10 +72,10 @@
 
 ## 4. Navigacija po tipu
 
-| type | Odredište |
-|------|-----------|
-| new_order, order_status | /orders |
-| new_message | /conversations |
+| type                    | Odredište        |
+| ----------------------- | ---------------- |
+| new_order, order_status | /orders          |
+| new_message             | /conversations   |
 
 ---
 
@@ -88,21 +88,34 @@
 - [ ] Migracije primenjene (uključujući notify_order_status_change)
 - [ ] Edge Function deploy: `supabase functions deploy send-push`
 
+## 5b. Health Check
+
+- `SELECT * FROM public.push_health_summary();`
+- `SELECT * FROM public.push_user_health('<user_uuid>'::uuid);`
+- `SELECT * FROM public.push_health_dashboard;`
+- `SELECT * FROM public.push_health_user_issues;`
+- Ako je `health = 'stalled'`: proveri `pg_net` worker i `net._http_response`
+- Ako je `health = 'missing_token'`: pokreni aplikaciju i proveri `user_push_tokens`
+- Ako je poslednji delivery `error` sa FCM `404`: token je invalidiran i treba da se regeneriše novim pokretanjem aplikacije
+
 ---
 
 ## 6. Optimizacija po platformi
 
 ### Xiaomi / Huawei / Oppo / Samsung
+
 - **Optimizacija baterije:** Obaveštenja → meni (⋮) → „Optimizacija baterije (Xiaomi, Huawei...)“ – otvara dijalog za isključivanje optimizacije
 - **Pomoć:** „Pomoć: obaveštenja ne stižu“ – link na dontkillmyapp.com
 - **Autostart (Xiaomi):** Postavke → Aplikacije → Autostart → uključi za Naše Selo
 - **Baterija:** Postavke → Baterija → Izaberi aplikacije → Naše Selo → „Bez ograničenja“
 
 ### iOS
+
 - APNs certifikat mora biti uploadovan u Firebase Console
 - GoogleService-Info.plist u ios/Runner/
 
 ### Android (standardni)
+
 - Kanal mleko_push sa zvukom i vibracijom
 - Heads-up: Postavke → Aplikacije → Naše Selo → Obaveštenja → „Prikaži kao pop-up“
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -15,9 +16,27 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Prijava')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: _LoginForm(),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.maxContentWidth(context),
+          ),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              Breakpoints.horizontalPadding(context),
+              Breakpoints.adaptiveDouble(
+                context,
+                phone: 24,
+                largeTabletValue: 32,
+                desktop: 32,
+              ),
+              Breakpoints.horizontalPadding(context),
+              24,
+            ),
+            child: _LoginForm(),
+          ),
+        ),
       ),
     );
   }
@@ -119,12 +138,14 @@ class _LoginFormState extends State<_LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    final isTabletOrLarger = Breakpoints.isTabletOrLarger(context);
-
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: isTabletOrLarger ? 420 : double.infinity,
+          maxWidth: Breakpoints.authContentWidth(
+            context,
+            tabletWidth: 420,
+            desktopWidth: 420,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -143,7 +164,8 @@ class _LoginFormState extends State<_LoginForm> {
               decoration: InputDecoration(
                 labelText: 'Lozinka',
                 suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                  icon:
+                      Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
@@ -160,6 +182,36 @@ class _LoginFormState extends State<_LoginForm> {
               onPressed: () => context.push('/register'),
               child: const Text('Nemaš nalog? Registruj se'),
             ),
+            const SizedBox(height: 4),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: Theme.of(context).textTheme.bodySmall,
+                children: [
+                  const TextSpan(text: 'Pravni dokumenti: '),
+                  TextSpan(
+                    text: 'Uslovi korišćenja',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => context.push('/uslovi-koriscenja'),
+                  ),
+                  const TextSpan(text: ' i '),
+                  TextSpan(
+                    text: 'Politiku privatnosti',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => context.push('/politika-privatnosti'),
+                  ),
+                  const TextSpan(text: '.'),
+                ],
+              ),
+            ),
             const SizedBox(height: 8),
             OutlinedButton(
               onPressed: _guestLoading ? null : _guest,
@@ -175,7 +227,8 @@ class _LoginFormState extends State<_LoginForm> {
               onPressed: () {
                 if (_email.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Unesite email za reset lozinke')),
+                    const SnackBar(
+                        content: Text('Unesite email za reset lozinke')),
                   );
                   return;
                 }

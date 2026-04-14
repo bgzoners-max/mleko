@@ -4,18 +4,22 @@ import '../../providers/app_state.dart';
 import 'search_screen.dart';
 import 'seller/seller_dashboard_screen.dart';
 
-/// Tab 1: Pretraga (kupac) ili Moji proizvodi (prodavac).
+/// Shared shell tab that can show marketplace search or seller products.
 class TabSearchOrProductsScreen extends StatelessWidget {
-  const TabSearchOrProductsScreen({super.key, this.initialCategory});
+  const TabSearchOrProductsScreen({
+    super.key,
+    this.initialCategory,
+    this.openSellerProducts = false,
+  });
 
   final String? initialCategory;
+  final bool openSellerProducts;
 
   @override
   Widget build(BuildContext context) {
-    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
-    // Prodavac vidi dashboard samo kada nema filtera kategorije.
-    // Kada klikne na kategoriju, prikazuje se marketplace pretraga.
-    if (isSeller && initialCategory == null) {
+    final isSeller =
+        context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
+    if (isSeller && openSellerProducts) {
       return const SellerDashboardScreen();
     }
     return SearchScreen(initialCategory: initialCategory);

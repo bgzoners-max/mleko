@@ -62,7 +62,8 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
       _error = null;
     });
     try {
-      final list = await _supabaseService.getChildCategories(widget.parentCategory.id);
+      final list =
+          await _supabaseService.getChildCategories(widget.parentCategory.id);
       if (mounted) {
         setState(() {
           _categories = list;
@@ -133,7 +134,8 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
       if (mounted) {
         setState(() => _loadingMore = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Greška pri učitavanju više proizvoda.')),
+          const SnackBar(
+              content: Text('Greška pri učitavanju više proizvoda.')),
         );
       }
     }
@@ -172,7 +174,9 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+              Text(_error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade600)),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: _loadCategories,
@@ -191,153 +195,206 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: Breakpoints.isDesktop(context) ? 800 : Breakpoints.maxContentWidth(context),
+            maxWidth: Breakpoints.isDesktop(context)
+                ? Breakpoints.dataContentWidth(context)
+                : Breakpoints.maxContentWidth(context),
           ),
           child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          // Subcategories grid
-          if (_categories.isNotEmpty)
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                Breakpoints.horizontalPadding(context),
-                16,
-                Breakpoints.horizontalPadding(context),
-                8,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
-                  mainAxisExtent: 64,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final cat = _categories[index];
-                    return Semantics(
-                      button: true,
-                      label: 'Kategorija ${cat.name}',
-                      child: InkWell(
-                        onTap: () => context.go('/search?category=${Uri.encodeComponent(cat.name)}'),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              buildCategoryIcon(
-                                cat.icon,
-                                size: 30,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  cat.name,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w500),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+            controller: _scrollController,
+            slivers: [
+              // Subcategories grid
+              if (_categories.isNotEmpty)
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    Breakpoints.horizontalPadding(context),
+                    16,
+                    Breakpoints.horizontalPadding(context),
+                    8,
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: Breakpoints.isWideDesktop(context)
+                          ? 4
+                          : Breakpoints.isLargeTablet(context)
+                              ? 3
+                              : 2,
+                      mainAxisSpacing: Breakpoints.adaptiveDouble(
+                        context,
+                        phone: 6,
+                        smallTabletValue: 8,
+                        largeTabletValue: 10,
+                        desktop: 10,
                       ),
-                    );
-                  },
-                  childCount: _categories.length,
+                      crossAxisSpacing: Breakpoints.adaptiveDouble(
+                        context,
+                        phone: 6,
+                        smallTabletValue: 8,
+                        largeTabletValue: 10,
+                        desktop: 10,
+                      ),
+                      mainAxisExtent: Breakpoints.adaptiveDouble(
+                        context,
+                        phone: 64,
+                        smallTabletValue: 72,
+                        largeTabletValue: 76,
+                        desktop: 76,
+                      ),
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final cat = _categories[index];
+                        return Semantics(
+                          button: true,
+                          label: 'Kategorija ${cat.name}',
+                          child: InkWell(
+                            onTap: () => context.go(
+                                '/search?category=${Uri.encodeComponent(cat.name)}'),
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  buildCategoryIcon(
+                                    cat.icon,
+                                    size: 30,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      cat.name,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w500),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: _categories.length,
+                    ),
+                  ),
+                )
+              else
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(Icons.folder_off_outlined,
+                            size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Nema podkategorija',
+                          style: TextStyle(
+                              fontSize: 16, color: Colors.grey.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            )
-          else
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
+
+              // Divider + products header
+              SliverToBoxAdapter(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.folder_off_outlined, size: 64, color: Colors.grey.shade400),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Nema podkategorija',
-                      style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+                    const Divider(height: 1, thickness: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                      child: Text(
+                        'Najnoviji proizvodi',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
 
-          // Divider + products header
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Divider(height: 1, thickness: 1),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
-                  child: Text(
-                    'Najnoviji proizvodi',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+              // Products list
+              if (_loadingProducts)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              else if (_products.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: Text(
+                        'Nema dostupnih proizvoda.',
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: Breakpoints.horizontalPadding(context)),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: Breakpoints.isWideDesktop(context)
+                          ? 4
+                          : Breakpoints.isLargeTablet(context)
+                              ? 4
+                              : (Breakpoints.isSmallTablet(context) ? 3 : 2),
+                      crossAxisSpacing: Breakpoints.adaptiveDouble(
+                        context,
+                        phone: 6,
+                        smallTabletValue: 10,
+                        largeTabletValue: 12,
+                        desktop: 12,
+                      ),
+                      mainAxisSpacing: Breakpoints.adaptiveDouble(
+                        context,
+                        phone: 6,
+                        smallTabletValue: 10,
+                        largeTabletValue: 12,
+                        desktop: 12,
+                      ),
+                      mainAxisExtent: Breakpoints.isWideDesktop(context)
+                          ? 308
+                          : Breakpoints.isLargeTablet(context)
+                              ? 292
+                              : (Breakpoints.isSmallTablet(context)
+                                  ? 284
+                                  : 255),
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          ProductCard(product: _products[index]),
+                      childCount: _products.length,
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
 
-          // Products list
-          if (_loadingProducts)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            )
-          else if (_products.isEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Center(
-                  child: Text(
-                    'Nema dostupnih proizvoda.',
-                    style: TextStyle(color: Colors.grey.shade600),
+              // Load more indicator
+              if (_loadingMore)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
                 ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: Breakpoints.horizontalPadding(context)),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 0.65,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => ProductCard(product: _products[index]),
-                  childCount: _products.length,
-                ),
-              ),
-            ),
 
-          // Load more indicator
-          if (_loadingMore)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ),
-
-          // Bottom padding
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-        ],
+              // Bottom padding
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            ],
           ),
         ),
       ),

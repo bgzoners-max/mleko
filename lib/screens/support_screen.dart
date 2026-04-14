@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../providers/app_state.dart';
 import '../services/services.dart';
 
@@ -44,7 +45,9 @@ class _SupportScreenState extends State<SupportScreen>
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
+          ),
           child: TabBarView(
             controller: _tabCtrl,
             children: [
@@ -403,97 +406,97 @@ class _MyTicketsTabState extends State<_MyTicketsTab> {
       child: InkWell(
         onTap: () => context.go('/support/ticket/${ticket.id}'),
         child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(ticket.subject,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                const SizedBox(width: 8),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(ticket.subject,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      ticket.status.label,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: statusColor,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                ticket.ticketNumber,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w500),
+              ),
+              if (hasReply) ...[
+                const SizedBox(height: 12),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    ticket.status.label,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: statusColor,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              ticket.ticketNumber,
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w500),
-            ),
-            if (hasReply) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer
-                      .withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
                     color: Theme.of(context)
                         .colorScheme
-                        .primary
-                        .withValues(alpha: 0.2),
+                        .primaryContainer
+                        .withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.support_agent,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Odgovor administratora',
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(ticket.adminNote!,
+                          style: const TextStyle(fontSize: 13)),
+                    ],
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.support_agent,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Odgovor administratora',
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(ticket.adminNote!,
-                        style: const TextStyle(fontSize: 13)),
-                  ],
+              ] else ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Čekamo odgovor admina...',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.outlineVariant),
                 ),
-              ),
-            ] else ...[
-              const SizedBox(height: 8),
-              Text(
-                'Čekamo odgovor admina...',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.outlineVariant),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }

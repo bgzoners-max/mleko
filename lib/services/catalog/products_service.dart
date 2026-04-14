@@ -170,6 +170,96 @@ class ProductsService {
 
   final _client = Supabase.instance.client;
 
+  Future<Map<String, List<String>>> _getSelectedDeliveryPointIdsForProducts(
+    List<String> productIds,
+  ) async {
+    if (productIds.isEmpty) return const {};
+
+    final rows = await _client
+        .from('product_delivery_points')
+        .select('product_id, delivery_point_id')
+        .inFilter('product_id', productIds);
+
+    final map = <String, List<String>>{};
+    for (final row in (rows as List).cast<Map<String, dynamic>>()) {
+      final productId = row['product_id'] as String?;
+      final deliveryPointId = row['delivery_point_id'] as String?;
+      if (productId == null || deliveryPointId == null) continue;
+      map.putIfAbsent(productId, () => []).add(deliveryPointId);
+    }
+    return map;
+  }
+
+  Future<List<ProductModel>> _attachSelectedDeliveryPointIds(
+    List<ProductModel> products,
+  ) async {
+    final selectedModeProducts = products
+        .where((product) => product.usesSelectedDeliveryPoints)
+        .toList(growable: false);
+    if (selectedModeProducts.isEmpty) return products;
+
+    final idsByProduct = await _getSelectedDeliveryPointIdsForProducts(
+      selectedModeProducts.map((product) => product.id).toList(),
+    );
+
+    return products
+        .map(
+          (product) => ProductModel(
+            id: product.id,
+            sellerId: product.sellerId,
+            category: product.category,
+            name: product.name,
+            pricePerKg: product.pricePerKg,
+            minOrderKg: product.minOrderKg,
+            orderStep: product.orderStep,
+            availableKg: product.availableKg,
+            unitType: product.unitType,
+            description: product.description,
+            imageUrls: product.imageUrls,
+            pickupOptions: product.pickupOptions,
+            location: product.location,
+            isDomestic: product.isDomestic,
+            availableNow: product.availableNow,
+            deliveryMode: product.deliveryMode,
+            selectedDeliveryPointIds:
+                idsByProduct[product.id] ?? product.selectedDeliveryPointIds,
+            createdAt: product.createdAt,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> _setProductDeliveryScope(
+    String productId,
+    ProductDeliveryMode deliveryMode,
+    List<String> selectedDeliveryPointIds,
+  ) async {
+    final normalizedDeliveryPointIds = selectedDeliveryPointIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+
+    if (deliveryMode == ProductDeliveryMode.selectedPoints &&
+        normalizedDeliveryPointIds.isEmpty) {
+      throw Exception(
+        'selected_points requires at least one delivery point.',
+      );
+    }
+
+    await _client.rpc(
+      'set_product_delivery_scope',
+      params: {
+        'p_product_id': productId,
+        'p_delivery_mode': deliveryMode.dbValue,
+        'p_delivery_point_ids':
+            deliveryMode == ProductDeliveryMode.selectedPoints
+                ? normalizedDeliveryPointIds
+                : <String>[],
+      },
+    );
+  }
+
   int _compareProducts(ProductModel a, ProductModel b, ProductSort sort) {
     switch (sort) {
       case ProductSort.dateDesc:
@@ -253,7 +343,8 @@ class ProductsService {
     if (sort == ProductSort.ratingDesc) {
       ordered = ordered.order('created_at', ascending: false);
     }
-    final list = await _withRetry(() => ordered.range(offset, offset + limit - 1));
+    final list =
+        await _withRetry(() => ordered.range(offset, offset + limit - 1));
     final rows = list as List;
     final products = rows
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
@@ -610,9 +701,7 @@ class ProductsService {
     final initialCacheKey = initialRegion != null
         ? '${ProductCacheService.homeProductsKey}_$initialRegion'
         : ProductCacheService.homeProductsKey;
-    cache
-        .getCachedProducts(initialCacheKey)
-        .then((cachedProducts) {
+    cache.getCachedProducts(initialCacheKey).then((cachedProducts) {
       if (controller.isClosed) return;
       if (cachedProducts != null && cachedProducts.isNotEmpty) {
         controller
@@ -739,9 +828,11 @@ class ProductsService {
             .select()
             .eq('seller_id', sellerId)
             .order('created_at', ascending: false);
-        final products = (list as List)
-            .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+        final products = await _attachSelectedDeliveryPointIds(
+          (list as List)
+              .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+              .toList(growable: false),
+        );
 
         // Cache nove proizvode
         await cache.cacheProducts(
@@ -812,9 +903,10 @@ class ProductsService {
         .select()
         .eq('seller_id', sellerId)
         .order('created_at', ascending: false);
-    return (list as List)
+    final products = (list as List)
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
         .toList();
+    return _attachSelectedDeliveryPointIds(products);
   }
 
   Future<ProductModel?> getProduct(String id) async {
@@ -825,7 +917,10 @@ class ProductsService {
       if (res == null) {
         return null;
       }
-      final product = ProductModel.fromJson(res);
+      final product = (await _attachSelectedDeliveryPointIds(
+        [ProductModel.fromJson(res)],
+      ))
+          .first;
       // Cache product
       await cache.cacheProduct(product);
       return product;
@@ -864,12 +959,14 @@ class ProductsService {
     // Batch fetch missing iz DB
     if (missingIds.isNotEmpty) {
       try {
-        final res = await _client
-            .from('products')
-            .select()
-            .inFilter('id', missingIds);
-        for (final row in res as List) {
-          final product = ProductModel.fromJson(row as Map<String, dynamic>);
+        final res =
+            await _client.from('products').select().inFilter('id', missingIds);
+        final products = await _attachSelectedDeliveryPointIds(
+          (res as List)
+              .map((row) => ProductModel.fromJson(row as Map<String, dynamic>))
+              .toList(growable: false),
+        );
+        for (final product in products) {
           result[product.id] = product;
           // Cache za kasnije
           await cache.cacheProduct(product);
@@ -885,17 +982,31 @@ class ProductsService {
   }
 
   Future<String> addProduct(ProductModel product) async {
-    final data = product.toJson();
+    final data = Map<String, dynamic>.from(product.toJson());
+    if ((data['id'] as String?)?.trim().isEmpty ?? true) {
+      data.remove('id');
+    }
+    data['delivery_mode'] = ProductDeliveryMode.none.dbValue;
     final res =
         await _client.from('products').insert(data).select('id').single();
-    return (res)['id'] as String;
+    final productId = (res)['id'] as String;
+    await _setProductDeliveryScope(
+      productId,
+      product.deliveryMode,
+      product.selectedDeliveryPointIds,
+    );
+    return productId;
   }
 
   Future<void> updateProduct(ProductModel product) async {
-    await _client
-        .from('products')
-        .update(product.toJson())
-        .eq('id', product.id);
+    final data = Map<String, dynamic>.from(product.toJson())
+      ..remove('delivery_mode');
+    await _client.from('products').update(data).eq('id', product.id);
+    await _setProductDeliveryScope(
+      product.id,
+      product.deliveryMode,
+      product.selectedDeliveryPointIds,
+    );
   }
 
   Future<void> deleteProduct(String id) async {

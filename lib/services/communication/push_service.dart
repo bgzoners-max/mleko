@@ -13,10 +13,10 @@ import '../../core/notification_types.dart';
 import '../../firebase_options.dart';
 import '../core/logger_service.dart';
 
-const _channelId = 'mleko_urgent';
+const _channelId = 'mleko_urgent_v2';
 const _channelName = 'Hitno';
 
-const _ordersChannelId = 'orders_high';
+const _ordersChannelId = 'orders_high_v2';
 const _ordersChannelName = 'Porudžbine';
 
 const _defaultChannel = AndroidNotificationChannel(

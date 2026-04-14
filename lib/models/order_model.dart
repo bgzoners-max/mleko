@@ -1,4 +1,5 @@
 import '../utils/order_status_flow_rules.dart';
+import 'seller_delivery_models.dart';
 
 enum OrderStatus {
   sent,
@@ -37,6 +38,15 @@ class OrderModel {
   final String? cancellationReason;
   final DateTime? archivedAt;
   final DateTime? expiresAt;
+  final DeliveryMethod deliveryMethod;
+  final String? deliveryCity;
+  final String? deliveryPointId;
+  final String? deliveryPointLabel;
+  final String? deliveryAddress;
+  final int? deliveryWeekday;
+  final String? deliveryTimeFrom;
+  final String? deliveryTimeTo;
+  final double? deliveryFeeRsd;
 
   /// Ukupna suma porudžbine (iz order_items ili legacy); null za stare porudžbine.
   final double? totalAmount;
@@ -62,6 +72,15 @@ class OrderModel {
     this.cancellationReason,
     this.archivedAt,
     this.expiresAt,
+    this.deliveryMethod = DeliveryMethod.agreement,
+    this.deliveryCity,
+    this.deliveryPointId,
+    this.deliveryPointLabel,
+    this.deliveryAddress,
+    this.deliveryWeekday,
+    this.deliveryTimeFrom,
+    this.deliveryTimeTo,
+    this.deliveryFeeRsd,
     this.totalAmount,
     this.counterpartyName,
   });
@@ -148,11 +167,37 @@ class OrderModel {
       cancellationReason: json['cancellation_reason'] as String?,
       archivedAt: archivedAt,
       expiresAt: expiresAt,
+      deliveryMethod: deliveryMethodFromDb(json['delivery_method'] as String?),
+      deliveryCity: json['delivery_city'] as String?,
+      deliveryPointId: json['delivery_point_id'] as String?,
+      deliveryPointLabel: json['delivery_point_label'] as String?,
+      deliveryAddress: json['delivery_address'] as String?,
+      deliveryWeekday: (json['delivery_weekday'] as num?)?.toInt(),
+      deliveryTimeFrom:
+          normalizeDeliveryTimeString(json['delivery_time_from'] as String?),
+      deliveryTimeTo:
+          normalizeDeliveryTimeString(json['delivery_time_to'] as String?),
+      deliveryFeeRsd: (json['delivery_fee_rsd'] as num?)?.toDouble(),
       totalAmount: (json['total_amount'] as num?)?.toDouble(),
     );
   }
 
   bool get hasMultipleItems => productId == null;
+
+  bool get hasSellerDelivery =>
+      deliveryMethod == DeliveryMethod.sellerDelivery &&
+      deliveryPointLabel != null &&
+      deliveryAddress != null &&
+      deliveryWeekday != null &&
+      deliveryTimeFrom != null &&
+      deliveryTimeTo != null;
+
+  String get deliveryMethodLabel => deliveryMethod.label;
+
+  String? get formattedDeliverySchedule {
+    if (!hasSellerDelivery) return null;
+    return '${sellerDeliveryWeekdayLabel(deliveryWeekday!)}, ${formatDeliveryWindow(deliveryTimeFrom!, deliveryTimeTo!)}';
+  }
 
   OrderModel copyWith({String? counterpartyName}) {
     return OrderModel(
@@ -172,6 +217,15 @@ class OrderModel {
       cancellationReason: cancellationReason,
       archivedAt: archivedAt,
       expiresAt: expiresAt,
+      deliveryMethod: deliveryMethod,
+      deliveryCity: deliveryCity,
+      deliveryPointId: deliveryPointId,
+      deliveryPointLabel: deliveryPointLabel,
+      deliveryAddress: deliveryAddress,
+      deliveryWeekday: deliveryWeekday,
+      deliveryTimeFrom: deliveryTimeFrom,
+      deliveryTimeTo: deliveryTimeTo,
+      deliveryFeeRsd: deliveryFeeRsd,
       totalAmount: totalAmount,
       counterpartyName: counterpartyName ?? this.counterpartyName,
     );
@@ -190,6 +244,16 @@ class OrderModel {
       'buyer_phone': buyerPhone,
       if (buyerAddress != null) 'buyer_address': buyerAddress,
       'status': status.dbValue,
+      'delivery_method': deliveryMethod.dbValue,
+      if (deliveryCity != null) 'delivery_city': deliveryCity,
+      if (deliveryPointId != null) 'delivery_point_id': deliveryPointId,
+      if (deliveryPointLabel != null)
+        'delivery_point_label': deliveryPointLabel,
+      if (deliveryAddress != null) 'delivery_address': deliveryAddress,
+      if (deliveryWeekday != null) 'delivery_weekday': deliveryWeekday,
+      if (deliveryTimeFrom != null) 'delivery_time_from': deliveryTimeFrom,
+      if (deliveryTimeTo != null) 'delivery_time_to': deliveryTimeTo,
+      if (deliveryFeeRsd != null) 'delivery_fee_rsd': deliveryFeeRsd,
       if (cancellationReason != null) 'cancellation_reason': cancellationReason,
     };
   }

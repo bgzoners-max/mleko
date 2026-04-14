@@ -70,8 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
-    final isWide =
-        Breakpoints.isLargeTablet(context) || Breakpoints.isDesktop(context);
+    final isWide = Breakpoints.useTwoPaneLayout(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
@@ -365,7 +364,8 @@ class _MiniStoreCard extends StatelessWidget {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.go('/search'),
+        onTap: () =>
+            context.go(user.isSeller ? '/search?view=products' : '/search'),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

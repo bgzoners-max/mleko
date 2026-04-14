@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math' show min;
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/responsive.dart';
 import '../models/message_model.dart';
 import '../models/message_reaction_model.dart';
 import '../models/order_model.dart';
@@ -13,6 +15,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
 import '../widgets/app_error_retry.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/skeleton.dart';
 
 const _kReactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
@@ -48,8 +51,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final _chatService = ChatService();
 
   // Stream se čuva kao polje — sprečava re-kreiranje kanala na svakom buildu.
-  late final Stream<List<MessageModel>> _messagesStream = _chatService
-      .watchMessages(widget.conversationId,
+  late final Stream<List<MessageModel>> _messagesStream =
+      _chatService.watchMessages(widget.conversationId,
           refreshTrigger: _refreshController.stream);
   late final Stream<Set<String>> _typingStream =
       _chatService.watchTypingUsers(widget.conversationId);
@@ -87,8 +90,8 @@ class _ChatScreenState extends State<ChatScreen> {
       final userId = context.read<AppState>().user?.id;
       if (userId != null && mounted) {
         setState(() {
-          _reactionsStream = _chatService.watchMessageReactions(
-              widget.conversationId, userId);
+          _reactionsStream =
+              _chatService.watchMessageReactions(widget.conversationId, userId);
         });
       }
     });
@@ -162,7 +165,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final items = <_ChatItem>[];
     DateTime? lastDay;
     for (final m in messages) {
-      final day = DateTime(m.createdAt.year, m.createdAt.month, m.createdAt.day);
+      final day =
+          DateTime(m.createdAt.year, m.createdAt.month, m.createdAt.day);
       if (lastDay == null || day != lastDay) {
         items.add(_DateSeparatorItem(day));
         lastDay = day;
@@ -184,7 +188,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final user = context.read<AppState>().user;
     if (user == null) return;
     // Koristi jedan RPC umesto dva upita (getConversationInfo + profili)
-    final info = await _chatService.getConversationInfoWithProfiles(widget.conversationId);
+    final info = await _chatService
+        .getConversationInfoWithProfiles(widget.conversationId);
 
     OrderModel? order;
     if (info.orderId != null) {
@@ -221,9 +226,12 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Obriši poruku'),
-        content: const Text('Da li ste sigurni? Ova radnja se ne može poništiti.'),
+        content:
+            const Text('Da li ste sigurni? Ova radnja se ne može poništiti.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Odustani')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Odustani')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
@@ -282,8 +290,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _showDesktopContextMenu(
       BuildContext context, MessageModel m, bool isMe, Offset position) async {
     final messenger = ScaffoldMessenger.of(context);
-    final overlay =
-        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final rel = RelativeRect.fromRect(
       Rect.fromLTWH(position.dx, position.dy, 1, 1),
       Offset.zero & overlay.size,
@@ -308,7 +315,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(6),
-                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                  child: EmojiText(
+                    emoji,
+                    style: const TextStyle(fontSize: 22),
+                  ),
                 ),
               );
             }).toList(),
@@ -345,15 +355,15 @@ class _ChatScreenState extends State<ChatScreen> {
     } else if (result == 'copy') {
       await Clipboard.setData(ClipboardData(text: m.body));
       if (mounted) {
-        messenger.showSnackBar(const SnackBar(content: Text('Poruka kopirana')));
+        messenger
+            .showSnackBar(const SnackBar(content: Text('Poruka kopirana')));
       }
     } else if (result == 'delete') {
       _deleteMessage(m);
     }
   }
 
-  void _showMobileBottomSheet(
-      BuildContext context, MessageModel m, bool isMe) {
+  void _showMobileBottomSheet(BuildContext context, MessageModel m, bool isMe) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -373,7 +383,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       Navigator.pop(context);
                       _toggleReaction(m, emoji);
                     },
-                    child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                    child: EmojiText(
+                      emoji,
+                      style: const TextStyle(fontSize: 28),
+                    ),
                   );
                 }).toList(),
               ),
@@ -472,283 +485,302 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
+          ),
           child: Column(
-        children: [
-          if (_order != null) _OrderContextCard(order: _order!),
-          if (_sellerStats != null) _SellerStatsCard(stats: _sellerStats!),
-          Expanded(
-            child: StreamBuilder<List<MessageReactionModel>>(
-              stream: _reactionsStream,
-              builder: (context, reactionsSnap) {
-                final reactionsByMsg = <String, List<MessageReactionModel>>{};
-                for (final r in reactionsSnap.data ?? []) {
-                  reactionsByMsg.putIfAbsent(r.messageId, () => []).add(r);
-                }
-                return StreamBuilder<List<MessageModel>>(
-                  stream: _messagesStream,
-                  builder: (context, snap) {
-                if (snap.hasError) {
-                  return AppErrorRetry(
-                    message: 'Greška pri učitavanju poruka.',
-                    detail: snap.error?.toString(),
-                    onRetry: () => _refreshController.add(null),
-                  );
-                }
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const ChatMessagesSkeleton();
-                }
-                final recent = snap.data ?? [];
-                final messages = [..._olderMessages, ...recent];
-
-                // markAsRead samo kada se promeni broj poruka (nova poruka stigla),
-                // ne na svakom rebuildu (npr. rebuild zbog setState).
-                if (messages.length != _lastMarkedReadCount) {
-                  _lastMarkedReadCount = messages.length;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _chatService.markAsRead(widget.conversationId, user.id);
-                  });
-                }
-
-                if (messages.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Nema poruka.\nPošaljite prvu poruku.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  );
-                }
-
-                // Gradi flat listu: "učitaj starije" + separatori + poruke
-                final items = _buildChatItems(messages);
-                final totalCount = items.length + (_hasOlderMessages ? 1 : 0);
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: totalCount,
-                  itemBuilder: (_, i) {
-                    if (i == 0 && _hasOlderMessages) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Center(
-                          child: _loadingOlder
-                              ? const CircularProgressIndicator()
-                              : TextButton.icon(
-                                  icon: const Icon(Icons.expand_less, size: 18),
-                                  label: const Text('Učitaj starije poruke'),
-                                  onPressed: () => _loadOlderMessages(recent),
-                                ),
-                        ),
-                      );
+            children: [
+              if (_order != null) _OrderContextCard(order: _order!),
+              if (_sellerStats != null) _SellerStatsCard(stats: _sellerStats!),
+              Expanded(
+                child: StreamBuilder<List<MessageReactionModel>>(
+                  stream: _reactionsStream,
+                  builder: (context, reactionsSnap) {
+                    final reactionsByMsg =
+                        <String, List<MessageReactionModel>>{};
+                    for (final r in reactionsSnap.data ?? []) {
+                      reactionsByMsg.putIfAbsent(r.messageId, () => []).add(r);
                     }
-                    final item = items[_hasOlderMessages ? i - 1 : i];
-                    if (item is _DateSeparatorItem) {
-                      return _DateSeparator(date: item.date);
-                    }
-                    final m = (item as _MessageChatItem).message;
-                    final isMe = m.senderId == user.id;
-                    final msgReactions = reactionsByMsg[m.id] ?? [];
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      children: [
-                        Align(
-                          alignment: isMe
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: GestureDetector(
-                            onSecondaryTapUp: (details) => _showMessageMenu(
-                                context, m, isMe,
-                                tapPosition: details.globalPosition),
-                            onLongPress: () =>
-                                _showMessageMenu(context, m, isMe),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 2),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          constraints: BoxConstraints(
-                              maxWidth: min(MediaQuery.sizeOf(context).width * 0.75, 500)),
-                          decoration: BoxDecoration(
-                            color: isMe
-                                ? Theme.of(context).colorScheme.primaryContainer
-                                : Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: isMe
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                m.body,
-                                style: TextStyle(
-                                  color: isMe
-                                      ? Theme.of(context)
-                                          .colorScheme
-                                          .onPrimaryContainer
-                                      : Colors.black87,
+                    return StreamBuilder<List<MessageModel>>(
+                      stream: _messagesStream,
+                      builder: (context, snap) {
+                        if (snap.hasError) {
+                          return AppErrorRetry(
+                            message: 'Greška pri učitavanju poruka.',
+                            detail: snap.error?.toString(),
+                            onRetry: () => _refreshController.add(null),
+                          );
+                        }
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return const ChatMessagesSkeleton();
+                        }
+                        final recent = snap.data ?? [];
+                        final messages = [..._olderMessages, ...recent];
+
+                        // markAsRead samo kada se promeni broj poruka (nova poruka stigla),
+                        // ne na svakom rebuildu (npr. rebuild zbog setState).
+                        if (messages.length != _lastMarkedReadCount) {
+                          _lastMarkedReadCount = messages.length;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _chatService.markAsRead(
+                                widget.conversationId, user.id);
+                          });
+                        }
+
+                        if (messages.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'Nema poruka.\nPošaljite prvu poruku.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          );
+                        }
+
+                        // Gradi flat listu: "učitaj starije" + separatori + poruke
+                        final items = _buildChatItems(messages);
+                        final totalCount =
+                            items.length + (_hasOlderMessages ? 1 : 0);
+
+                        return ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: totalCount,
+                          itemBuilder: (_, i) {
+                            if (i == 0 && _hasOlderMessages) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Center(
+                                  child: _loadingOlder
+                                      ? const CircularProgressIndicator()
+                                      : TextButton.icon(
+                                          icon: const Icon(Icons.expand_less,
+                                              size: 18),
+                                          label: const Text(
+                                              'Učitaj starije poruke'),
+                                          onPressed: () =>
+                                              _loadOlderMessages(recent),
+                                        ),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      _formatTime(m.createdAt),
-                                      style: TextStyle(
-                                        fontSize: 10,
+                              );
+                            }
+                            final item = items[_hasOlderMessages ? i - 1 : i];
+                            if (item is _DateSeparatorItem) {
+                              return _DateSeparator(date: item.date);
+                            }
+                            final m = (item as _MessageChatItem).message;
+                            final isMe = m.senderId == user.id;
+                            final msgReactions = reactionsByMsg[m.id] ?? [];
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                              children: [
+                                Align(
+                                  alignment: isMe
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: GestureDetector(
+                                    onSecondaryTapUp: (details) =>
+                                        _showMessageMenu(context, m, isMe,
+                                            tapPosition:
+                                                details.globalPosition),
+                                    onLongPress: () =>
+                                        _showMessageMenu(context, m, isMe),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(bottom: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                      constraints: BoxConstraints(
+                                          maxWidth: min(
+                                              MediaQuery.sizeOf(context).width *
+                                                  0.75,
+                                              500)),
+                                      decoration: BoxDecoration(
                                         color: isMe
                                             ? Theme.of(context)
                                                 .colorScheme
-                                                .onPrimaryContainer
-                                                .withValues(alpha: 0.7)
-                                            : Colors.black38,
+                                                .primaryContainer
+                                            : Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: isMe
+                                            ? CrossAxisAlignment.end
+                                            : CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            m.body,
+                                            style: TextStyle(
+                                              color: isMe
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                  : Colors.black87,
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 4),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  _formatTime(m.createdAt),
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: isMe
+                                                        ? Theme.of(context)
+                                                            .colorScheme
+                                                            .onPrimaryContainer
+                                                            .withValues(
+                                                                alpha: 0.7)
+                                                        : Colors.black38,
+                                                  ),
+                                                ),
+                                                if (isMe) ...[
+                                                  const SizedBox(width: 4),
+                                                  Icon(
+                                                    m.readAt != null
+                                                        ? Icons.done_all
+                                                        : Icons.done,
+                                                    size: 14,
+                                                    color: m.readAt != null
+                                                        ? Theme.of(context)
+                                                            .colorScheme
+                                                            .primary
+                                                        : Theme.of(context)
+                                                            .colorScheme
+                                                            .onPrimaryContainer
+                                                            .withValues(
+                                                                alpha: 0.7),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    if (isMe) ...[
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        m.readAt != null
-                                            ? Icons.done_all
-                                            : Icons.done,
-                                        size: 14,
-                                        color: m.readAt != null
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .onPrimaryContainer
-                                                .withValues(alpha: 0.7),
-                                      ),
-                                    ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (msgReactions.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          left: isMe ? 0 : 8,
-                          right: isMe ? 8 : 0,
-                          bottom: 8,
-                        ),
-                        child: Wrap(
-                          spacing: 4,
-                          children: msgReactions
-                              .map((r) => _ReactionChip(
-                                    reaction: r,
-                                    onTap: () => _toggleReaction(m, r.reaction),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                  ],
-                );
+                                if (msgReactions.isNotEmpty)
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      left: isMe ? 0 : 8,
+                                      right: isMe ? 8 : 0,
+                                      bottom: 8,
+                                    ),
+                                    child: Wrap(
+                                      spacing: 4,
+                                      children: msgReactions
+                                          .map((r) => _ReactionChip(
+                                                reaction: r,
+                                                onTap: () => _toggleReaction(
+                                                    m, r.reaction),
+                                              ))
+                                          .toList(),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
                   },
-                );
-              },
-                );
-              },
-            ),
-          ),
-          StreamBuilder<Set<String>>(
-
-            stream: _typingStream,
-            builder: (context, snap) {
-              final typingUsers = snap.data ?? {};
-              final othersTyping = typingUsers
-                  .where((id) => id != context.read<AppState>().user?.id)
-                  .toList();
-              if (othersTyping.isEmpty) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 16,
-                      child: _TypingDots(),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'kuca...',
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                  ],
                 ),
-              );
-            },
-          ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration:
-                BoxDecoration(color: Theme.of(context).colorScheme.surface),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: (_isBuyer
-                            ? _quickRepliesBuyer
-                            : (_sellerCustomReplies.isNotEmpty
-                                ? _sellerCustomReplies
-                                : _quickRepliesSeller))
-                        .map((reply) => ActionChip(
-                              label: Text(reply,
-                                  style: const TextStyle(fontSize: 12)),
-                              onPressed: _sending ? null : () => _send(reply),
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          decoration: const InputDecoration(
-                            hintText: 'Poruka...',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          maxLines: 3,
-                          minLines: 1,
-                          onSubmitted: (_) => _send(),
+              ),
+              StreamBuilder<Set<String>>(
+                stream: _typingStream,
+                builder: (context, snap) {
+                  final typingUsers = snap.data ?? {};
+                  final othersTyping = typingUsers
+                      .where((id) => id != context.read<AppState>().user?.id)
+                      .toList();
+                  if (othersTyping.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 16,
+                          child: _TypingDots(),
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'kuca...',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration:
+                    BoxDecoration(color: Theme.of(context).colorScheme.surface),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: (_isBuyer
+                                ? _quickRepliesBuyer
+                                : (_sellerCustomReplies.isNotEmpty
+                                    ? _sellerCustomReplies
+                                    : _quickRepliesSeller))
+                            .map((reply) => ActionChip(
+                                  label: Text(reply,
+                                      style: const TextStyle(fontSize: 12)),
+                                  onPressed:
+                                      _sending ? null : () => _send(reply),
+                                ))
+                            .toList(),
                       ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        onPressed: _sending ? null : _send,
-                        icon: _sending
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.send),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _messageController,
+                              decoration: const InputDecoration(
+                                hintText: 'Poruka...',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              maxLines: 3,
+                              minLines: 1,
+                              onSubmitted: (_) => _send(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            onPressed: _sending ? null : _send,
+                            icon: _sending
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : const Icon(Icons.send),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
           ),
         ),
       ),
@@ -847,7 +879,10 @@ class _SellerStatsCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -935,7 +970,10 @@ class _ReactionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(reaction.reaction, style: const TextStyle(fontSize: 14)),
+            EmojiText(
+              reaction.reaction,
+              style: const TextStyle(fontSize: 14),
+            ),
             if (reaction.count > 1) ...[
               const SizedBox(width: 4),
               Text(

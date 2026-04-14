@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mleko/core/web_seo.dart';
 import 'package:mleko/core/responsive.dart';
 
 class TermsScreen extends StatelessWidget {
@@ -6,17 +7,42 @@ class TermsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    setPageMetadata(
+      title: 'Uslovi korišćenja | domaćimarket.rs',
+      description:
+          'Pravila korišćenja platforme domaćimarket.rs, uključujući obaveze korisnika, prodavaca i ograničenja odgovornosti.',
+      path: '/uslovi-koriscenja',
+    );
+    final horizontalPadding = Breakpoints.horizontalPadding(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Uslovi korišćenja')),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: Breakpoints.isTabletOrLarger(context) ? 720 : double.infinity,
+            maxWidth:
+                Breakpoints.isTabletOrLarger(context) ? 720 : double.infinity,
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(Breakpoints.horizontalPadding(context)).copyWith(bottom: 32),
-            child: const _TermsContent(),
+          child: SelectionArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                Breakpoints.adaptiveDouble(
+                  context,
+                  phone: 16,
+                  largeTabletValue: 20,
+                  desktop: 24,
+                ),
+                horizontalPadding,
+                Breakpoints.adaptiveDouble(
+                  context,
+                  phone: 32,
+                  largeTabletValue: 40,
+                  desktop: 48,
+                ),
+              ),
+              child: const _TermsContent(),
+            ),
           ),
         ),
       ),
@@ -30,18 +56,45 @@ class _TermsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final body = theme.textTheme.bodyMedium;
-    final heading = theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold);
+    final sectionSpacing = Breakpoints.adaptiveDouble(
+      context,
+      phone: 22,
+      largeTabletValue: 28,
+      desktop: 32,
+    );
+    final itemSpacing = Breakpoints.adaptiveDouble(
+      context,
+      phone: 6,
+      largeTabletValue: 7,
+      desktop: 8,
+    );
+    final body = Breakpoints.supportingTextStyle(
+      context,
+      theme.textTheme.bodyMedium,
+      phone: 15,
+      largeTabletValue: 16,
+      desktop: 16,
+      height: 1.72,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final heading = Breakpoints.sectionTitleStyle(
+      context,
+      theme.textTheme.titleMedium,
+    )?.copyWith(fontWeight: FontWeight.w700);
+    final pageTitle = Breakpoints.heroTitleStyle(
+      context,
+      theme.textTheme.titleLarge,
+    )?.copyWith(fontWeight: FontWeight.w800);
 
     Widget section(String number, String title, List<String> items) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 24),
+          SizedBox(height: sectionSpacing),
           Text('$number. $title', style: heading),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           ...items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: EdgeInsets.only(bottom: itemSpacing),
                 child: Text(item, style: body),
               )),
         ],
@@ -49,7 +102,7 @@ class _TermsContent extends StatelessWidget {
     }
 
     Widget bullet(String text) => Padding(
-          padding: const EdgeInsets.only(left: 16, bottom: 4),
+          padding: EdgeInsets.only(left: 16, bottom: itemSpacing),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -74,131 +127,95 @@ class _TermsContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
-        Text('USLOVI KORIŠĆENJA – „Domaći market"',
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-
-        // 1
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(Breakpoints.cardPadding(context) + 2),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pravna pravila korišćenja platforme',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Korišćenjem platforme potvrđujete da ste pročitali, razumeli i prihvatili uslove navedene u nastavku.',
+                style: body,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: sectionSpacing),
+        Text('USLOVI KORIŠĆENJA – domaćimarket.rs', style: pageTitle),
+        const SizedBox(height: 12),
+        Text('Datum stupanja na snagu: 9. april 2026.', style: body),
         section('1', 'Opšte odredbe', [
-          'Dobrodošli na platformu „Domaći market" (u daljem tekstu: Platforma), koja omogućava povezivanje proizvođača domaćih proizvoda i krajnjih kupaca.',
-          'Korišćenjem Platforme, korisnik potvrđuje da je pročitao, razumeo i prihvatio ove Uslove korišćenja.',
+          'Dobrodošli na platformu domaćimarket.rs, koja omogućava povezivanje proizvođača domaćih proizvoda i krajnjih kupaca.',
+          'Korišćenjem platforme korisnik potvrđuje da je pročitao, razumeo i prihvatio ove Uslove korišćenja.',
         ]),
-
-        // 2
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 24),
-            Text('2. Opis usluge', style: heading),
-            const SizedBox(height: 8),
-            Text('Platforma „Domaći market" omogućava:', style: body),
-            const SizedBox(height: 4),
-            bullet('registraciju domaćinstava i proizvođača'),
-            bullet('objavljivanje i pregled ponude proizvoda'),
-            bullet('komunikaciju između kupaca i proizvođača'),
-            const SizedBox(height: 6),
-            Text('Platforma ne učestvuje direktno u proizvodnji, distribuciji niti prodaji proizvoda.', style: body),
-          ],
-        ),
-
-        // 3
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 24),
-            Text('3. Registracija korisnika', style: heading),
-            const SizedBox(height: 8),
-            Text('Registracijom na Platformu korisnik potvrđuje da:', style: body),
-            const SizedBox(height: 4),
-            bullet('su svi uneti podaci tačni i istiniti'),
-            bullet('ima pravo da koristi Platformu u skladu sa važećim zakonima'),
-            bullet('neće zloupotrebljavati sistem niti unositi lažne informacije'),
-            const SizedBox(height: 6),
-            Text('Korisnik je odgovoran za čuvanje svojih pristupnih podataka.', style: body),
-          ],
-        ),
-
-        // 4
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 24),
-            Text('4. Odgovornost proizvođača', style: heading),
-            const SizedBox(height: 8),
-            Text('Korisnik koji registruje domaćinstvo ili proizvode izjavljuje i garantuje:', style: body),
-            const SizedBox(height: 4),
-            bullet('da ima pravo da se bavi proizvodnjom i/ili prodajom hrane u skladu sa zakonima Republike Srbije'),
-            bullet('da poseduje sve potrebne dozvole, ukoliko su zakonom propisane'),
-            bullet('da proizvodi ispunjavaju sve higijenske i zdravstvene standarde'),
-            bullet('da redovno proverava zdravstvenu ispravnost proizvoda'),
-            bullet('da su svi opisi proizvoda tačni i ne dovode kupce u zabludu'),
-            const SizedBox(height: 6),
-            Text('Korisnik snosi punu odgovornost za kvalitet, bezbednost i ispravnost svojih proizvoda.', style: body),
-          ],
-        ),
-
-        // 5
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 24),
-            Text('5. Ograničenje odgovornosti platforme', style: heading),
-            const SizedBox(height: 8),
-            Text('Platforma „Domaći market":', style: body),
-            const SizedBox(height: 4),
-            bullet('ne garantuje kvalitet, bezbednost niti ispravnost proizvoda'),
-            bullet('ne snosi odgovornost za eventualne štete nastale korišćenjem proizvoda'),
-            bullet('ne učestvuje u transakcijama između korisnika'),
-            bullet('ne odgovara za netačne ili obmanjujuće informacije koje unesu korisnici'),
-            const SizedBox(height: 6),
-            Text('Sva odgovornost je isključivo na proizvođaču i korisnicima koji učestvuju u razmeni.', style: body),
-          ],
-        ),
-
-        // 6
-        sectionBullets('6', 'Zabranjene aktivnosti', [
-          'objavljivanje lažnih ili obmanjujućih informacija',
-          'prodaja proizvoda koji nisu dozvoljeni zakonom',
-          'kršenje važećih zdravstvenih i bezbednosnih propisa',
-          'zloupotreba platforme u bilo kom obliku',
+        section('2', 'Opis usluge', [
+          'Platforma omogućava registraciju korisnika, objavljivanje i pregled ponude proizvoda, komunikaciju između kupaca i prodavaca, kao i slanje upita i porudžbina kroz digitalni interfejs.',
+          'Platforma ne učestvuje direktno u proizvodnji, distribuciji niti fizičkoj isporuci proizvoda, osim ako naknadno ne bude izričito objavljeno drugačije.',
         ]),
-        Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text('Platforma zadržava pravo da ukloni sadržaj ili nalog koji krši pravila.', style: body),
-        ),
-
-        // 7
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 24),
-            Text('7. Uklanjanje naloga', style: heading),
-            const SizedBox(height: 8),
-            Text('Platforma zadržava pravo da:', style: body),
-            const SizedBox(height: 4),
-            bullet('privremeno ili trajno suspenduje nalog'),
-            bullet('ukloni sadržaj bez prethodne najave'),
-            const SizedBox(height: 6),
-            Text('u slučaju kršenja ovih Uslova.', style: body),
-          ],
-        ),
-
-        // 8
-        section('8', 'Privatnost podataka', [
-          'Platforma prikuplja i obrađuje lične podatke u skladu sa važećim zakonima o zaštiti podataka o ličnosti.',
-          'Podaci se koriste isključivo u svrhu funkcionisanja Platforme.',
+        sectionBullets('3', 'Registracija i korisnički nalog', [
+          'korisnik je dužan da unese tačne, potpune i ažurne podatke',
+          'korisnik je odgovoran za čuvanje svojih pristupnih podataka i za sve aktivnosti koje se izvrše preko njegovog naloga',
+          'zabranjeno je otvaranje naloga sa lažnim identitetom ili u ime trećeg lica bez ovlašćenja',
         ]),
-
-        // 9
-        section('9', 'Izmene uslova', [
-          'Platforma zadržava pravo da izmeni ove Uslove u bilo kom trenutku.',
-          'Korisnici će biti obavešteni o izmenama putem aplikacije ili sajta.',
+        sectionBullets('4', 'Obaveze prodavca', [
+          'da proizvodi, opisi, cene, fotografije i druge objavljene informacije budu tačni i da ne dovode kupce u zabludu',
+          'da je ovlašćen da nudi proizvode koje objavljuje i da postupa u skladu sa važećim propisima Republike Srbije',
+          'da snosi odgovornost za kvalitet, bezbednost, ispravnost, deklarisanje i zakonitost svojih proizvoda',
+          'da ne objavljuje zabranjene, nedozvoljene ili obmanjujuće sadržaje i ponude',
         ]),
-
-        // 10
-        section('10', 'Završne odredbe', [
-          'Na ove Uslove primenjuje se pravo Republike Srbije.',
-          'U slučaju spora, nadležan je sud u Republici Srbiji.',
+        sectionBullets('5', 'Obaveze kupca', [
+          'da koristi platformu savesno i u skladu sa važećim propisima',
+          'da ne koristi platformu za zloupotrebu, uznemiravanje, lažno naručivanje ili nanošenje štete drugim korisnicima',
+          'da samostalno proceni ponudu prodavca pre donošenja odluke o kupovini ili kontaktu',
+        ]),
+        section('6', 'Uloga platforme i ograničenje odgovornosti', [
+          'Platforma domaćimarket.rs deluje kao digitalna platforma za povezivanje korisnika i ne garantuje kvalitet, bezbednost, zdravstvenu ispravnost, legalnost, raspoloživost niti tačnost ponude koju objavljuju korisnici.',
+          'Platforma ne snosi odgovornost za štetu nastalu iz odnosa između kupca i prodavca, uključujući sporove u vezi sa kvalitetom proizvoda, isporukom, cenom, reklamacijama ili drugim okolnostima pojedinačne transakcije, osim u meri u kojoj je takva odgovornost izričito propisana obavezujućim pravom.',
+        ]),
+        sectionBullets('7', 'Zabranjene aktivnosti', [
+          'objavljivanje lažnih, obmanjujućih, nezakonitih ili uvredljivih sadržaja',
+          'lažno predstavljanje, zloupotreba tuđih podataka ili neovlašćeno korišćenje naloga',
+          'objavljivanje proizvoda ili sadržaja čije je stavljanje u promet ili prikazivanje zabranjeno zakonom',
+          'narušavanje bezbednosti sistema, pokušaji neovlašćenog pristupa ili ometanje rada platforme',
+        ]),
+        section('8', 'Uklanjanje sadržaja i naloga', [
+          'Platforma zadržava pravo da ukloni sadržaj, ograniči pristup ili privremeno odnosno trajno suspenduje korisnički nalog ako utvrdi ili osnovano posumnja da korisnik krši ove Uslove korišćenja, važeće propise ili prava trećih lica.',
+          'Platforma može preduzeti navedene mere i bez prethodne najave kada je to neophodno radi zaštite drugih korisnika, bezbednosti sistema ili poštovanja zakonskih obaveza.',
+        ]),
+        section('9', 'Intelektualna svojina', [
+          'Softver, dizajn, struktura sajta, tekstovi, logotipi i drugi elementi platforme, osim sadržaja koji postavljaju korisnici, pripadaju rukovaocu ili licima koja su za to dala odgovarajuća prava.',
+          'Bez prethodne dozvole nije dozvoljeno neovlašćeno kopiranje, distribucija, prerada ili korišćenje sadržaja platforme, osim u meri dozvoljenoj zakonom.',
+        ]),
+        section('10', 'Privatnost i obrada podataka', [
+          'Pravila koja se odnose na prikupljanje, obradu, čuvanje i zaštitu podataka o ličnosti uređena su posebnim dokumentom Politika privatnosti, koji je sastavni deo pravnog okvira korišćenja platforme.',
+          'Prihvatanjem ovih Uslova korisnik potvrđuje i da je upoznat sa Politikom privatnosti.',
+        ]),
+        section('11', 'Izmene uslova', [
+          'Rukovalac zadržava pravo da izmeni ili dopuni ove Uslove korišćenja u bilo kom trenutku, naročito radi usklađivanja sa razvojem platforme, poslovnog modela ili promenama važećih propisa.',
+          'Ažurirana verzija biće objavljena na platformi, uz naznačen datum stupanja na snagu.',
+        ]),
+        section('12', 'Merodavno pravo i nadležnost', [
+          'Na ove Uslove korišćenja primenjuje se pravo Republike Srbije.',
+          'Za sporove koji nastanu u vezi sa korišćenjem platforme nadležan je stvarno nadležni sud u Republici Srbiji, osim ako obavezujući propisi nalažu drugačije.',
+        ]),
+        section('13', 'Kontakt', [
+          'Za pitanja u vezi sa ovim Uslovima korišćenja možete se obratiti na: Vladimir Ivanović, Crvenih Hrastova 6, Beograd, Republika Srbija, email: vrvlada@gmail.com.',
         ]),
       ],
     );

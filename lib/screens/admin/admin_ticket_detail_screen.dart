@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/responsive.dart';
 import '../../services/services.dart';
 
 const int _kMaxMessages = 5;
@@ -194,7 +195,9 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
         Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
+            constraints: BoxConstraints(
+              maxWidth: Breakpoints.formContentWidth(context),
+            ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Column(
@@ -212,8 +215,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                         child: Text(
                           ticket.status.label,
                           style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.w600),
+                              color: statusColor, fontWeight: FontWeight.w600),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -250,11 +252,13 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
           child: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 700),
+              constraints: BoxConstraints(
+                maxWidth: Breakpoints.formContentWidth(context),
+              ),
               child: ListView(
                 controller: _scrollCtrl,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 children: [
                   // Original user message
                   _AdminOriginalBubble(body: ticket.body),
@@ -308,7 +312,9 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             decoration: BoxDecoration(
@@ -328,18 +334,15 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                           fontSize: 11,
                           color: limitReached
                               ? Colors.red
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant),
+                              : Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     const Spacer(),
                     Text(
                       'Korisnik: ${_messages.where((m) => !m.isAdmin).length}/$_kMaxMessages',
                       style: TextStyle(
                           fontSize: 11,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -387,8 +390,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                       label: const Text('Zatvori tiket'),
                       onPressed: _savingStatus
                           ? null
-                          : () =>
-                              _changeStatus(TicketStatus.zatvoren.value),
+                          : () => _changeStatus(TicketStatus.zatvoren.value),
                     ),
                   ),
                 ],
@@ -406,8 +408,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
       child: Row(
         children: [
           Icon(icon,
-              size: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+              size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(text,
               style: TextStyle(
@@ -456,8 +457,7 @@ class _AdminOriginalBubble extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 4),
-            Text(body,
-                style: const TextStyle(fontSize: 14)),
+            Text(body, style: const TextStyle(fontSize: 14)),
           ],
         ),
       ),
@@ -469,8 +469,7 @@ class _AdminMessageBubble extends StatelessWidget {
   final TicketMessageModel message;
   final Color statusColor;
 
-  const _AdminMessageBubble(
-      {required this.message, required this.statusColor});
+  const _AdminMessageBubble({required this.message, required this.statusColor});
 
   @override
   Widget build(BuildContext context) {

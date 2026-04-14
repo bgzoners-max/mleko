@@ -82,11 +82,32 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
     final isDesktop = Breakpoints.isDesktop(context);
+    final isWideDesktop = Breakpoints.isWideDesktop(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
-    final isGridLayout = isDesktop || isLargeTablet;
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final isGridLayout = isDesktop || isLargeTablet || isSmallTablet;
     final contentPadding = Breakpoints.horizontalPadding(context);
-    final gridColumns = isDesktop ? 3 : 2;
-    final gridExtent = isDesktop ? 372.0 : 360.0;
+    final gridColumns = isWideDesktop
+        ? 4
+        : isDesktop
+            ? 3
+            : isLargeTablet
+                ? 3
+                : 2;
+    final gridSpacing = Breakpoints.adaptiveDouble(
+      context,
+      phone: 12,
+      smallTabletValue: 12,
+      largeTabletValue: 14,
+      desktop: 14,
+    );
+    final gridExtent = isWideDesktop
+        ? 360.0
+        : isDesktop
+            ? 372.0
+            : isLargeTablet
+                ? 340.0
+                : 320.0;
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Omiljeni proizvodi')),
@@ -159,7 +180,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxWidth: Breakpoints.maxContentWidth(context)),
+                  maxWidth: isDesktop
+                      ? Breakpoints.dataContentWidth(context)
+                      : Breakpoints.maxContentWidth(context),
+                ),
                 child: isGridLayout
                     ? GridView.builder(
                         controller: _scrollController,
@@ -167,8 +191,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         padding: EdgeInsets.all(contentPadding),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: gridColumns,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
+                          crossAxisSpacing: gridSpacing,
+                          mainAxisSpacing: gridSpacing,
                           mainAxisExtent: gridExtent,
                         ),
                         itemCount: visible.length + (hasMore ? 1 : 0),

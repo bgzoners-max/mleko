@@ -16,6 +16,7 @@ import '../../widgets/add_buyer_review_dialog.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/cancel_order_dialog.dart';
+import '../../widgets/order_delivery_summary.dart';
 import '../../widgets/order_status_audit_log_section.dart';
 import '../../widgets/order_status_timeline.dart';
 import '../../widgets/skeleton.dart';
@@ -90,7 +91,8 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Greška pri učitavanju starijih porudžbina.')),
+          const SnackBar(
+              content: Text('Greška pri učitavanju starijih porudžbina.')),
         );
       }
     } finally {
@@ -118,130 +120,134 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: Column(
-        children: [
-          SegmentedButton<int>(
-            segments: const [
-              ButtonSegment(
-                  value: 0,
-                  label: Text('Aktivne'),
-                  icon: Icon(Icons.receipt_long)),
-              ButtonSegment(
-                  value: 1,
-                  label: Text('Arhiva'),
-                  icon: Icon(Icons.archive_outlined)),
-            ],
-            selected: {_segmentIndex},
-            onSelectionChanged: (s) => setState(() {
-              _segmentIndex = s.first;
-              _streamKey = null;
-            }),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(
-              _isArchive
-                  ? 'Ovde su porudžbine koje ste ručno arhivirali. Brisanje nakon isteka roka čuvanja (expires_at), ako je podešeno.'
-                  : 'Aktivne porudžbine (bez arhive). Završene — isporučeno, odbijeno ili otkazano — možete arhivirati da nestanu sa ove liste.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.grey.shade600),
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<List<OrderModel>>(
-              stream: _ordersStream,
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const OrderListSkeleton();
-                }
-                if (snap.hasError) {
-                  return AppErrorRetry(
-                    message: 'Greška pri učitavanju porudžbina.',
-                    detail: snap.error?.toString(),
-                    onRetry: _onRefresh,
-                  );
-                }
-                final recent = snap.data ?? [];
-                final orders = [...recent, ..._olderOrders];
-                if (orders.isEmpty) {
-                  return RefreshIndicator(
-                    onRefresh: _onRefresh,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: SizedBox(
-                        height: MediaQuery.of(context).size.height - 260,
-                        child: AppEmptyState(
-                          icon: Icons.receipt_long_outlined,
-                          title: _isArchive
-                              ? 'Nema arhiviranih porudžbina'
-                              : 'Nemate porudžbina',
-                          subtitle: _isArchive
-                              ? 'Kada arhivirate porudžbinu, pojaviće se ovde.'
-                              : 'Kada kupci pošalju upit, porudžbine će se pojaviti ovde.',
-                          ctaLabel: _isArchive ? null : 'Pregledaj proizvode',
-                          ctaIcon: Icons.storefront_outlined,
-                          onCtaPressed: _isArchive ? null : () => context.go('/'),
+            children: [
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(
+                      value: 0,
+                      label: Text('Aktivne'),
+                      icon: Icon(Icons.receipt_long)),
+                  ButtonSegment(
+                      value: 1,
+                      label: Text('Arhiva'),
+                      icon: Icon(Icons.archive_outlined)),
+                ],
+                selected: {_segmentIndex},
+                onSelectionChanged: (s) => setState(() {
+                  _segmentIndex = s.first;
+                  _streamKey = null;
+                }),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: Text(
+                  _isArchive
+                      ? 'Ovde su porudžbine koje ste ručno arhivirali. Brisanje nakon isteka roka čuvanja (expires_at), ako je podešeno.'
+                      : 'Aktivne porudžbine (bez arhive). Završene — isporučeno, odbijeno ili otkazano — možete arhivirati da nestanu sa ove liste.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey.shade600),
+                ),
+              ),
+              Expanded(
+                child: StreamBuilder<List<OrderModel>>(
+                  stream: _ordersStream,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const OrderListSkeleton();
+                    }
+                    if (snap.hasError) {
+                      return AppErrorRetry(
+                        message: 'Greška pri učitavanju porudžbina.',
+                        detail: snap.error?.toString(),
+                        onRetry: _onRefresh,
+                      );
+                    }
+                    final recent = snap.data ?? [];
+                    final orders = [...recent, ..._olderOrders];
+                    if (orders.isEmpty) {
+                      return RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height - 260,
+                            child: AppEmptyState(
+                              icon: Icons.receipt_long_outlined,
+                              title: _isArchive
+                                  ? 'Nema arhiviranih porudžbina'
+                                  : 'Nemate porudžbina',
+                              subtitle: _isArchive
+                                  ? 'Kada arhivirate porudžbinu, pojaviće se ovde.'
+                                  : 'Kada kupci pošalju upit, porudžbine će se pojaviti ovde.',
+                              ctaLabel:
+                                  _isArchive ? null : 'Pregledaj proizvode',
+                              ctaIcon: Icons.storefront_outlined,
+                              onCtaPressed:
+                                  _isArchive ? null : () => context.go('/'),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: _onRefresh,
-                  child: ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      top: 8,
-                      bottom: 16 + MediaQuery.of(context).padding.bottom,
-                    ),
-                    itemCount: (_isArchive ? 1 : 0) +
-                        orders.length +
-                        (_hasMore ? 1 : 0),
-                    itemBuilder: (_, i) {
-                      if (_isArchive && i == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            'Ista porudžbina može biti arhivirana i od kupca i od vas; ovde vidite samo vašu arhivu.',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                      );
+                    }
+                    return RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 8,
+                          bottom: 16 + MediaQuery.of(context).padding.bottom,
+                        ),
+                        itemCount: (_isArchive ? 1 : 0) +
+                            orders.length +
+                            (_hasMore ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          if (_isArchive && i == 0) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                'Ista porudžbina može biti arhivirana i od kupca i od vas; ovde vidite samo vašu arhivu.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: Colors.grey.shade600,
                                       fontStyle: FontStyle.italic,
                                     ),
-                          ),
-                        );
-                      }
-                      final listIndex = _isArchive ? i - 1 : i;
-                      if (listIndex == orders.length) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Center(
-                            child: _loadingMore
-                                ? const CircularProgressIndicator()
-                                : OutlinedButton(
-                                    onPressed: () =>
-                                        _loadMore(user.id, recent.length),
-                                    child: const Text('Učitaj starije'),
-                                  ),
-                          ),
-                        );
-                      }
-                      return _SellerOrderCard(
-                        order: orders[listIndex],
-                        user: user,
-                        isArchivedList: _isArchive,
-                        onRefresh: () => _refreshController.add(null),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+                              ),
+                            );
+                          }
+                          final listIndex = _isArchive ? i - 1 : i;
+                          if (listIndex == orders.length) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Center(
+                                child: _loadingMore
+                                    ? const CircularProgressIndicator()
+                                    : OutlinedButton(
+                                        onPressed: () =>
+                                            _loadMore(user.id, recent.length),
+                                        child: const Text('Učitaj starije'),
+                                      ),
+                              ),
+                            );
+                          }
+                          return _SellerOrderCard(
+                            order: orders[listIndex],
+                            user: user,
+                            isArchivedList: _isArchive,
+                            onRefresh: () => _refreshController.add(null),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -420,12 +426,10 @@ class _SellerOrderCard extends StatelessWidget {
                         'Označili ste porudžbinu kao poslatu – čeka se potvrda kupca.',
                       OrderStatus.delivered =>
                         'Kupac je potvrdio prijem – možete ostaviti recenziju kupca.',
-                      OrderStatus.rejected =>
-                        'Odbili ste ovu porudžbinu.',
+                      OrderStatus.rejected => 'Odbili ste ovu porudžbinu.',
                       OrderStatus.cancelledBySeller =>
                         'Otkazali ste ovu porudžbinu.',
-                      OrderStatus.archived =>
-                        'Porudžbina je u arhivi.',
+                      OrderStatus.archived => 'Porudžbina je u arhivi.',
                     },
                     style: TextStyle(
                       fontSize: 12,
@@ -489,6 +493,7 @@ class _SellerOrderCard extends StatelessWidget {
             if (o.buyerCity.isNotEmpty)
               _DetailRow(
                   icon: Icons.location_on, label: 'Grad', value: o.buyerCity),
+            if (o.hasSellerDelivery) OrderDeliverySummary(order: o),
             if (o.buyerPhone.isNotEmpty)
               _DetailRow(
                 icon: Icons.phone,
@@ -541,8 +546,8 @@ class _SellerOrderCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: () =>
-                                _updateStatus(context, o.id, OrderStatus.accepted),
+                            onPressed: () => _updateStatus(
+                                context, o.id, OrderStatus.accepted),
                             child: const Text('Prihvati'),
                           ),
                         ),
@@ -558,7 +563,8 @@ class _SellerOrderCard extends StatelessWidget {
                                       'Kupac će biti obavešten da ste odbili porudžbinu.'),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
                                       child: const Text('Odustani'),
                                     ),
                                     FilledButton(
@@ -585,8 +591,8 @@ class _SellerOrderCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: FilledButton.tonal(
-                            onPressed: () =>
-                                _updateStatus(context, o.id, OrderStatus.shipped),
+                            onPressed: () => _updateStatus(
+                                context, o.id, OrderStatus.shipped),
                             child: const Text('Poslato'),
                           ),
                         ),
@@ -669,7 +675,9 @@ class _SellerOrderCard extends StatelessWidget {
                                 user.id,
                                 orderId: o.id,
                               );
-                              if (context.mounted) context.push('/chat/$convId');
+                              if (context.mounted) {
+                                context.push('/chat/$convId');
+                              }
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(

@@ -13,6 +13,7 @@ import 'package:mleko/services/services.dart';
 import '../models/order_item_model.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/add_review_dialog.dart';
+import '../widgets/order_delivery_summary.dart';
 import '../widgets/order_status_audit_log_section.dart';
 import '../widgets/order_status_timeline.dart';
 import '../widgets/skeleton.dart';
@@ -59,8 +60,40 @@ class _OrdersScreenState extends State<OrdersScreen> {
         return OrdersService.statusFilterActiveNonArchived;
     }
   }
+
   bool get _isArchive => _segmentIndex == 1;
   bool get _isBySeller => _segmentIndex == 2;
+
+  String get _segmentDescription {
+    if (_segmentIndex == 0) {
+      return 'Aktivna lista: sve što nije u tvojoj arhivi. Završene porudžbine možeš ručno da arhiviraš.';
+    }
+    if (_segmentIndex == 1) {
+      return 'U arhivi su samo porudžbine koje ste vi ručno arhivirali.';
+    }
+    return 'Koliko često poručuješ i koliki ti je prosečan račun kod svakog prodavca.';
+  }
+
+  String get _panelTitle {
+    if (_segmentIndex == 1) return 'Arhivirane porudžbine';
+    if (_segmentIndex == 2) return 'Pregled po prodavcima';
+    return 'Aktivne porudžbine';
+  }
+
+  void _selectSegment(int value) {
+    setState(() {
+      _segmentIndex = value;
+      _statusChipIndex = 0;
+      _streamKey = null;
+    });
+  }
+
+  void _selectStatusChip(int value) {
+    setState(() {
+      _statusChipIndex = value;
+      _streamKey = null;
+    });
+  }
 
   @override
   void dispose() {
@@ -107,12 +140,312 @@ class _OrdersScreenState extends State<OrdersScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Greška pri učitavanju starijih porudžbina.')),
+          const SnackBar(
+              content: Text('Greška pri učitavanju starijih porudžbina.')),
         );
       }
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
+  }
+
+  Widget _buildSegmentedControl(BuildContext context) {
+    return SegmentedButton<int>(
+      segments: const [
+        ButtonSegment(
+          value: 0,
+          label: Text('U toku'),
+          icon: Icon(Icons.receipt_long),
+        ),
+        ButtonSegment(
+          value: 1,
+          label: Text('Arhiva'),
+          icon: Icon(Icons.archive_outlined),
+        ),
+        ButtonSegment(
+          value: 2,
+          label: Text('Prodavci'),
+          icon: Icon(Icons.store),
+        ),
+      ],
+      selected: {_segmentIndex},
+      onSelectionChanged: (selection) => _selectSegment(selection.first),
+    );
+  }
+
+  Widget _buildStatusFilters() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        FilterChip(
+          label: const Text('Sve'),
+          selected: _statusChipIndex == 0,
+          onSelected: (_) => _selectStatusChip(0),
+        ),
+        FilterChip(
+          label: const Text('Čeka prodavca'),
+          selected: _statusChipIndex == 1,
+          onSelected: (_) => _selectStatusChip(1),
+        ),
+        FilterChip(
+          label: const Text('Prihvaćene'),
+          selected: _statusChipIndex == 2,
+          onSelected: (_) => _selectStatusChip(2),
+        ),
+        FilterChip(
+          label: const Text('Poslate'),
+          selected: _statusChipIndex == 3,
+          onSelected: (_) => _selectStatusChip(3),
+        ),
+        FilterChip(
+          label: const Text('Odbijene'),
+          selected: _statusChipIndex == 4,
+          onSelected: (_) => _selectStatusChip(4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopSidebar(BuildContext context) {
+    final cardPadding = Breakpoints.cardPadding(context);
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: Padding(
+              padding: EdgeInsets.all(cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Porudžbine',
+                    style: Breakpoints.sectionTitleStyle(
+                      context,
+                      Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _segmentDescription,
+                    style: Breakpoints.supportingTextStyle(
+                      context,
+                      Theme.of(context).textTheme.bodyMedium,
+                      phone: 13,
+                      largeTabletValue: 14,
+                      desktop: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.tonalIcon(
+                    onPressed: _onRefresh,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Osveži prikaz'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: Breakpoints.panelGap(context)),
+          Card(
+            child: Padding(
+              padding: EdgeInsets.all(cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Sekcije',
+                    style: Breakpoints.sectionTitleStyle(
+                      context,
+                      Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _OrdersSidebarTile(
+                    icon: Icons.receipt_long,
+                    label: 'U toku',
+                    selected: _segmentIndex == 0,
+                    onTap: () => _selectSegment(0),
+                  ),
+                  const SizedBox(height: 8),
+                  _OrdersSidebarTile(
+                    icon: Icons.archive_outlined,
+                    label: 'Arhiva',
+                    selected: _segmentIndex == 1,
+                    onTap: () => _selectSegment(1),
+                  ),
+                  const SizedBox(height: 8),
+                  _OrdersSidebarTile(
+                    icon: Icons.store,
+                    label: 'Prodavci',
+                    selected: _segmentIndex == 2,
+                    onTap: () => _selectSegment(2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_segmentIndex == 0) ...[
+            SizedBox(height: Breakpoints.panelGap(context)),
+            Card(
+              child: Padding(
+                padding: EdgeInsets.all(cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Status filter',
+                      style: Breakpoints.sectionTitleStyle(
+                        context,
+                        Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStatusFilters(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrdersPanel(BuildContext context, String userId) {
+    if (_isBySeller) {
+      return _BySellerTab(userId: userId, onRefresh: _onRefresh);
+    }
+
+    return StreamBuilder<List<OrderModel>>(
+      stream: _ordersStream,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
+          return const OrderListSkeleton();
+        }
+        if (snap.hasError) {
+          return AppErrorRetry(
+            message: 'Greška pri učitavanju porudžbina.',
+            detail: snap.error?.toString(),
+            onRetry: _onRefresh,
+          );
+        }
+        final recent = snap.data ?? [];
+        final list = [...recent, ..._olderOrders];
+        if (list.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 220,
+                ),
+                child: Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _isArchive
+                              ? 'Još nema arhiviranih porudžbina.'
+                              : 'Još nema porudžbina.',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
+                                  ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isArchive
+                              ? 'Kada ručno arhivirate porudžbinu, pojaviće se ovde.'
+                              : 'Kreni od pregleda proizvoda i pošalji prvu porudžbinu.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey.shade600),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        if (!_isArchive)
+                          FilledButton.icon(
+                            onPressed: () => context.go('/'),
+                            icon: const Icon(Icons.search),
+                            label: const Text('Pronađi proizvode'),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: 16 + MediaQuery.of(context).padding.bottom,
+            ),
+            itemCount: (_isArchive ? 1 : 0) + list.length + (_hasMore ? 1 : 0),
+            itemBuilder: (_, i) {
+              if (_isArchive && i == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Porudžbina prelazi u arhivu tek kada je vi arhivirate.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                  ),
+                );
+              }
+              final listIndex = _isArchive ? i - 1 : i;
+              if (listIndex == list.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Center(
+                    child: _loadingMore
+                        ? const CircularProgressIndicator()
+                        : OutlinedButton(
+                            onPressed: () => _loadMore(userId, recent.length),
+                            child: const Text('Učitaj starije'),
+                          ),
+                  ),
+                );
+              }
+              return _BuyerOrderCard(
+                order: list[listIndex],
+                user: context.read<AppState>().user,
+                refreshController: _refreshController,
+                isArchived: _isArchive,
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -126,276 +459,127 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
 
     _initStream(user.id);
+    final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
+    final contentPadding = Breakpoints.horizontalPadding(context);
+    final panelGap = Breakpoints.panelGap(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Moje porudžbine')),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(Breakpoints.horizontalPadding(context), 8, Breakpoints.horizontalPadding(context), 4),
-            child: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(
-                    value: 0,
-                    label: Text('U toku'),
-                    icon: Icon(Icons.receipt_long)),
-                ButtonSegment(
-                    value: 1,
-                    label: Text('Arhiva'),
-                    icon: Icon(Icons.archive_outlined)),
-                ButtonSegment(
-                    value: 2,
-                    label: Text('Prodavci'),
-                    icon: Icon(Icons.store)),
-              ],
-              selected: {_segmentIndex},
-              onSelectionChanged: (s) => setState(() {
-                _segmentIndex = s.first;
-                _statusChipIndex = 0;
-                _streamKey = null;
-              }),
-            ),
+          constraints: BoxConstraints(
+            maxWidth:
+                isTwoPaneLayout ? Breakpoints.dataContentWidth(context) : 800,
           ),
-          if (_segmentIndex == 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Aktivna lista: sve što nije u tvojoj arhivi. Završene (isporučeno, odbijeno, otkazano) možeš uvek da arhiviraš da nestanu odavde.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
-              ),
-            )
-          else if (_segmentIndex == 1)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'U arhivi su samo porudžbine koje ste vi ručno arhivirali.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Koliko često poručuješ i koliki ti je prosečan račun kod svakog prodavca.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
-              ),
-            ),
-          if (_segmentIndex == 0)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
+          child: isTwoPaneLayout
+              ? Padding(
+                  padding: EdgeInsets.all(contentPadding),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: Breakpoints.desktopSidebarWidth(context),
+                        child: _buildDesktopSidebar(context),
+                      ),
+                      SizedBox(width: panelGap),
+                      Expanded(
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  Breakpoints.cardPadding(context),
+                                  Breakpoints.cardPadding(context),
+                                  Breakpoints.cardPadding(context),
+                                  12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _panelTitle,
+                                            style:
+                                                Breakpoints.sectionTitleStyle(
+                                              context,
+                                              Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _segmentDescription,
+                                            style:
+                                                Breakpoints.supportingTextStyle(
+                                              context,
+                                              Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall,
+                                              phone: 13,
+                                              largeTabletValue: 14,
+                                              desktop: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Divider(height: 1),
+                              Expanded(
+                                child: _buildOrdersPanel(context, user.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
                   children: [
-                    FilterChip(
-                      label: const Text('Sve'),
-                      selected: _statusChipIndex == 0,
-                      onSelected: (_) => setState(() {
-                        _statusChipIndex = 0;
-                        _streamKey = null;
-                      }),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        Breakpoints.horizontalPadding(context),
+                        8,
+                        Breakpoints.horizontalPadding(context),
+                        4,
+                      ),
+                      child: _buildSegmentedControl(context),
                     ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Čeka prodavca'),
-                      selected: _statusChipIndex == 1,
-                      onSelected: (_) => setState(() {
-                        _statusChipIndex = 1;
-                        _streamKey = null;
-                      }),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        _segmentDescription,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey.shade600),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Prihvaćene'),
-                      selected: _statusChipIndex == 2,
-                      onSelected: (_) => setState(() {
-                        _statusChipIndex = 2;
-                        _streamKey = null;
-                      }),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Poslate'),
-                      selected: _statusChipIndex == 3,
-                      onSelected: (_) => setState(() {
-                        _statusChipIndex = 3;
-                        _streamKey = null;
-                      }),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: const Text('Odbijene'),
-                      selected: _statusChipIndex == 4,
-                      onSelected: (_) => setState(() {
-                        _statusChipIndex = 4;
-                        _streamKey = null;
-                      }),
+                    if (_segmentIndex == 0)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: _buildStatusFilters(),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: _buildOrdersPanel(context, user.id),
                     ),
                   ],
                 ),
-              ),
-            ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _isBySeller
-                ? _BySellerTab(userId: user.id, onRefresh: _onRefresh)
-                : StreamBuilder<List<OrderModel>>(
-                    stream: _ordersStream,
-                    builder: (context, snap) {
-                      if (snap.connectionState == ConnectionState.waiting &&
-                          !snap.hasData) {
-                        return const OrderListSkeleton();
-                      }
-                      if (snap.hasError) {
-                        return AppErrorRetry(
-                          message: 'Greška pri učitavanju porudžbina.',
-                          detail: snap.error?.toString(),
-                          onRetry: _onRefresh,
-                        );
-                      }
-                      final recent = snap.data ?? [];
-                      final list = [...recent, ..._olderOrders];
-                      if (list.isEmpty) {
-                        return RefreshIndicator(
-                          onRefresh: _onRefresh,
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight:
-                                    MediaQuery.of(context).size.height - 220,
-                              ),
-                              child: Center(
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 24),
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade50,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border:
-                                        Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.receipt_long_outlined,
-                                          size: 64,
-                                          color: Colors.grey.shade300),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        _isArchive
-                                            ? 'Još nema arhiviranih porudžbina.'
-                                            : 'Još nema porudžbina.',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.grey.shade700,
-                                            ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _isArchive
-                                            ? 'Kada ručno arhivirate porudžbinu, pojaviće se ovde.'
-                                            : 'Kreni od pregleda proizvoda i pošalji prvu porudžbinu.',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                                color: Colors.grey.shade600),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      if (!_isArchive)
-                                        FilledButton.icon(
-                                          onPressed: () => context.go('/'),
-                                          icon: const Icon(Icons.search),
-                                          label:
-                                              const Text('Pronađi proizvode'),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      return RefreshIndicator(
-                        onRefresh: _onRefresh,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.only(
-                            left: 16,
-                            right: 16,
-                            top: 8,
-                            bottom: 16 + MediaQuery.of(context).padding.bottom,
-                          ),
-                          itemCount: (_isArchive ? 1 : 0) +
-                              list.length +
-                              (_hasMore ? 1 : 0),
-                          itemBuilder: (_, i) {
-                            if (_isArchive && i == 0) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  'Porudžbina prelazi u arhivu tek kada je vi arhivirate.',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.grey.shade600,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                ),
-                              );
-                            }
-                            final listIndex = _isArchive ? i - 1 : i;
-                            if (listIndex == list.length) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                child: Center(
-                                  child: _loadingMore
-                                      ? const CircularProgressIndicator()
-                                      : OutlinedButton(
-                                          onPressed: () =>
-                                              _loadMore(user.id, recent.length),
-                                          child: const Text('Učitaj starije'),
-                                        ),
-                                ),
-                              );
-                            }
-                            return _BuyerOrderCard(
-                              order: list[listIndex],
-                              user: user,
-                              refreshController: _refreshController,
-                              isArchived: _isArchive,
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-          ),
         ),
       ),
     );
@@ -444,6 +628,59 @@ class _OrdersScreenState extends State<OrdersScreen> {
         orderId: order.id,
         productName: resolvedProductName,
         onSubmitted: () => refreshController.add(null),
+      ),
+    );
+  }
+}
+
+class _OrdersSidebarTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _OrdersSidebarTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: selected
+              ? colorScheme.primary.withValues(alpha: 0.10)
+              : colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? colorScheme.primary : colorScheme.outlineVariant,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon,
+                  size: 18, color: selected ? colorScheme.primary : null),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? colorScheme.primary : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -804,12 +1041,10 @@ class _BuyerOrderCard extends StatelessWidget {
                         'Prodavac je poslao porudžbinu – nakon isporuke potvrdi prijem.',
                       OrderStatus.delivered =>
                         'Porudžbina je isporučena – možeš da je arhiviraš i ostaviš recenziju.',
-                      OrderStatus.rejected =>
-                        'Prodavac je odbio porudžbinu.',
+                      OrderStatus.rejected => 'Prodavac je odbio porudžbinu.',
                       OrderStatus.cancelledBySeller =>
                         'Prodavac je otkazao porudžbinu.',
-                      OrderStatus.archived =>
-                        'Porudžbina je u arhivi.',
+                      OrderStatus.archived => 'Porudžbina je u arhivi.',
                     },
                     style: TextStyle(
                       fontSize: 12,
@@ -925,6 +1160,7 @@ class _BuyerOrderCard extends StatelessWidget {
             if (o.buyerCity.isNotEmpty)
               _DetailRow(
                   icon: Icons.location_on, label: 'Grad', value: o.buyerCity),
+            if (o.hasSellerDelivery) OrderDeliverySummary(order: o),
             if (o.note.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),

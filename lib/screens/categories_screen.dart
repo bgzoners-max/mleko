@@ -6,6 +6,7 @@ import '../providers/categories_provider.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/skeleton.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -55,13 +56,28 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
 
     final padding = Breakpoints.horizontalPadding(context);
+    final isDesktop = Breakpoints.isDesktop(context);
+    final isWideDesktop = Breakpoints.isWideDesktop(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
-    final gridColumns = Breakpoints.isDesktop(context)
-        ? 4
-        : (isLargeTablet ? 4 : (isSmallTablet ? 3 : 2));
-    final cardPadding = isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 16.0);
-    final iconSize = isLargeTablet ? 30.0 : (isSmallTablet ? 32.0 : 36.0);
+    final gridColumns = isWideDesktop
+        ? 5
+        : isDesktop
+            ? 4
+            : (isLargeTablet ? 4 : (isSmallTablet ? 3 : 2));
+    final cardPadding = isDesktop
+        ? 16.0
+        : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 16.0));
+    final iconSize = isDesktop
+        ? 32.0
+        : (isLargeTablet ? 30.0 : (isSmallTablet ? 32.0 : 36.0));
+    final gridSpacing = Breakpoints.adaptiveDouble(
+      context,
+      phone: 8,
+      smallTabletValue: 10,
+      largeTabletValue: 12,
+      desktop: 12,
+    );
 
     return RefreshIndicator(
       onRefresh: () => catProvider.refresh(),
@@ -69,8 +85,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: Breakpoints.isDesktop(context)
-                ? 960
+            maxWidth: isDesktop
+                ? Breakpoints.dataContentWidth(context)
                 : Breakpoints.maxContentWidth(context),
           ),
           child: CustomScrollView(
@@ -81,7 +97,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     padding: EdgeInsets.fromLTRB(padding, padding, padding, 8),
                     child: Row(
                       children: [
-                        Text(
+                        EmojiText(
                           section.emoji,
                           style: const TextStyle(fontSize: 20),
                         ),
@@ -142,10 +158,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     ),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: gridColumns,
-                      childAspectRatio:
-                          isLargeTablet ? 1.08 : (isSmallTablet ? 1.0 : 0.96),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+                      childAspectRatio: isWideDesktop
+                          ? 1.14
+                          : isLargeTablet
+                              ? 1.08
+                              : (isSmallTablet ? 1.02 : 0.96),
+                      crossAxisSpacing: gridSpacing,
+                      mainAxisSpacing: gridSpacing,
                     ),
                   ),
                 ),

@@ -9,6 +9,7 @@ class Breakpoints {
   static const double smallTablet = 768;
   static const double largeTablet = 1024;
   static const double tablet = 1200;
+  static const double wideDesktop = 1440;
 
   /// Vraća skaliran font-size na osnovu device-a
   /// Tablet: +2-3px boost, Desktop: +4-5px boost
@@ -56,8 +57,25 @@ class Breakpoints {
   static bool isTabletOrLarger(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= phone;
 
+  static bool isLandscape(BuildContext context) =>
+      MediaQuery.orientationOf(context) == Orientation.landscape;
+
   static bool isDesktop(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= tablet;
+
+  static bool isWideDesktop(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= wideDesktop;
+
+  static bool useDesktopSplitView(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 1280;
+
+  /// Dvopanelni raspored za data-heavy ekrane.
+  /// Desktop ga uvek koristi, a veliki tableti samo u landscape orijentaciji.
+  static bool useTwoPaneLayout(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= 1280) return true;
+    return width >= largeTablet && isLandscape(context);
+  }
 
   /// Maksimalna širina sadržaja na tablet/desktop (centrirano)
   static double maxContentWidth(BuildContext context) {
@@ -66,6 +84,40 @@ class Breakpoints {
     if (width >= largeTablet) return 1040;
     if (width >= smallTablet) return 920;
     if (width >= phone) return 800;
+    return double.infinity;
+  }
+
+  /// Širina za data-heavy desktop ekrane sa sidebar-om ili većom listom.
+  static double dataContentWidth(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= wideDesktop) return 1360;
+    if (width >= tablet) return 1240;
+    if (width >= largeTablet) return 1040;
+    if (width >= smallTablet) return 920;
+    if (width >= phone) return 800;
+    return double.infinity;
+  }
+
+  /// Čitljiva širina za forme i detail ekrane.
+  /// Telefon ostaje fluidan, tablet dobija umeren okvir, a desktop 800px.
+  static double formContentWidth(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= tablet) return 800;
+    if (width >= largeTablet) return 720;
+    if (width >= smallTablet) return 680;
+    if (width >= phone) return 640;
+    return double.infinity;
+  }
+
+  /// Uža širina za auth tokove koji treba da ostanu fokusirani i na tabletu.
+  static double authContentWidth(
+    BuildContext context, {
+    required double tabletWidth,
+    double? desktopWidth,
+  }) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= tablet) return desktopWidth ?? tabletWidth;
+    if (width >= phone) return tabletWidth;
     return double.infinity;
   }
 
@@ -104,6 +156,23 @@ class Breakpoints {
     if (isSmallTablet(context)) return 20;
     if (isTablet(context)) return 24;
     return 16;
+  }
+
+  static double panelGap(BuildContext context) {
+    return adaptiveDouble(
+      context,
+      phone: 16,
+      smallTabletValue: 18,
+      largeTabletValue: 20,
+      desktop: 24,
+    );
+  }
+
+  static double desktopSidebarWidth(BuildContext context) {
+    if (isWideDesktop(context)) return 360;
+    if (isDesktop(context)) return 320;
+    if (isLargeTablet(context)) return 280;
+    return 260;
   }
 
   /// Adaptivna numerička vrednost po breakpoint-u.

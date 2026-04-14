@@ -1,3 +1,27 @@
+enum ProductDeliveryMode { none, allSellerPoints, selectedPoints }
+
+extension ProductDeliveryModeX on ProductDeliveryMode {
+  String get dbValue => switch (this) {
+        ProductDeliveryMode.none => 'none',
+        ProductDeliveryMode.allSellerPoints => 'all_seller_points',
+        ProductDeliveryMode.selectedPoints => 'selected_points',
+      };
+
+  String get label => switch (this) {
+        ProductDeliveryMode.none => 'Bez lične dostave domaćina',
+        ProductDeliveryMode.allSellerPoints => 'Na svim mojim lokacijama',
+        ProductDeliveryMode.selectedPoints => 'Samo na izabranim lokacijama',
+      };
+}
+
+ProductDeliveryMode productDeliveryModeFromDb(String? value) {
+  return switch (value) {
+    'selected_points' => ProductDeliveryMode.selectedPoints,
+    'all_seller_points' => ProductDeliveryMode.allSellerPoints,
+    _ => ProductDeliveryMode.none,
+  };
+}
+
 class ProductModel {
   static const String unitKg = 'kg';
   static const String unitL = 'L';
@@ -21,6 +45,8 @@ class ProductModel {
   final String location;
   final bool isDomestic;
   final bool availableNow;
+  final ProductDeliveryMode deliveryMode;
+  final List<String> selectedDeliveryPointIds;
   final DateTime createdAt;
 
   const ProductModel({
@@ -39,6 +65,8 @@ class ProductModel {
     required this.location,
     this.isDomestic = true,
     this.availableNow = true,
+    this.deliveryMode = ProductDeliveryMode.none,
+    this.selectedDeliveryPointIds = const [],
     required this.createdAt,
   });
 
@@ -90,6 +118,11 @@ class ProductModel {
 
   /// Proizvod je dostupan za narudžbinu (ima na stanju i availableNow)
   bool get isAvailable => availableKg > 0 && availableNow;
+
+  bool get supportsSellerDelivery => deliveryMode != ProductDeliveryMode.none;
+
+  bool get usesSelectedDeliveryPoints =>
+      deliveryMode == ProductDeliveryMode.selectedPoints;
 
   /// Korak kojim se menja količina u UI-u (step), nezavisno od minimalne količine.
   double get quantityStep {
@@ -161,6 +194,12 @@ class ProductModel {
       location: json['location'] as String? ?? '',
       isDomestic: json['is_domestic'] as bool? ?? true,
       availableNow: json['available_now'] as bool? ?? true,
+      deliveryMode: productDeliveryModeFromDb(json['delivery_mode'] as String?),
+      selectedDeliveryPointIds:
+          (json['selected_delivery_point_ids'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [],
       createdAt: date,
     );
   }
@@ -214,6 +253,7 @@ class ProductModel {
       'location': location,
       'is_domestic': isDomestic,
       'available_now': availableNow,
+      'delivery_mode': deliveryMode.dbValue,
     };
   }
 }

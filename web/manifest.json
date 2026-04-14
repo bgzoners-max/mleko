@@ -1,11 +1,11 @@
 {
-    "name": "Naše mleko",
-    "short_name": "Naše mleko",
+    "name": "Domaći market",
+    "short_name": "Domaći market",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Kupuj domaće mlečne proizvode direktno od proizvođača.",
+    "description": "Domaći market povezuje kupce sa domaćim proizvođačima i lokalnim proizvodima širom Srbije.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

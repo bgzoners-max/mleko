@@ -41,13 +41,19 @@ class SupabaseConfig {
 
   /// Load .env - pozovi pre Supabase.initialize()
   static Future<void> load() async {
+    // If --dart-define values are present, skip .env loading entirely.
+    if (_urlFromDefine.isNotEmpty && _anonKeyFromDefine.isNotEmpty) return;
+
     try {
-      await dotenv.load(fileName: '.env');
-    } catch (_) {
+      await dotenv.load(fileName: 'assets/.env');
+    } catch (e) {
       // Web preview builds may rely on --dart-define instead of the bundled .env asset.
+      if (!kIsWeb) rethrow;
     }
 
-    if (!isConfigured) {
+    if (_urlFromDefine.isEmpty &&
+        (dotenv.env['SUPABASE_URL'] == null ||
+            dotenv.env['SUPABASE_ANON_KEY'] == null)) {
       throw Exception(kIsWeb
           ? 'Missing SUPABASE_URL or SUPABASE_ANON_KEY. '
               'Provide them in .env or build with '

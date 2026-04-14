@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/seller_delivery_models.dart';
 import '../core/logger_service.dart';
 
 /// Model za porudžbinu koja čeka sinhronizaciju (offline queue)
@@ -15,6 +16,15 @@ class PendingOrder {
   final String buyerCity;
   final String? buyerAddress;
   final String buyerPhone;
+  final DeliveryMethod deliveryMethod;
+  final String? deliveryCity;
+  final String? deliveryPointId;
+  final String? deliveryPointLabel;
+  final String? deliveryAddress;
+  final int? deliveryWeekday;
+  final String? deliveryTimeFrom;
+  final String? deliveryTimeTo;
+  final double? deliveryFeeRsd;
   final bool preferCall;
   final List<String> pickupOptions;
   final DateTime createdAt;
@@ -32,6 +42,15 @@ class PendingOrder {
     required this.buyerCity,
     this.buyerAddress,
     required this.buyerPhone,
+    this.deliveryMethod = DeliveryMethod.agreement,
+    this.deliveryCity,
+    this.deliveryPointId,
+    this.deliveryPointLabel,
+    this.deliveryAddress,
+    this.deliveryWeekday,
+    this.deliveryTimeFrom,
+    this.deliveryTimeTo,
+    this.deliveryFeeRsd,
     required this.preferCall,
     required this.pickupOptions,
     required this.createdAt,
@@ -52,6 +71,15 @@ class PendingOrder {
         'buyer_city': buyerCity,
         'buyer_address': buyerAddress,
         'buyer_phone': buyerPhone,
+        'delivery_method': deliveryMethod.dbValue,
+        'delivery_city': deliveryCity,
+        'delivery_point_id': deliveryPointId,
+        'delivery_point_label': deliveryPointLabel,
+        'delivery_address': deliveryAddress,
+        'delivery_weekday': deliveryWeekday,
+        'delivery_time_from': deliveryTimeFrom,
+        'delivery_time_to': deliveryTimeTo,
+        'delivery_fee_rsd': deliveryFeeRsd,
         'prefer_call': preferCall,
         'pickup_options': pickupOptions,
         'created_at': createdAt.toIso8601String(),
@@ -70,6 +98,18 @@ class PendingOrder {
         buyerCity: json['buyer_city'] as String,
         buyerAddress: json['buyer_address'] as String?,
         buyerPhone: json['buyer_phone'] as String,
+        deliveryMethod:
+            deliveryMethodFromDb(json['delivery_method'] as String?),
+        deliveryCity: json['delivery_city'] as String?,
+        deliveryPointId: json['delivery_point_id'] as String?,
+        deliveryPointLabel: json['delivery_point_label'] as String?,
+        deliveryAddress: json['delivery_address'] as String?,
+        deliveryWeekday: (json['delivery_weekday'] as num?)?.toInt(),
+        deliveryTimeFrom:
+            normalizeDeliveryTimeString(json['delivery_time_from'] as String?),
+        deliveryTimeTo:
+            normalizeDeliveryTimeString(json['delivery_time_to'] as String?),
+        deliveryFeeRsd: (json['delivery_fee_rsd'] as num?)?.toDouble(),
         preferCall: json['prefer_call'] as bool,
         pickupOptions: List<String>.from(json['pickup_options'] as List),
         createdAt: DateTime.parse(json['created_at'] as String),
@@ -160,6 +200,15 @@ class OrderQueueService {
           buyerCity: order.buyerCity,
           buyerAddress: order.buyerAddress,
           buyerPhone: order.buyerPhone,
+          deliveryMethod: order.deliveryMethod,
+          deliveryCity: order.deliveryCity,
+          deliveryPointId: order.deliveryPointId,
+          deliveryPointLabel: order.deliveryPointLabel,
+          deliveryAddress: order.deliveryAddress,
+          deliveryWeekday: order.deliveryWeekday,
+          deliveryTimeFrom: order.deliveryTimeFrom,
+          deliveryTimeTo: order.deliveryTimeTo,
+          deliveryFeeRsd: order.deliveryFeeRsd,
           preferCall: order.preferCall,
           pickupOptions: order.pickupOptions,
           createdAt: order.createdAt,

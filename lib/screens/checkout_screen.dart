@@ -123,8 +123,8 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       return;
     }
     if (widget.product.availableKg > 0 && qty > widget.product.availableKg) {
-      setState(() =>
-          _error = 'Maksimalna dostupna količina: ${widget.product.availableFormatted}');
+      setState(() => _error =
+          'Maksimalna dostupna količina: ${widget.product.availableFormatted}');
       return;
     }
     if (_phoneController.text.trim().isEmpty) {
@@ -242,107 +242,112 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: Breakpoints.isTabletOrLarger(context) ? 640 : double.infinity),
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
+          ),
           child: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            left: Breakpoints.horizontalPadding(context),
-            right: Breakpoints.horizontalPadding(context),
-            top: 24,
-            bottom: 24 + MediaQuery.of(context).padding.bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('${widget.product.name} – ${widget.product.priceFormatted}',
-                  style: Theme.of(context).textTheme.titleMedium),
-              if (isOffline) ...[
-                const SizedBox(height: 8),
-                const OfflineReadOnlyBadge(),
-              ],
-              const SizedBox(height: 24),
-              TextField(
-                controller: _quantityController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                      RegExp(r'^\d*[,.]?\d{0,2}')),
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Količina (${widget.product.quantityUnitLabel})',
-                  hintText: 'Min ${widget.product.minOrderFormatted}',
-                ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: Breakpoints.horizontalPadding(context),
+                right: Breakpoints.horizontalPadding(context),
+                top: 24,
+                bottom: 24 + MediaQuery.of(context).padding.bottom,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _noteController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                    labelText: 'Napomena (npr. Treba za subotu)'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _cityController,
-                decoration: const InputDecoration(labelText: 'Grad kupca'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _addressController,
-                decoration:
-                    const InputDecoration(labelText: 'Adresa (ulica i broj)'),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration:
-                    const InputDecoration(labelText: 'Kontakt telefon *'),
-              ),
-              const SizedBox(height: 4),
-              if (user != null)
-                CheckboxListTile(
-                  value: _savePhoneToProfile,
-                  onChanged: (v) =>
-                      setState(() => _savePhoneToProfile = v ?? false),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text(
-                    'Sačuvaj ovaj broj u profilu',
-                    style: TextStyle(fontSize: 13),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                      '${widget.product.name} – ${widget.product.priceFormatted}',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  if (isOffline) ...[
+                    const SizedBox(height: 8),
+                    const OfflineReadOnlyBadge(),
+                  ],
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _quantityController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*[,.]?\d{0,2}')),
+                    ],
+                    decoration: InputDecoration(
+                      labelText:
+                          'Količina (${widget.product.quantityUnitLabel})',
+                      hintText: 'Min ${widget.product.minOrderFormatted}',
+                    ),
                   ),
-                ),
-              const SizedBox(height: 8),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-              ],
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed:
-                    (_sending || !widget.product.isAvailable) ? null : _submit,
-                child: _sending
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text(widget.product.isAvailable
-                        ? 'Pošalji upit prodavcu'
-                        : 'Nedostupno'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                        labelText: 'Napomena (npr. Treba za subotu)'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(labelText: 'Grad kupca'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _addressController,
+                    decoration: const InputDecoration(
+                        labelText: 'Adresa (ulica i broj)'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration:
+                        const InputDecoration(labelText: 'Kontakt telefon *'),
+                  ),
+                  const SizedBox(height: 4),
+                  if (user != null)
+                    CheckboxListTile(
+                      value: _savePhoneToProfile,
+                      onChanged: (v) =>
+                          setState(() => _savePhoneToProfile = v ?? false),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: const Text(
+                        'Sačuvaj ovaj broj u profilu',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                  ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: (_sending || !widget.product.isAvailable)
+                        ? null
+                        : _submit,
+                    child: _sending
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(widget.product.isAvailable
+                            ? 'Pošalji upit prodavcu'
+                            : 'Nedostupno'),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Ništa se ne naplaćuje u aplikaciji – dogovor, isporuka i plaćanje direktno sa proizvođačem.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Ništa se ne naplaćuje u aplikaciji – dogovor, isporuka i plaćanje direktno sa proizvođačem.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+            ),
           ),
         ),
       ),

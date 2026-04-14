@@ -16,7 +16,6 @@ import '../screens/checkout_multi_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/seller/becoming_seller_screen.dart';
 import '../screens/seller/add_edit_product_screen.dart';
-import '../screens/seller/add_product_screen.dart';
 import '../screens/seller/seller_profile_screen.dart';
 import '../screens/seller/seller_reviews_screen.dart';
 import '../screens/buyer_profile_screen.dart';
@@ -34,9 +33,12 @@ import '../screens/support_screen.dart';
 import '../screens/support_ticket_chat_screen.dart';
 import '../screens/admin/admin_tickets_screen.dart';
 import '../screens/admin/admin_ticket_detail_screen.dart';
+import '../screens/admin/admin_push_health_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/child_categories_screen.dart';
+import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_screen.dart';
+import '../screens/about_screen.dart';
 import '../screens/landing_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
@@ -56,10 +58,18 @@ GoRouter createRouter(AppState appState) {
       if (loc == '/splash') return null;
       if (loc.startsWith('/onboarding')) return null;
       if (loc == '/verify-email') return null;
-      if (loc == '/terms') return null;
+      if (loc == '/terms' ||
+          loc == '/uslovi-koriscenja' ||
+          loc == '/politika-privatnosti') {
+        return null;
+      }
+      if (loc == '/about') return null;
+      if (loc == '/support') return null;
 
       // Email just confirmed — steer to success screen before anything else
-      if (appState.justConfirmedEmail && loc != '/auth/confirmed') return '/auth/confirmed';
+      if (appState.justConfirmedEmail && loc != '/auth/confirmed') {
+        return '/auth/confirmed';
+      }
       if (loc == '/auth/confirmed') return null;
 
       if (loc.startsWith('/login') || loc.startsWith('/register')) {
@@ -100,7 +110,8 @@ GoRouter createRouter(AppState appState) {
       }
 
       // Stranica recenzija — samo vlasnik prodavnice (kupci i gosti na javni profil).
-      final sellerReviewsMatch = RegExp(r'^/seller/([^/]+)/reviews$').firstMatch(loc);
+      final sellerReviewsMatch =
+          RegExp(r'^/seller/([^/]+)/reviews$').firstMatch(loc);
       if (sellerReviewsMatch != null) {
         final sid = sellerReviewsMatch.group(1)!;
         final u = appState.user;
@@ -109,7 +120,8 @@ GoRouter createRouter(AppState appState) {
         }
       }
 
-      final buyerReviewsMatch = RegExp(r'^/buyer/([^/]+)/reviews$').firstMatch(loc);
+      final buyerReviewsMatch =
+          RegExp(r'^/buyer/([^/]+)/reviews$').firstMatch(loc);
       if (buyerReviewsMatch != null) {
         final bid = buyerReviewsMatch.group(1)!;
         final u = appState.user;
@@ -157,7 +169,7 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/add-product',
-        builder: (_, __) => const AddProductScreen(),
+        builder: (_, __) => const AddEditProductScreen(),
       ),
       GoRoute(
         path: '/product/:id',
@@ -184,8 +196,10 @@ GoRouter createRouter(AppState appState) {
         builder: (_, state) {
           final sellerId = state.pathParameters['sellerId']!;
           final extra = state.extra as Map<String, dynamic>?;
-          final productQuantities = extra?['productQuantities'] as Map<String, double>? ?? {};
-          return CheckoutMultiScreen(sellerId: sellerId, productQuantities: productQuantities);
+          final productQuantities =
+              extra?['productQuantities'] as Map<String, double>? ?? {};
+          return CheckoutMultiScreen(
+              sellerId: sellerId, productQuantities: productQuantities);
         },
       ),
       GoRoute(
@@ -263,12 +277,28 @@ GoRouter createRouter(AppState appState) {
             AdminTicketDetailScreen(ticketId: state.pathParameters['id']!),
       ),
       GoRoute(
+        path: '/admin/push-health',
+        builder: (_, __) => const AdminPushHealthScreen(),
+      ),
+      GoRoute(
         path: '/favorite-sellers',
         builder: (_, __) => const FavoriteSellersScreen(),
       ),
       GoRoute(
-        path: '/terms',
+        path: '/politika-privatnosti',
+        builder: (_, __) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/uslovi-koriscenja',
         builder: (_, __) => const TermsScreen(),
+      ),
+      GoRoute(
+        path: '/terms',
+        redirect: (_, __) => '/uslovi-koriscenja',
+      ),
+      GoRoute(
+        path: '/about',
+        builder: (_, __) => const AboutScreen(),
       ),
       GoRoute(
         path: '/landing',
@@ -313,7 +343,8 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/chat/:id',
-        builder: (_, state) => ChatScreen(conversationId: state.pathParameters['id']!),
+        builder: (_, state) =>
+            ChatScreen(conversationId: state.pathParameters['id']!),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -334,6 +365,8 @@ GoRouter createRouter(AppState appState) {
                 path: '/search',
                 builder: (_, state) => TabSearchOrProductsScreen(
                   initialCategory: state.uri.queryParameters['category'],
+                  openSellerProducts:
+                      state.uri.queryParameters['view'] == 'products',
                 ),
               ),
             ],
@@ -393,7 +426,8 @@ class MainShell extends StatelessWidget {
     final isSeller = appState.user?.isSeller ?? false;
     final dest = isSeller ? _sellerDestinations : _buyerDestinations;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
-    final selectedDestIndex = _branchToDestIndex(navigationShell.currentIndex, isSeller);
+    final selectedDestIndex =
+        _branchToDestIndex(navigationShell.currentIndex, isSeller);
 
     if (isWide) {
       return Scaffold(
@@ -401,19 +435,24 @@ class MainShell extends StatelessWidget {
           children: [
             NavigationRail(
               selectedIndex: selectedDestIndex,
-              onDestinationSelected: (i) => navigationShell.goBranch(_destIndexToBranch(i, isSeller), initialLocation: true),
+              onDestinationSelected: (i) {
+                if (isSeller && i == 1) {
+                  context.go('/search?view=products');
+                  return;
+                }
+                navigationShell.goBranch(
+                  _destIndexToBranch(i, isSeller),
+                  initialLocation: true,
+                );
+              },
               labelType: NavigationRailLabelType.all,
-              destinations: dest
-                  .asMap()
-                  .entries
-                  .map((e) {
-                    final d = e.value;
-                    return NavigationRailDestination(
-                      icon: Icon(d.icon),
-                      label: Text(d.label),
-                    );
-                  })
-                  .toList(),
+              destinations: dest.asMap().entries.map((e) {
+                final d = e.value;
+                return NavigationRailDestination(
+                  icon: Icon(d.icon),
+                  label: Text(d.label),
+                );
+              }).toList(),
             ),
             const VerticalDivider(width: 1),
             Expanded(child: navigationShell),
@@ -426,18 +465,23 @@ class MainShell extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedDestIndex,
-        onDestinationSelected: (i) => navigationShell.goBranch(_destIndexToBranch(i, isSeller), initialLocation: true),
-        destinations: dest
-            .asMap()
-            .entries
-            .map((e) {
-              final d = e.value;
-              return NavigationDestination(
-                icon: Icon(d.icon),
-                label: d.label,
-              );
-            })
-            .toList(),
+        onDestinationSelected: (i) {
+          if (isSeller && i == 1) {
+            context.go('/search?view=products');
+            return;
+          }
+          navigationShell.goBranch(
+            _destIndexToBranch(i, isSeller),
+            initialLocation: true,
+          );
+        },
+        destinations: dest.asMap().entries.map((e) {
+          final d = e.value;
+          return NavigationDestination(
+            icon: Icon(d.icon),
+            label: d.label,
+          );
+        }).toList(),
       ),
     );
   }

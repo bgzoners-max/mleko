@@ -68,6 +68,11 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
         title: const Text('Admin — Tiketi podrške'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.notifications_active_outlined),
+            tooltip: 'Push health',
+            onPressed: () => context.push('/admin/push-health'),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Osveži',
             onPressed: _load,
@@ -135,8 +140,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.inbox_outlined,
-                size: 56,
-                color: Theme.of(context).colorScheme.outlineVariant),
+                size: 56, color: Theme.of(context).colorScheme.outlineVariant),
             const SizedBox(height: 12),
             const Text('Nema tiketa'),
           ],
@@ -173,8 +177,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
               Row(
                 children: [
                   Icon(_categoryIcon(ticket.category),
-                      size: 18,
-                      color: Theme.of(context).colorScheme.primary),
+                      size: 18, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -236,9 +239,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
                   ),
                   const Spacer(),
                   if (hasReply)
-                    Icon(Icons.reply,
-                        size: 14,
-                        color: Colors.green.shade600),
+                    Icon(Icons.reply, size: 14, color: Colors.green.shade600),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(ticket.createdAt),

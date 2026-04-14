@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../core/responsive.dart';
 import '../services/services.dart';
 
 const int _kMaxMessages = 5;
@@ -73,8 +74,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     });
   }
 
-  int get _userMessageCount =>
-      _messages.where((m) => !m.isAdmin).length;
+  int get _userMessageCount => _messages.where((m) => !m.isAdmin).length;
 
   bool get _canSend {
     final ticket = _ticket;
@@ -94,8 +94,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -168,7 +167,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
           child: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680),
+              constraints: BoxConstraints(
+                maxWidth: Breakpoints.formContentWidth(context),
+              ),
               child: ListView(
                 controller: _scrollCtrl,
                 padding:
@@ -228,7 +229,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
+          ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             decoration: BoxDecoration(
@@ -257,9 +260,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                         'Admin: ${_messages.where((m) => m.isAdmin).length}/$_kMaxMessages',
                         style: TextStyle(
                             fontSize: 11,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                   ],
                 ),
@@ -364,9 +366,8 @@ class _MessageBubble extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isAdmin = message.isAdmin;
 
-    final bgColor = isMe
-        ? colorScheme.primary
-        : colorScheme.surfaceContainerHighest;
+    final bgColor =
+        isMe ? colorScheme.primary : colorScheme.surfaceContainerHighest;
     final textColor = isMe ? colorScheme.onPrimary : colorScheme.onSurface;
     final labelColor = isMe
         ? colorScheme.onPrimary.withValues(alpha: 0.7)
@@ -414,8 +415,7 @@ class _MessageBubble extends StatelessWidget {
             Text(message.body,
                 style: TextStyle(color: textColor, fontSize: 14)),
             const SizedBox(height: 2),
-            Text(timeStr,
-                style: TextStyle(fontSize: 10, color: labelColor)),
+            Text(timeStr, style: TextStyle(fontSize: 10, color: labelColor)),
           ],
         ),
       ),

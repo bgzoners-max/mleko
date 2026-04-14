@@ -399,11 +399,23 @@ class _SearchScreenState extends State<SearchScreen> {
     final user = context.watch<AppState>().user;
     final categoriesProvider = context.watch<CategoriesProvider>();
     final topCategories = categoriesProvider.topCategories.take(8).toList();
+    final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
-    final isWide = Breakpoints.isDesktop(context) || isLargeTablet;
-    final mobileCategoryColumns = isSmallTablet ? 4 : 3;
-    final mobileResultsAsGrid = isSmallTablet;
+    final contentPadding = Breakpoints.horizontalPadding(context);
+    final mobileCategoryColumns = isLargeTablet ? 4 : (isSmallTablet ? 4 : 3);
+    final mobileResultsAsGrid = isSmallTablet || isLargeTablet;
+    final stackedResultColumns = isLargeTablet ? 3 : 2;
+    final stackedGridExtent = isLargeTablet ? 336.0 : 348.0;
+    final stackedGridSpacing = Breakpoints.adaptiveDouble(
+      context,
+      phone: 12,
+      smallTabletValue: 12,
+      largeTabletValue: 14,
+      desktop: 14,
+    );
+    final wideGridColumns = Breakpoints.isDesktop(context) ? 4 : 3;
+    final wideGridExtent = Breakpoints.isDesktop(context) ? 380.0 : 356.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE9E9E9),
@@ -435,9 +447,12 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints:
-              BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
-          child: isWide
+          constraints: BoxConstraints(
+            maxWidth: isTwoPaneLayout
+                ? Breakpoints.dataContentWidth(context)
+                : Breakpoints.maxContentWidth(context),
+          ),
+          child: isTwoPaneLayout
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -491,13 +506,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                           onRefresh: _onRefresh,
                                           child: GridView.builder(
                                             controller: _scrollController,
-                                            padding: const EdgeInsets.all(16),
+                                            padding: EdgeInsets.all(
+                                              contentPadding,
+                                            ),
                                             gridDelegate:
-                                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                              crossAxisCount: 4,
-                                              crossAxisSpacing: 12,
-                                              mainAxisSpacing: 12,
-                                              mainAxisExtent: 380,
+                                                SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: wideGridColumns,
+                                              crossAxisSpacing:
+                                                  stackedGridSpacing,
+                                              mainAxisSpacing:
+                                                  stackedGridSpacing,
+                                              mainAxisExtent: wideGridExtent,
                                             ),
                                             itemCount: _products.length +
                                                 (_loadingMore ? 4 : 0),
@@ -524,8 +543,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   children: [
                     // Kategorije grid (mobile)
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: contentPadding,
+                        vertical: 12,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -610,13 +631,19 @@ class _SearchScreenState extends State<SearchScreen> {
                                       child: mobileResultsAsGrid
                                           ? GridView.builder(
                                               controller: _scrollController,
-                                              padding: const EdgeInsets.all(16),
+                                              padding: EdgeInsets.all(
+                                                contentPadding,
+                                              ),
                                               gridDelegate:
-                                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount: 2,
-                                                crossAxisSpacing: 12,
-                                                mainAxisSpacing: 12,
-                                                mainAxisExtent: 348,
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount:
+                                                    stackedResultColumns,
+                                                crossAxisSpacing:
+                                                    stackedGridSpacing,
+                                                mainAxisSpacing:
+                                                    stackedGridSpacing,
+                                                mainAxisExtent:
+                                                    stackedGridExtent,
                                               ),
                                               itemCount: _products.length +
                                                   (_loadingMore ? 2 : 0),
@@ -635,7 +662,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                             )
                                           : ListView.builder(
                                               controller: _scrollController,
-                                              padding: const EdgeInsets.all(16),
+                                              padding: EdgeInsets.all(
+                                                contentPadding,
+                                              ),
                                               itemCount: _products.length +
                                                   (_loadingMore ? 1 : 0),
                                               itemBuilder: (_, i) {

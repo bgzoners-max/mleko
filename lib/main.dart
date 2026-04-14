@@ -218,7 +218,7 @@ void main() async {
       child: OfflineIndicator(
         child: p_provider.Consumer<AppSettingsProvider>(
           builder: (_, settings, __) => MaterialApp.router(
-            title: 'Naše Selo',
+            title: 'Domaći market',
             theme: buildAppTheme(compact: settings.compactMode),
             darkTheme: buildAppDarkTheme(compact: settings.compactMode),
             themeMode: settings.themeMode,

@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart",
+    "vercel:deploy": "npm run vercel:prepare && npx vercel link --cwd build/vercel-deploy --yes --scope vladimir-ivanovics-projects --project mleko && npx vercel deploy --cwd build/vercel-deploy --prod --yes --scope vladimir-ivanovics-projects",
+    "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",
+    "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts"
+  },
   "devDependencies": {
     "supabase": "^2.76.15"
   },

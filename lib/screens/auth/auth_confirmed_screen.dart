@@ -20,7 +20,10 @@ class _AuthConfirmedScreenState extends State<AuthConfirmedScreen> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
       setState(() => _countdown--);
       if (_countdown <= 0) {
         t.cancel();
@@ -48,10 +51,23 @@ class _AuthConfirmedScreenState extends State<AuthConfirmedScreen> {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: Breakpoints.isTabletOrLarger(context) ? 480 : double.infinity,
+            maxWidth: Breakpoints.authContentWidth(
+              context,
+              tabletWidth: 480,
+              desktopWidth: 480,
+            ),
           ),
           child: Padding(
-            padding: EdgeInsets.all(Breakpoints.horizontalPadding(context)).copyWith(top: 80),
+            padding: EdgeInsets.all(
+              Breakpoints.horizontalPadding(context),
+            ).copyWith(
+              top: Breakpoints.adaptiveDouble(
+                context,
+                phone: 64,
+                largeTabletValue: 80,
+                desktop: 80,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -62,17 +78,19 @@ class _AuthConfirmedScreenState extends State<AuthConfirmedScreen> {
                     color: Colors.green.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_circle, color: Colors.green, size: 56),
+                  child: const Icon(Icons.check_circle,
+                      color: Colors.green, size: 56),
                 ),
                 const SizedBox(height: 32),
                 Text(
                   'Uspešno ste registrovani!',
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Dobrodošli na „Naše selo". Vaš nalog je potvrđen.',
+                  'Dobro došli u Domaći market. Vaš nalog je potvrđen i spremni ste da istražujete ponudu.',
                   style: theme.textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),

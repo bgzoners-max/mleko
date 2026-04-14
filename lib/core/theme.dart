@@ -90,7 +90,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
   final inputPaddingV = compact ? 10.0 : 14.0;
   final cardMarginV = compact ? 3.0 : 6.0;
   final navBarHeight = compact ? 56.0 : 64.0;
-  final visualDensity = compact ? VisualDensity.compact : VisualDensity.standard;
+  final visualDensity =
+      compact ? VisualDensity.compact : VisualDensity.standard;
 
   return ThemeData(
     useMaterial3: true,
@@ -144,7 +145,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         minimumSize: touch,
-        padding: EdgeInsets.symmetric(horizontal: buttonPaddingH, vertical: buttonPaddingV),
+        padding: EdgeInsets.symmetric(
+            horizontal: buttonPaddingH, vertical: buttonPaddingV),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(
           fontWeight: FontWeight.w600,
@@ -170,7 +172,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         minimumSize: touch,
-        padding: EdgeInsets.symmetric(horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
+        padding: EdgeInsets.symmetric(
+            horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
         foregroundColor: const Color(0xFF2E7D32),
         textStyle: const TextStyle(
           fontWeight: FontWeight.w500,
@@ -191,7 +194,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         minimumSize: touch,
-        padding: EdgeInsets.symmetric(horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
+        padding: EdgeInsets.symmetric(
+            horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
         side: const BorderSide(color: Color(0xFF2E7D32)),
         foregroundColor: const Color(0xFF2E7D32),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -228,7 +232,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
       ),
     ),
     listTileTheme: ListTileThemeData(
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: listTilePaddingV),
+      contentPadding:
+          EdgeInsets.symmetric(horizontal: 16, vertical: listTilePaddingV),
       minLeadingWidth: 24,
       minVerticalPadding: listTileMinVerticalPadding,
     ),
@@ -271,7 +276,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
         height: 1.3,
         color: Color(0xFFD32F2F),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
+      contentPadding:
+          EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
     ),
     cardTheme: CardThemeData(
       elevation: 1,
@@ -280,8 +286,9 @@ ThemeData _buildBaseTheme({required bool compact}) {
       shadowColor: Colors.black.withValues(alpha: 0.12),
     ),
     snackBarTheme: const SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+      behavior: SnackBarBehavior.fixed,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12))),
       contentTextStyle: TextStyle(
         fontSize: 14,
         height: 1.4,
@@ -410,7 +417,8 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
   final buttonPaddingH = compact ? 16.0 : 24.0;
   final inputPaddingV = compact ? 10.0 : 14.0;
   final navBarHeight = compact ? 56.0 : 64.0;
-  final visualDensity = compact ? VisualDensity.compact : VisualDensity.standard;
+  final visualDensity =
+      compact ? VisualDensity.compact : VisualDensity.standard;
 
   return ThemeData(
     useMaterial3: true,
@@ -459,7 +467,8 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         minimumSize: touch,
-        padding: EdgeInsets.symmetric(horizontal: buttonPaddingH, vertical: buttonPaddingV),
+        padding: EdgeInsets.symmetric(
+            horizontal: buttonPaddingH, vertical: buttonPaddingV),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
@@ -475,7 +484,8 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       filled: true,
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
+      contentPadding:
+          EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
     ),
     cardTheme: CardThemeData(
       elevation: 2,
@@ -483,7 +493,8 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     listTileTheme: ListTileThemeData(
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: compact ? 2 : 8),
+      contentPadding:
+          EdgeInsets.symmetric(horizontal: 16, vertical: compact ? 2 : 8),
       minLeadingWidth: 24,
       minVerticalPadding: compact ? 4 : 10,
     ),

@@ -1,15 +1,15 @@
-# Naše mleko – MVP (B2C)
+# Domaći market – MVP (B2C)
 
 [![CI](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml)
 
-Marketplace za domaće mlečne proizvode (kupuj direktno od proizvođača).
+Marketplace za domaće proizvode, sa fokusom na direktnu kupovinu od proizvođača.
 
 ## CI
 
 GitHub Actions workflow `.github/workflows/ci.yml` pokreće:
 
 - `flutter-checks`: `flutter analyze` + `flutter test`
-- `db-integration-checks`: lokalni Supabase stack + reset migracija + SQL integration provere
+- `db-integration-checks`: lokalni Supabase stack + reset migracija + SQL integration provere + provera svežine `supabase/types/database.types.ts`
 
 DB integration skripta:
 
@@ -17,11 +17,13 @@ DB integration skripta:
 
 Ove provere pokrivaju ključne delove status flow-a: tranzicije, trigger-e, audit log i ručno arhiviranje.
 
+U istom job-u se lokalno regenerišu Supabase TypeScript tipovi i CI pada ako checked-in fajl nije usklađen sa aktuelnim migracijama.
+
 ## Šta je urađeno (MVP ekrani)
 
 - **Splash** → Login
 - **Login / Register** – email + lozinka, „Nastavi kao gost”, Zaboravljena lozinka
-- **Home** – lokacija, search bar, kategorije (Sir, Kačkavalj, Kajmak), lista proizvoda (kartice)
+- **Home** – lokacija, search bar, kategorije domaćih proizvoda, lista proizvoda (kartice)
 - **Search + filter** – kategorija, region, dostupno sada
 - **Product details** – carousel slika, naziv, cena, opis, min porudžbina, način preuzimanja, CTA „Pošalji porudžbinu”
 - **Checkout-lite** – količina, napomena, grad, telefon, „Pozovi me” / „Pošalji poruku” → „Pošalji upit prodavcu”
@@ -36,24 +38,29 @@ Ove provere pokrivaju ključne delove status flow-a: tranzicije, trigger-e, audi
 
 ## Pokretanje
 
-1. **Flutter**  
+1. **Flutter**
+
    Instaliraj [Flutter](https://docs.flutter.dev/get-started/install) i u PATH dodaj `flutter`.
 
-2. **Supabase**  
+2. **Supabase**
+
    Aplikacija koristi Supabase za auth, bazu i storage. Vidi **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** – posebno važno je pokrenuti `supabase_schema.sql` u SQL Editor-u u Supabase Dashboard-u.
 
 3. **Projekat**
+
    ```bash
    cd d:\mleko
    flutter pub get
    ```
 
    **Nova obaveza: Environment vars (.env)**
-   ```
+
+   ```bash
    cp .env.example .env
-   # Popuni SUPABASE_URL i SUPABASE_ANON_KEY iz Supabase Dashboard → Settings → API
+   # Popuni SUPABASE_URL i SUPABASE_ANON_KEY iz Supabase Dashboard -> Settings -> API
    ```
 
+   ```bash
    flutter run -d chrome
    ```
 
@@ -73,10 +80,45 @@ pa ponovo `flutter pub get` i `flutter run`.
 
 Slike proizvoda i profila se čuvaju u **Supabase Storage** (bucketovi `product-images` i `profiles`).
 
+## Supabase tipovi
+
+TypeScript schema snapshot za linked projekat čuva se u `supabase/types/database.types.ts`.
+
+Osvežavanje tipova:
+
+```bash
+npm run supabase:types
+```
+
+Lokalna varijanta za CI i proveru nakon migracija:
+
+```bash
+npm run supabase:types:local
+```
+
+Ovaj korak je koristan posle novih migracija ili pre izmena u Edge Functions kako bi `createClient<Database>` ostao usklađen sa trenutnom bazom.
+
+## Vercel deploy
+
+Za produkcioni deploy koristi samo root komandu:
+
+```bash
+npm run vercel:deploy
+```
+
+Ta komanda:
+
+- regeneriše `build/web`
+- priprema `build/vercel-deploy`
+- eksplicitno linkuje bundle na Vercel projekat `mleko`
+- radi production deploy
+
+Ne pokreći deploy ručno iz `build/vercel-deploy`, jer se taj folder rekreira i može privremeno ostati linkovan na pogrešan Vercel projekat.
+
 ## Šta nije u MVP-u (nice to have)
 
-- Recenzije  
-- Online plaćanje  
-- Integracija dostave  
-- Geo „najbliže tebi”  
+- Recenzije
+- Online plaćanje
+- Integracija dostave
+- Geo „najbliže tebi”
 - Chat (samo kontakt: Pozovi / poruka)

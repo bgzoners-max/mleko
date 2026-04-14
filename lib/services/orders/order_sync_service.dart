@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/order_model.dart';
+import '../../models/seller_delivery_models.dart';
 import '../core/connectivity_service.dart';
 import '../core/logger_service.dart';
 import 'order_queue_service.dart';
@@ -20,7 +21,7 @@ class OrderSyncService {
     required OrdersService ordersService,
   })  : _queueService = queueService,
         _ordersService = ordersService,
-      _analyticsService = SyncAnalyticsService();
+        _analyticsService = SyncAnalyticsService();
 
   static const String taskName = 'mleko_order_sync';
 
@@ -85,6 +86,15 @@ class OrderSyncService {
             buyerCity: pending.buyerCity,
             buyerPhone: pending.buyerPhone,
             buyerAddress: pending.buyerAddress,
+            deliveryMethod: pending.deliveryMethod,
+            deliveryCity: pending.deliveryCity,
+            deliveryPointId: pending.deliveryPointId,
+            deliveryPointLabel: pending.deliveryPointLabel,
+            deliveryAddress: pending.deliveryAddress,
+            deliveryWeekday: pending.deliveryWeekday,
+            deliveryTimeFrom: pending.deliveryTimeFrom,
+            deliveryTimeTo: pending.deliveryTimeTo,
+            deliveryFeeRsd: pending.deliveryFeeRsd,
             status: OrderStatus.sent,
             createdAt: DateTime.now(),
           );
@@ -136,7 +146,7 @@ class OrderSyncService {
     final rows = await _client
         .from('orders')
         .select(
-            'id, quantity_kg, buyer_phone, buyer_city, buyer_address, note, created_at')
+            'id, quantity_kg, buyer_phone, buyer_city, buyer_address, note, delivery_method, delivery_city, delivery_point_label, delivery_address, delivery_weekday, delivery_time_from, delivery_time_to, delivery_fee_rsd, created_at')
         .eq('buyer_id', pending.buyerId)
         .eq('seller_id', pending.sellerId)
         .eq('product_id', pending.productId)
@@ -148,6 +158,14 @@ class OrderSyncService {
     final expectedCity = _normalize(pending.buyerCity);
     final expectedAddress = _normalize(pending.buyerAddress ?? '');
     final expectedNote = _normalize(pending.note ?? '');
+    final expectedDeliveryMethod = pending.deliveryMethod.dbValue;
+    final expectedDeliveryCity = _normalize(pending.deliveryCity ?? '');
+    final expectedDeliveryPoint = _normalize(pending.deliveryPointLabel ?? '');
+    final expectedDeliveryAddress = _normalize(pending.deliveryAddress ?? '');
+    final expectedDeliveryWeekday = pending.deliveryWeekday;
+    final expectedDeliveryFrom = _normalize(pending.deliveryTimeFrom ?? '');
+    final expectedDeliveryTo = _normalize(pending.deliveryTimeTo ?? '');
+    final expectedDeliveryFee = pending.deliveryFeeRsd ?? 0;
 
     for (final row in (rows as List).cast<Map<String, dynamic>>()) {
       final qty = (row['quantity_kg'] as num?)?.toDouble();
@@ -159,11 +177,31 @@ class OrderSyncService {
       final city = _normalize(row['buyer_city'] as String? ?? '');
       final address = _normalize(row['buyer_address'] as String? ?? '');
       final note = _normalize(row['note'] as String? ?? '');
+      final deliveryMethod =
+          _normalize(row['delivery_method'] as String? ?? 'agreement');
+      final deliveryCity = _normalize(row['delivery_city'] as String? ?? '');
+      final deliveryPoint =
+          _normalize(row['delivery_point_label'] as String? ?? '');
+      final deliveryAddress =
+          _normalize(row['delivery_address'] as String? ?? '');
+      final deliveryWeekday = (row['delivery_weekday'] as num?)?.toInt();
+      final deliveryFrom =
+          _normalize(row['delivery_time_from'] as String? ?? '');
+      final deliveryTo = _normalize(row['delivery_time_to'] as String? ?? '');
+      final deliveryFee = (row['delivery_fee_rsd'] as num?)?.toDouble() ?? 0;
 
       if (phone == expectedPhone &&
           city == expectedCity &&
           address == expectedAddress &&
-          note == expectedNote) {
+          note == expectedNote &&
+          deliveryMethod == expectedDeliveryMethod &&
+          deliveryCity == expectedDeliveryCity &&
+          deliveryPoint == expectedDeliveryPoint &&
+          deliveryAddress == expectedDeliveryAddress &&
+          deliveryWeekday == expectedDeliveryWeekday &&
+          deliveryFrom == expectedDeliveryFrom &&
+          deliveryTo == expectedDeliveryTo &&
+          (deliveryFee - expectedDeliveryFee).abs() < 0.0001) {
         return row['id'] as String?;
       }
     }

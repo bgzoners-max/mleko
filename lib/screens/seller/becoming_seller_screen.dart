@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/responsive.dart';
 import '../../providers/app_state.dart';
 
 class BecomingSellerScreen extends StatefulWidget {
@@ -21,7 +22,7 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
     if (_farmNameController.text.trim().isEmpty ||
         _locationController.text.trim().isEmpty ||
         _phoneController.text.trim().isEmpty) {
-      setState(() => _error = 'Ime gazdinstva, mesto i telefon su obavezni.');
+      setState(() => _error = 'Naziv profila, mesto i telefon su obavezni.');
       return;
     }
     setState(() {
@@ -31,16 +32,16 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
     final appState = context.read<AppState>();
     try {
       await appState.authService.switchToSeller(
-            farmName: _farmNameController.text.trim(),
-            location: _locationController.text.trim(),
-            phone: _phoneController.text.trim(),
-          );
+        farmName: _farmNameController.text.trim(),
+        location: _locationController.text.trim(),
+        phone: _phoneController.text.trim(),
+      );
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sada ste prodavac!')),
+          const SnackBar(content: Text('Profil prodavca je aktivan.')),
         );
-        context.go('/search');
+        context.go('/search?view=products');
       }
     } on Exception catch (e) {
       if (mounted) {
@@ -65,56 +66,62 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: 24 + MediaQuery.of(context).padding.bottom,
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.formContentWidth(context),
           ),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Unesite podatke o gazdinstvu da biste mogli da objavljujete proizvode.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade700),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: 24 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Unesite osnovne podatke o prodajnom profilu da biste mogli da objavljujete proizvode i budete vidljivi kupcima.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                    controller: _farmNameController,
+                    decoration: const InputDecoration(
+                        labelText: 'Ime / Naziv profila *'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _locationController,
+                    decoration: const InputDecoration(labelText: 'Mesto *'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Telefon *'),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                  ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    child: _loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Postani prodavac'),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _farmNameController,
-              decoration: const InputDecoration(labelText: 'Ime / Naziv gazdinstva *'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _locationController,
-              decoration: const InputDecoration(labelText: 'Mesto *'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Telefon *'),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-            ],
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loading ? null : _submit,
-              child: _loading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Postani prodavac'),
-            ),
-          ],
-        ),
-        ),
           ),
         ),
       ),

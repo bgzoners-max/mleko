@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
+import '../../core/map_tiles.dart';
 
 /// Ekran za odabir lokacije na mapi – prodavac tapne tačku da postavi marker.
 /// Koristi InteractionOptions bez doubleTapZoom da tapovi odmah reaguju,
@@ -51,19 +52,24 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     // Brza povratna informacija da je lokacija odabrana
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Lokacija: ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}'),
+        content: Text(
+            'Lokacija: ${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)}'),
         duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
+        behavior: MediaQuery.sizeOf(context).width >= 800
+            ? SnackBarBehavior.floating
+            : SnackBarBehavior.fixed,
       ),
     );
   }
 
   void _confirm() {
     if (_selectedPoint != null) {
-      context.pop({'lat': _selectedPoint!.latitude, 'lng': _selectedPoint!.longitude});
+      context.pop(
+          {'lat': _selectedPoint!.latitude, 'lng': _selectedPoint!.longitude});
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tapnite na mapu da odaberete lokaciju farme.')),
+        const SnackBar(
+            content: Text('Tapnite na mapu da odaberete lokaciju farme.')),
       );
     }
   }
@@ -93,14 +99,13 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 onTap: _onMapTap,
                 onMapEvent: _onMapEvent,
                 interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.doubleTapZoom & ~InteractiveFlag.doubleTapDragZoom,
+                  flags: InteractiveFlag.all &
+                      ~InteractiveFlag.doubleTapZoom &
+                      ~InteractiveFlag.doubleTapDragZoom,
                 ),
               ),
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'app.mleko',
-                ),
+                AppMapTiles.buildTileLayer(),
                 if (_selectedPoint != null)
                   TranslucentPointer(
                     child: MarkerLayer(
@@ -118,12 +123,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       ],
                     ),
                   ),
+                AppMapTiles.buildAttribution(),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            color: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withValues(alpha: 0.5),
             child: SafeArea(
               top: false,
               child: Column(
@@ -140,14 +149,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   ],
                   Row(
                     children: [
-                      Icon(Icons.touch_app, color: Theme.of(context).colorScheme.primary),
+                      Icon(Icons.touch_app,
+                          color: Theme.of(context).colorScheme.primary),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _selectedPoint != null
                               ? 'Lokacija: ${_selectedPoint!.latitude.toStringAsFixed(5)}, ${_selectedPoint!.longitude.toStringAsFixed(5)}'
                               : 'Tapnite na mapu da označite lokaciju farme',
-                          style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                          style: TextStyle(
+                              color: Colors.grey.shade700, fontSize: 13),
                         ),
                       ),
                     ],

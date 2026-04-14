@@ -40,3 +40,50 @@ jobs:
         with:
           name: coverage
           path: coverage/lcov.info
+
+  db-integration-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Start local Supabase stack
+        run: npx supabase start
+
+      - name: Reset local database
+        run: npx supabase db reset --local --yes
+
+      - name: Run order status flow integration SQL
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/order_status_flow_integration.sql
+
+      - name: Regenerate local Supabase types
+        run: npm run supabase:types:local
+
+      - name: Verify generated types are committed
+        shell: bash
+        run: |
+          if ! git diff --quiet -- supabase/types/database.types.ts; then
+            echo "::error file=supabase/types/database.types.ts::Supabase generated types are out of date. Run 'npm run supabase:types' after updating migrations and commit the regenerated file."
+            echo "Detected diff in supabase/types/database.types.ts:"
+            git --no-pager diff -- supabase/types/database.types.ts
+            exit 1
+          fi
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup

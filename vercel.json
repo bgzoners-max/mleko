@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/p/:id", "destination": "/api/product-preview?id=:id" },
+    { "source": "/:path((?!api/).*)", "destination": "/index.html" }
   ]
 }

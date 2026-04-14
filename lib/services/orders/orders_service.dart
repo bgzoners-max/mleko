@@ -6,6 +6,7 @@ import '../../models/order_item_model.dart';
 import '../../models/order_model.dart';
 import '../../models/order_status_audit_log_model.dart';
 import '../../models/product_model.dart';
+import '../../models/seller_delivery_models.dart';
 import '../../utils/quantity_engine.dart';
 import '../core/logger_service.dart';
 
@@ -180,6 +181,8 @@ class OrdersService {
     required String buyerCity,
     required String buyerPhone,
     String? buyerAddress,
+    DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
+    DeliverySelectionModel? deliverySelection,
   }) async {
     if (items.isEmpty) {
       throw Exception('Porudžbina mora imati barem jednu stavku.');
@@ -228,6 +231,23 @@ class OrdersService {
       }
     }
 
+    final orderTotal = items.fold<double>(
+      0,
+      (sum, item) => sum + (item.unitPrice * item.quantityKg),
+    );
+
+    if (deliveryMethod == DeliveryMethod.sellerDelivery) {
+      if (deliverySelection == null) {
+        throw Exception('Izaberite grad, lokaciju i termin lične dostave.');
+      }
+      final minimum = deliverySelection.minOrderAmountRsd;
+      if (minimum != null && orderTotal < minimum) {
+        throw Exception(
+          'Minimalna porudžbina za izabrani termin je ${formatRsdAmount(minimum)}.',
+        );
+      }
+    }
+
     final itemsJson = items.map((i) => i.toJson()).toList();
     final result = await _client.rpc(
       'create_order_with_items',
@@ -239,6 +259,10 @@ class OrdersService {
         'p_note': note,
         'p_buyer_city': buyerCity,
         'p_buyer_address': buyerAddress,
+        'p_delivery_method': deliveryMethod.dbValue,
+        'p_delivery_point_id': deliverySelection?.pointId,
+        'p_delivery_slot_id': deliverySelection?.slotId,
+        'p_delivery_fee_rsd': deliverySelection?.deliveryFeeRsd,
       },
     );
     return result as String;
@@ -412,8 +436,7 @@ class OrdersService {
 
     return (list as List)
         .map(
-          (e) =>
-              OrderStatusAuditLogModel.fromJson(e as Map<String, dynamic>),
+          (e) => OrderStatusAuditLogModel.fromJson(e as Map<String, dynamic>),
         )
         .toList();
   }
@@ -456,14 +479,12 @@ class OrdersService {
         .order('order_count', ascending: false)
         .limit(limit);
 
-    return (products as List)
-        .map((p) {
-          final data = p as Map<String, dynamic>;
-          final product = ProductModel.fromJson(data);
-          final salesCount = data['order_count'] as int;
-          return (product: product, salesCount: salesCount);
-        })
-        .toList();
+    return (products as List).map((p) {
+      final data = p as Map<String, dynamic>;
+      final product = ProductModel.fromJson(data);
+      final salesCount = data['order_count'] as int;
+      return (product: product, salesCount: salesCount);
+    }).toList();
   }
 }
 

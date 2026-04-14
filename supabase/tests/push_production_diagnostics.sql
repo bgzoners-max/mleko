@@ -1,6 +1,15 @@
 -- Push diagnostics package (production-safe read checks)
 -- Run sections one by one in SQL Editor.
 
+-- 0) One-line health summary (recommended first check)
+SELECT * FROM public.push_health_summary();
+
+-- 0b) Dashboard-ready summary view
+SELECT * FROM public.push_health_dashboard;
+
+-- 0c) Users with active push issues
+SELECT * FROM public.push_health_user_issues;
+
 -- 1) Core config check: edge URL + anon key presence
 SELECT key, CASE
   WHEN key = 'functions_base_url' THEN value
@@ -48,6 +57,10 @@ ORDER BY created_at DESC
 LIMIT 100;
 
 -- 5) Last sends for one specific user (replace UUID)
+-- SELECT *
+-- FROM public.push_user_health('00000000-0000-0000-0000-000000000000'::uuid);
+
+-- 5b) Detailed delivery history for one user (replace UUID)
 -- SELECT
 --   created_at,
 --   request_id,
@@ -121,3 +134,7 @@ FROM public.user_push_tokens
 WHERE created_at < NOW() - INTERVAL '60 days'
 ORDER BY created_at ASC
 LIMIT 100;
+
+-- 12) Cleanup playbook
+-- See: supabase/tests/push_delivery_log_cleanup.sql
+-- See also: supabase/tests/push_delivery_log_archive_cleanup.sql

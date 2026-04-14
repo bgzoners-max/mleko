@@ -2,7 +2,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'Naše selo';
+  static const String appName = 'Domaći market';
   static const String appTagline = 'Naša snaga';
 
   static const List<String> regions = [

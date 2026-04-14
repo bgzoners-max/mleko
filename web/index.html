@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="sr">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -19,35 +19,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Naše mleko – kupuj domaće mlečne proizvode direktno od proizvođača. Sir, kačkavalj, kajmak i više.">
+  <meta name="description" content="Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.">
 
   <!-- Web preview (Open Graph, Twitter) – za deljenje na WhatsApp, Facebook, itd. -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Naše mleko – Domaći mlečni proizvodi">
-  <meta property="og:description" content="Kupuj direktno od proizvođača. Sir, kačkavalj, kajmak i ostalo.">
-  <meta property="og:image" content="/icons/Icon-512.png">
+  <meta property="og:title" content="Domaće, baš kako treba! | domaćimarket.rs">
+  <meta property="og:description" content="Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.">
+  <meta property="og:image" content="icons/Icon-512.png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
-  <meta property="og:site_name" content="Naše mleko">
+  <meta property="og:site_name" content="Domaći market">
+  <meta property="og:url" content="https://domacimarket.rs/">
   <meta property="og:locale" content="sr_RS">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Naše mleko – Domaći mlečni proizvodi">
-  <meta name="twitter:description" content="Kupuj direktno od proizvođača. Sir, kačkavalj, kajmak.">
-  <meta name="twitter:image" content="/icons/Icon-512.png">
+  <meta name="twitter:title" content="Domaće, baš kako treba! | domaćimarket.rs">
+  <meta name="twitter:description" content="Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.">
+  <meta name="twitter:image" content="icons/Icon-512.png">
+  <link rel="canonical" href="https://domacimarket.rs/">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Naše mleko">
+  <meta name="apple-mobile-web-app-title" content="Domaći market">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Naše mleko – Domaći mlečni proizvodi</title>
+  <title>Domaće, baš kako treba! | domaćimarket.rs</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    window.addEventListener('load', async function () {
+      if (!('serviceWorker' in navigator) || !('caches' in window)) {
+        return;
+      }
+
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      } catch (error) {
+        console.warn('Web cache cleanup failed', error);
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

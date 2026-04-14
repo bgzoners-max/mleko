@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mleko/core/web_seo.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -23,7 +24,8 @@ class _LandingScreenState extends State<LandingScreen> {
   void _scrollToWaitlist() {
     final ctx = _waitlistKey.currentContext;
     if (ctx != null) {
-      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+      Scrollable.ensureVisible(ctx,
+          duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
     }
   }
 
@@ -40,11 +42,12 @@ class _LandingScreenState extends State<LandingScreen> {
       setState(() => _error = 'Unesite ispravnu email adresu.');
       return;
     }
-    setState(() { _submitting = true; _error = null; });
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
-      await Supabase.instance.client
-          .from('waitlist')
-          .insert({'email': email});
+      await Supabase.instance.client.from('waitlist').insert({'email': email});
       if (mounted) setState(() => _submitted = true);
     } on PostgrestException catch (e) {
       if (mounted) {
@@ -59,6 +62,12 @@ class _LandingScreenState extends State<LandingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    setPageMetadata(
+      title: 'Domaće, baš kako treba! | domaćimarket.rs',
+      description:
+          'Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.',
+      path: '/',
+    );
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 800;
@@ -71,7 +80,8 @@ class _LandingScreenState extends State<LandingScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Header(isWide: isWide),
-            _HeroSection(isWide: isWide, theme: theme, onWaitlistTap: _scrollToWaitlist),
+            _HeroSection(
+                isWide: isWide, theme: theme, onWaitlistTap: _scrollToWaitlist),
             const _TrustSection(),
             const _HowItWorksSection(),
             _WaitlistSection(
@@ -106,30 +116,59 @@ class _Header extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.eco, color: Colors.white, size: 28),
-              SizedBox(width: 10),
+              Image.asset(
+                'assets/images/header_logo.png',
+                height: isWide ? 52 : 40,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 10),
               Text(
                 'Domaći market',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: isWide ? 20 : 16,
                   fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
+                  letterSpacing: -0.3,
                 ),
               ),
             ],
           ),
+          if (isWide) ...[
+            TextButton(
+              onPressed: () => context.push('/about'),
+              child: const Text('O platformi',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () => context.push('/support'),
+              child:
+                  const Text('Podrška', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () => context.push('/uslovi-koriscenja'),
+              child: const Text('Uslovi korišćenja',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () => context.push('/politika-privatnosti'),
+              child: const Text('Politika privatnosti',
+                  style: TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(width: 8),
+          ],
           TextButton(
             onPressed: () => context.go('/login'),
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: Colors.white.withValues(alpha: 0.15),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Prijava', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text('Prijava',
+                style: TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -141,7 +180,8 @@ class _HeroSection extends StatelessWidget {
   final bool isWide;
   final ThemeData theme;
   final VoidCallback onWaitlistTap;
-  const _HeroSection({required this.isWide, required this.theme, required this.onWaitlistTap});
+  const _HeroSection(
+      {required this.isWide, required this.theme, required this.onWaitlistTap});
 
   @override
   Widget build(BuildContext context) {
@@ -162,8 +202,8 @@ class _HeroSection extends StatelessWidget {
         children: [
           Image.asset(
             'assets/images/logo.png',
-            width: isWide ? 180 : 140,
-            height: isWide ? 180 : 140,
+            width: isWide ? 360 : 280,
+            height: isWide ? 360 : 280,
           ),
           const SizedBox(height: 24),
           Container(
@@ -184,7 +224,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Text(
-            'Direktno sa sela\nna vaš sto',
+            'Domaće, baš kako treba!',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
@@ -196,7 +236,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Vaša oaza domaće hrane — povežite se sa proverenim proizvođačima i uživajte u pravim ukusima.',
+            'Povežite se sa proverenim proizvođačima, otkrijte lokalnu ponudu i kupujte direktno od ljudi koji stoje iza svojih proizvoda.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.88),
@@ -215,9 +255,12 @@ class _HeroSection extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF1B5E20),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  textStyle: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 15),
                 ),
                 child: const Text('Registrujte se'),
               ),
@@ -226,9 +269,12 @@ class _HeroSection extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: Colors.white, width: 1.5),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  textStyle: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 child: const Text('Obavestite me kada platforma startuje'),
               ),
@@ -236,7 +282,7 @@ class _HeroSection extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Bez posrednika  •  Provereni proizvođači  •  Domaće i sveže',
+            'Domaće, baš kako treba!  •  Provereni proizvođači  •  Lokalna ponuda',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.65),
@@ -268,7 +314,7 @@ class _TrustSection extends StatelessWidget {
           child: Column(
             children: [
               const Text(
-                'Domaći market je platforma gde će biti:',
+                'Domaći market okuplja:',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
@@ -277,14 +323,15 @@ class _TrustSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              const _CheckItem('Provereni proizvođači'),
+              const _CheckItem('Proverene proizvođače i autentične proizvode'),
               const SizedBox(height: 12),
-              const _CheckItem('Direktna kupovina bez preprodavaca'),
+              const _CheckItem('Direktnu kupovinu bez preprodavaca'),
               const SizedBox(height: 12),
-              const _CheckItem('Transparentno poreklo proizvoda'),
+              const _CheckItem('Jasno poreklo i direktan kontakt'),
               const SizedBox(height: 28),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
@@ -353,7 +400,7 @@ class _HowItWorksSection extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Jednostavno, bez filozofije.',
+                'Jednostavno, pregledno i direktno.',
                 style: TextStyle(fontSize: 14, color: Color(0xFF78909C)),
               ),
               const SizedBox(height: 36),
@@ -361,20 +408,41 @@ class _HowItWorksSection extends StatelessWidget {
                   ? const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _StepCard(step: '1', title: 'Pronađite proizvođača', icon: Icons.search)),
+                        Expanded(
+                            child: _StepCard(
+                                step: '1',
+                                title: 'Pronađite lokalnu ponudu',
+                                icon: Icons.search)),
                         SizedBox(width: 16),
-                        Expanded(child: _StepCard(step: '2', title: 'Izaberite proizvode', icon: Icons.shopping_basket_outlined)),
+                        Expanded(
+                            child: _StepCard(
+                                step: '2',
+                                title: 'Izaberite proizvode',
+                                icon: Icons.shopping_basket_outlined)),
                         SizedBox(width: 16),
-                        Expanded(child: _StepCard(step: '3', title: 'Dogovorite kupovinu ili dostavu', icon: Icons.handshake_outlined)),
+                        Expanded(
+                            child: _StepCard(
+                                step: '3',
+                                title: 'Dogovorite kupovinu ili preuzimanje',
+                                icon: Icons.handshake_outlined)),
                       ],
                     )
                   : const Column(
                       children: [
-                        _StepCard(step: '1', title: 'Pronađite proizvođača', icon: Icons.search),
+                        _StepCard(
+                            step: '1',
+                            title: 'Pronađite lokalnu ponudu',
+                            icon: Icons.search),
                         SizedBox(height: 16),
-                        _StepCard(step: '2', title: 'Izaberite proizvode', icon: Icons.shopping_basket_outlined),
+                        _StepCard(
+                            step: '2',
+                            title: 'Izaberite proizvode',
+                            icon: Icons.shopping_basket_outlined),
                         SizedBox(height: 16),
-                        _StepCard(step: '3', title: 'Dogovorite kupovinu ili dostavu', icon: Icons.handshake_outlined),
+                        _StepCard(
+                            step: '3',
+                            title: 'Dogovorite kupovinu ili preuzimanje',
+                            icon: Icons.handshake_outlined),
                       ],
                     ),
             ],
@@ -389,7 +457,8 @@ class _StepCard extends StatelessWidget {
   final String step;
   final String title;
   final IconData icon;
-  const _StepCard({required this.step, required this.title, required this.icon});
+  const _StepCard(
+      {required this.step, required this.title, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -411,7 +480,10 @@ class _StepCard extends StatelessWidget {
             child: Center(
               child: Text(
                 step,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18),
               ),
             ),
           ),
@@ -421,7 +493,10 @@ class _StepCard extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1B1B1B)),
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1B1B1B)),
           ),
         ],
       ),
@@ -461,7 +536,8 @@ class _WaitlistSection extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 540),
           child: Column(
             children: [
-              const Icon(Icons.mark_email_unread_outlined, color: Colors.white, size: 40),
+              const Icon(Icons.mark_email_unread_outlined,
+                  color: Colors.white, size: 40),
               const SizedBox(height: 16),
               const Text(
                 'Prijavite se prvi',
@@ -474,7 +550,7 @@ class _WaitlistSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Ukoliko ste proizvođač, ostavite nam mail i bićete prvi koji će biti obavešten kada sajt krene da radi.',
+                'Ostavite nam email i bićete među prvima obavešteni kada platforma krene, bilo da želite da kupujete ili da ponudite svoje proizvode.',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.88),
                   fontSize: 16,
@@ -573,25 +649,34 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width >= 800;
+
     return Container(
       color: const Color(0xFF0A0A0A),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: Column(
+        crossAxisAlignment:
+            isWide ? CrossAxisAlignment.center : CrossAxisAlignment.start,
         children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Row(
+            mainAxisAlignment:
+                isWide ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
-              Icon(Icons.eco, color: Colors.white54, size: 18),
-              SizedBox(width: 8),
-              Text(
+              Image.asset('assets/images/header_logo.png',
+                  height: 22, width: 22, fit: BoxFit.contain),
+              const SizedBox(width: 8),
+              const Text(
                 'Domaći market',
-                style: TextStyle(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600),
               ),
             ],
           ),
           const SizedBox(height: 12),
           RichText(
-            textAlign: TextAlign.center,
+            textAlign: isWide ? TextAlign.center : TextAlign.left,
             text: TextSpan(
               style: const TextStyle(color: Colors.white38, fontSize: 12),
               children: [
@@ -603,7 +688,17 @@ class _Footer extends StatelessWidget {
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()
-                    ..onTap = () => context.push('/terms'),
+                    ..onTap = () => context.push('/uslovi-koriscenja'),
+                ),
+                const TextSpan(text: ' · '),
+                TextSpan(
+                  text: 'Politika privatnosti',
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => context.push('/politika-privatnosti'),
                 ),
               ],
             ),

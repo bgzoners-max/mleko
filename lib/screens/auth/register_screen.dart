@@ -18,9 +18,29 @@ class RegisterScreen extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-              maxWidth: Breakpoints.isTabletOrLarger(context) ? 520 : double.infinity),
+            maxWidth: Breakpoints.authContentWidth(
+              context,
+              tabletWidth: 520,
+              desktopWidth: 520,
+            ),
+          ),
           child: SingleChildScrollView(
-            padding: EdgeInsets.all(Breakpoints.horizontalPadding(context)),
+            padding: EdgeInsets.fromLTRB(
+              Breakpoints.horizontalPadding(context),
+              Breakpoints.adaptiveDouble(
+                context,
+                phone: 16,
+                largeTabletValue: 24,
+                desktop: 24,
+              ),
+              Breakpoints.horizontalPadding(context),
+              Breakpoints.adaptiveDouble(
+                context,
+                phone: 24,
+                largeTabletValue: 32,
+                desktop: 32,
+              ),
+            ),
             child: _RegisterForm(),
           ),
         ),
@@ -46,6 +66,7 @@ class _RegisterFormState extends State<_RegisterForm> {
 
   bool _obscure = true;
   bool _termsAccepted = false;
+  bool _privacyAccepted = false;
   bool _isSeller = false;
 
   // inline field errors
@@ -90,13 +111,16 @@ class _RegisterFormState extends State<_RegisterForm> {
       setState(() => _emailError = 'Unesite ispravnu email adresu.');
       return;
     }
-    setState(() { _checkingEmail = true; _emailError = null; });
+    setState(() {
+      _checkingEmail = true;
+      _emailError = null;
+    });
     try {
-      final exists = await context.read<AppState>().authService.checkEmailExists(email);
+      final exists =
+          await context.read<AppState>().authService.checkEmailExists(email);
       if (mounted) {
-        setState(() => _emailError = exists
-            ? 'Ova email adresa je već registrovana.'
-            : null);
+        setState(() => _emailError =
+            exists ? 'Ova email adresa je već registrovana.' : null);
       }
     } catch (_) {
       // silent — server check failed, submit will catch it
@@ -109,13 +133,16 @@ class _RegisterFormState extends State<_RegisterForm> {
     if (_phoneFocus.hasFocus) return;
     final phone = _phoneCtrl.text.trim();
     if (phone.isEmpty) return;
-    setState(() { _checkingPhone = true; _phoneError = null; });
+    setState(() {
+      _checkingPhone = true;
+      _phoneError = null;
+    });
     try {
-      final exists = await context.read<AppState>().authService.checkPhoneExists(phone);
+      final exists =
+          await context.read<AppState>().authService.checkPhoneExists(phone);
       if (mounted) {
-        setState(() => _phoneError = exists
-            ? 'Ovaj broj telefona je već registrovan.'
-            : null);
+        setState(() => _phoneError =
+            exists ? 'Ovaj broj telefona je već registrovan.' : null);
       }
     } catch (_) {
       // silent
@@ -127,14 +154,24 @@ class _RegisterFormState extends State<_RegisterForm> {
   Future<void> _submit() async {
     setState(() => _submitError = null);
 
+    if (!_termsAccepted && !_privacyAccepted) {
+      setState(() => _submitError =
+          'Morate prihvatiti Uslove korišćenja i Politiku privatnosti.');
+      return;
+    }
     if (!_termsAccepted) {
       setState(() => _submitError = 'Morate prihvatiti Uslove korišćenja.');
+      return;
+    }
+    if (!_privacyAccepted) {
+      setState(() => _submitError = 'Morate prihvatiti Politiku privatnosti.');
       return;
     }
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
     if (email.isEmpty || password.length < 6) {
-      setState(() => _submitError = 'Email i lozinka (min 6 znakova) su obavezni.');
+      setState(
+          () => _submitError = 'Email i lozinka (min 6 znakova) su obavezni.');
       return;
     }
     if (!_emailRegex.hasMatch(email)) {
@@ -142,12 +179,14 @@ class _RegisterFormState extends State<_RegisterForm> {
       return;
     }
     if (_emailError != null || _phoneError != null) return;
+    if (_phoneCtrl.text.trim().isEmpty) {
+      setState(() => _submitError = 'Broj telefona je obavezan.');
+      return;
+    }
     if (_isSeller &&
-        (_phoneCtrl.text.trim().isEmpty ||
-            _cityCtrl.text.trim().isEmpty ||
-            _nameCtrl.text.trim().isEmpty)) {
+        (_cityCtrl.text.trim().isEmpty || _nameCtrl.text.trim().isEmpty)) {
       setState(() =>
-          _submitError = 'Za prodavca su obavezni ime, telefon i mesto/gazdinstvo.');
+          _submitError = 'Za prodavca su obavezni ime i mesto/gazdinstvo.');
       return;
     }
 
@@ -156,8 +195,10 @@ class _RegisterFormState extends State<_RegisterForm> {
       await context.read<AppState>().authService.registerWithEmail(
             email,
             password,
-            displayName: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-            phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+            displayName:
+                _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+            phone:
+                _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
             city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
             isSeller: _isSeller,
             farmName: _isSeller ? _nameCtrl.text.trim() : null,
@@ -194,7 +235,8 @@ class _RegisterFormState extends State<_RegisterForm> {
                     text: TextSpan(
                       style: const TextStyle(color: Colors.red, fontSize: 12),
                       children: [
-                        const TextSpan(text: 'Ova email adresa je već registrovana. '),
+                        const TextSpan(
+                            text: 'Ova email adresa je već registrovana. '),
                         TextSpan(
                           text: 'Prijavite se?',
                           style: TextStyle(
@@ -307,7 +349,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           focusNode: _phoneFocus,
           keyboardType: TextInputType.phone,
           decoration: InputDecoration(
-            labelText: _isSeller ? 'Telefon *' : 'Telefon (opciono)',
+            labelText: 'Telefon *',
             suffixIcon: _checkingPhone
                 ? const Padding(
                     padding: EdgeInsets.all(12),
@@ -323,8 +365,7 @@ class _RegisterFormState extends State<_RegisterForm> {
           ),
         ),
         if (_checkingPhone) _checkingIndicator(),
-        if (!_checkingPhone && _phoneError != null)
-          _fieldError(_phoneError!),
+        if (!_checkingPhone && _phoneError != null) _fieldError(_phoneError!),
         const SizedBox(height: 12),
 
         // City
@@ -359,11 +400,47 @@ class _RegisterFormState extends State<_RegisterForm> {
                           decoration: TextDecoration.underline,
                         ),
                         recognizer: TapGestureRecognizer()
-                          ..onTap = () => context.push('/terms'),
+                          ..onTap = () => context.push('/uslovi-koriscenja'),
                       ),
                       const TextSpan(
                         text:
-                            ' i potvrđujem da su moji proizvodi u skladu sa važećim zakonima i zdravstveno ispravni.',
+                            ' i potvrđujem da su moji podaci tačni i da ću platformu koristiti u skladu sa važećim pravilima i zakonima.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: _privacyAccepted,
+              onChanged: (v) => setState(() => _privacyAccepted = v ?? false),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: RichText(
+                  text: TextSpan(
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    children: [
+                      const TextSpan(text: 'Prihvatam '),
+                      TextSpan(
+                        text: 'Politiku privatnosti',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => context.push('/politika-privatnosti'),
+                      ),
+                      const TextSpan(
+                        text:
+                            ' i saglasan/na sam da se moji podaci obrađuju na način opisan u tom dokumentu.',
                       ),
                     ],
                   ),

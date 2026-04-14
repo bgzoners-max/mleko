@@ -181,6 +181,284 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         .subscribe();
   }
 
+  Widget _buildQuickActionsCard(
+    BuildContext context, {
+    required int totalCount,
+  }) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(Breakpoints.cardPadding(context)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Brze radnje',
+              style: Breakpoints.sectionTitleStyle(
+                context,
+                Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Ukupno obaveštenja: $totalCount',
+              style: Breakpoints.supportingTextStyle(
+                context,
+                Theme.of(context).textTheme.bodyMedium,
+                phone: 13,
+                largeTabletValue: 14,
+                desktop: 14,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _loadAndMarkRead,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Osveži'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _markAllAsRead,
+                  icon: const Icon(Icons.done_all),
+                  label: const Text('Pročitaj sve'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard(BuildContext context, double settingsCardPadding) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(settingsCardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Podešavanja push obaveštenja',
+              style: Breakpoints.sectionTitleStyle(
+                context,
+                Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: openAppSettings,
+              icon: const Icon(Icons.settings, size: 20),
+              label: const Text('Otvori podešavanja obaveštenja'),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Na Xiaomi/HyperOS: uključi Pop-up i Zvuk za oba kanala (Porudžbine i Hitno), jer Xiaomi ume da jedan ostavi silent.',
+              style: Breakpoints.supportingTextStyle(
+                context,
+                Theme.of(context).textTheme.bodySmall,
+                phone: 13,
+                largeTabletValue: 14,
+                desktop: 14,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPermissionBanner(BuildContext context) {
+    return Card(
+      color: Colors.amber.shade100,
+      child: const ListTile(
+        leading: Icon(Icons.notifications_off),
+        title: Text('Obaveštenja su isključena'),
+        subtitle: Text(
+          'Dozvolite obaveštenja u podešavanjima da primate push obaveštenja.',
+        ),
+        trailing: TextButton(
+          onPressed: openAppSettings,
+          child: Text('Podešavanja'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopNotificationsPanel(
+    BuildContext context, {
+    required List<NotificationModel> list,
+    required double tileVerticalPadding,
+    required double tileHorizontalPadding,
+    required double tileBottomMargin,
+  }) {
+    final panelPadding = Breakpoints.cardPadding(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              panelPadding,
+              panelPadding,
+              panelPadding,
+              12,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Sva obaveštenja',
+                    style: Breakpoints.sectionTitleStyle(
+                      context,
+                      Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: Text(
+                      '${list.length}',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: list.isEmpty
+                ? const Center(
+                    child: AppEmptyState(
+                      icon: Icons.notifications_none,
+                      title: 'Nemate obaveštenja',
+                      subtitle:
+                          'Ovde će se prikazivati porudžbine, poruke i ostala obaveštenja.',
+                    ),
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.all(panelPadding),
+                    itemCount: list.length,
+                    itemBuilder: (_, i) {
+                      final n = list[i];
+                      return Dismissible(
+                        key: Key(n.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          color: Colors.red,
+                          child: const Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        confirmDismiss: (_) async => true,
+                        onDismissed: (_) => _deleteNotification(n, list),
+                        child: Card(
+                          margin: EdgeInsets.only(bottom: tileBottomMargin),
+                          color: n.isRead
+                              ? null
+                              : Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withValues(alpha: 0.5),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: tileHorizontalPadding,
+                              vertical: tileVerticalPadding,
+                            ),
+                            leading: Icon(
+                              n.isRead
+                                  ? Icons.notifications
+                                  : Icons.notifications_active,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            title: Text(
+                              n.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(
+                                    fontSize: Breakpoints.adaptiveDouble(
+                                      context,
+                                      phone: 15,
+                                      largeTabletValue: 16,
+                                      desktop: 16,
+                                    ),
+                                    fontWeight: n.isRead
+                                        ? FontWeight.w500
+                                        : FontWeight.w600,
+                                  ),
+                            ),
+                            subtitle: Text(
+                              n.body,
+                              style: Breakpoints.supportingTextStyle(
+                                context,
+                                Theme.of(context).textTheme.bodyMedium,
+                                phone: 13,
+                                largeTabletValue: 14,
+                                desktop: 14,
+                                height: 1.35,
+                              ),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Obriši obaveštenje',
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: () => _deleteNotification(n, list),
+                                ),
+                                if (n.orderId != null)
+                                  IconButton(
+                                    tooltip: 'Vidi porudžbinu',
+                                    icon: const Icon(Icons.receipt_long),
+                                    onPressed: () => context.go('/orders'),
+                                  ),
+                              ],
+                            ),
+                            onTap: () async {
+                              if (!n.isRead) await _service.markAsRead(n.id);
+                              if (!context.mounted) return;
+                              if (n.type == 'support_ticket_created') {
+                                context.go('/admin/tickets');
+                              } else if (n.type == 'admin_reply') {
+                                if (n.ticketId != null) {
+                                  context.go('/support/ticket/${n.ticketId}');
+                                } else {
+                                  context.go('/support');
+                                }
+                              } else if (n.orderId != null) {
+                                context.go('/orders');
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
@@ -191,14 +469,27 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       );
     }
 
-    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
     final contentPadding = Breakpoints.horizontalPadding(context);
     final settingsCardPadding = Breakpoints.cardPadding(context);
+    final panelGap = Breakpoints.panelGap(context);
+    final tileHorizontalPadding = Breakpoints.adaptiveDouble(
+      context,
+      phone: 16,
+      largeTabletValue: 18,
+      desktop: 20,
+    );
     final tileVerticalPadding = Breakpoints.adaptiveDouble(
       context,
       phone: 6,
       largeTabletValue: 8,
       desktop: 8,
+    );
+    final tileBottomMargin = Breakpoints.adaptiveDouble(
+      context,
+      phone: 8,
+      largeTabletValue: 10,
+      desktop: 12,
     );
 
     return Scaffold(
@@ -256,8 +547,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content:
-                            Text('Izaberite "Ne ograničavaj" za Naše Selo.')),
+                        content: Text(
+                            'Izaberite "Ne ograničavaj" za Domaći market.')),
                   );
                 }
               } else if (value == 'help') {
@@ -281,8 +572,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints:
-              BoxConstraints(maxWidth: Breakpoints.maxContentWidth(context)),
+          constraints: BoxConstraints(
+            maxWidth: isTwoPaneLayout
+                ? Breakpoints.dataContentWidth(context)
+                : Breakpoints.maxContentWidth(context),
+          ),
           child: StreamBuilder<List<NotificationModel>>(
             stream: _notificationsController.stream,
             builder: (context, snap) {
@@ -296,77 +590,74 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               if (!snap.hasData) return const NotificationListSkeleton();
               final list = snap.data!;
               final settingsCard = (!kIsWeb && Platform.isAndroid)
-                  ? Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        contentPadding,
-                        contentPadding,
-                        contentPadding,
-                        0,
-                      ),
-                      child: Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(settingsCardPadding),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Podešavanja push obaveštenja',
-                                style: Breakpoints.sectionTitleStyle(
-                                  context,
-                                  Theme.of(context).textTheme.titleSmall,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              FilledButton.icon(
-                                onPressed: openAppSettings,
-                                icon: const Icon(Icons.settings, size: 20),
-                                label: const Text(
-                                    'Otvori podešavanja obaveštenja'),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Na Xiaomi/HyperOS: uključi Pop-up i Zvuk za oba kanala (Porudžbine i Hitno), jer Xiaomi ume da jedan ostavi silent.',
-                                style: Breakpoints.supportingTextStyle(
-                                  context,
-                                  Theme.of(context).textTheme.bodySmall,
-                                  phone: 13,
-                                  largeTabletValue: 14,
-                                  desktop: 14,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
+                  ? _buildSettingsCard(context, settingsCardPadding)
                   : null;
               final permissionBanner = !kIsWeb &&
                       Platform.isAndroid &&
                       _notificationPermissionGranted == false
-                  ? Padding(
-                      padding: EdgeInsets.all(contentPadding),
-                      child: Card(
-                        color: Colors.amber.shade100,
-                        child: ListTile(
-                          leading: const Icon(Icons.notifications_off),
-                          title: const Text('Obaveštenja su isključena'),
-                          subtitle: const Text(
-                              'Dozvolite obaveštenja u podešavanjima da primate push obaveštenja.'),
-                          trailing: TextButton(
-                            onPressed: () => openAppSettings(),
-                            child: const Text('Podešavanja'),
+                  ? _buildPermissionBanner(context)
+                  : null;
+              if (isTwoPaneLayout) {
+                return Padding(
+                  padding: EdgeInsets.all(contentPadding),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: Breakpoints.desktopSidebarWidth(context),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildQuickActionsCard(
+                                context,
+                                totalCount: list.length,
+                              ),
+                              if (permissionBanner != null) ...[
+                                SizedBox(height: panelGap),
+                                permissionBanner,
+                              ],
+                              if (settingsCard != null) ...[
+                                SizedBox(height: panelGap),
+                                settingsCard,
+                              ],
+                            ],
                           ),
                         ),
                       ),
-                    )
-                  : null;
+                      SizedBox(width: panelGap),
+                      Expanded(
+                        child: _buildDesktopNotificationsPanel(
+                          context,
+                          list: list,
+                          tileVerticalPadding: tileVerticalPadding,
+                          tileHorizontalPadding: tileHorizontalPadding,
+                          tileBottomMargin: tileBottomMargin,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
               if (list.isEmpty) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (settingsCard != null) settingsCard,
-                    if (permissionBanner != null) permissionBanner,
+                    if (settingsCard != null)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          contentPadding,
+                          contentPadding,
+                          contentPadding,
+                          0,
+                        ),
+                        child: settingsCard,
+                      ),
+                    if (permissionBanner != null)
+                      Padding(
+                        padding: EdgeInsets.all(contentPadding),
+                        child: permissionBanner,
+                      ),
                     const Expanded(
                       child: AppEmptyState(
                         icon: Icons.notifications_none,
@@ -381,8 +672,21 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (settingsCard != null) settingsCard,
-                  if (permissionBanner != null) permissionBanner,
+                  if (settingsCard != null)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        contentPadding,
+                        contentPadding,
+                        contentPadding,
+                        0,
+                      ),
+                      child: settingsCard,
+                    ),
+                  if (permissionBanner != null)
+                    Padding(
+                      padding: EdgeInsets.all(contentPadding),
+                      child: permissionBanner,
+                    ),
                   Expanded(
                     child: ListView.builder(
                       padding: EdgeInsets.all(contentPadding),
@@ -402,8 +706,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                           confirmDismiss: (_) async => true,
                           onDismissed: (_) => _deleteNotification(n, list),
                           child: Card(
-                            margin:
-                                EdgeInsets.only(bottom: isLargeTablet ? 10 : 8),
+                            margin: EdgeInsets.only(bottom: tileBottomMargin),
                             color: n.isRead
                                 ? null
                                 : Theme.of(context)
@@ -412,7 +715,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                     .withValues(alpha: 0.5),
                             child: ListTile(
                               contentPadding: EdgeInsets.symmetric(
-                                horizontal: isLargeTablet ? 18 : 16,
+                                horizontal: tileHorizontalPadding,
                                 vertical: tileVerticalPadding,
                               ),
                               leading: Icon(
