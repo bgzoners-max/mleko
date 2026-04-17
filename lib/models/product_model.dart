@@ -48,6 +48,7 @@ class ProductModel {
   final ProductDeliveryMode deliveryMode;
   final List<String> selectedDeliveryPointIds;
   final DateTime createdAt;
+  final bool sellerIsVerified;
 
   const ProductModel({
     required this.id,
@@ -68,6 +69,7 @@ class ProductModel {
     this.deliveryMode = ProductDeliveryMode.none,
     this.selectedDeliveryPointIds = const [],
     required this.createdAt,
+    this.sellerIsVerified = false,
   });
 
   bool get isVolumeUnit => unitType == unitL;
@@ -201,6 +203,7 @@ class ProductModel {
                   .toList() ??
               const [],
       createdAt: date,
+      sellerIsVerified: json['seller_is_verified'] as bool? ?? false,
     );
   }
 

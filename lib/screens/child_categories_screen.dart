@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../core/responsive.dart';
 import '../models/category.dart';
 import '../models/product_model.dart';
@@ -22,7 +23,7 @@ class ChildCategoriesScreen extends StatefulWidget {
 
 class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
   final _supabaseService = SupabaseService();
-  final _productsService = ProductsService();
+  ProductsService? _productsService;
   final _scrollController = ScrollController();
 
   List<Category> _categories = [];
@@ -34,6 +35,12 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
   bool _hasMore = true;
   bool _loadingProducts = false;
   bool _loadingMore = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _productsService ??= context.read<ProductsService>();
+  }
 
   @override
   void initState() {
@@ -91,7 +98,7 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
     });
     try {
       final categoryNames = categories.map((c) => c.name).toList();
-      final result = await _productsService.getProductsByCategories(
+      final result = await _productsService!.getProductsByCategories(
         categoryNames: categoryNames,
         offset: 0,
       );
@@ -118,7 +125,7 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
     setState(() => _loadingMore = true);
     try {
       final categoryNames = _categories.map((c) => c.name).toList();
-      final result = await _productsService.getProductsByCategories(
+      final result = await _productsService!.getProductsByCategories(
         categoryNames: categoryNames,
         offset: _offset,
       );

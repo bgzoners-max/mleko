@@ -25,21 +25,23 @@ class BuyerProfileScreen extends StatefulWidget {
 }
 
 class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
-  late Future<Map<String, dynamic>> _loadFuture;
+  Future<Map<String, dynamic>>? _loadFuture;
 
   @override
-  void initState() {
-    super.initState();
-    _loadFuture = _load(widget.buyerId);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadFuture ??= _load(widget.buyerId);
   }
 
   void _retry() => setState(() => _loadFuture = _load(widget.buyerId));
 
-  static Future<Map<String, dynamic>> _load(String buyerId) async {
+  Future<Map<String, dynamic>> _load(String buyerId) async {
+    final usersService = context.read<UsersService>();
+    final reviewsService = context.read<ReviewsService>();
     final results = await Future.wait([
-      UsersService().getUser(buyerId),
-      ReviewsService().getReviewsByBuyer(buyerId),
-      ReviewsService().getReviewsForBuyer(buyerId),
+      usersService.getUser(buyerId),
+      reviewsService.getReviewsByBuyer(buyerId),
+      reviewsService.getReviewsForBuyer(buyerId),
       _loadDeliveredOrdersCount(buyerId),
     ]);
     final reviewsLeftByBuyer = results[1] as List<ReviewModel>;
@@ -461,10 +463,11 @@ class _ContactBuyerButtonState extends State<_ContactBuyerButton> {
 
   Future<void> _openChat() async {
     final currentUser = context.read<AppState>().user;
+    final chatService = context.read<ChatService>();
     if (currentUser == null) return;
     setState(() => _loading = true);
     try {
-      final convId = await ChatService().getOrCreateConversation(
+      final convId = await chatService.getOrCreateConversation(
         widget.buyerId,
         currentUser.id,
       );

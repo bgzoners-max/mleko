@@ -13,6 +13,7 @@ import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
+import '../models/app_error.dart';
 import 'package:mleko/services/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -23,6 +24,7 @@ import '../widgets/skeleton.dart';
 import '../widgets/cache_status_widget.dart';
 import '../widgets/app_network_image.dart';
 import '../widgets/product_card.dart';
+import 'offline_indicator.dart';
 
 typedef HomeProductsData = ({
   List<ProductModel> products,
@@ -39,8 +41,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _refreshController = StreamController<void>.broadcast();
-  final _productsService = ProductsService();
-  final _ordersService = OrdersService();
+  ProductsService? _productsService;
+  OrdersService? _ordersService;
   Stream<HomeProductsData>? _homeProductsStream;
   StreamSubscription<HomeProductsData>? _homeProductsSubscription;
   HomeProductsData? _latestHomeData;
@@ -70,15 +72,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _productsService ??= context.read<ProductsService>();
+    _ordersService ??= context.read<OrdersService>();
     context.read<CategoriesProvider>().load();
     final user = context.read<AppState>().user;
     if (user != null && user.isSeller && user.id != _lastSellerId) {
       _lastSellerId = user.id;
-      _sellerStatsFuture = _ordersService.getSellerStats(user.id);
+      _sellerStatsFuture = _ordersService!.getSellerStats(user.id);
     }
-    final loc = context.read<LocationProvider>();
+    // Koristi listen: false unutar didChangeDependencies ako samo uzimaš vrednost
+    final loc = Provider.of<LocationProvider>(context, listen: false);
     if (_homeProductsStream == null) {
-      _homeProductsStream = _productsService.getHomeProducts(
+      _homeProductsStream = _productsService!.getHomeProducts(
         regionNotifier: loc.regionNotifier,
         refreshTrigger: _refreshController.stream,
       );
@@ -116,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context.select<AppState, int>((s) => s.unreadNotificationCount);
     final isWide = isTwoPaneLayout;
     final isTablet = Breakpoints.isTablet(context);
+    final isOffline = context.select<AppState, bool>((s) => s.isOffline);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isTabletLayout = isTablet && !isWide;
@@ -129,8 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final productGridExtent = isWide
         ? 364.0
         : (isLargeTablet ? 352.0 : (isSmallTablet ? 344.0 : 368.0));
-    final categoryTileExtent =
-        isWide ? 52.0 : (isLargeTablet ? 54.0 : (isTablet ? 58.0 : 58.0));
     final stream = _homeProductsStream;
     if (stream == null) {
       return Scaffold(
@@ -167,631 +171,479 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isTwoPaneLayout
-                ? Breakpoints.dataContentWidth(context)
-                : Breakpoints.maxContentWidth(context),
-          ),
-          child: RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              cacheExtent: 400,
-              slivers: [
-                if (!isWide)
-                  SliverPersistentHeader(
-                    pinned: false,
-                    delegate: _StickySearchHeaderDelegate(
-                      isWide: false,
-                      onTapSearch: () => _openSearch(context),
-                    ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            OfflineIndicator(isOffline: isOffline),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isTwoPaneLayout
+                        ? Breakpoints.dataContentWidth(context)
+                        : Breakpoints.maxContentWidth(context),
                   ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      outerHorizontalPadding,
-                      12,
-                      outerHorizontalPadding,
-                      4,
-                    ),
-                    child: isWide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 70,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Kategorije',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              context.push('/categories'),
-                                          child: const Text('Vidi sve'),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: compactSpacing),
-                                    GridView.builder(
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 4,
-                                        crossAxisSpacing: 6,
-                                        mainAxisSpacing: 6,
-                                        mainAxisExtent: 52,
-                                      ),
-                                      itemCount: topCategories.length,
-                                      itemBuilder: (context, index) {
-                                        final cat = topCategories[index];
-                                        return Semantics(
-                                          button: true,
-                                          label: 'Kategorija ${cat.name}',
-                                          child: Card(
-                                            margin: EdgeInsets.zero,
-                                            clipBehavior: Clip.antiAlias,
-                                            child: InkWell(
-                                              onTap: () => context.push(
-                                                  '/categories/${cat.id}',
-                                                  extra: cat),
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 6),
-                                                child: Row(
-                                                  children: [
-                                                    buildCategoryIcon(
-                                                      cat.icon,
-                                                      size: 22,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .primary,
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Text(
-                                                        cat.name,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodyMedium
-                                                            ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
-                                                            ),
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    if (isSeller) ...[
-                                      SizedBox(height: compactSpacing),
-                                      RepaintBoundary(
-                                        child: _SellerDashboardSliver(
-                                          statsFuture: _sellerStatsFuture,
-                                        ),
-                                      ),
-                                    ],
-                                    SizedBox(height: sectionSpacing),
-                                    StreamBuilder<HomeProductsData>(
-                                      initialData: _latestHomeData,
-                                      stream: stream,
-                                      builder: (context, snap) {
-                                        if (snap.hasError) {
-                                          return AppErrorRetry(
-                                            message:
-                                                'Greška pri učitavanju proizvoda.',
-                                            detail: snap.error?.toString(),
-                                            onRetry: () =>
-                                                _refreshController.add(null),
-                                          );
-                                        }
-                                        if (snap.connectionState ==
-                                            ConnectionState.waiting) {
-                                          return const Padding(
-                                            padding:
-                                                EdgeInsets.only(bottom: 24),
-                                            child: ProductCarouselSkeleton(),
-                                          );
-                                        }
-                                        final list = snap.data?.products ?? [];
-                                        final salesCounts =
-                                            snap.data?.salesCounts ?? {};
-                                        final ratings =
-                                            snap.data?.ratings ?? {};
-                                        final newProducts = list
-                                            .where((p) =>
-                                                DateTime.now()
-                                                    .difference(p.createdAt)
-                                                    .inDays <
-                                                AppConstants.newProductDays)
-                                            .toList();
-                                        final displayList =
-                                            newProducts.isNotEmpty
-                                                ? newProducts
-                                                : list;
-                                        _warmupCarouselImages(displayList);
-                                        final user = context.select<AppState,
-                                            UserModel?>((s) => s.user);
-                                        final canFavorite =
-                                            user != null && !user.isGuest;
-                                        return Column(
+                  child: RefreshIndicator(
+                    onRefresh: _onRefresh,
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      cacheExtent: 400,
+                      slivers: [
+                        // Search header se prikazuje samo na mobilnim uređajima kada se skroluje
+                        if (!isWide) _buildStickySearch(context),
+
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              outerHorizontalPadding,
+                              12,
+                              outerHorizontalPadding,
+                              4,
+                            ),
+                            child: isWide
+                                ? Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 70,
+                                        child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 12),
-                                              child: Text(
-                                                newProducts.isNotEmpty
-                                                    ? 'Najnoviji proizvodi'
-                                                    : 'Poslednje dodato',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium
-                                                    ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.bold),
+                                            _buildCategoryHeader(context),
+                                            SizedBox(height: compactSpacing),
+                                            _CategoryGrid(
+                                                topCategories: topCategories,
+                                                isWide: true),
+                                            if (isSeller) ...[
+                                              SizedBox(height: compactSpacing),
+                                              RepaintBoundary(
+                                                child: _SellerDashboardSliver(
+                                                  statsFuture:
+                                                      _sellerStatsFuture,
+                                                ),
                                               ),
-                                            ),
-                                            GridView.builder(
-                                              shrinkWrap: true,
-                                              physics:
-                                                  const NeverScrollableScrollPhysics(),
-                                              gridDelegate:
-                                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount:
-                                                    Breakpoints.isDesktop(
-                                                            context)
-                                                        ? 4
-                                                        : Breakpoints
-                                                            .productGridColumns(
-                                                                context),
-                                                mainAxisSpacing: 6,
-                                                crossAxisSpacing: 6,
-                                                mainAxisExtent:
-                                                    productGridExtent,
-                                              ),
-                                              itemCount:
-                                                  displayList.take(8).length,
-                                              itemBuilder: (context, i) {
-                                                final product = displayList[i];
-                                                final rating =
-                                                    ratings[product.id];
-                                                return Selector<
-                                                    FavoritesProvider, bool>(
-                                                  selector: (_, fav) => fav
-                                                      .isFavorite(product.id),
-                                                  builder:
-                                                      (_, isFavorite, __) =>
-                                                          ProductCard(
-                                                    product: product,
-                                                    isPopular: (salesCounts[
-                                                                product.id] ??
-                                                            0) >=
+                                            ],
+                                            SizedBox(height: sectionSpacing),
+                                            StreamBuilder<HomeProductsData>(
+                                              initialData: _latestHomeData,
+                                              stream: stream,
+                                              builder: (context, snap) {
+                                                if (snap.hasError) {
+                                                  final appError =
+                                                      AppError.from(snap.error);
+                                                  return AppErrorRetry(
+                                                    message: appError
+                                                        .getUserMessage(),
+                                                    detail: appError.code,
+                                                    onRetry: () =>
+                                                        _refreshController
+                                                            .add(null),
+                                                  );
+                                                }
+                                                if (snap.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return const Padding(
+                                                    padding: EdgeInsets.only(
+                                                        bottom: 24),
+                                                    child:
+                                                        ProductCarouselSkeleton(),
+                                                  );
+                                                }
+                                                final list =
+                                                    snap.data?.products ?? [];
+                                                final salesCounts =
+                                                    snap.data?.salesCounts ??
+                                                        {};
+                                                final ratings =
+                                                    snap.data?.ratings ?? {};
+                                                final newProducts = list
+                                                    .where((p) =>
+                                                        DateTime.now()
+                                                            .difference(
+                                                                p.createdAt)
+                                                            .inDays <
                                                         AppConstants
-                                                            .popularProductMinSales,
-                                                    isFavorite: canFavorite
-                                                        ? isFavorite
-                                                        : null,
-                                                    onFavoriteToggle: canFavorite
-                                                        ? () => context
-                                                            .read<
-                                                                FavoritesProvider>()
-                                                            .toggle(user.id,
-                                                                product.id)
-                                                        : null,
-                                                    avgRating: rating?.avg,
-                                                    reviewCount: rating?.count,
-                                                  ),
+                                                            .newProductDays)
+                                                    .toList();
+                                                final displayList =
+                                                    newProducts.isNotEmpty
+                                                        ? newProducts
+                                                        : list;
+                                                _warmupCarouselImages(
+                                                    displayList);
+                                                final user = context.select<
+                                                    AppState,
+                                                    UserModel?>((s) => s.user);
+                                                final canFavorite =
+                                                    user != null &&
+                                                        !user.isGuest;
+                                                return Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              bottom: 12),
+                                                      child: Text(
+                                                        newProducts.isNotEmpty
+                                                            ? 'Najnoviji proizvodi'
+                                                            : 'Poslednje dodato',
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleMedium
+                                                            ?.copyWith(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                      ),
+                                                    ),
+                                                    GridView.builder(
+                                                      shrinkWrap: true,
+                                                      physics:
+                                                          const NeverScrollableScrollPhysics(),
+                                                      gridDelegate:
+                                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                                        crossAxisCount: Breakpoints
+                                                                .isDesktop(
+                                                                    context)
+                                                            ? 4
+                                                            : Breakpoints
+                                                                .productGridColumns(
+                                                                    context),
+                                                        mainAxisSpacing: 6,
+                                                        crossAxisSpacing: 6,
+                                                        mainAxisExtent:
+                                                            productGridExtent,
+                                                      ),
+                                                      itemCount: displayList
+                                                          .take(8)
+                                                          .length,
+                                                      itemBuilder:
+                                                          (context, i) {
+                                                        final product =
+                                                            displayList[i];
+                                                        final rating =
+                                                            ratings[product.id];
+                                                        return Selector<
+                                                            FavoritesProvider,
+                                                            bool>(
+                                                          selector: (_, fav) =>
+                                                              fav.isFavorite(
+                                                                  product.id),
+                                                          builder: (_,
+                                                                  isFavorite,
+                                                                  __) =>
+                                                              ProductCard(
+                                                            product: product,
+                                                            isPopular: (salesCounts[
+                                                                        product
+                                                                            .id] ??
+                                                                    0) >=
+                                                                AppConstants
+                                                                    .popularProductMinSales,
+                                                            isFavorite:
+                                                                canFavorite
+                                                                    ? isFavorite
+                                                                    : null,
+                                                            onFavoriteToggle: canFavorite
+                                                                ? () => context
+                                                                    .read<
+                                                                        FavoritesProvider>()
+                                                                    .toggle(
+                                                                        user.id,
+                                                                        product
+                                                                            .id)
+                                                                : null,
+                                                            avgRating:
+                                                                rating?.avg,
+                                                            reviewCount:
+                                                                rating?.count,
+                                                          ),
+                                                        );
+                                                      },
+                                                    ),
+                                                    SizedBox(
+                                                        height: compactSpacing),
+                                                    CacheStatusIndicator(
+                                                      onRefresh: () =>
+                                                          _refreshController
+                                                              .add(null),
+                                                    ),
+                                                    SizedBox(
+                                                        height: sectionSpacing),
+                                                  ],
                                                 );
                                               },
                                             ),
-                                            SizedBox(height: compactSpacing),
-                                            CacheStatusIndicator(
-                                              onRefresh: () =>
-                                                  _refreshController.add(null),
-                                            ),
-                                            SizedBox(height: sectionSpacing),
                                           ],
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: sectionSpacing),
-                              Expanded(
-                                flex: 30,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    TextField(
-                                      readOnly: true,
-                                      onTap: () => _openSearch(context),
-                                      decoration: const InputDecoration(
-                                        hintText:
-                                            'Traži proizvode, proizvođače…',
-                                        prefixIcon: Icon(Icons.search),
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(height: sidePanelSpacing),
-                                    RepaintBoundary(
-                                      child: _HomeSidePanel(
-                                        homeProductsStream: stream,
-                                        initialData: _latestHomeData,
-                                        isSeller: isSeller,
-                                      ),
-                                    ),
-                                    if (selectedRegion != null) ...[
-                                      SizedBox(height: sectionSpacing),
-                                      RepaintBoundary(
-                                        child: _SellersNearYouSection(
-                                            region: selectedRegion),
+                                      SizedBox(width: sectionSpacing),
+                                      Expanded(
+                                        flex: 30,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            TextField(
+                                              readOnly: true,
+                                              onTap: () => _openSearch(context),
+                                              decoration: const InputDecoration(
+                                                hintText:
+                                                    'Traži proizvode, proizvođače…',
+                                                prefixIcon: Icon(Icons.search),
+                                              ),
+                                            ),
+                                            SizedBox(height: sidePanelSpacing),
+                                            RepaintBoundary(
+                                              child: _HomeSidePanel(
+                                                homeProductsStream: stream,
+                                                initialData: _latestHomeData,
+                                                isSeller: isSeller,
+                                              ),
+                                            ),
+                                            if (selectedRegion != null) ...[
+                                              SizedBox(height: sectionSpacing),
+                                              RepaintBoundary(
+                                                child: _SellersNearYouSection(
+                                                    region: selectedRegion),
+                                              ),
+                                            ],
+                                            SizedBox(height: sectionSpacing),
+                                            RepaintBoundary(child: _MapCard()),
+                                          ],
+                                        ),
                                       ),
                                     ],
-                                    SizedBox(height: sectionSpacing),
-                                    RepaintBoundary(child: _MapCard()),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              TextField(
-                                readOnly: true,
-                                onTap: () => _openSearch(context),
-                                decoration: const InputDecoration(
-                                  hintText: 'Traži proizvode, proizvođače…',
-                                  prefixIcon: Icon(Icons.search),
-                                ),
-                              ),
-                              SizedBox(height: sectionSpacing),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                  )
+                                : Column(
                                     children: [
-                                      Text(
-                                        'Kategorije',
+                                      TextField(
+                                        readOnly: true,
+                                        onTap: () => _openSearch(context),
+                                        decoration: const InputDecoration(
+                                          hintText:
+                                              'Traži proizvode, proizvođače…',
+                                          prefixIcon: Icon(Icons.search),
+                                        ),
+                                      ),
+                                      SizedBox(height: sectionSpacing),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _buildCategoryHeader(context),
+                                          SizedBox(height: compactSpacing),
+                                          _CategoryGrid(
+                                              topCategories: topCategories,
+                                              isWide: false),
+                                        ],
+                                      ),
+                                      SizedBox(height: sectionSpacing),
+                                      if (isTabletLayout) ...[
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              flex: isLargeTablet ? 6 : 5,
+                                              child: RepaintBoundary(
+                                                child: _HomeSidePanel(
+                                                  homeProductsStream: stream,
+                                                  initialData: _latestHomeData,
+                                                  isSeller: isSeller,
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(width: sectionSpacing),
+                                            Expanded(
+                                              flex: isLargeTablet ? 4 : 5,
+                                              child: RepaintBoundary(
+                                                child: _MapCard(),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (selectedRegion != null) ...[
+                                          SizedBox(height: sectionSpacing),
+                                          RepaintBoundary(
+                                            child: _SellersNearYouSection(
+                                              region: selectedRegion,
+                                            ),
+                                          ),
+                                        ],
+                                      ] else ...[
+                                        RepaintBoundary(
+                                          child: _HomeSidePanel(
+                                            homeProductsStream: stream,
+                                            initialData: _latestHomeData,
+                                            isSeller: isSeller,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        if (!isWide && isSeller)
+                          SliverToBoxAdapter(
+                            child: RepaintBoundary(
+                              child: _SellerDashboardSliver(
+                                  statsFuture: _sellerStatsFuture),
+                            ),
+                          ),
+                        if (!isWide)
+                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                        if (!isWide)
+                          StreamBuilder<HomeProductsData>(
+                            initialData: _latestHomeData,
+                            stream: stream,
+                            builder: (context, snap) {
+                              if (snap.hasError) {
+                                final appError = AppError.from(snap.error);
+                                return SliverToBoxAdapter(
+                                  child: AppErrorRetry(
+                                    message: appError.getUserMessage(),
+                                    detail: appError.code,
+                                    onRetry: () => _refreshController.add(null),
+                                  ),
+                                );
+                              }
+                              if (snap.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(bottom: 24),
+                                    child: ProductCarouselSkeleton(),
+                                  ),
+                                );
+                              }
+                              final list = snap.data?.products ?? [];
+                              final salesCounts = snap.data?.salesCounts ?? {};
+                              final ratings = snap.data?.ratings ?? {};
+                              final newProducts = list
+                                  .where((p) =>
+                                      DateTime.now()
+                                          .difference(p.createdAt)
+                                          .inDays <
+                                      AppConstants.newProductDays)
+                                  .toList();
+                              final displayList =
+                                  newProducts.isNotEmpty ? newProducts : list;
+                              _warmupCarouselImages(displayList);
+                              final user = context
+                                  .select<AppState, UserModel?>((s) => s.user);
+                              final canFavorite = user != null && !user.isGuest;
+
+                              return SliverMainAxisGroup(
+                                slivers: [
+                                  SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        Breakpoints.horizontalPadding(context),
+                                        sidePanelSpacing,
+                                        Breakpoints.horizontalPadding(context),
+                                        12,
+                                      ),
+                                      child: Text(
+                                        newProducts.isNotEmpty
+                                            ? 'Najnoviji proizvodi'
+                                            : 'Poslednje dodato',
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleMedium
                                             ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                                fontWeight: FontWeight.bold),
                                       ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            context.push('/categories'),
-                                        child: const Text('Vidi sve'),
-                                      ),
-                                    ],
+                                    ),
                                   ),
-                                  SizedBox(height: compactSpacing),
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: topCategories.length,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: isLargeTablet
-                                          ? 4
-                                          : (isSmallTablet ? 3 : 2),
-                                      mainAxisSpacing: 6,
-                                      crossAxisSpacing: 6,
-                                      mainAxisExtent: isTabletLayout
-                                          ? categoryTileExtent
-                                          : categoryTileExtent,
+                                  SliverPadding(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal:
+                                            Breakpoints.horizontalPadding(
+                                                context)),
+                                    sliver: SliverGrid(
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: isTabletLayout
+                                            ? (isLargeTablet ? 3 : 2)
+                                            : 2,
+                                        mainAxisSpacing: isTabletLayout ? 8 : 4,
+                                        crossAxisSpacing:
+                                            isTabletLayout ? 8 : 4,
+                                        mainAxisExtent: isTabletLayout
+                                            ? (isLargeTablet ? 348 : 356)
+                                            : 255,
+                                      ),
+                                      delegate: SliverChildBuilderDelegate(
+                                        (context, i) {
+                                          final product = displayList[i];
+                                          final rating = ratings[product.id];
+                                          return ProductCard(
+                                            product: product,
+                                            isPopular:
+                                                (salesCounts[product.id] ??
+                                                        0) >=
+                                                    AppConstants
+                                                        .popularProductMinSales,
+                                            isFavorite: canFavorite
+                                                ? context.select<
+                                                        FavoritesProvider,
+                                                        bool>(
+                                                    (f) => f
+                                                        .isFavorite(product.id))
+                                                : null,
+                                            onFavoriteToggle: canFavorite
+                                                ? () => context
+                                                    .read<FavoritesProvider>()
+                                                    .toggle(user.id, product.id)
+                                                : null,
+                                            avgRating: rating?.avg,
+                                            reviewCount: rating?.count,
+                                          );
+                                        },
+                                        childCount: displayList.take(6).length,
+                                      ),
                                     ),
-                                    itemBuilder: (context, index) {
-                                      final cat = topCategories[index];
-                                      return Semantics(
-                                        button: true,
-                                        label: 'Kategorija ${cat.name}',
-                                        child: InkWell(
-                                          onTap: () => context.push(
-                                            '/categories/${cat.id}',
-                                            extra: cat,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 8,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                buildCategoryIcon(
-                                                  cat.icon,
-                                                  size: isLargeTablet
-                                                      ? 22
-                                                      : (isSmallTablet
-                                                          ? 24
-                                                          : 26),
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    cat.name,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium
-                                                        ?.copyWith(
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
                                   ),
-                                ],
-                              ),
-                              SizedBox(height: sectionSpacing),
-                              if (isTabletLayout) ...[
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: isLargeTablet ? 6 : 5,
-                                      child: RepaintBoundary(
-                                        child: _HomeSidePanel(
-                                          homeProductsStream: stream,
-                                          initialData: _latestHomeData,
-                                          isSeller: isSeller,
+                                  SliverToBoxAdapter(
+                                    child: Column(
+                                      children: [
+                                        if (!isTabletLayout &&
+                                            selectedRegion != null) ...[
+                                          SizedBox(height: sectionSpacing),
+                                          RepaintBoundary(
+                                            child: _SellersNearYouSection(
+                                                region: selectedRegion),
+                                          ),
+                                        ],
+                                        if (!isTabletLayout) ...[
+                                          SizedBox(height: sectionSpacing),
+                                          RepaintBoundary(child: _MapCard()),
+                                        ],
+                                        SizedBox(height: compactSpacing),
+                                        CacheStatusIndicator(
+                                          onRefresh: () =>
+                                              _refreshController.add(null),
                                         ),
-                                      ),
-                                    ),
-                                    SizedBox(width: sectionSpacing),
-                                    Expanded(
-                                      flex: isLargeTablet ? 4 : 5,
-                                      child: RepaintBoundary(
-                                        child: _MapCard(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (selectedRegion != null) ...[
-                                  SizedBox(height: sectionSpacing),
-                                  RepaintBoundary(
-                                    child: _SellersNearYouSection(
-                                      region: selectedRegion,
+                                        SizedBox(height: sectionSpacing),
+                                      ],
                                     ),
                                   ),
                                 ],
-                              ] else ...[
-                                RepaintBoundary(
-                                  child: _HomeSidePanel(
-                                    homeProductsStream: stream,
-                                    initialData: _latestHomeData,
-                                    isSeller: isSeller,
-                                  ),
-                                ),
-                              ],
-                            ],
+                              );
+                            },
                           ),
-                  ),
-                ),
-                if (!isWide && isSeller)
-                  SliverToBoxAdapter(
-                    child: RepaintBoundary(
-                      child: _SellerDashboardSliver(
-                          statsFuture: _sellerStatsFuture),
+                      ],
                     ),
                   ),
-                if (!isWide)
-                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                if (!isWide)
-                  StreamBuilder<HomeProductsData>(
-                    initialData: _latestHomeData,
-                    stream: stream,
-                    builder: (context, snap) {
-                      if (snap.hasError) {
-                        return SliverToBoxAdapter(
-                          child: AppErrorRetry(
-                            message: 'Greška pri učitavanju proizvoda.',
-                            detail: snap.error?.toString(),
-                            onRetry: () => _refreshController.add(null),
-                          ),
-                        );
-                      }
-                      if (snap.connectionState == ConnectionState.waiting) {
-                        return const SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.only(bottom: 24),
-                            child: ProductCarouselSkeleton(),
-                          ),
-                        );
-                      }
-                      final list = snap.data?.products ?? [];
-                      final salesCounts = snap.data?.salesCounts ?? {};
-                      final ratings = snap.data?.ratings ?? {};
-                      final newProducts = list
-                          .where((p) =>
-                              DateTime.now().difference(p.createdAt).inDays <
-                              AppConstants.newProductDays)
-                          .toList();
-                      final displayList =
-                          newProducts.isNotEmpty ? newProducts : list;
-                      _warmupCarouselImages(displayList);
-                      final user =
-                          context.select<AppState, UserModel?>((s) => s.user);
-                      final canFavorite = user != null && !user.isGuest;
-                      return SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: sidePanelSpacing),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal:
-                                      Breakpoints.horizontalPadding(context)),
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  newProducts.isNotEmpty
-                                      ? 'Najnoviji proizvodi'
-                                      : 'Poslednje dodato',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                            if (isWide || isTabletLayout)
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal:
-                                        Breakpoints.horizontalPadding(context)),
-                                child: GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount:
-                                        isWide ? 3 : (isLargeTablet ? 3 : 2),
-                                    mainAxisSpacing: 8,
-                                    crossAxisSpacing: 8,
-                                    mainAxisExtent: isWide
-                                        ? 364
-                                        : (isLargeTablet ? 348 : 356),
-                                  ),
-                                  itemCount: displayList.take(6).length,
-                                  itemBuilder: (context, i) {
-                                    final product = displayList[i];
-                                    final rating = ratings[product.id];
-                                    return Selector<FavoritesProvider, bool>(
-                                      selector: (_, fav) =>
-                                          fav.isFavorite(product.id),
-                                      builder: (_, isFavorite, __) =>
-                                          ProductCard(
-                                        product: product,
-                                        isPopular: (salesCounts[product.id] ??
-                                                0) >=
-                                            AppConstants.popularProductMinSales,
-                                        isFavorite:
-                                            canFavorite ? isFavorite : null,
-                                        onFavoriteToggle: canFavorite
-                                            ? () => context
-                                                .read<FavoritesProvider>()
-                                                .toggle(user.id, product.id)
-                                            : null,
-                                        avgRating: rating?.avg,
-                                        reviewCount: rating?.count,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              )
-                            else
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal:
-                                        Breakpoints.horizontalPadding(context)),
-                                child: GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 4,
-                                    crossAxisSpacing: 4,
-                                    mainAxisExtent: 255,
-                                  ),
-                                  itemCount: displayList.take(6).length,
-                                  itemBuilder: (context, i) {
-                                    final product = displayList[i];
-                                    final rating = ratings[product.id];
-                                    return Selector<FavoritesProvider, bool>(
-                                      selector: (_, fav) =>
-                                          fav.isFavorite(product.id),
-                                      builder: (_, isFavorite, __) =>
-                                          ProductCard(
-                                        product: product,
-                                        isPopular: (salesCounts[product.id] ??
-                                                0) >=
-                                            AppConstants.popularProductMinSales,
-                                        isFavorite:
-                                            canFavorite ? isFavorite : null,
-                                        onFavoriteToggle: canFavorite
-                                            ? () => context
-                                                .read<FavoritesProvider>()
-                                                .toggle(user.id, product.id)
-                                            : null,
-                                        avgRating: rating?.avg,
-                                        reviewCount: rating?.count,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            if (!isTabletLayout && selectedRegion != null) ...[
-                              SizedBox(height: sectionSpacing),
-                              RepaintBoundary(
-                                child: _SellersNearYouSection(
-                                    region: selectedRegion),
-                              ),
-                            ],
-                            if (!isTabletLayout) ...[
-                              SizedBox(height: sectionSpacing),
-                              RepaintBoundary(child: _MapCard()),
-                            ],
-                            SizedBox(height: compactSpacing),
-                            CacheStatusIndicator(
-                              onRefresh: () => _refreshController.add(null),
-                            ),
-                            SizedBox(height: sectionSpacing),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-              ],
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -851,6 +703,34 @@ class _HomeScreenState extends State<HomeScreen> {
         await loc.setRegion(chosen);
       }
     }
+  }
+
+  Widget _buildCategoryHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Kategorije',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        TextButton(
+          onPressed: () => context.push('/categories'),
+          child: const Text('Vidi sve'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStickySearch(BuildContext context) {
+    return SliverPersistentHeader(
+      pinned: false,
+      delegate: _StickySearchHeaderDelegate(
+        isWide: false, // Prosleđujemo false jer je u !isWide bloku
+        onTapSearch: () => _openSearch(context),
+      ),
+    );
   }
 
   void _openSearch(BuildContext context) {
@@ -1442,7 +1322,7 @@ class _SellersNearYouSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           FutureBuilder<List<UserModel>>(
-            future: ProductsService().getSellersInRegion(region),
+            future: context.read<ProductsService>().getSellersInRegion(region),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const SellerAvatarRowSkeleton();
@@ -1620,10 +1500,10 @@ class _StickySearchHeaderDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get minExtent => isWide ? 60 : 0;
+  double get minExtent => isWide ? 0 : 60;
 
   @override
-  double get maxExtent => isWide ? 72 : 0;
+  double get maxExtent => isWide ? 0 : 72;
 
   @override
   Widget build(
@@ -1631,7 +1511,7 @@ class _StickySearchHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    if (!isWide) return const SizedBox.shrink();
+    if (isWide) return const SizedBox.shrink();
     final theme = Theme.of(context);
     return Material(
       color: theme.scaffoldBackgroundColor,
@@ -1660,5 +1540,72 @@ class _StickySearchHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _StickySearchHeaderDelegate oldDelegate) {
     return isWide != oldDelegate.isWide;
+  }
+}
+
+class _CategoryGrid extends StatelessWidget {
+  final List topCategories;
+  final bool isWide;
+
+  const _CategoryGrid({
+    required this.topCategories,
+    required this.isWide,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isLargeTablet = Breakpoints.isLargeTablet(context);
+    final isSmallTablet = Breakpoints.isSmallTablet(context);
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount:
+            isWide ? 4 : (isLargeTablet ? 4 : (isSmallTablet ? 3 : 2)),
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 6,
+        mainAxisExtent: 52,
+      ),
+      itemCount: topCategories.length,
+      itemBuilder: (context, index) {
+        final cat = topCategories[index];
+        return Semantics(
+          button: true,
+          label: 'Kategorija ${cat.name}',
+          child: Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => context.push('/categories/${cat.id}', extra: cat),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Row(
+                  children: [
+                    buildCategoryIcon(
+                      cat.icon,
+                      size: 22,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        cat.name,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

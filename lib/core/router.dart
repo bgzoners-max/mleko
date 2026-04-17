@@ -65,6 +65,7 @@ GoRouter createRouter(AppState appState) {
       }
       if (loc == '/about') return null;
       if (loc == '/support') return null;
+      if (loc == '/landing') return null;
 
       // Email just confirmed — steer to success screen before anything else
       if (appState.justConfirmedEmail && loc != '/auth/confirmed') {
@@ -80,8 +81,8 @@ GoRouter createRouter(AppState appState) {
           !loc.startsWith('/login') &&
           !loc.startsWith('/register') &&
           !loc.startsWith('/onboarding') &&
-          loc != '/login') {
-        return '/login';
+          loc != '/landing') {
+        return '/landing';
       }
 
       // Gost (anonymous) može samo da gleda proizvode, ne i da naručuje

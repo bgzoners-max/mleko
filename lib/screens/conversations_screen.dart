@@ -62,13 +62,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   void _initStream(String userId) {
     if (_streamUserId == userId) return;
     _streamUserId = userId;
-    _conversationsStream = ChatService()
+    _conversationsStream = context.read<ChatService>()
         .watchConversations(userId, refreshTrigger: _refreshController.stream);
   }
 
   Future<void> _toggleFavorite(ConversationModel conv) async {
+    final chatService = context.read<ChatService>();
     try {
-      await ChatService().setConversationUserPrefs(
+      await chatService.setConversationUserPrefs(
         conv.id,
         isFavorite: !conv.isFavorite,
       );
@@ -83,6 +84,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _hideConversation(ConversationModel conv) async {
+    final chatService = context.read<ChatService>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -102,7 +104,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
     if (confirmed != true || !mounted) return;
     try {
-      await ChatService().setConversationUserPrefs(conv.id, hidden: true);
+      await chatService.setConversationUserPrefs(conv.id, hidden: true);
       _refreshController.add(null);
     } catch (e) {
       if (mounted) {

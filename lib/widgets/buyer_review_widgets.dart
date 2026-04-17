@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../models/buyer_review_model.dart';
 import '../services/services.dart';
@@ -225,7 +226,7 @@ class _BuyerReplyDialogState extends State<BuyerReplyDialog> {
     if (text.isEmpty) return;
     setState(() => _loading = true);
     try {
-      await ReviewsService().addBuyerReply(
+      await context.read<ReviewsService>().addBuyerReply(
         buyerReviewId: widget.review.id,
         reply: text,
       );

@@ -102,6 +102,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final user = context.read<AppState>().user;
+    final productsService = context.read<ProductsService>();
     if (user == null || !user.isSeller) {
       _showError('Niste prijavljeni kao prodavac.');
       return;
@@ -162,7 +163,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         createdAt: DateTime.now(),
       );
 
-      await ProductsService().addProduct(product).timeout(
+      await productsService.addProduct(product).timeout(
             const Duration(seconds: 15),
             onTimeout: () =>
                 throw TimeoutException('Prekoračeno vreme. Proveri internet.'),

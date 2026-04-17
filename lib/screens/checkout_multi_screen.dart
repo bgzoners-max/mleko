@@ -86,7 +86,7 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
   }
 
   Future<void> _load(Map<String, double> productQuantities) async {
-    final productsService = ProductsService();
+    final productsService = context.read<ProductsService>();
     // Batch load umesto N+1 petlje
     final products =
         await productsService.getProductsByIds(productQuantities.keys.toList());
@@ -505,6 +505,9 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
 
     try {
       final appState = context.read<AppState>();
+      final ordersService = context.read<OrdersService>();
+      final chatService = context.read<ChatService>();
+      final usersService = context.read<UsersService>();
       final isOnline = appState.isOnline;
       final note = _noteController.text.trim();
       final buyerCity = _deliveryMethod == DeliveryMethod.sellerDelivery
@@ -525,7 +528,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                 ))
             .toList();
 
-        final orderId = await OrdersService().createOrderWithItems(
+        final orderId = await ordersService.createOrderWithItems(
           buyerId: user.id,
           sellerId: widget.sellerId,
           items: orderItems,
@@ -537,11 +540,11 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
           deliverySelection: deliverySelection,
         );
 
-        await ChatService().getOrCreateConversation(user.id, widget.sellerId,
+        await chatService.getOrCreateConversation(user.id, widget.sellerId,
             orderId: orderId);
 
         if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
-          await UsersService().updatePhone(user.id, phone);
+          await usersService.updatePhone(user.id, phone);
           await appState.refreshUser();
         }
 

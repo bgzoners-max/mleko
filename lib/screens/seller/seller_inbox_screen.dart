@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../models/app_error.dart';
 import '../../models/order_model.dart';
 import '../../models/product_model.dart';
 import '../../models/seller_inbox_item.dart';
+import '../../core/utils/action_utils.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
@@ -84,77 +84,80 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
 
     return Scaffold(
       appBar: widget.showAppBar ? AppBar(title: const Text('Razgovori')) : null,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: StreamBuilder<List<SellerInboxItem>>(
-        stream: _inboxStream,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return AppErrorRetry(
-              message: 'Greška pri učitavanju inbox-a.',
-              detail: snap.error?.toString(),
-              onRetry: () => _refreshController.add(null),
-            );
-          }
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const OrderListSkeleton();
-          }
-          var list = snap.data ?? [];
-          if (widget.showOnlyConversations) {
-            list = list
-                .where((i) => i.type == SellerInboxItemType.conversation)
-                .toList();
-          }
-          if (list.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height - 200,
-                  child: AppEmptyState(
-                    icon: Icons.chat_outlined,
-                    title: widget.showOnlyConversations
-                        ? 'Nema razgovora'
-                        : 'Nema upita ni poruka',
-                    subtitle: widget.showOnlyConversations
-                        ? 'Kada kupci pošalju poruku, pojaviće se ovde.'
-                        : 'Upiti i poruke od kupaca će se pojaviti ovde kada počnu da naručuju.',
-                    ctaLabel: 'Pregledaj proizvode',
-                    ctaIcon: Icons.storefront_outlined,
-                    onCtaPressed: () => context.go('/'),
+      body: SafeArea(
+        top: !widget.showAppBar,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: StreamBuilder<List<SellerInboxItem>>(
+              stream: _inboxStream,
+              builder: (context, snap) {
+                if (snap.hasError) {
+                  return AppErrorRetry(
+                    message: 'Greška pri učitavanju inbox-a.',
+                    detail: snap.error?.toString(),
+                    onRetry: () => _refreshController.add(null),
+                  );
+                }
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const OrderListSkeleton();
+                }
+                var list = snap.data ?? [];
+                if (widget.showOnlyConversations) {
+                  list = list
+                      .where((i) => i.type == SellerInboxItemType.conversation)
+                      .toList();
+                }
+                if (list.isEmpty) {
+                  return RefreshIndicator(
+                    onRefresh: _onRefresh,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height - 200,
+                        child: AppEmptyState(
+                          icon: Icons.chat_outlined,
+                          title: widget.showOnlyConversations
+                              ? 'Nema razgovora'
+                              : 'Nema upita ni poruka',
+                          subtitle: widget.showOnlyConversations
+                              ? 'Kada kupci pošalju poruku, pojaviće se ovde.'
+                              : 'Upiti i poruke od kupaca će se pojaviti ovde kada počnu da naručuju.',
+                          ctaLabel: 'Pregledaj proizvode',
+                          ctaIcon: Icons.storefront_outlined,
+                          onCtaPressed: () => context.go('/'),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    itemCount: list.length,
+                    itemBuilder: (_, i) {
+                      final item = list[i];
+                      return item.type == SellerInboxItemType.order
+                          ? _OrderInboxCard(
+                              item: item,
+                              user: user,
+                              onRefresh: () => _refreshController.add(null),
+                            )
+                          : _ConversationInboxCard(
+                              item: item,
+                              onRefresh: () => _refreshController.add(null),
+                            );
+                    },
                   ),
-                ),
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: _onRefresh,
-            child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              itemBuilder: (_, i) {
-                final item = list[i];
-                return item.type == SellerInboxItemType.order
-                    ? _OrderInboxCard(
-                        item: item,
-                        user: user,
-                        onRefresh: () => _refreshController.add(null),
-                      )
-                    : _ConversationInboxCard(
-                        item: item,
-                        onRefresh: () => _refreshController.add(null),
-                      );
+                );
               },
             ),
-          );
-        },
+          ),
+        ),
       ),
-    ),
-  ),
     );
   }
 }
@@ -163,51 +166,14 @@ class _OrderInboxCard extends StatelessWidget {
   final SellerInboxItem item;
   final UserModel user;
   final VoidCallback onRefresh;
-  static final OrdersService _ordersService = OrdersService();
-  static final ChatService _chatService = ChatService();
 
   const _OrderInboxCard(
       {required this.item, required this.user, required this.onRefresh});
 
-  Future<void> _launchCall(BuildContext context, String? phone) async {
-    final rawPhone = phone?.trim() ?? '';
-    if (rawPhone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Broj telefona nije dostupan.')),
-      );
-      return;
-    }
-
-    final normalized = rawPhone.replaceAll(RegExp(r'[^0-9+]'), '');
-    if (normalized.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Broj telefona nije validan.')),
-      );
-      return;
-    }
-
-    final uri = Uri(scheme: 'tel', path: normalized);
-    try {
-      final launched =
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Pozivanje nije podržano na ovom uređaju.')),
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ne mogu da pokrenem poziv.')),
-        );
-      }
-    }
-  }
-
   Future<void> _updateStatus(
       BuildContext context, String orderId, OrderStatus status) async {
-    await _ordersService.updateOrderStatus(orderId, status);
+    final ordersService = context.read<OrdersService>();
+    await ordersService.updateOrderStatus(orderId, status);
     onRefresh();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -219,9 +185,10 @@ class _OrderInboxCard extends StatelessWidget {
   }
 
   Future<void> _cancelOrder(BuildContext context, String orderId) async {
+    final ordersService = context.read<OrdersService>();
     final reason = await CancelOrderDialog.show(context);
     if (reason == null || !context.mounted) return;
-    await _ordersService.cancelOrderBySeller(orderId, reason);
+    await ordersService.cancelOrderBySeller(orderId, reason);
     onRefresh();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,10 +217,12 @@ class _OrderInboxCard extends StatelessWidget {
                         ),
                       )
                     : CircleAvatar(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainerHighest,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         child: Icon(Icons.person,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -351,7 +320,8 @@ class _OrderInboxCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 FilledButton.tonal(
-                  onPressed: () => _launchCall(context, o.buyerPhone),
+                  onPressed: () =>
+                      ActionUtils.launchCall(context, o.buyerPhone),
                   child: const Text('Pozovi'),
                 ),
                 OutlinedButton.icon(
@@ -359,8 +329,9 @@ class _OrderInboxCard extends StatelessWidget {
                       ? null
                       : () async {
                           try {
+                            final chatService = context.read<ChatService>();
                             final convId =
-                                await _chatService.getOrCreateConversation(
+                                await chatService.getOrCreateConversation(
                               o.buyerId!,
                               user.id,
                               orderId: o.orderId,
@@ -502,9 +473,8 @@ class _ConversationInboxCard extends StatelessWidget {
     required this.onRefresh,
   });
 
-  static final ChatService _chat = ChatService();
-
   Future<void> _confirmHide(BuildContext context) async {
+    final chatService = context.read<ChatService>();
     final cid = item.conversationId;
     if (cid == null) return;
     final ok = await showDialog<bool>(
@@ -528,7 +498,7 @@ class _ConversationInboxCard extends StatelessWidget {
     );
     if (ok != true || !context.mounted) return;
     try {
-      await _chat.setConversationUserPrefs(cid, hidden: true);
+      await chatService.setConversationUserPrefs(cid, hidden: true);
       onRefresh();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -571,7 +541,8 @@ class _ConversationInboxCard extends StatelessWidget {
                       backgroundColor:
                           Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: Icon(Icons.person,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
               const SizedBox(width: 12),
               Expanded(
@@ -667,7 +638,7 @@ class _ConversationInboxCard extends StatelessWidget {
                   ),
                   onPressed: () async {
                     try {
-                      await _chat.setConversationUserPrefs(
+                      await context.read<ChatService>().setConversationUserPrefs(
                         cid,
                         isFavorite: !c.isFavorite,
                       );
@@ -686,7 +657,7 @@ class _ConversationInboxCard extends StatelessWidget {
                   onSelected: (v) async {
                     if (v == 'fav') {
                       try {
-                        await _chat.setConversationUserPrefs(
+                        await context.read<ChatService>().setConversationUserPrefs(
                           cid,
                           isFavorite: !c.isFavorite,
                         );

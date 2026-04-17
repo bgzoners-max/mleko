@@ -8,7 +8,7 @@ import 'package:mleko/services/services.dart';
 
 class CartProvider extends ChangeNotifier {
   final Map<String, Map<String, double>> _sellerItems = {};
-  final ProductsService _productsService = ProductsService();
+  final ProductsService _productsService;
   static const _storageKey = 'mleko_seller_drafts';
   static const _legacyStorageKey = 'mleko_cart';
 
@@ -29,7 +29,8 @@ class CartProvider extends ChangeNotifier {
   Map<String, double> getSellerDraft(String sellerId) =>
       Map<String, double>.from(_sellerItems[sellerId] ?? const {});
 
-  CartProvider() {
+  CartProvider({required ProductsService productsService})
+      : _productsService = productsService {
     _load();
   }
 

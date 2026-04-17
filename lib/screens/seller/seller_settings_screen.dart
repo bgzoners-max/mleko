@@ -47,6 +47,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _clearLocation() async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final user = appState.user;
     if (user == null) return;
     setState(() {
@@ -54,7 +55,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _loading = true;
     });
     try {
-      await UsersService().clearSellerLocation(user.id);
+      await usersService.clearSellerLocation(user.id);
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -69,6 +70,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _openMapPicker() async {
     final user = context.read<AppState>().user;
+    final usersService = context.read<UsersService>();
     final result = await context.push<Map<String, dynamic>>(
       '/map-picker',
       extra: {
@@ -88,7 +90,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _loading = true;
     });
     try {
-      await UsersService()
+      await usersService
           .updateSellerLocation(u.id, lat.toDouble(), lng.toDouble());
       await appState.refreshUser();
       if (mounted) {
@@ -104,6 +106,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _saveStory() async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final user = appState.user;
     if (user == null) return;
     setState(() {
@@ -111,7 +114,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _loading = true;
     });
     try {
-      await UsersService()
+      await usersService
           .updateSellerStory(user.id, _storyController.text.trim());
       await appState.refreshUser();
       if (mounted) {
@@ -127,6 +130,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _addGalleryPhoto() async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final messenger = ScaffoldMessenger.of(context);
     final xFile = await ImagePicker()
         .pickImage(source: ImageSource.gallery, imageQuality: 80);
@@ -140,7 +144,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
           .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
       final newUrls = [..._galleryUrls, url];
       if (mounted) setState(() => _galleryUrls = newUrls);
-      await UsersService().updateFarmGallery(user.id, newUrls);
+      await usersService.updateFarmGallery(user.id, newUrls);
       await appState.refreshUser();
       if (mounted) {
         messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
@@ -157,6 +161,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Future<void> _removeGalleryPhoto(int index) async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final user = appState.user;
     if (user == null) return;
     final removed = _galleryUrls[index];
@@ -166,7 +171,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _loading = true;
     });
     try {
-      await UsersService().updateFarmGallery(user.id, updated);
+      await usersService.updateFarmGallery(user.id, updated);
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -462,11 +467,12 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
                         });
                         try {
                           final appState = context.read<AppState>();
+                          final usersService = context.read<UsersService>();
                           final u = appState.user;
                           if (u == null) return;
                           final replies =
                               controllers.map((c) => c.text).toList();
-                          await UsersService()
+                          await usersService
                               .updateSellerQuickReplies(u.id, replies);
                           await appState.refreshUser();
                           if (!mounted) return;

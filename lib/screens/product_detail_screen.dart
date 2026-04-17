@@ -53,16 +53,15 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  late Future<ProductModel?> _productFuture =
-      ProductsService().getProduct(widget.productId);
-  late Future<ProductReviewsData> _reviewsFuture = _loadReviewsFuture();
+  Future<ProductModel?>? _productFuture;
+  Future<ProductReviewsData>? _reviewsFuture;
   Future<UserModel?>? _sellerFuture;
   String? _sellerFutureSellerId;
 
   Future<UserModel?> _ensureSellerFuture(String sellerId) {
     if (_sellerFutureSellerId != sellerId || _sellerFuture == null) {
       _sellerFutureSellerId = sellerId;
-      _sellerFuture = UsersService().getUser(sellerId);
+      _sellerFuture = context.read<UsersService>().getUser(sellerId);
     }
     return _sellerFuture!;
   }
@@ -120,6 +119,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _pageIndex = 0;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _productFuture ??= context.read<ProductsService>().getProduct(widget.productId);
+    _reviewsFuture ??= _loadReviewsFuture();
+  }
+
+  @override
   void initState() {
     super.initState();
     _pageController = PageController();
@@ -133,10 +139,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<ProductReviewsData> _loadReviewsFuture() async {
+    final reviewsService = context.read<ReviewsService>();
     final avg =
-        await ReviewsService().getAverageRatingForProduct(widget.productId);
+        await reviewsService.getAverageRatingForProduct(widget.productId);
     final reviews =
-        await ReviewsService().getReviewsForProduct(widget.productId);
+        await reviewsService.getReviewsForProduct(widget.productId);
     final names = await fetchProfileDisplayNames(reviews.map((r) => r.buyerId));
     return ProductReviewsData(
       averageRating: avg,
@@ -166,7 +173,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _retry() => setState(() {
-        _productFuture = ProductsService().getProduct(widget.productId);
+        _productFuture = context.read<ProductsService>().getProduct(widget.productId);
         _reviewsFuture = _loadReviewsFuture();
       });
 
@@ -421,7 +428,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           const SizedBox(height: 8),
           _RatingSummaryBadge(
-            reviewsFuture: _reviewsFuture,
+            reviewsFuture: _reviewsFuture!,
             onTap: _scrollToReviews,
           ),
           const SizedBox(height: 16),
@@ -464,7 +471,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const SizedBox(height: 16),
           _ProductReviewsSection(
             key: _reviewsSectionKey,
-            reviewsFuture: _reviewsFuture,
+            reviewsFuture: _reviewsFuture!,
           ),
           const SizedBox(height: 16),
           Row(
@@ -1018,7 +1025,7 @@ class _MoreFromSellerSectionState extends State<_MoreFromSellerSection> {
   void _ensureStream(String sellerId) {
     if (_lastSellerId == sellerId) return;
     _lastSellerId = sellerId;
-    _productsStream = ProductsService().getProductsBySeller(sellerId);
+    _productsStream = context.read<ProductsService>().getProductsBySeller(sellerId);
   }
 
   @override

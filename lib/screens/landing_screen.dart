@@ -2,7 +2,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:mleko/core/responsive.dart';
 import 'package:mleko/core/web_seo.dart';
+import '../models/app_error.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -49,11 +51,12 @@ class _LandingScreenState extends State<LandingScreen> {
     try {
       await Supabase.instance.client.from('waitlist').insert({'email': email});
       if (mounted) setState(() => _submitted = true);
-    } on PostgrestException catch (e) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _error = e.code == '23505'
+        final appError = AppError.from(e);
+        setState(() => _error = appError.type == ErrorType.conflict
             ? 'Ova adresa je već na listi. Hvala!'
-            : 'Greška. Pokušajte ponovo.');
+            : appError.getUserMessage());
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -70,7 +73,7 @@ class _LandingScreenState extends State<LandingScreen> {
     );
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final isWide = width >= 800;
+    final isWide = width >= Breakpoints.tablet;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F6F0),
@@ -107,8 +110,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      color: const Color(0xFF1B5E20),
+      color: const Color(0xFF0E521E),
       padding: EdgeInsets.symmetric(
         horizontal: isWide ? 64 : 24,
         vertical: 16,
@@ -126,8 +130,8 @@ class _Header extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 'Domaći market',
-                style: TextStyle(
-                  color: Colors.white,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onPrimary,
                   fontSize: isWide ? 20 : 16,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
@@ -138,31 +142,31 @@ class _Header extends StatelessWidget {
           if (isWide) ...[
             TextButton(
               onPressed: () => context.push('/about'),
-              child: const Text('O platformi',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('O platformi',
+                  style: TextStyle(color: theme.colorScheme.onPrimary)),
             ),
             TextButton(
               onPressed: () => context.push('/support'),
-              child:
-                  const Text('Podrška', style: TextStyle(color: Colors.white)),
+              child: Text('Podrška',
+                  style: TextStyle(color: theme.colorScheme.onPrimary)),
             ),
             TextButton(
               onPressed: () => context.push('/uslovi-koriscenja'),
-              child: const Text('Uslovi korišćenja',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('Uslovi korišćenja',
+                  style: TextStyle(color: theme.colorScheme.onPrimary)),
             ),
             TextButton(
               onPressed: () => context.push('/politika-privatnosti'),
-              child: const Text('Politika privatnosti',
-                  style: TextStyle(color: Colors.white)),
+              child: Text('Politika privatnosti',
+                  style: TextStyle(color: theme.colorScheme.onPrimary)),
             ),
             const SizedBox(width: 8),
           ],
           TextButton(
             onPressed: () => context.go('/login'),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.white.withValues(alpha: 0.15),
+              foregroundColor: theme.colorScheme.onPrimary,
+              backgroundColor: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
@@ -186,111 +190,127 @@ class _HeroSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+      color: theme.colorScheme.primaryContainer,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: isWide ? 64 : 24,
+          vertical: isWide ? 80 : 56,
         ),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: isWide ? 64 : 24,
-        vertical: isWide ? 80 : 56,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Image.asset(
-            'assets/images/logo.png',
-            width: isWide ? 360 : 280,
-            height: isWide ? 360 : 280,
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: isWide ? 360 : 280,
+              height: isWide ? 360 : 280,
             ),
-            child: const Text(
-              'Uskoro dostupno',
-              style: TextStyle(
-                color: Colors.white,
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Uskoro dostupno',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            Text(
+              'Domaće, baš kako treba!',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: theme.colorScheme.onPrimary,
+                fontSize: isWide ? 48 : 32,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+                letterSpacing: -0.5,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Povežite se sa proverenim proizvođačima, otkrijte lokalnu ponudu i kupujte direktno od ljudi koji stoje iza svojih proizvoda.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.92),
+                fontSize: isWide ? 18 : 16,
+                height: 1.6,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.30),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 36),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              children: [
+                FilledButton(
+                  onPressed: () => context.go('/register'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.onPrimary,
+                    foregroundColor: theme.colorScheme.primary,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    textStyle: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  child: const Text('Registrujte se'),
+                ),
+                OutlinedButton(
+                  onPressed: onWaitlistTap,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    side: BorderSide(
+                        color: theme.colorScheme.onPrimary, width: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    textStyle: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                  child: const Text('Obavestite me kada platforma startuje'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Domaće, baš kako treba!  •  Provereni proizvođači  •  Lokalna ponuda',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.65),
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                letterSpacing: 0.3,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 4,
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'Domaće, baš kako treba!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isWide ? 48 : 32,
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Povežite se sa proverenim proizvođačima, otkrijte lokalnu ponudu i kupujte direktno od ljudi koji stoje iza svojih proizvoda.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.88),
-              fontSize: isWide ? 18 : 16,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 36),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: [
-              FilledButton(
-                onPressed: () => context.go('/register'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF1B5E20),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  textStyle: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-                child: const Text('Registrujte se'),
-              ),
-              OutlinedButton(
-                onPressed: onWaitlistTap,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white, width: 1.5),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  textStyle: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 15),
-                ),
-                child: const Text('Obavestite me kada platforma startuje'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Domaće, baš kako treba!  •  Provereni proizvođači  •  Lokalna ponuda',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.65),
-              fontSize: 13,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -303,7 +323,7 @@ class _TrustSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= 800;
     return Container(
-      color: const Color(0xFFF9F6F0),
+      color: Theme.of(context).scaffoldBackgroundColor,
       padding: EdgeInsets.symmetric(
         horizontal: isWide ? 64 : 24,
         vertical: 48,
@@ -313,14 +333,14 @@ class _TrustSection extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 640),
           child: Column(
             children: [
-              const Text(
+              Text(
                 'Domaći market okuplja:',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1B1B1B),
-                ),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
               const SizedBox(height: 24),
               const _CheckItem('Proverene proizvođače i autentične proizvode'),
@@ -362,11 +382,14 @@ class _CheckItem extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 22),
+        Icon(Icons.check_circle,
+            color: Theme.of(context).colorScheme.secondary, size: 22),
         const SizedBox(width: 10),
         Text(
           text,
-          style: const TextStyle(fontSize: 16, color: Color(0xFF37434F)),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -378,7 +401,8 @@ class _HowItWorksSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= 800;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= Breakpoints.tablet;
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(
@@ -390,18 +414,23 @@ class _HowItWorksSection extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 720),
           child: Column(
             children: [
-              const Text(
+              Text(
                 'Kako funkcioniše?',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1B1B1B),
-                ),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Jednostavno, pregledno i direktno.',
-                style: TextStyle(fontSize: 14, color: Color(0xFF78909C)),
+                style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.7)),
               ),
               const SizedBox(height: 36),
               isWide
@@ -524,9 +553,10 @@ class _WaitlistSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= 800;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= Breakpoints.tablet;
     return Container(
-      color: const Color(0xFF1B5E20),
+      color: theme.colorScheme.primary,
       padding: EdgeInsets.symmetric(
         horizontal: isWide ? 64 : 24,
         vertical: 56,
@@ -537,12 +567,12 @@ class _WaitlistSection extends StatelessWidget {
           child: Column(
             children: [
               const Icon(Icons.mark_email_unread_outlined,
-                  color: Colors.white, size: 40),
+                  color: Colors.white, size: 40), // Keep white for contrast
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Prijavite se prvi',
-                style: TextStyle(
-                  color: Colors.white,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: theme.colorScheme.onPrimary,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                 ),
@@ -552,7 +582,7 @@ class _WaitlistSection extends StatelessWidget {
               Text(
                 'Ostavite nam email i bićete među prvima obavešteni kada platforma krene, bilo da želite da kupujete ili da ponudite svoje proizvode.',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.88),
+                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.88),
                   fontSize: 16,
                   height: 1.6,
                 ),
@@ -563,19 +593,21 @@ class _WaitlistSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, color: Colors.white, size: 24),
-                      SizedBox(width: 10),
+                      const Icon(Icons.check_circle,
+                          color: Colors.white,
+                          size: 24), // Keep white for contrast
+                      const SizedBox(width: 10),
                       Flexible(
                         child: Text(
                           'Hvala! Bićete među prvima obavešteni.',
-                          style: TextStyle(
-                            color: Colors.white,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -592,10 +624,12 @@ class _WaitlistSection extends StatelessWidget {
                       child: TextField(
                         controller: emailCtrl,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Color(0xFF0A0A0A)),
+                        style: TextStyle(color: theme.colorScheme.onSurface),
                         decoration: InputDecoration(
                           hintText: 'Vaša email adresa',
-                          hintStyle: const TextStyle(color: Color(0xFF78909C)),
+                          hintStyle: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7)),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -615,7 +649,7 @@ class _WaitlistSection extends StatelessWidget {
                       child: FilledButton(
                         onPressed: submitting ? null : onSubmit,
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF8BC34A),
+                          backgroundColor: theme.colorScheme.tertiary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
@@ -649,10 +683,11 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= 800;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= Breakpoints.tablet;
 
     return Container(
-      color: const Color(0xFF0A0A0A),
+      color: theme.colorScheme.surfaceContainerHighest,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: Column(
         crossAxisAlignment:
@@ -663,12 +698,14 @@ class _Footer extends StatelessWidget {
                 isWide ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
               Image.asset('assets/images/header_logo.png',
-                  height: 22, width: 22, fit: BoxFit.contain),
+                  height: 22,
+                  width: 22,
+                  fit: BoxFit.contain),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Domaći market',
-                style: TextStyle(
-                    color: Colors.white54,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.54),
                     fontSize: 14,
                     fontWeight: FontWeight.w600),
               ),
@@ -678,13 +715,15 @@ class _Footer extends StatelessWidget {
           RichText(
             textAlign: isWide ? TextAlign.center : TextAlign.left,
             text: TextSpan(
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                  fontSize: 12),
               children: [
                 const TextSpan(text: '© 2026 Domaći market · '),
                 TextSpan(
                   text: 'Uslovi korišćenja',
-                  style: const TextStyle(
-                    color: Colors.white54,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.54),
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()
@@ -693,8 +732,8 @@ class _Footer extends StatelessWidget {
                 const TextSpan(text: ' · '),
                 TextSpan(
                   text: 'Politika privatnosti',
-                  style: const TextStyle(
-                    color: Colors.white54,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.54),
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()

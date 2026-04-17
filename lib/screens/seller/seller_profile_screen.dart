@@ -3,11 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/product_model.dart';
 import '../../models/review_model.dart';
 import '../../models/seller_stats_model.dart';
+import '../../core/utils/action_utils.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
@@ -34,10 +34,17 @@ class SellerProfileScreen extends StatefulWidget {
 }
 
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
-  Future<UserModel?> _loadUser() => UsersService().getUser(widget.sellerId);
-  late Future<UserModel?> _userFuture = _loadUser();
+  Future<UserModel?>? _userFuture;
 
-  void _retry() => setState(() => _userFuture = _loadUser());
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _userFuture ??= context.read<UsersService>().getUser(widget.sellerId);
+  }
+
+  void _retry() => setState(() {
+        _userFuture = context.read<UsersService>().getUser(widget.sellerId);
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +424,7 @@ class _ProfileHeaderState extends State<_ProfileHeader> {
                         ),
                       ],
                       FutureBuilder<SellerStatsModel>(
-                        future: ReviewsService().getSellerStats(seller.id),
+                        future: context.read<ReviewsService>().getSellerStats(seller.id),
                         builder: (context, snap) {
                           final stats = snap.data;
                           if (stats == null) {
@@ -711,43 +718,6 @@ class _ReputationItem extends StatelessWidget {
   }
 }
 
-Future<void> _launchCall(BuildContext context, String? phone) async {
-  final rawPhone = phone?.trim() ?? '';
-  if (rawPhone.isEmpty) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Broj telefona nije dostupan.')),
-      );
-    }
-    return;
-  }
-  final normalized = rawPhone.replaceAll(RegExp(r'[^0-9+]'), '');
-  if (normalized.isEmpty) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Broj telefona nije validan.')),
-      );
-    }
-    return;
-  }
-  final uri = Uri(scheme: 'tel', path: normalized);
-  try {
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Pozivanje nije podržano na ovom uređaju.')),
-      );
-    }
-  } catch (_) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nije moguće pokrenuti poziv.')),
-      );
-    }
-  }
-}
-
 class _CallButton extends StatelessWidget {
   final UserModel seller;
 
@@ -766,8 +736,9 @@ class _CallButton extends StatelessWidget {
         ),
         minimumSize: const Size(48, 48),
       ),
-      onPressed: () => _launchCall(context, seller.phone),
-      icon: const Icon(Icons.phone, size: 18),
+      onPressed: () => ActionUtils.launchCall(context, seller.phone),
+      icon: const Icon(Icons.phone,
+          size: 18), // Changed from 20 to 18 for consistency with other buttons
       label: const Text('Pozovi'),
     );
   }
@@ -918,10 +889,10 @@ class _ReviewsSectionState extends State<_ReviewsSection> {
     return FutureBuilder<Map<String, dynamic>>(
       key: ValueKey(_refreshKey),
       future: Future.wait([
-        ReviewsService().getSellerStats(widget.sellerId),
-        ReviewsService().getReviewsForSeller(widget.sellerId),
+        context.read<ReviewsService>().getSellerStats(widget.sellerId),
+        context.read<ReviewsService>().getReviewsForSeller(widget.sellerId),
         if (canReview)
-          ReviewsService().getReviewableOrder(user.id, widget.sellerId),
+          context.read<ReviewsService>().getReviewableOrder(user.id, widget.sellerId),
       ]).then((r) async {
         final reviews = r[1] as List<ReviewModel>;
         final buyerNames =
@@ -1375,13 +1346,18 @@ class _ProductGrid extends StatefulWidget {
 class _ProductGridState extends State<_ProductGrid> {
   Stream<List<ProductModel>>? _productsStream;
   String? _lastSellerId;
-  late final Future<Map<String, ({double avg, int count})>> _ratingsFuture =
-      ProductsService().getProductRatings();
+  Future<Map<String, ({double avg, int count})>>? _ratingsFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ratingsFuture ??= context.read<ProductsService>().getProductRatings();
+  }
 
   void _ensureStream(String sellerId) {
     if (_lastSellerId == sellerId) return;
     _lastSellerId = sellerId;
-    _productsStream = ProductsService().getProductsBySeller(sellerId);
+    _productsStream = context.read<ProductsService>().getProductsBySeller(sellerId);
   }
 
   @override
@@ -1684,7 +1660,7 @@ class _SellerOrderDraftBar extends StatelessWidget {
                     ),
                     onPressed: () async {
                       try {
-                        final convId = await ChatService()
+                        final convId = await context.read<ChatService>()
                             .getOrCreateConversation(user.id, sellerId);
                         if (context.mounted) context.push('/chat/$convId');
                       } catch (e) {

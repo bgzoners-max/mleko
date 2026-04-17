@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:mleko/services/services.dart';
 class AddBuyerReviewDialog extends StatefulWidget {
   final String sellerId;
@@ -34,7 +35,7 @@ class _AddBuyerReviewDialogState extends State<AddBuyerReviewDialog> {
   Future<void> _submit() async {
     setState(() => _loading = true);
     try {
-      await ReviewsService().addBuyerReview(
+      await context.read<ReviewsService>().addBuyerReview(
         sellerId: widget.sellerId,
         buyerId: widget.buyerId,
         orderId: widget.orderId,

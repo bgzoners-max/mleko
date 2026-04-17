@@ -115,7 +115,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _load() async {
-    final p = await ProductsService().getProduct(widget.productId!);
+    final p = await context.read<ProductsService>().getProduct(widget.productId!);
     if (p != null && mounted) {
       _nameController.text = p.name;
       _priceController.text = p.pricePerKg.toString();
@@ -215,6 +215,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   Future<void> _submit() async {
     final user = context.read<AppState>().user;
+    final productsService = context.read<ProductsService>();
     final effectiveCategory = _resolveEffectiveCategory();
     final effectiveLocation = (_location?.trim().isNotEmpty ?? false)
         ? _location!.trim()
@@ -331,13 +332,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     );
     try {
       if (isEdit) {
-        await ProductsService().updateProduct(product).timeout(
+        await productsService.updateProduct(product).timeout(
               const Duration(seconds: 15),
               onTimeout: () => throw TimeoutException(
                   'Čuvanje traje predugo. Proveri internet i Supabase.'),
             );
       } else {
-        await ProductsService().addProduct(product).timeout(
+        await productsService.addProduct(product).timeout(
               const Duration(seconds: 15),
               onTimeout: () => throw TimeoutException(
                   'Čuvanje traje predugo. Proveri internet i Supabase.'),

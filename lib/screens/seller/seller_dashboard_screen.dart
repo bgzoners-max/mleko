@@ -34,8 +34,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     final user = context.read<AppState>().user;
     if (user != null && user.isSeller && user.id != _lastUserId) {
       _lastUserId = user.id;
-      _statsFuture = OrdersService().getSellerStats(user.id);
-      _productsStream = ProductsService().getProductsBySeller(
+      _statsFuture = context.read<OrdersService>().getSellerStats(user.id);
+      _productsStream = context.read<ProductsService>().getProductsBySeller(
         user.id,
         refreshTrigger: _refreshController.stream,
       );
@@ -99,7 +99,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     }
 
     void goToAddProduct() => context.go('/add-product');
-    final productsService = ProductsService(); // samo za switch toggle
+    final productsService = context.read<ProductsService>();
 
     return Scaffold(
       appBar: AppBar(

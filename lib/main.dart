@@ -19,8 +19,10 @@ import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/location_provider.dart';
-import 'services/orders/background_sync_service.dart';
-import 'services/orders/sync_manager.dart';
+import 'services/auth/auth_services.dart';
+import 'services/catalog/catalog_services.dart';
+import 'services/orders/order_services.dart';
+import 'services/social/social_services.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
 
@@ -154,9 +156,15 @@ void main() async {
     );
   }
 
-  final appState = AppState();
+  final ordersService = OrdersService();
+  final productsService = ProductsService();
+  final chatService = ChatService();
+  final reviewsService = ReviewsService();
+  final usersService = UsersService();
+
+  final appState = AppState(ordersService: ordersService);
   final appSettings = AppSettingsProvider();
-  final cartProvider = CartProvider();
+  final cartProvider = CartProvider(productsService: productsService);
   final categoriesProvider = CategoriesProvider();
   final favoritesProvider = FavoritesProvider();
   final locationProvider = LocationProvider();
@@ -225,6 +233,11 @@ void main() async {
             value: favoritesProvider),
         p_provider.ChangeNotifierProvider<LocationProvider>.value(
             value: locationProvider),
+        p_provider.Provider<OrdersService>.value(value: ordersService),
+        p_provider.Provider<ProductsService>.value(value: productsService),
+        p_provider.Provider<ChatService>.value(value: chatService),
+        p_provider.Provider<ReviewsService>.value(value: reviewsService),
+        p_provider.Provider<UsersService>.value(value: usersService),
       ],
       child: OfflineIndicator(
         child: p_provider.Consumer<AppSettingsProvider>(

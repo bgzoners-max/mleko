@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:math';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -62,10 +63,12 @@ void _showLocalNotification({
   final channelName = isOrder ? _ordersChannelName : _channelName;
   final payload = jsonEncode({'type': type, 'order_id': orderId});
 
-  // Jedinstveni ID baziran na payload + vreme za izbegavanje kolizija
-  final notificationId = Object.hashAll(
-    [type, orderId, DateTime.now().microsecondsSinceEpoch],
-  ).remainder(2147483647).abs();
+  // Deterministički ID baziran na sadržaju (type, orderId, naslov i telo).
+  // Ako ista notifikacija stigne više puta (npr. zbog više tokena ili FCM retry-a),
+  // novi ID će biti identičan prethodnom, pa će OS samo ažurirati postojeću
+  // notifikaciju u tray-u umesto da pravi vizuelni duplikat.
+  final notificationId =
+      Object.hash(type, orderId, title, body).remainder(2147483647).abs();
 
   LoggerService.debug(
     'Prikazi lokalnu notifikaciju',
@@ -120,6 +123,9 @@ void _showLocalNotification({
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Ignorišemo prazne poruke koje se ponekad šalju kao keep-alive
+  if (message.data.isEmpty && message.notification == null) return;
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -407,18 +413,19 @@ class PushService {
         LoggerService.warning('PushService: Notification permission DENIED');
         return;
       }
-      var token = await FirebaseMessaging.instance.getToken();
+      var token = await _safeGetToken();
       if (!_isCurrentRegistration(generation, userId)) return;
       final hasToken = token?.isNotEmpty ?? false;
       LoggerService.debug('PushService: Got initial token', extra: {
         'has_token': hasToken,
       });
 
-      // Retry logika - ako je null, probaj do 3 puta
+      // Retry logika sa progresivnim čekanjem
       int retries = 0;
       while ((token == null || token.isEmpty) && retries < 3) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        token = await FirebaseMessaging.instance.getToken();
+        await Future.delayed(
+            Duration(milliseconds: 500 * pow(2, retries).toInt()));
+        token = await _safeGetToken();
         retries++;
         if (!_isCurrentRegistration(generation, userId)) return;
       }
@@ -479,6 +486,16 @@ class PushService {
     }
   }
 
+  Future<String?> _safeGetToken() async {
+    try {
+      return await FirebaseMessaging.instance.getToken();
+    } catch (e) {
+      LoggerService.warning('PushService: Failed to fetch token',
+          extra: {'error': e.toString()});
+      return null;
+    }
+  }
+
   /// Ukloni token pri odjavi
   Future<void> unregisterToken(String userId) async {
     if (kIsWeb) return;
@@ -510,7 +527,13 @@ class PushService {
     _cancelSub(_onMessageSub).then((_) {
       _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
         final shouldSkipLocalNotification =
-            Platform.isIOS && message.notification != null;
+            (Platform.isIOS || Platform.isAndroid) &&
+                message.notification != null;
+
+        // Na Androidu, ako poruka sadrži 'notification' objekat, sistem će je
+        // automatski prikazati ako je app u backgroundu. Ako je u foregroundu,
+        // mi je prikazujemo lokalno, ali samo ako već nije obrađena.
+        if (message.notification == null && message.data.isEmpty) return;
 
         // Preuzmi podatke - iz notifikacije ili iz data payload-a
         final data =

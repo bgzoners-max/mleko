@@ -71,7 +71,7 @@ class AppSettingsProvider extends ChangeNotifier {
 
   Future<void> _persistBootstrapState(SharedPreferences prefs) async {
     await prefs.setInt(_keyThemeMode, _themeModeToInt(_themeMode));
-    await prefs.setDouble(_keyFontScale, _fontScale.clamp(fontScaleMin, fontScaleMax));
+    await prefs.setDouble(_keyFontScale, fontScale);
     await prefs.setBool(_keyAnimationsEnabled, _animationsEnabled);
     await prefs.setBool(_keyCompactMode, _compactMode);
   }
@@ -79,40 +79,39 @@ class AppSettingsProvider extends ChangeNotifier {
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bootstrapDone = prefs.getBool(_keyInstallDefaultsBootstrap) ?? false;
+      final bootstrapDone =
+          prefs.getBool(_keyInstallDefaultsBootstrap) ?? false;
 
       if (!bootstrapDone) {
         if (_hasPriorAppUsage(prefs)) {
           // Nadogradnja: implicitne starije vrednosti (system, normalan font) ako nije bilo čuvanja.
-          _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 0);
-          _fontScale = prefs.getDouble(_keyFontScale) ?? 1.0;
-          _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
-          _compactMode = prefs.getBool(_keyCompactMode) ?? false;
+          _readFromPrefs(prefs, defaultTheme: 0, defaultFont: 1.0);
         } else {
           // Prva instalacija aplikacije: svetla tema + „Velika” (1.15).
           _themeMode = ThemeMode.light;
           _fontScale = 1.15;
-          _animationsEnabled = true;
-          _compactMode = false;
         }
         await _persistBootstrapState(prefs);
         await prefs.setBool(_keyInstallDefaultsBootstrap, true);
       } else {
         // Samo sačuvano stanje (fallback samo ako je ključ oštećen / obrisan).
-        _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? 1);
-        _fontScale = prefs.getDouble(_keyFontScale) ?? 1.15;
-        _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
-        _compactMode = prefs.getBool(_keyCompactMode) ?? false;
+        _readFromPrefs(prefs, defaultTheme: 1, defaultFont: 1.15);
       }
 
-      if (_fontScale < fontScaleMin || _fontScale > fontScaleMax) {
-        _fontScale = 1.15;
-        await prefs.setDouble(_keyFontScale, _fontScale);
-      }
+      // Finalna sinhronizacija internog stanja sa dozvoljenim granicama
+      _fontScale = fontScale;
       notifyListeners();
     } catch (_) {
       // keep field defaults
     }
+  }
+
+  void _readFromPrefs(SharedPreferences prefs,
+      {required int defaultTheme, required double defaultFont}) {
+    _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? defaultTheme);
+    _fontScale = prefs.getDouble(_keyFontScale) ?? defaultFont;
+    _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
+    _compactMode = prefs.getBool(_keyCompactMode) ?? false;
   }
 
   static ThemeMode _themeModeFromInt(int v) {
@@ -145,7 +144,8 @@ class AppSettingsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyThemeMode, _themeModeToInt(value));
     } catch (e) {
-      LoggerService.warning('Failed to save theme mode', extra: {'error': e.toString()});
+      LoggerService.warning('Failed to save theme mode',
+          extra: {'error': e.toString()});
     }
   }
 
@@ -157,7 +157,8 @@ class AppSettingsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyAnimationsEnabled, value);
     } catch (e) {
-      LoggerService.warning('Failed to save animations setting', extra: {'error': e.toString()});
+      LoggerService.warning('Failed to save animations setting',
+          extra: {'error': e.toString()});
     }
   }
 
@@ -170,7 +171,8 @@ class AppSettingsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_keyFontScale, clamped);
     } catch (e) {
-      LoggerService.warning('Failed to save font scale', extra: {'error': e.toString()});
+      LoggerService.warning('Failed to save font scale',
+          extra: {'error': e.toString()});
     }
   }
 
@@ -182,7 +184,8 @@ class AppSettingsProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyCompactMode, value);
     } catch (e) {
-      LoggerService.warning('Failed to save compact mode', extra: {'error': e.toString()});
+      LoggerService.warning('Failed to save compact mode',
+          extra: {'error': e.toString()});
     }
   }
 }

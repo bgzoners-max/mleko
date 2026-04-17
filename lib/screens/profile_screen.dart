@@ -455,6 +455,7 @@ class _SellerProfilePhotoSectionState
 
   Future<void> _pickAndUpload() async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final messenger = ScaffoldMessenger.of(context);
     final picker = ImagePicker();
     final xFile =
@@ -465,7 +466,7 @@ class _SellerProfilePhotoSectionState
       final bytes = await xFile.readAsBytes();
       final url =
           await StorageService().uploadProfileImage(widget.user.id, bytes);
-      await UsersService().updateProfileImage(widget.user.id, url);
+      await usersService.updateProfileImage(widget.user.id, url);
       await appState.refreshUser();
       if (mounted) {
         messenger.showSnackBar(
@@ -796,10 +797,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final user = widget.user;
     setState(() => _saving = true);
     try {
-      await UsersService().upsertProfile(
+      await usersService.upsertProfile(
         user.id,
         displayName:
             _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
@@ -813,7 +815,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             : null,
       );
       if (user.isSeller) {
-        await UsersService().updateSellerTags(user.id, _selectedTags);
+        await usersService.updateSellerTags(user.id, _selectedTags);
       }
       await appState.refreshUser();
       if (mounted) {
@@ -1005,6 +1007,7 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
 
   Future<void> _addPhoto() async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final messenger = ScaffoldMessenger.of(context);
     final xFile = await ImagePicker()
         .pickImage(source: ImageSource.gallery, imageQuality: 80);
@@ -1018,7 +1021,7 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
           .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
       final newUrls = [..._galleryUrls, url];
       if (mounted) setState(() => _galleryUrls = newUrls);
-      await UsersService().updateFarmGallery(user.id, newUrls);
+      await usersService.updateFarmGallery(user.id, newUrls);
       await appState.refreshUser();
       if (mounted) {
         messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
@@ -1035,6 +1038,7 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
 
   Future<void> _removePhoto(int index) async {
     final appState = context.read<AppState>();
+    final usersService = context.read<UsersService>();
     final user = appState.user;
     if (user == null) return;
     final removed = _galleryUrls[index];
@@ -1044,7 +1048,7 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
       _loading = true;
     });
     try {
-      await UsersService().updateFarmGallery(user.id, updated);
+      await usersService.updateFarmGallery(user.id, updated);
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)

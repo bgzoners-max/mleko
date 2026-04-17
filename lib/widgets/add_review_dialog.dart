@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:mleko/services/services.dart';
 /// Dijalog za ocenjivanje prodavca (1–5 zvezdica + komentar).
 /// Prikazuje se kupcima koji su imali isporučenu porudžbinu.
@@ -38,7 +39,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
   Future<void> _submit() async {
     setState(() => _loading = true);
     try {
-      await ReviewsService().addReview(
+      await context.read<ReviewsService>().addReview(
         buyerId: widget.buyerId,
         sellerId: widget.sellerId,
         orderId: widget.orderId,

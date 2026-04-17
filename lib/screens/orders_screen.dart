@@ -28,6 +28,7 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   final _refreshController = StreamController<void>.broadcast();
+  OrdersService? _ordersService;
 
   Stream<List<OrderModel>>? _ordersStream;
   String? _streamKey;
@@ -96,6 +97,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ordersService ??= context.read<OrdersService>();
+  }
+
+  @override
   void dispose() {
     _refreshController.close();
     super.dispose();
@@ -108,7 +115,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _streamKey = key;
     _olderOrders.clear();
     _hasMore = true;
-    _ordersStream = OrdersService().getOrdersByBuyer(
+    _ordersStream = _ordersService!.getOrdersByBuyer(
       userId,
       refreshTrigger: _refreshController.stream,
       statusFilter: _statusFilter,
@@ -126,7 +133,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (_loadingMore || !_hasMore) return;
     setState(() => _loadingMore = true);
     try {
-      final more = await OrdersService().fetchMoreOrdersByBuyer(
+      final more = await _ordersService!.fetchMoreOrdersByBuyer(
         userId,
         offset: currentCount + _olderOrders.length,
         statusFilter: _statusFilter,
@@ -587,7 +594,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   static Future<void> _maybeShowReview(BuildContext context, dynamic user,
       OrderModel order, StreamController<void> refreshController) async {
-    final canReview = await ReviewsService().canReviewOrder(user.id, order.id);
+    final reviewsService = context.read<ReviewsService>();
+    final ordersService = context.read<OrdersService>();
+    final canReview = await reviewsService.canReviewOrder(user.id, order.id);
     if (!context.mounted) return;
     if (!canReview) return;
 
@@ -598,7 +607,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (productId == null ||
         productName == null ||
         productName.trim().isEmpty) {
-      final items = await OrdersService().getOrderItems(order.id);
+      final items = await ordersService.getOrderItems(order.id);
       if (items.isNotEmpty) {
         productId = items.first.productId;
         productName = items.first.productName;
@@ -697,12 +706,17 @@ class _BySellerTab extends StatefulWidget {
 }
 
 class _BySellerTabState extends State<_BySellerTab> {
-  late Future<List<BuyerSellerStats>> _future =
-      OrdersService().getOrdersByBuyerForSellerStats(widget.userId);
+  Future<List<BuyerSellerStats>>? _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _future ??= context.read<OrdersService>().getOrdersByBuyerForSellerStats(widget.userId);
+  }
 
   void _refresh() {
     setState(() {
-      _future = OrdersService().getOrdersByBuyerForSellerStats(widget.userId);
+      _future = context.read<OrdersService>().getOrdersByBuyerForSellerStats(widget.userId);
     });
     widget.onRefresh();
   }
@@ -802,7 +816,7 @@ class _BySellerTabState extends State<_BySellerTab> {
 
   Future<void> _reorder(BuildContext context, BuyerSellerStats stats) async {
     try {
-      final items = await OrdersService().getOrderItems(stats.lastOrderId);
+      final items = await context.read<OrdersService>().getOrderItems(stats.lastOrderId);
       if (items.isEmpty || !context.mounted) return;
       await context
           .read<CartProvider>()
@@ -912,6 +926,7 @@ class _BuyerOrderCard extends StatelessWidget {
   });
 
   Future<void> _archiveOrder(BuildContext context) async {
+    final ordersService = context.read<OrdersService>();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -933,7 +948,7 @@ class _BuyerOrderCard extends StatelessWidget {
     );
     if (ok != true || !context.mounted) return;
 
-    await OrdersService().archiveOrderByBuyer(
+    await ordersService.archiveOrderByBuyer(
       user.id as String,
       order.id,
     );
@@ -945,6 +960,7 @@ class _BuyerOrderCard extends StatelessWidget {
   }
 
   Future<void> _confirmReceipt(BuildContext context) async {
+    final ordersService = context.read<OrdersService>();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -966,7 +982,7 @@ class _BuyerOrderCard extends StatelessWidget {
     );
     if (ok != true || !context.mounted) return;
 
-    await OrdersService().confirmOrderReceivedByBuyer(order.id);
+    await ordersService.confirmOrderReceivedByBuyer(order.id);
     refreshController.add(null);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1201,7 +1217,7 @@ class _BuyerOrderCard extends StatelessWidget {
                   onPressed: () async {
                     try {
                       final convId =
-                          await ChatService().getOrCreateConversation(
+                          await context.read<ChatService>().getOrCreateConversation(
                         user.id,
                         o.sellerId,
                         orderId: o.id,
@@ -1276,7 +1292,7 @@ class _OrderItemsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<OrderItemModel>>(
-      future: OrdersService().getOrderItems(orderId),
+      future: context.read<OrdersService>().getOrderItems(orderId),
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
         final items = snap.data!;
@@ -1383,8 +1399,13 @@ class _CanReviewOrderButton extends StatefulWidget {
 }
 
 class _CanReviewOrderButtonState extends State<_CanReviewOrderButton> {
-  late final Future<bool> _canReviewFuture =
-      ReviewsService().canReviewOrder(widget.userId, widget.order.id);
+  Future<bool>? _canReviewFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _canReviewFuture ??= context.read<ReviewsService>().canReviewOrder(widget.userId, widget.order.id);
+  }
 
   @override
   Widget build(BuildContext context) {

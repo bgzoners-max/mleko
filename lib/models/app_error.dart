@@ -42,7 +42,7 @@ class AppError {
 
   static String? _extractErrorCode(dynamic exception) {
     final msg = exception.toString();
-    if (msg.contains('PGRST')) {
+    if (msg.contains('PGRST') || msg.contains('23505')) {
       final match = RegExp(r'PGRST(\d+)').firstMatch(msg);
       return match?.group(0);
     }
@@ -70,7 +70,9 @@ class AppError {
     if (msg.contains('validation') || msg.contains('bad request')) {
       return ErrorType.validation;
     }
-    if (msg.contains('duplicate') || msg.contains('constraint')) {
+    if (msg.contains('duplicate') ||
+        msg.contains('constraint') ||
+        msg.contains('23505')) {
       return ErrorType.conflict;
     }
 

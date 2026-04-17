@@ -25,11 +25,16 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  late Future<ProductModel?> _productFuture =
-      ProductsService().getProduct(widget.productId);
+  Future<ProductModel?>? _productFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _productFuture ??= context.read<ProductsService>().getProduct(widget.productId);
+  }
 
   void _retry() => setState(() {
-        _productFuture = ProductsService().getProduct(widget.productId);
+        _productFuture = context.read<ProductsService>().getProduct(widget.productId);
       });
 
   @override
@@ -150,7 +155,10 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           : _addressController.text.trim();
 
       if (isOnline) {
-        final orderId = await OrdersService().createSingleProductOrder(
+        final ordersService = context.read<OrdersService>();
+        final usersService = context.read<UsersService>();
+        final chatService = context.read<ChatService>();
+        final orderId = await ordersService.createSingleProductOrder(
           buyerId: user.id,
           sellerId: widget.product.sellerId,
           productId: widget.product.id,
@@ -163,10 +171,10 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           buyerAddress: buyerAddress,
         );
         if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
-          await UsersService().updatePhone(user.id, phone);
+          await usersService.updatePhone(user.id, phone);
           await appState.refreshUser();
         }
-        await ChatService().getOrCreateConversation(
+        await chatService.getOrCreateConversation(
             user.id, widget.product.sellerId,
             orderId: orderId);
         if (!mounted) return;

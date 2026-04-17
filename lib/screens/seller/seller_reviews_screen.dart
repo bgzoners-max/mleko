@@ -67,8 +67,8 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
           child: FutureBuilder<Map<String, dynamic>>(
         key: ValueKey(_refreshKey),
         future: Future.wait([
-          ReviewsService().getSellerStats(widget.sellerId),
-          ReviewsService().getReviewsForSeller(widget.sellerId),
+          context.read<ReviewsService>().getSellerStats(widget.sellerId),
+          context.read<ReviewsService>().getReviewsForSeller(widget.sellerId),
         ]).then((r) async {
           final reviews = r[1] as List<ReviewModel>;
           final buyerIds = reviews.map((x) => x.buyerId).toSet();

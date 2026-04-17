@@ -48,7 +48,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _refreshController = StreamController<void>.broadcast();
-  final _chatService = ChatService();
+  late ChatService _chatService;
 
   // Stream se čuva kao polje — sprečava re-kreiranje kanala na svakom buildu.
   late final Stream<List<MessageModel>> _messagesStream =
@@ -83,6 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _chatService = context.read<ChatService>();
     _loadConversationInfo();
     _messageController.addListener(_onTypingChanged);
     // Inicijalizuj stream reakcija čim imamo userId (async safe: initState ne smije biti async)
@@ -185,6 +186,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadConversationInfo() async {
+    final ordersService = context.read<OrdersService>();
     final user = context.read<AppState>().user;
     if (user == null) return;
     // Koristi jedan RPC umesto dva upita (getConversationInfo + profili)
@@ -193,7 +195,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     OrderModel? order;
     if (info.orderId != null) {
-      order = await OrdersService().getOrderById(info.orderId!);
+      order = await ordersService.getOrderById(info.orderId!);
     }
 
     final isBuyer = info.buyerId == user.id;

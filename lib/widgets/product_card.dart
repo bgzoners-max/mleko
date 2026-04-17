@@ -112,13 +112,29 @@ class _ProductCardState extends State<ProductCard> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
-          Text(
-            widget.product.name,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  widget.product.name,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+              ),
+              if (widget.product.sellerIsVerified) ...[
+                const SizedBox(width: 4),
+                Tooltip(
+                  message: 'Proveren prodavac',
+                  child: Icon(Icons.verified,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.primary),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 4),
           Text(

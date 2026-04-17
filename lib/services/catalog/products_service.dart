@@ -278,12 +278,9 @@ class ProductsService {
     }
   }
 
-  /// Paginirani učitavanje proizvoda – za "load more" / beskonačan scroll
-  /// Uvek koristi view products_with_ratings (ima avg_rating, order_count) – jedan poziv, bez getProductSalesCounts.
-  /// searchQuery – server-side pretraga samo po **nazivu** proizvoda (`name`).
-  /// Više reči = AND (svaka reč mora da se pojavi u nazivu). Kategorija iz filtera
-  /// i dalje koristi `eq('category', …)` — tekstualni upit ne traži po polju kategorije
-  /// (izbegava lažne pogotke tipa „Jogurt“ za „mleko“ jer je kategorija „Jogurt i kiselo mleko“).
+  /// Paginirani učitavanje proizvoda – za “load more” / beskonačan scroll.
+  /// Kada je [searchQuery] prisutan, koristi FTS RPC (GIN indeks, rangiranje relevantnosti,
+  /// pretraga po imenu I opisu, podrška za dijakritike). Bez pretrage – standardni query.
   Future<
       ({
         List<ProductModel> items,
@@ -302,50 +299,52 @@ class ProductsService {
     int limit = productsPageSize,
     int offset = 0,
   }) async {
-    const table = 'products_with_ratings';
-    var query = _client.from(table).select();
-    if (category != null && category.isNotEmpty) {
-      query = query.eq('category', category);
-    }
-    if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
-      query = query.neq('seller_id', excludeSellerId);
-    }
-    if (region != null && region.isNotEmpty) {
-      query = query.eq('location', region);
-    }
-    if (availableNow == true) {
-      query = query.eq('available_now', true);
-    }
-    if (minPrice != null) {
-      query = query.gte('price_per_kg', minPrice);
-    }
-    if (maxPrice != null) {
-      query = query.lte('price_per_kg', maxPrice);
-    }
     final safeSearch = _sanitizeProductSearchInput(searchQuery);
+
+    List rows;
+
     if (safeSearch != null) {
-      final tokens = _nameSearchTokens(safeSearch);
-      // Svaki token mora da se poklopi sa nazivom (AND) — preciznije od OR name/category.
-      for (final token in tokens) {
-        query = query.ilike('name', '%$token%');
+      // FTS putanja: GIN indeks + rangiranje relevantnosti
+      final params = <String, dynamic>{
+        'p_query': safeSearch,
+        'p_limit': limit,
+        'p_offset': offset,
+      };
+      if (category != null && category.isNotEmpty) params['p_category'] = category;
+      if (region != null && region.isNotEmpty) params['p_region'] = region;
+      if (availableNow == true) params['p_available_now'] = true;
+      if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
+        params['p_exclude_seller_id'] = excludeSellerId;
       }
+      rows = await _withRetry(() => _client.rpc('search_products_fts', params: params)) as List;
+    } else {
+      // Standardna putanja: korisnik bira sort, nema text pretrage
+      const table = 'products_with_ratings';
+      var query = _client.from(table).select();
+      if (category != null && category.isNotEmpty) query = query.eq('category', category);
+      if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
+        query = query.neq('seller_id', excludeSellerId);
+      }
+      if (region != null && region.isNotEmpty) query = query.eq('location', region);
+      if (availableNow == true) query = query.eq('available_now', true);
+      if (minPrice != null) query = query.gte('price_per_kg', minPrice);
+      if (maxPrice != null) query = query.lte('price_per_kg', maxPrice);
+
+      final (orderColumn, orderAsc) = switch (sort) {
+        ProductSort.dateDesc  => ('created_at', false),
+        ProductSort.dateAsc   => ('created_at', true),
+        ProductSort.priceAsc  => ('price_per_kg', true),
+        ProductSort.priceDesc => ('price_per_kg', false),
+        ProductSort.location  => ('location', true),
+        ProductSort.ratingDesc => ('avg_rating', false),
+      };
+      var ordered = query.order(orderColumn, ascending: orderAsc);
+      if (sort == ProductSort.ratingDesc) {
+        ordered = ordered.order('created_at', ascending: false);
+      }
+      rows = await _withRetry(() => ordered.range(offset, offset + limit - 1)) as List;
     }
 
-    final (orderColumn, orderAsc) = switch (sort) {
-      ProductSort.dateDesc => ('created_at', false),
-      ProductSort.dateAsc => ('created_at', true),
-      ProductSort.priceAsc => ('price_per_kg', true),
-      ProductSort.priceDesc => ('price_per_kg', false),
-      ProductSort.location => ('location', true),
-      ProductSort.ratingDesc => ('avg_rating', false),
-    };
-    var ordered = query.order(orderColumn, ascending: orderAsc);
-    if (sort == ProductSort.ratingDesc) {
-      ordered = ordered.order('created_at', ascending: false);
-    }
-    final list =
-        await _withRetry(() => ordered.range(offset, offset + limit - 1));
-    final rows = list as List;
     final products = rows
         .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
         .toList();

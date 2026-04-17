@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../models/review_model.dart';
 import '../services/services.dart';
@@ -211,7 +212,7 @@ class _SellerReplyDialogState extends State<SellerReplyDialog> {
     if (text.isEmpty) return;
     setState(() => _loading = true);
     try {
-      await ReviewsService().addSellerReply(
+      await context.read<ReviewsService>().addSellerReply(
         reviewId: widget.review.id,
         reply: text,
       );

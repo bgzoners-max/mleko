@@ -28,7 +28,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   final _searchHistoryService = SearchHistoryService();
-  final _productsService = ProductsService();
+  ProductsService? _productsService;
   String? _category;
   String? _region;
   bool? _availableNow;
@@ -69,6 +69,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _productsService ??= context.read<ProductsService>();
     context.read<CategoriesProvider>().load();
     final user = context.read<AppState>().user;
     final favorites = context.read<FavoritesProvider>();
@@ -98,7 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _loadingMore = false;
     });
     try {
-      final result = await _productsService.getProductsPage(
+      final result = await _productsService!.getProductsPage(
         category: _category,
         region: _region,
         availableNow: _availableNow,
@@ -131,7 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final querySeq = _querySeq;
     setState(() => _loadingMore = true);
     try {
-      final result = await _productsService.getProductsPage(
+      final result = await _productsService!.getProductsPage(
         category: _category,
         region: _region,
         availableNow: _availableNow,
@@ -220,7 +221,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     try {
-      final counts = await _productsService.getCategoryCounts(
+      final counts = await _productsService!.getCategoryCounts(
         categoryNames:
             categories.map<String>((cat) => cat.name as String).toList(),
         region: _region,

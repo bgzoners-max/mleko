@@ -14,6 +14,12 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.sizeOf(context).width < Breakpoints.phone;
+
+    if (isMobile) {
+      return _MobileLoginScreen();
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Prijava')),
       body: Align(
@@ -37,6 +43,19 @@ class LoginScreen extends StatelessWidget {
             child: _LoginForm(),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MobileLoginScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Prijava')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+        child: _LoginForm(),
       ),
     );
   }

@@ -18,7 +18,7 @@ class AppState extends ChangeNotifier {
   final AuthService _auth = AuthService();
   final ConnectivityService _connectivity = ConnectivityService();
   final OrderQueueService _orderQueue = OrderQueueService();
-  final OrdersService _ordersService = OrdersService();
+  final OrdersService _ordersService;
   late final SyncManager _syncManager;
 
   StreamSubscription? _authSubscription;
@@ -55,7 +55,8 @@ class AppState extends ChangeNotifier {
   SyncManager get syncManager => _syncManager;
   int get unreadNotificationCount => _unreadNotificationCount;
 
-  AppState() {
+  AppState({required OrdersService ordersService})
+      : _ordersService = ordersService {
     _syncManager = SyncManager(
       queueService: _orderQueue,
       ordersService: _ordersService,

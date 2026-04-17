@@ -131,8 +131,7 @@ class _TermsContent extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(Breakpoints.cardPadding(context) + 2),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.55),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),

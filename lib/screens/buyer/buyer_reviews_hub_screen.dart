@@ -27,9 +27,10 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
   void _refresh() => setState(() => _refreshKey++);
 
   Future<Map<String, dynamic>> _load() async {
+    final reviewsService = context.read<ReviewsService>();
     final results = await Future.wait([
-      ReviewsService().getReviewsByBuyer(widget.buyerId),
-      ReviewsService().getReviewsForBuyer(widget.buyerId),
+      reviewsService.getReviewsByBuyer(widget.buyerId),
+      reviewsService.getReviewsForBuyer(widget.buyerId),
     ]);
     final reviewsLeftByBuyer = results[0] as List<ReviewModel>;
     final reviewsForBuyer = results[1] as List<BuyerReviewModel>;
