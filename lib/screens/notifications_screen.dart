@@ -510,6 +510,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               if (value == 'read') {
                 await _service.markAllAsRead(user.id);
                 if (context.mounted) {
+                  context.read<AppState>().resetUnreadCount();
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Označeno kao pročitano.')));
                 }
