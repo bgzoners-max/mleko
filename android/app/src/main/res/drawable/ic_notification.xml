@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <!-- Milk drop / kapljica mleka -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M12,2 C8.5,6.5 4,10.5 4,15 A8,8 0,0,1 20,15 C20,10.5 15.5,6.5 12,2 Z"/>
+  <!-- Highlight / odsjaj -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:fillAlpha="0.4"
+      android:pathData="M9.5,8 C8.5,9.5 7.5,11 7.5,13 A1.5,1.5 0,0,0 10.5,13 C10.5,11.5 11,9.5 12,8 C11,7.5 10.2,7.5 9.5,8 Z"/>
+</vector>

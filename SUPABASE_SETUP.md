@@ -1,6 +1,7 @@
 # Supabase setup – potpuna konfiguracija
 
-Aplikacija koristi **samo Supabase**. Firebase je uklonjen.
+Aplikacija koristi **Supabase** za bazu podataka, storage i autentifikaciju.
+*Napomena: Firebase jeste uklonjen za ove servise, ali se **FCM (Firebase Cloud Messaging) i dalje aktivno koristi za Push notifikacije** (pogledaj `PUSH_SETUP.md` i `FIREBASE_SETUP.md`).*
 
 ## 1. Kreiraj projekat
 

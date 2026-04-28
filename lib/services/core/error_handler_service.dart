@@ -110,18 +110,23 @@ class ErrorHandlerService {
   /// Track error frequency za crash detection
   void _trackErrorFrequency(AppError error) {
     final key = error.code ?? error.type.toString();
-    _errorCounts[key] = (_errorCounts[key] ?? 0) + 1;
-    _lastErrorTimes[key] = DateTime.now();
+    final now = DateTime.now();
+    final lastTime = _lastErrorTimes[key];
 
-    // Ako je isti error išao 5+ puta u 10 sekundi, log severe
+    // Ako je prošlo više od 10 sekundi, resetujemo brojač
+    if (lastTime != null && now.difference(lastTime).inSeconds > 10) {
+      _errorCounts[key] = 1;
+    } else {
+      _errorCounts[key] = (_errorCounts[key] ?? 0) + 1;
+    }
+    _lastErrorTimes[key] = now;
+
     final count = _errorCounts[key]!;
-    final lastTime = _lastErrorTimes[key]!;
-    final timeSinceLast = DateTime.now().difference(lastTime).inSeconds;
-
-    if (count >= 5 && timeSinceLast < 10) {
+    if (count >= 5) {
       LoggerService.warning(
         'Česta greška: $key ($count) u poslednjих 10s',
       );
+      _errorCounts[key] = 0; // Resetuj brojač kako ne bi spamovao log
     }
   }
 

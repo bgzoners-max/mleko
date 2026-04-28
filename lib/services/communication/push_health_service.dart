@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../models/app_error.dart';
 
 class PushHealthDashboardModel {
   final DateTime? checkedAt;
@@ -104,11 +105,19 @@ class PushHealthService {
   final SupabaseClient _client = Supabase.instance.client;
 
   Future<PushHealthDashboardModel> fetchDashboard() async {
-    final rows = await _client.from('push_health_dashboard').select();
-    if (rows.isEmpty) {
-      throw StateError('Push health dashboard nije dostupan.');
+    try {
+      final rows = await _client.from('push_health_dashboard').select();
+      if (rows.isEmpty) {
+        throw AppError(
+          message: 'Push health dashboard row missing',
+          userMessage: 'Statistika notifikacija trenutno nije dostupna.',
+          type: ErrorType.notFound,
+        );
+      }
+      return PushHealthDashboardModel.fromJson(rows.first);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     }
-    return PushHealthDashboardModel.fromJson(rows.first);
   }
 
   Future<List<PushHealthUserIssueModel>> fetchUserIssues() async {

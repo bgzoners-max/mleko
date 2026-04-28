@@ -58,6 +58,7 @@ class GroupedCategoryDropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       key: ValueKey(effectiveValue),
       initialValue: effectiveValue,
+      isExpanded: true,
       decoration: InputDecoration(labelText: label),
       items: items,
       onChanged: (v) {

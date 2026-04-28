@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mleko/services/services.dart';
+import '../core/utils/error_messages.dart';
 class AddBuyerReviewDialog extends StatefulWidget {
   final String sellerId;
   final String buyerId;
@@ -51,7 +52,7 @@ class _AddBuyerReviewDialogState extends State<AddBuyerReviewDialog> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greska: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _loading = false);

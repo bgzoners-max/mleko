@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../models/buyer_review_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
@@ -475,7 +476,7 @@ class _ContactBuyerButtonState extends State<_ContactBuyerButton> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

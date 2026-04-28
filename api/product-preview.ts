@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Deklaracija kako TypeScript ne bi prijavljivao grešku za 'process' u okruženjima bez Node tipova
+declare const process: any;
+
 type ProductRow = {
   id: string;
   name: string;
@@ -43,14 +46,18 @@ function normalizeImageUrl(
   imageUrl: string | null | undefined,
   origin: string,
 ): string {
-  if (!imageUrl) return `${origin}/icons/Icon-512.png`;
+  const fallback = `${origin}/icons/Icon-512.png`;
+  if (!imageUrl || typeof imageUrl !== 'string') return fallback;
+
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
     return imageUrl;
   }
+
+  const cleanOrigin = origin.replace(/\/+$/, '');
   if (imageUrl.startsWith('/')) {
-    return `${origin}${imageUrl}`;
+    return `${cleanOrigin}${imageUrl}`;
   }
-  return `${origin}/${imageUrl}`;
+  return `${cleanOrigin}/${imageUrl}`;
 }
 
 function formatPrice(
@@ -60,23 +67,27 @@ function formatPrice(
   if (pricePerKg == null) return null;
   switch (unitType) {
     case 'L':
-      return `${pricePerKg.toFixed(0)} RSD/L`;
+      return `${Math.round(pricePerKg)} RSD/L`;
     case 'kom':
-      return `${pricePerKg.toFixed(0)} RSD/kom`;
+      return `${Math.round(pricePerKg)} RSD/kom`;
     default:
-      return `${pricePerKg.toFixed(0)} RSD/kg`;
+      return `${Math.round(pricePerKg)} RSD/kg`;
   }
 }
 
 function buildDescription(product: ProductRow | null): string {
   if (product == null) return FALLBACK_DESCRIPTION;
 
-  const location = product.location?.trim();
-  const description = product.description?.trim();
+  const location = product.location?.trim() || '';
+  const description = product.description?.trim() || '';
+  const priceInfo = formatPrice(product.price_per_kg, product.unit_type);
+
   const parts = [
-    formatPrice(product.price_per_kg, product.unit_type),
+    priceInfo,
     location ? `Lokacija: ${location}` : null,
-    description || 'Pogledajte detalje proizvoda i lokalnu ponudu na Domaćem marketu.',
+    description.length > 10
+      ? description
+      : 'Pogledajte detalje proizvoda i lokalnu ponudu na Domaćem marketu.',
   ].filter((part): part is string => Boolean(part));
 
   const text = parts.join('. ').replace(/\s+/g, ' ').trim();
@@ -127,13 +138,18 @@ function buildHtml({
   </script>
 </head>
 <body>
-  <p>Preusmeravanje na proizvod...</p>
+  <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+    <p>Preusmeravanje na proizvod...</p>
+    <p style="font-size: 0.9em; color: #666;">Ako se ništa ne dešava,
+      <a href="${escapedCanonicalUrl}" style="color: #1B5E20;">klikni ovde</a>.</p>
+  </div>
 </body>
 </html>`;
 }
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env?: Record<string, string>): Promise<Response> {
+    try {
     const requestUrl = new URL(request.url);
     const productId = requestUrl.searchParams.get('id')?.trim();
     const origin = normalizeBaseUrl(requestUrl.origin);
@@ -148,8 +164,9 @@ export default {
     const previewUrl = `${publicBaseUrl}/p/${encodedProductId}`;
     const fallbackImageUrl = `${origin}/icons/Icon-512.png`;
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    // Podrška za Cloudflare Workers (env) i Vercel/Node.js (process.env)
+    const supabaseUrl = env?.SUPABASE_URL || (typeof process !== 'undefined' ? process.env.SUPABASE_URL : undefined);
+    const supabaseAnonKey = env?.SUPABASE_ANON_KEY || (typeof process !== 'undefined' ? process.env.SUPABASE_ANON_KEY : undefined);
 
     if (!supabaseUrl || !supabaseAnonKey) {
       const html = buildHtml({
@@ -169,6 +186,7 @@ export default {
       });
     }
 
+    // Koristimo createClient direktno bez nepotrebnih opcija za brži cold start
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -184,7 +202,11 @@ export default {
       ? `${product.name} | Domaći market`
       : 'Proizvod nije pronađen | Domaći market';
     const description = buildDescription(product);
-    const imageUrl = normalizeImageUrl(product?.image_urls?.[0], origin);
+
+    // Pronalazimo prvu sliku koja nije prazan string
+    const rawImageUrl = product?.image_urls?.find(url => url && url.trim().length > 0);
+    const imageUrl = normalizeImageUrl(rawImageUrl ?? null, origin);
+
     const html = buildHtml({
       title,
       description,
@@ -200,5 +222,19 @@ export default {
         'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400',
       },
     });
+    } catch (err) {
+      // Globalni fallback u slučaju neočekivane greške (World-class resilience)
+      console.error('Edge Function Error:', err);
+      return new Response(buildHtml({
+        title: FALLBACK_TITLE,
+        description: FALLBACK_DESCRIPTION,
+        previewUrl: request.url,
+        canonicalUrl: request.url,
+        imageUrl: `${new URL(request.url).origin}/icons/Icon-512.png`,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      });
+    }
   },
 };

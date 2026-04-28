@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/user_model.dart';
+import '../../models/app_error.dart';
 import '../communication/push_service.dart';
 import 'users_service.dart';
 
@@ -16,22 +17,30 @@ class AuthService {
       Supabase.instance.client.auth.onAuthStateChange;
 
   Future<UserModel?> getCurrentUser() async {
-    final u = Supabase.instance.client.auth.currentUser;
-    if (u == null) return null;
+    try {
+      final u = Supabase.instance.client.auth.currentUser;
+      if (u == null) return null;
 
-    final profile = await _users.getUser(u.id);
-    if (profile != null) return profile;
+      final profile = await _users.getUser(u.id);
+      if (profile != null) return profile;
 
-    return UserModel(
-      id: u.id,
-      email: u.email,
-      isGuest: u.isAnonymous,
-    );
+      return UserModel(
+        id: u.id,
+        email: u.email,
+        isGuest: u.isAnonymous,
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> signInWithEmail(String email, String password) async {
-    await Supabase.instance.client.auth
-        .signInWithPassword(email: email, password: password);
+    try {
+      await Supabase.instance.client.auth
+          .signInWithPassword(email: email, password: password);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> registerWithEmail(
@@ -44,82 +53,112 @@ class AuthService {
     String? farmName,
     String? location,
   }) async {
-    await Supabase.instance.client.auth.signUp(
-      email: email,
-      password: password,
-      emailRedirectTo: _authRedirectTo,
-      data: {
-        'email': email,
-        'display_name': displayName,
-        'phone': phone,
-        'city': city,
-        'role': isSeller ? 'seller' : 'buyer',
-        'farm_name': farmName,
-        'location': location,
-      },
-    );
-    // Profil se kreira automatski triggerom handle_new_user u Supabase
-    // (čita podatke iz user_metadata) - nema RLS problema
+    try {
+      await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        emailRedirectTo: _authRedirectTo,
+        data: {
+          'email': email,
+          'display_name': displayName,
+          'phone': phone,
+          'city': city,
+          'role': isSeller ? 'seller' : 'buyer',
+          'farm_name': farmName,
+          'location': location,
+        },
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> resendConfirmationEmail(String email) async {
-    await Supabase.instance.client.auth.resend(
-      type: OtpType.signup,
-      email: email,
-      emailRedirectTo: _authRedirectTo,
-    );
+    try {
+      await Supabase.instance.client.auth.resend(
+        type: OtpType.signup,
+        email: email,
+        emailRedirectTo: _authRedirectTo,
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<bool> checkEmailExists(String email) async {
-    final result = await Supabase.instance.client.rpc('check_email_exists',
-        params: {'p_email': email.trim().toLowerCase()});
-    return result as bool;
+    try {
+      final result = await Supabase.instance.client.rpc('check_email_exists',
+          params: {'p_email': email.trim().toLowerCase()});
+      return result as bool;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<bool> checkPhoneExists(String phone) async {
-    final trimmed = phone.trim();
-    final res = await Supabase.instance.client
-        .from('profiles')
-        .select('id')
-        .eq('phone', trimmed)
-        .maybeSingle();
-    return res != null;
+    try {
+      final trimmed = phone.trim();
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select('id')
+          .eq('phone', trimmed)
+          .maybeSingle();
+      return res != null;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> signInAsGuest() async {
-    await Supabase.instance.client.auth.signInAnonymously();
-    final u = Supabase.instance.client.auth.currentUser;
-    if (u != null) {
-      await _users.upsertProfile(u.id, role: 'buyer', isGuest: true);
+    try {
+      await Supabase.instance.client.auth.signInAnonymously();
+      final u = Supabase.instance.client.auth.currentUser;
+      if (u != null) {
+        await _users.upsertProfile(u.id, role: 'buyer', isGuest: true);
+      }
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     }
   }
 
   Future<void> sendPasswordReset(String email) async {
-    await Supabase.instance.client.auth.resetPasswordForEmail(
-      email,
-      redirectTo: _authRedirectTo,
-    );
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: _authRedirectTo,
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> signOut() async {
-    final userId = currentSupabaseUser?.id;
-    if (userId != null) {
-      await PushService().unregisterToken(userId);
+    try {
+      final userId = currentSupabaseUser?.id;
+      if (userId != null) {
+        await PushService().unregisterToken(userId);
+      }
+    } finally {
+      await PushService.clearRegistrationState();
+      await Supabase.instance.client.auth.signOut();
     }
-    await Supabase.instance.client.auth.signOut();
   }
 
   Future<void> updateProfile(UserModel user) async {
-    await _users.upsertProfile(
-      user.id,
-      displayName: user.displayName,
-      phone: user.phone,
-      city: user.city,
-      role: user.role == UserRole.seller ? 'seller' : 'buyer',
-      farmName: user.farmName,
-      location: user.location,
-      profileImageUrl: user.profileImageUrl,
-    );
+    try {
+      await _users.upsertProfile(
+        user.id,
+        displayName: user.displayName,
+        phone: user.phone,
+        city: user.city,
+        role: user.role == UserRole.seller ? 'seller' : 'buyer',
+        farmName: user.farmName,
+        location: user.location,
+        profileImageUrl: user.profileImageUrl,
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> switchToSeller({
@@ -127,15 +166,25 @@ class AuthService {
     required String location,
     required String phone,
   }) async {
-    final u = currentSupabaseUser;
-    if (u == null) throw Exception('Niste prijavljeni.');
-    await _users.upsertProfile(
-      u.id,
-      role: 'seller',
-      farmName: farmName,
-      location: location,
-      phone: phone,
-      isGuest: false,
-    );
+    try {
+      final u = currentSupabaseUser;
+      if (u == null) {
+        throw AppError(
+          message: 'User not logged in',
+          userMessage: 'Niste prijavljeni.',
+          type: ErrorType.unauthorized,
+        );
+      }
+      await _users.upsertProfile(
+        u.id,
+        role: 'seller',
+        farmName: farmName,
+        location: location,
+        phone: phone,
+        isGuest: false,
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 }

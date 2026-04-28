@@ -1,3 +1,5 @@
+import 'order_model.dart';
+
 /// Stavka u jedinstvenom inbox-u prodavca – porudžbina ili razgovor
 enum SellerInboxItemType { order, conversation }
 
@@ -16,6 +18,7 @@ class SellerInboxItem {
   final String? lastMessageBody;
   final int unreadCount;
   final String? statusLabel;
+  final OrderStatus? status;
   final String? buyerPhone;
   final String? note;
   final String? buyerCity;
@@ -36,6 +39,7 @@ class SellerInboxItem {
     this.lastMessageBody,
     this.unreadCount = 0,
     this.statusLabel,
+    this.status,
     this.buyerPhone,
     this.note,
     this.buyerCity,

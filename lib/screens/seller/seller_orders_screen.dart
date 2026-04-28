@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/utils/error_messages.dart';
 import '../../models/order_item_model.dart';
 import '../../models/order_model.dart';
 import '../../models/product_model.dart';
@@ -16,6 +17,7 @@ import '../../widgets/add_buyer_review_dialog.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/cancel_order_dialog.dart';
+import '../../models/seller_delivery_models.dart';
 import '../../widgets/order_delivery_summary.dart';
 import '../../widgets/order_status_audit_log_section.dart';
 import '../../widgets/order_status_timeline.dart';
@@ -60,10 +62,10 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     _olderOrders.clear();
     _hasMore = true;
     _ordersStream = context.read<OrdersService>().getOrdersBySeller(
-      userId,
-      refreshTrigger: _refreshController.stream,
-      statusFilter: _statusFilter,
-    );
+          userId,
+          refreshTrigger: _refreshController.stream,
+          statusFilter: _statusFilter,
+        );
   }
 
   Future<void> _onRefresh() async {
@@ -461,9 +463,32 @@ class _SellerOrderCard extends StatelessWidget {
                   value: ProductModel.formatQuantityWithUnit(
                       o.quantityKg ?? 0, o.unitType ?? ProductModel.unitKg)),
             ],
+            if (o.totalAmount != null)
+              _DetailRow(
+                icon: Icons.payments_outlined,
+                label: 'Ukupno',
+                value: formatRsdAmount(o.totalAmount) ?? '',
+              ),
+            if (!o.hasSellerDelivery)
+              _DetailRow(
+                icon: switch (o.deliveryMethod) {
+                  DeliveryMethod.courier => Icons.local_shipping,
+                  DeliveryMethod.pickup => Icons.store,
+                  _ => Icons.handshake,
+                },
+                label: 'Dostava',
+                value: o.deliveryMethodLabel,
+              ),
+            if (o.buyerAddress != null && o.buyerAddress!.isNotEmpty)
+              _DetailRow(
+                  icon: Icons.location_on,
+                  label: 'Adresa',
+                  value: o.buyerAddress!),
             if (o.buyerCity.isNotEmpty)
               _DetailRow(
-                  icon: Icons.location_on, label: 'Grad', value: o.buyerCity),
+                  icon: Icons.location_city,
+                  label: 'Grad',
+                  value: o.buyerCity),
             if (o.hasSellerDelivery) OrderDeliverySummary(order: o),
             if (o.buyerPhone.isNotEmpty)
               _DetailRow(
@@ -642,12 +667,13 @@ class _SellerOrderCard extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () async {
                             try {
-                              final convId =
-                                  await context.read<ChatService>().getOrCreateConversation(
-                                o.buyerId,
-                                user.id,
-                                orderId: o.id,
-                              );
+                              final convId = await context
+                                  .read<ChatService>()
+                                  .getOrCreateConversation(
+                                    o.buyerId,
+                                    user.id,
+                                    orderId: o.id,
+                                  );
                               if (context.mounted) {
                                 context.push('/chat/$convId');
                               }
@@ -655,7 +681,7 @@ class _SellerOrderCard extends StatelessWidget {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                      content: Text('Greška: $e'),
+                                      content: Text(friendlyError(e)),
                                       backgroundColor: Colors.red),
                                 );
                               }
@@ -820,7 +846,9 @@ class _CanSellerReviewBuyerButtonState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _canReviewFuture ??= context.read<ReviewsService>().canSellerReviewBuyer(widget.sellerId, widget.order.id);
+    _canReviewFuture ??= context
+        .read<ReviewsService>()
+        .canSellerReviewBuyer(widget.sellerId, widget.order.id);
   }
 
   @override

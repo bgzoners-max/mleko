@@ -32,6 +32,9 @@ jobs:
       - name: Prepare Vercel deploy bundle
         run: dart run tool/prepare_vercel_deploy.dart
 
+      - name: Copy well-known directory
+        run: cp -r web/.well-known build/vercel-deploy/
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 

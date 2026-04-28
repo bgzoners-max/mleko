@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../services/services.dart';
 
 const int _kMaxMessages = 5;
@@ -94,7 +95,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
 import '../../core/responsive.dart';
+import '../../core/utils/error_messages.dart';
 import '../../models/product_model.dart';
 import '../../utils/product_helpers.dart';
 import '../../widgets/grouped_category_dropdown.dart';
@@ -79,6 +80,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final newBytes = <Uint8List>[];
       for (final f in files.take(remaining)) {
         final bytes = await f.readAsBytes();
+        final sizeError = checkFileSize(bytes);
+        if (sizeError != null) {
+          if (mounted) _showError(sizeError);
+          return;
+        }
         newBytes.add(Uint8List.fromList(bytes));
       }
       if (mounted) setState(() => _imageBytes.addAll(newBytes));
@@ -177,7 +183,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     } on TimeoutException {
       if (mounted) _showError('Čuvanje traje predugo. Proveri internet.');
     } catch (e) {
-      if (mounted) _showError('Greška: ${e.toString().split('\n').first}');
+      if (mounted) _showError(friendlyError(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -336,7 +342,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           child: Text('Kilogrami (kg)')),
                       DropdownMenuItem(
                           value: ProductModel.unitL,
-                          child: Text('Litri / ml (tečnosti, zimnica, tegle)')),
+                          child: Text('Litri / ml')),
                       DropdownMenuItem(
                           value: ProductModel.unitG, child: Text('Grami (g)')),
                       DropdownMenuItem(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../models/conversation_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
@@ -77,7 +78,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -109,7 +110,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mleko/services/services.dart';
+import '../core/utils/error_messages.dart';
 /// Dijalog za ocenjivanje prodavca (1–5 zvezdica + komentar).
 /// Prikazuje se kupcima koji su imali isporučenu porudžbinu.
 class AddReviewDialog extends StatefulWidget {
@@ -53,7 +54,7 @@ class _AddReviewDialogState extends State<AddReviewDialog> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recenzija poslata.')));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

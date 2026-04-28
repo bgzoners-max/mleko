@@ -34,25 +34,81 @@ class SellerInboxScreen extends StatefulWidget {
   State<SellerInboxScreen> createState() => _SellerInboxScreenState();
 }
 
-class _SellerInboxScreenState extends State<SellerInboxScreen> {
+class _SellerInboxScreenState extends State<SellerInboxScreen>
+    with AutomaticKeepAliveClientMixin {
   final _refreshController = StreamController<void>.broadcast();
   final SellerInboxService _sellerInboxService = SellerInboxService();
+  final ScrollController _scrollController = ScrollController();
   Stream<List<SellerInboxItem>>? _inboxStream;
   String? _inboxUserId;
+  int _limit = 20;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  List<SellerInboxItem>? _lastItems;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
     _refreshController.close();
+    _scrollController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final user = context.read<AppState>().user;
+    if (user != null && user.isSeller && _inboxUserId != user.id) {
+      _inboxUserId = user.id;
+      _initStream(user.id);
+    }
+  }
+
+  void _initStream(String userId) {
+    _inboxStream = _sellerInboxService.watchInbox(
+      userId,
+      refreshTrigger: _refreshController.stream,
+    );
+  }
+
+  void _onScroll() {
+    // Ako smo blizu dna liste (300px od kraja) i ima još podataka, učitaj sledeću "stranu"
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 300 &&
+        _hasMore) {
+      _loadMore();
+    }
+  }
+
+  void _loadMore() {
+    if (_inboxUserId == null || _loadingMore || !_hasMore) return;
+    _loadingMore = true;
+    setState(() {
+      _limit += 20;
+      _initStream(_inboxUserId!);
+    });
+  }
+
   Future<void> _onRefresh() async {
+    setState(() {
+      _limit = 20;
+      _hasMore = true;
+    });
     _refreshController.add(null);
     await Future.delayed(const Duration(milliseconds: 400));
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final user = context.watch<AppState>().user;
     if (user == null || !user.isSeller) {
       _inboxStream = null;
@@ -69,16 +125,6 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
           ctaIcon: Icons.login,
           onCtaPressed: user == null ? () => context.go('/login') : null,
         ),
-      );
-    }
-
-    // Stream mora biti stabilan kroz rebuild-ove, da ne bi stalno
-    // otvarali/pravili nove realtime pretplate.
-    if (_inboxStream == null || _inboxUserId != user.id) {
-      _inboxUserId = user.id;
-      _inboxStream = _sellerInboxService.watchInbox(
-        user.id,
-        refreshTrigger: _refreshController.stream,
       );
     }
 
@@ -100,15 +146,34 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
                     onRetry: () => _refreshController.add(null),
                   );
                 }
-                if (snap.connectionState == ConnectionState.waiting) {
+
+                if (snap.hasData) {
+                  _lastItems = snap.data;
+                }
+
+                if (snap.connectionState != ConnectionState.waiting) {
+                  _loadingMore = false;
+                }
+
+                if (snap.connectionState == ConnectionState.waiting &&
+                    (_lastItems == null || _lastItems!.isEmpty)) {
                   return const OrderListSkeleton();
                 }
-                var list = snap.data ?? [];
+
+                var list = snap.data ?? _lastItems ?? [];
                 if (widget.showOnlyConversations) {
                   list = list
                       .where((i) => i.type == SellerInboxItemType.conversation)
                       .toList();
                 }
+
+                // Ažuriramo _hasMore van build faze u stream listeneru ili ovde preko post frame callback-a
+                if (list.length < _limit && _hasMore) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _hasMore = false);
+                  });
+                }
+
                 if (list.isEmpty) {
                   return RefreshIndicator(
                     onRefresh: _onRefresh,
@@ -135,10 +200,17 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
                 return RefreshIndicator(
                   onRefresh: _onRefresh,
                   child: ListView.builder(
+                    controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
-                    itemCount: list.length,
+                    itemCount: list.length + (_hasMore ? 1 : 0),
                     itemBuilder: (_, i) {
+                      if (i == list.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
                       final item = list[i];
                       return item.type == SellerInboxItemType.order
                           ? _OrderInboxCard(
@@ -162,7 +234,7 @@ class _SellerInboxScreenState extends State<SellerInboxScreen> {
   }
 }
 
-class _OrderInboxCard extends StatelessWidget {
+class _OrderInboxCard extends StatefulWidget {
   final SellerInboxItem item;
   final UserModel user;
   final VoidCallback onRefresh;
@@ -170,17 +242,40 @@ class _OrderInboxCard extends StatelessWidget {
   const _OrderInboxCard(
       {required this.item, required this.user, required this.onRefresh});
 
+  @override
+  State<_OrderInboxCard> createState() => _OrderInboxCardState();
+}
+
+class _OrderInboxCardState extends State<_OrderInboxCard> {
+  bool _isProcessing = false;
+
   Future<void> _updateStatus(
       BuildContext context, String orderId, OrderStatus status) async {
+    setState(() => _isProcessing = true);
     final ordersService = context.read<OrdersService>();
-    await ordersService.updateOrderStatus(orderId, status);
-    onRefresh();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Status: ${status == OrderStatus.accepted ? 'Prihvaćeno' : status == OrderStatus.shipped ? 'Poslato' : status == OrderStatus.rejected ? 'Odbijeno' : status == OrderStatus.cancelledBySeller ? 'Otkazano' : 'Isporučeno'}.')),
-      );
+    try {
+      await ordersService.updateOrderStatus(orderId, status);
+      widget.onRefresh();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Status uspešno ažuriran: ${_statusDisplayName(status)}.'),
+          ),
+        );
+      }
+    } catch (e, stack) {
+      if (context.mounted) {
+        LoggerService.error(
+          'Greška pri ažuriranju statusa porudžbine',
+          e,
+          stackTrace: stack,
+          extra: {'orderId': orderId, 'status': status.name},
+        );
+        ErrorSnackBar.show(context, error: AppError.from(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -188,17 +283,58 @@ class _OrderInboxCard extends StatelessWidget {
     final ordersService = context.read<OrdersService>();
     final reason = await CancelOrderDialog.show(context);
     if (reason == null || !context.mounted) return;
-    await ordersService.cancelOrderBySeller(orderId, reason);
-    onRefresh();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Porudžbina je otkazana.')));
+
+    setState(() => _isProcessing = true);
+    try {
+      await ordersService.cancelOrderBySeller(orderId, reason);
+      widget.onRefresh();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Porudžbina je otkazana.')),
+        );
+      }
+    } catch (e, stack) {
+      if (context.mounted) {
+        LoggerService.error(
+          'Greška pri otkazivanju porudžbine',
+          e,
+          stackTrace: stack,
+          extra: {
+            'orderId': orderId,
+            'reason': reason,
+            'userId': widget.user.id,
+          },
+        );
+        ErrorSnackBar.show(context, error: AppError.from(e));
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _handleCall(String? phone) async {
+    try {
+      await ActionUtils.launchCall(context, phone);
+    } catch (e, stack) {
+      if (mounted) {
+        LoggerService.error(
+          'Greška pri pokretanju poziva iz inbox-a',
+          e,
+          stackTrace: stack,
+          extra: {'phone': phone, 'orderId': widget.item.orderId},
+        );
+        ErrorSnackBar.show(context,
+            error:
+                AppError.from(e, userMessage: 'Neuspelo pokretanje poziva.'));
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final o = item;
+    final o = widget.item;
+    final status = o.status ?? OrderStatus.sent;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -298,11 +434,11 @@ class _OrderInboxCard extends StatelessWidget {
                       Text('Status: ${o.statusLabel}',
                           style: TextStyle(
                               fontWeight: FontWeight.w500,
-                              color: _statusColor(context, o.statusLabel))),
+                              color: _statusColor(context, status))),
                       if (o.statusLabel != null) ...[
                         const SizedBox(height: 8),
                         OrderStatusTimeline(
-                          status: _statusFromLabel(o.statusLabel),
+                          status: status,
                         ),
                       ],
                       if (o.orderId != null) ...[
@@ -320,12 +456,12 @@ class _OrderInboxCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 FilledButton.tonal(
-                  onPressed: () =>
-                      ActionUtils.launchCall(context, o.buyerPhone),
+                  onPressed:
+                      _isProcessing ? null : () => _handleCall(o.buyerPhone),
                   child: const Text('Pozovi'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: o.buyerId == null
+                  onPressed: (o.buyerId == null || _isProcessing)
                       ? null
                       : () async {
                           try {
@@ -333,12 +469,21 @@ class _OrderInboxCard extends StatelessWidget {
                             final convId =
                                 await chatService.getOrCreateConversation(
                               o.buyerId!,
-                              user.id,
+                              widget.user.id,
                               orderId: o.orderId,
                             );
                             if (context.mounted) context.push('/chat/$convId');
-                          } catch (e) {
+                          } catch (e, stack) {
                             if (context.mounted) {
+                              LoggerService.error(
+                                'Neuspešno otvaranje konverzacije iz inbox-a',
+                                e,
+                                stackTrace: stack,
+                                extra: {
+                                  'buyerId': o.buyerId,
+                                  'orderId': o.orderId,
+                                },
+                              );
                               ErrorSnackBar.show(
                                 context,
                                 error: AppError.from(
@@ -353,60 +498,77 @@ class _OrderInboxCard extends StatelessWidget {
                   icon: const Icon(Icons.chat, size: 18),
                   label: const Text(UiStrings.actionMessage),
                 ),
-                if (_isPending(o.statusLabel)) ...[
-                  FilledButton(
-                    onPressed: () => _updateStatus(
-                        context, o.orderId!, OrderStatus.accepted),
-                    child: const Text('Prihvati'),
+                if (status == OrderStatus.sent ||
+                    status == OrderStatus.rejected) ...[
+                  FilledButton.icon(
+                    onPressed: _isProcessing
+                        ? null
+                        : () => _updateStatus(
+                            context, o.orderId!, OrderStatus.accepted),
+                    icon: _isProcessing
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const SizedBox.shrink(),
+                    label: const Text('Prihvati'),
                   ),
                   OutlinedButton(
-                    onPressed: () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Odbij porudžbinu?'),
-                          content: const Text(
-                              'Kupac će biti obavešten da ste odbili porudžbinu.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text(UiStrings.actionCancel),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.red),
-                              child: const Text('Odbij'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (ok == true && context.mounted) {
-                        await _updateStatus(
-                            context, o.orderId!, OrderStatus.rejected);
-                      }
-                    },
+                    onPressed: _isProcessing
+                        ? null
+                        : () async {
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Odbij porudžbinu?'),
+                                content: const Text(
+                                    'Kupac će biti obavešten da ste odbili porudžbinu.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text(UiStrings.actionCancel),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.red),
+                                    child: const Text('Odbij'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (ok == true && context.mounted) {
+                              await _updateStatus(
+                                  context, o.orderId!, OrderStatus.rejected);
+                            }
+                          },
                     child: const Text('Odbij'),
                   ),
                 ],
-                if (_isAccepted(o.statusLabel)) ...[
+                if (status == OrderStatus.accepted) ...[
                   FilledButton.tonal(
-                    onPressed: () =>
-                        _updateStatus(context, o.orderId!, OrderStatus.shipped),
+                    onPressed: _isProcessing
+                        ? null
+                        : () => _updateStatus(
+                            context, o.orderId!, OrderStatus.shipped),
                     child: const Text('Poslato'),
                   ),
                   OutlinedButton(
-                    onPressed: () => _cancelOrder(context, o.orderId!),
+                    onPressed: _isProcessing
+                        ? null
+                        : () => _cancelOrder(context, o.orderId!),
                     child: const Text('Otkaži'),
                   ),
                 ],
-                if (_isShipped(o.statusLabel)) ...[
+                if (status == OrderStatus.shipped) ...[
                   const Chip(
                     label: Text('Ceka potvrdu kupca'),
                     avatar: Icon(Icons.schedule, size: 16),
                   ),
                   OutlinedButton(
-                    onPressed: () => _cancelOrder(context, o.orderId!),
+                    onPressed: _isProcessing
+                        ? null
+                        : () => _cancelOrder(context, o.orderId!),
                     child: const Text('Otkaži'),
                   ),
                 ],
@@ -418,53 +580,31 @@ class _OrderInboxCard extends StatelessWidget {
     );
   }
 
-  bool _isPending(String? s) => s == 'Na čekanju';
-  bool _isAccepted(String? s) => s == 'Prihvaćeno';
-  bool _isShipped(String? s) => s == 'Poslato';
-
-  OrderStatus _statusFromLabel(String? s) {
-    switch (s) {
-      case 'Na čekanju':
-        return OrderStatus.sent;
-      case 'Prihvaćeno':
-        return OrderStatus.accepted;
-      case 'Poslato':
-        return OrderStatus.shipped;
-      case 'Isporučeno':
-        return OrderStatus.delivered;
-      case 'Odbijeno':
-        return OrderStatus.rejected;
-      case 'Otkazano':
-        return OrderStatus.cancelledBySeller;
-      case 'Arhivirano':
-        return OrderStatus.archived;
-      default:
-        return OrderStatus.sent;
-    }
+  /// Pomoćna metoda za prikaz naziva statusa u UI porukama (SnackBar).
+  String _statusDisplayName(OrderStatus status) {
+    return status.displayName; // Pretpostavka: dodati extension na OrderStatus
   }
 
-  Color _statusColor(BuildContext context, String? s) {
+  Color _statusColor(BuildContext context, OrderStatus status) {
     final scheme = Theme.of(context).colorScheme;
-    switch (s) {
-      case 'Na čekanju':
-        return Colors.orange;
-      case 'Poslato':
-        return Colors.teal;
-      case 'Prihvaćeno':
-        return Colors.blue;
-      case 'Odbijeno':
+    switch (status) {
+      case OrderStatus.sent:
+        return Colors.orange.shade700;
+      case OrderStatus.shipped:
+        return Colors.teal.shade600;
+      case OrderStatus.accepted:
+        return Colors.blue.shade600;
+      case OrderStatus.rejected:
+      case OrderStatus.cancelledBySeller:
         return Colors.red;
-      case 'Isporučeno':
+      case OrderStatus.delivered:
+      case OrderStatus.archived:
         return scheme.primary;
-      case 'Otkazano':
-        return scheme.outline;
-      default:
-        return scheme.outline;
     }
   }
 }
 
-class _ConversationInboxCard extends StatelessWidget {
+class _ConversationInboxCard extends StatefulWidget {
   final SellerInboxItem item;
   final VoidCallback onRefresh;
 
@@ -473,9 +613,44 @@ class _ConversationInboxCard extends StatelessWidget {
     required this.onRefresh,
   });
 
+  @override
+  State<_ConversationInboxCard> createState() => _ConversationInboxCardState();
+}
+
+class _ConversationInboxCardState extends State<_ConversationInboxCard> {
+  bool _isProcessing = false;
+
+  Future<void> _toggleFavorite() async {
+    final cid = widget.item.conversationId;
+    if (cid == null) return;
+
+    setState(() => _isProcessing = true);
+    try {
+      await context.read<ChatService>().setConversationUserPrefs(
+            cid,
+            isFavorite: !widget.item.isFavorite,
+          );
+      widget.onRefresh();
+    } catch (e, stack) {
+      if (!mounted) return;
+      LoggerService.error(
+        'Greška pri promeni favorite statusa konverzacije',
+        e,
+        stackTrace: stack,
+        extra: {
+          'conversationId': cid,
+          'isFavorite': !widget.item.isFavorite,
+        },
+      );
+      ErrorSnackBar.show(context, error: AppError.from(e));
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
   Future<void> _confirmHide(BuildContext context) async {
     final chatService = context.read<ChatService>();
-    final cid = item.conversationId;
+    final cid = widget.item.conversationId;
     if (cid == null) return;
     final ok = await showDialog<bool>(
       context: context,
@@ -497,33 +672,44 @@ class _ConversationInboxCard extends StatelessWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
+    setState(() => _isProcessing = true);
     try {
       await chatService.setConversationUserPrefs(cid, hidden: true);
-      onRefresh();
+      widget.onRefresh();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Razgovor je uklonjen sa liste.')),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e')),
+        LoggerService.error(
+          'Greška pri sakrivanju konverzacije',
+          e,
+          stackTrace: stack,
+          extra: {
+            'conversationId': cid,
+          },
         );
+        ErrorSnackBar.show(context, error: AppError.from(e));
       }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c = item;
+    final c = widget.item;
     final cid = c.conversationId;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () {
-          if (cid != null) context.push('/chat/$cid');
-        },
+        onTap: _isProcessing
+            ? null
+            : () {
+                if (cid != null) context.push('/chat/$cid');
+              },
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
           child: Row(
@@ -631,44 +817,21 @@ class _ConversationInboxCard extends StatelessWidget {
               ),
               if (cid != null) ...[
                 IconButton(
-                  tooltip: c.isFavorite ? 'Ukloni iz omiljenih' : 'Omiljeni',
+                  tooltip: _isProcessing
+                      ? null
+                      : (c.isFavorite ? 'Ukloni iz omiljenih' : 'Omiljeni'),
                   icon: Icon(
                     c.isFavorite ? Icons.star : Icons.star_outline,
                     color: c.isFavorite ? Colors.amber.shade700 : null,
                   ),
-                  onPressed: () async {
-                    try {
-                      await context.read<ChatService>().setConversationUserPrefs(
-                        cid,
-                        isFavorite: !c.isFavorite,
-                      );
-                      onRefresh();
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Greška: $e')),
-                        );
-                      }
-                    }
-                  },
+                  onPressed: _isProcessing ? null : _toggleFavorite,
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
                   onSelected: (v) async {
+                    if (_isProcessing) return;
                     if (v == 'fav') {
-                      try {
-                        await context.read<ChatService>().setConversationUserPrefs(
-                          cid,
-                          isFavorite: !c.isFavorite,
-                        );
-                        onRefresh();
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Greška: $e')),
-                          );
-                        }
-                      }
+                      await _toggleFavorite();
                     } else if (v == 'hide') {
                       await _confirmHide(context);
                     }

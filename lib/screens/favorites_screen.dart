@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +32,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   static const _pageSize = 20;
   int _displayCount = _pageSize;
+  final Set<String> _preloadedImages = <String>{};
+
+  void _warmupProductImages(List<ProductModel> products) {
+    final urls = products
+        .map((p) => p.imageUrls.isNotEmpty ? p.imageUrls.first : null)
+        .whereType<String>()
+        .where((u) => u.isNotEmpty)
+        .take(12)
+        .toList();
+    if (urls.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      for (final url in urls) {
+        if (!mounted) return;
+        if (_preloadedImages.add(url)) {
+          await precacheImage(CachedNetworkImageProvider(url), context);
+        }
+      }
+    });
+  }
 
   void _initStream(String userId) {
     if (_streamUserId == userId) return;
@@ -150,6 +171,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             return const ProductListSkeleton();
           }
           final list = snap.data ?? [];
+          if (list.isNotEmpty) {
+            _warmupProductImages(list);
+          }
           if (list.isEmpty) {
             return RefreshIndicator(
               onRefresh: _onRefresh,

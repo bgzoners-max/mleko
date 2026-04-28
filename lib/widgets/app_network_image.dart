@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// Zajednički wrapper za mrežne slike – placeholder, error i memCache za optimizaciju.
 class AppNetworkImage extends StatelessWidget {
@@ -27,7 +28,7 @@ class AppNetworkImage extends StatelessWidget {
     this.fadeInDuration,
   });
 
-  /// Za thumbnails u gridu (400x250), bez fade-in za brži scroll.
+  /// Za thumbnails u gridu (400px širina, visina proporcionalna), bez fade-in za brži scroll.
   factory AppNetworkImage.thumbnail({
     Key? key,
     required String imageUrl,
@@ -42,7 +43,6 @@ class AppNetworkImage extends StatelessWidget {
         height: height,
         fit: fit,
         memCacheWidth: 400,
-        memCacheHeight: 250,
         fadeInDuration: Duration.zero,
       );
 
@@ -79,9 +79,14 @@ class AppNetworkImage extends StatelessWidget {
         memCacheHeight: 48,
         fit: BoxFit.cover,
         fadeInDuration: Duration.zero,
-        placeholder: ColoredBox(
-          color: Colors.grey.shade300,
-          child: const Icon(Icons.person, size: 24),
+        placeholder: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            width: width ?? 48,
+            height: height ?? 48,
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          ),
         ),
       );
 
@@ -101,9 +106,14 @@ class AppNetworkImage extends StatelessWidget {
         memCacheHeight: 120,
         fit: BoxFit.cover,
         fadeInDuration: Duration.zero,
-        placeholder: ColoredBox(
-          color: Colors.grey.shade300,
-          child: const Icon(Icons.person, size: 48),
+        placeholder: Shimmer.fromColors(
+          baseColor: Colors.grey.shade300,
+          highlightColor: Colors.grey.shade100,
+          child: Container(
+            width: width ?? 120,
+            height: height ?? 120,
+            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          ),
         ),
       );
 
@@ -138,18 +148,13 @@ class AppNetworkImage extends StatelessWidget {
         height: height,
         memCacheWidth: 600,
         memCacheHeight: 600,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
       );
 
-  static Widget _defaultPlaceholder() => ColoredBox(
-        color: Colors.grey.shade200,
-        child: Center(
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade400),
-          ),
-        ),
+  static Widget _defaultPlaceholder() => Shimmer.fromColors(
+        baseColor: Colors.grey.shade200,
+        highlightColor: Colors.grey.shade100,
+        child: Container(color: Colors.white),
       );
 
   static Widget _defaultError({double iconSize = 48}) => ColoredBox(

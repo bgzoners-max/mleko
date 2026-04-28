@@ -54,17 +54,23 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _error = null;
       _loading = true;
     });
-    try {
-      await usersService.clearSellerLocation(user.id);
+
+    final result = await ErrorHandlerService().executeWithResult(
+      'Clear seller location',
+      () => usersService.clearSellerLocation(user.id),
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (result.isSuccess) {
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Lokacija uklonjena.')));
       }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } else {
+      setState(() => _error = result.error?.getUserMessage());
     }
   }
 
@@ -89,18 +95,24 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _error = null;
       _loading = true;
     });
-    try {
-      await usersService
-          .updateSellerLocation(u.id, lat.toDouble(), lng.toDouble());
+
+    final resultAction = await ErrorHandlerService().executeWithResult(
+      'Update seller location',
+      () => usersService.updateSellerLocation(
+          u.id, lat.toDouble(), lng.toDouble()),
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (resultAction.isSuccess) {
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Lokacija sačuvana.')));
       }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } else {
+      setState(() => _error = resultAction.error?.getUserMessage());
     }
   }
 
@@ -113,18 +125,24 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _error = null;
       _loading = true;
     });
-    try {
-      await usersService
-          .updateSellerStory(user.id, _storyController.text.trim());
+
+    final resultAction = await ErrorHandlerService().executeWithResult(
+      'Update seller story',
+      () =>
+          usersService.updateSellerStory(user.id, _storyController.text.trim()),
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (resultAction.isSuccess) {
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Priča sačuvana.')));
       }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } else {
+      setState(() => _error = resultAction.error?.getUserMessage());
     }
   }
 
@@ -138,24 +156,30 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     final user = appState.user;
     if (!mounted || user == null) return;
     setState(() => _loading = true);
-    try {
+
+    final resultAction = await ErrorHandlerService()
+        .executeWithResult('Add gallery photo', () async {
       final bytes = await xFile.readAsBytes();
       final url = await StorageService()
           .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
       final newUrls = [..._galleryUrls, url];
-      if (mounted) setState(() => _galleryUrls = newUrls);
       await usersService.updateFarmGallery(user.id, newUrls);
+      return newUrls;
+    });
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (resultAction.isSuccess) {
+      setState(() => _galleryUrls = resultAction.data!);
       await appState.refreshUser();
       if (mounted) {
         messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
       }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } else {
+      messenger.showSnackBar(SnackBar(
+          content: Text(resultAction.error?.getUserMessage() ?? 'Greška'),
+          backgroundColor: Colors.red));
     }
   }
 
@@ -170,20 +194,26 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       _galleryUrls = updated;
       _loading = true;
     });
-    try {
-      await usersService.updateFarmGallery(user.id, updated);
+
+    final resultAction = await ErrorHandlerService().executeWithResult(
+      'Remove gallery photo',
+      () => usersService.updateFarmGallery(user.id, updated),
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (resultAction.isSuccess) {
       await appState.refreshUser();
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Slika uklonjena.')));
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() =>
-            _galleryUrls = List.from(_galleryUrls)..insert(index, removed));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    } else {
+      setState(
+          () => _galleryUrls = List.from(_galleryUrls)..insert(index, removed));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(resultAction.error?.getUserMessage() ?? 'Greška')));
     }
   }
 
@@ -465,29 +495,33 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
                           _quickRepliesError = '';
                           _quickRepliesSaving = true;
                         });
-                        try {
-                          final appState = context.read<AppState>();
-                          final usersService = context.read<UsersService>();
-                          final u = appState.user;
-                          if (u == null) return;
+
+                        final appState = context.read<AppState>();
+                        final usersService = context.read<UsersService>();
+                        final u = appState.user;
+                        if (u == null) return;
+
+                        final resultAction = await ErrorHandlerService()
+                            .executeWithResult('Update quick replies', () {
                           final replies =
                               controllers.map((c) => c.text).toList();
-                          await usersService
-                              .updateSellerQuickReplies(u.id, replies);
+                          return usersService.updateSellerQuickReplies(
+                              u.id, replies);
+                        });
+
+                        if (!mounted) return;
+                        this.setState(() => _quickRepliesSaving = false);
+
+                        if (resultAction.isSuccess) {
                           await appState.refreshUser();
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Brzi odgovori sačuvani.')),
-                          );
-                        } catch (e) {
-                          this.setState(() {
-                            _quickRepliesError = e.toString();
-                          });
-                        } finally {
-                          this.setState(() {
-                            _quickRepliesSaving = false;
-                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Brzi odgovori sačuvani.')));
+                          }
+                        } else {
+                          this.setState(() => _quickRepliesError =
+                              resultAction.error?.getUserMessage() ?? 'Greška');
                         }
                       },
                 child: _quickRepliesSaving

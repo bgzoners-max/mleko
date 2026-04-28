@@ -1,21 +1,28 @@
-enum DeliveryMethod { agreement, sellerDelivery }
+enum DeliveryMethod { courier, pickup, sellerDelivery, agreement }
 
 extension DeliveryMethodX on DeliveryMethod {
   String get dbValue => switch (this) {
-        DeliveryMethod.agreement => 'agreement',
+        DeliveryMethod.courier => 'courier',
+        DeliveryMethod.pickup => 'pickup',
         DeliveryMethod.sellerDelivery => 'seller_delivery',
+        DeliveryMethod.agreement => 'agreement',
       };
 
   String get label => switch (this) {
+        DeliveryMethod.courier => 'Kurirska služba',
+        DeliveryMethod.pickup => 'Lično preuzimanje',
+        DeliveryMethod.sellerDelivery => 'Dostava od strane prodavca',
         DeliveryMethod.agreement => 'Dogovor sa domaćinom',
-        DeliveryMethod.sellerDelivery => 'Lična dostava domaćina',
       };
 }
 
 DeliveryMethod deliveryMethodFromDb(String? value) {
   return switch (value) {
+    'courier' => DeliveryMethod.courier,
+    'pickup' => DeliveryMethod.pickup,
     'seller_delivery' => DeliveryMethod.sellerDelivery,
-    _ => DeliveryMethod.agreement,
+    'agreement' => DeliveryMethod.agreement,
+    _ => DeliveryMethod.courier,
   };
 }
 

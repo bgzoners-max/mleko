@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/responsive.dart';
+import '../../core/utils/error_messages.dart';
 import '../../utils/product_helpers.dart';
 import '../../widgets/grouped_category_dropdown.dart';
 import '../../providers/categories_provider.dart';
@@ -115,7 +116,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _load() async {
-    final p = await context.read<ProductsService>().getProduct(widget.productId!);
+    final p =
+        await context.read<ProductsService>().getProduct(widget.productId!);
     if (p != null && mounted) {
       _nameController.text = p.name;
       _priceController.text = p.pricePerKg.toString();
@@ -197,6 +199,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       final newBytes = <Uint8List>[];
       for (final f in files.take(remaining)) {
         final bytes = await f.readAsBytes();
+        final sizeError = checkFileSize(bytes);
+        if (sizeError != null) {
+          if (mounted) _showErrorDialog(sizeError);
+          return;
+        }
         newBytes.add(Uint8List.fromList(bytes));
       }
       if (mounted) setState(() => _newImageBytes.addAll(newBytes));
@@ -300,7 +307,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        _showErrorDialog('Greška pri upload-u slika: $e');
+        _showErrorDialog(friendlyError(e));
       }
       return;
     }
@@ -327,50 +334,35 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       availableNow: _availableNow,
       deliveryMode: _deliveryMode,
       selectedDeliveryPointIds:
-          _selectedDeliveryPointIds.toList(growable: false),
+          _deliveryMode == ProductDeliveryMode.selectedPoints
+              ? _selectedDeliveryPointIds.toList(growable: false)
+              : const [],
       createdAt: DateTime.now(),
     );
-    try {
-      if (isEdit) {
-        await productsService.updateProduct(product).timeout(
-              const Duration(seconds: 15),
-              onTimeout: () => throw TimeoutException(
-                  'Čuvanje traje predugo. Proveri internet i Supabase.'),
-            );
-      } else {
-        await productsService.addProduct(product).timeout(
-              const Duration(seconds: 15),
-              onTimeout: () => throw TimeoutException(
-                  'Čuvanje traje predugo. Proveri internet i Supabase.'),
-            );
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEdit ? 'Proizvod ažuriran.' : 'Proizvod objavljen.',
-            ),
-          ),
-        );
-        _exitScreen();
-      }
-    } on TimeoutException catch (_) {
-      if (mounted) {
-        const msg = 'Čuvanje traje predugo. Proveri internet i Supabase.';
-        setState(() => _error = msg);
-        _showErrorDialog(msg);
-      }
-    } catch (e) {
-      if (mounted) {
-        final msg =
-            e.toString().replaceFirst('Exception: ', '').split('\n').first;
-        setState(() => _error = 'Greška pri čuvanju proizvoda: $msg');
-        _showErrorDialog('Nije moguće sačuvati proizvod.\n\n$msg');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+
+    // 🚀 NOVI SISTEM: Automatsko logovanje, praćenje performansi i bezbedno hvatanje grešaka
+    final result = await ErrorHandlerService().executeWithResult(
+      isEdit ? 'Update product' : 'Add product',
+      () => isEdit
+          ? productsService.updateProduct(product)
+          : productsService.addProduct(product),
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (result.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content:
+                Text(isEdit ? 'Proizvod ažuriran.' : 'Proizvod objavljen.')),
+      );
+      _exitScreen();
+    } else {
+      final msg =
+          result.error?.getUserMessage() ?? 'Nije moguće sačuvati proizvod.';
+      setState(() => _error = msg);
+      _showErrorDialog(msg);
     }
   }
 
@@ -462,8 +454,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             child: Text('Kilogrami (kg)')),
                         DropdownMenuItem(
                             value: ProductModel.unitL,
-                            child:
-                                Text('Litri / ml (tečnosti, zimnica, tegle)')),
+                            child: Text('Litri / ml')),
                         DropdownMenuItem(
                             value: ProductModel.unitG,
                             child: Text('Grami (g)')),
@@ -667,43 +658,52 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
+                      // ignore: deprecated_member_use
                       RadioListTile<ProductDeliveryMode>(
                         value: ProductDeliveryMode.none,
-                        groupValue: _deliveryMode, // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
+                        groupValue: _deliveryMode,
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Bez lične dostave domaćina'),
                         subtitle: const Text(
                           'Koristite ovo ako proizvod nije za vašu organizovanu dostavu. Kupac se može dogovoriti sa vama direktno, ali ne bira vaše definisane punktove i termine.',
                         ),
-                        onChanged: (value) { // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
+                        onChanged: (value) {
                           if (value == null) return;
                           setState(() => _deliveryMode = value);
                         },
                       ),
+                      // ignore: deprecated_member_use
                       RadioListTile<ProductDeliveryMode>(
                         value: ProductDeliveryMode.allSellerPoints,
-                        groupValue: _deliveryMode, // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
+                        groupValue: _deliveryMode,
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Na svim mojim lokacijama'),
                         subtitle: const Text(
                           'Koristite ovo ako ovaj proizvod može da ide na svaki vaš aktivan punkt dostave. Kupac bira bilo koji grad, adresu i termin koje ste već definisali.',
                         ),
-                        onChanged: _sellerDeliveryPoints.isEmpty // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
+                        onChanged: _sellerDeliveryPoints.isEmpty
                             ? null
                             : (value) {
                                 if (value == null) return;
                                 setState(() => _deliveryMode = value);
                               },
                       ),
+                      // ignore: deprecated_member_use
                       RadioListTile<ProductDeliveryMode>(
                         value: ProductDeliveryMode.selectedPoints,
-                        groupValue: _deliveryMode, // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
+                        groupValue: _deliveryMode,
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Samo na izabranim lokacijama'),
                         subtitle: const Text(
                           'Koristite ovo kada proizvod nosite samo na određene gradove ili adrese. Ispod zatim čekirate tačne punktove na kojima je proizvod dostupan.',
                         ),
-                        onChanged: _sellerDeliveryPoints.isEmpty // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
+                        onChanged: _sellerDeliveryPoints.isEmpty
                             ? null
                             : (value) {
                                 if (value == null) return;

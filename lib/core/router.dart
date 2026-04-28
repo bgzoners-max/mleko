@@ -13,6 +13,7 @@ import '../screens/tab_orders_or_inbox_screen.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/checkout_screen.dart';
 import '../screens/checkout_multi_screen.dart';
+import '../screens/cart_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/seller/becoming_seller_screen.dart';
 import '../screens/seller/add_edit_product_screen.dart';
@@ -39,7 +40,6 @@ import '../screens/child_categories_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_screen.dart';
 import '../screens/about_screen.dart';
-import '../screens/landing_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
 
@@ -65,7 +65,6 @@ GoRouter createRouter(AppState appState) {
       }
       if (loc == '/about') return null;
       if (loc == '/support') return null;
-      if (loc == '/landing') return null;
 
       // Email just confirmed — steer to success screen before anything else
       if (appState.justConfirmedEmail && loc != '/auth/confirmed') {
@@ -80,9 +79,8 @@ GoRouter createRouter(AppState appState) {
       if (appState.user == null &&
           !loc.startsWith('/login') &&
           !loc.startsWith('/register') &&
-          !loc.startsWith('/onboarding') &&
-          loc != '/landing') {
-        return '/landing';
+          !loc.startsWith('/onboarding')) {
+        return '/login';
       }
 
       // Gost (anonymous) može samo da gleda proizvode, ne i da naručuje
@@ -134,6 +132,13 @@ GoRouter createRouter(AppState appState) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/search',
+        builder: (_, state) => TabSearchOrProductsScreen(
+          initialCategory: state.uri.queryParameters['category'],
+          openSellerProducts: state.uri.queryParameters['view'] == 'products',
+        ),
+      ),
       GoRoute(
         path: '/splash',
         builder: (_, __) => const SplashScreen(),
@@ -244,7 +249,7 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/cart',
-        redirect: (_, __) => '/orders',
+        builder: (_, __) => const CartScreen(),
       ),
       GoRoute(
         path: '/favorites',
@@ -300,10 +305,6 @@ GoRouter createRouter(AppState appState) {
       GoRoute(
         path: '/about',
         builder: (_, __) => const AboutScreen(),
-      ),
-      GoRoute(
-        path: '/landing',
-        builder: (_, __) => const LandingScreen(),
       ),
       GoRoute(
         path: '/verify-email',
@@ -363,18 +364,6 @@ GoRouter createRouter(AppState appState) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/search',
-                builder: (_, state) => TabSearchOrProductsScreen(
-                  initialCategory: state.uri.queryParameters['category'],
-                  openSellerProducts:
-                      state.uri.queryParameters['view'] == 'products',
-                ),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
                 path: '/orders',
                 builder: (_, __) => const TabOrdersOrInboxScreen(),
               ),
@@ -401,24 +390,22 @@ class MainShell extends StatelessWidget {
 
   static const _sellerDestinations = [
     (icon: Icons.cottage, label: 'Home'),
-    (icon: Icons.inventory_2, label: 'Moji proizvodi'),
     (icon: Icons.receipt_long, label: 'Porudžbine'),
     (icon: Icons.person, label: 'Profil'),
   ];
   static const _buyerDestinations = [
     (icon: Icons.cottage, label: 'Home'),
-    (icon: Icons.search, label: 'Pretraga'),
     (icon: Icons.receipt_long, label: 'Porudžbine'),
     (icon: Icons.person, label: 'Profil'),
   ];
 
-  /// Branches: 0=Home, 1=Search/Proizvodi, 2=Orders, 3=Profile.
+  /// Branches: 0=Home, 1=Orders, 2=Profile.
   int _destIndexToBranch(int i, bool isSeller) {
     return i;
   }
 
   int _branchToDestIndex(int branch, bool isSeller) {
-    return branch.clamp(0, 3);
+    return branch.clamp(0, 2);
   }
 
   @override
@@ -437,10 +424,6 @@ class MainShell extends StatelessWidget {
             NavigationRail(
               selectedIndex: selectedDestIndex,
               onDestinationSelected: (i) {
-                if (isSeller && i == 1) {
-                  context.go('/search?view=products');
-                  return;
-                }
                 navigationShell.goBranch(
                   _destIndexToBranch(i, isSeller),
                   initialLocation: true,
@@ -467,10 +450,6 @@ class MainShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedDestIndex,
         onDestinationSelected: (i) {
-          if (isSeller && i == 1) {
-            context.go('/search?view=products');
-            return;
-          }
           navigationShell.goBranch(
             _destIndexToBranch(i, isSeller),
             initialLocation: true,

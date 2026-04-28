@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
+import '../models/seller_delivery_models.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 
+import '../widgets/app_network_image.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/offline_indicator.dart';
 import '../widgets/skeleton.dart';
@@ -86,6 +88,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
   final _noteController = TextEditingController();
   final _cityController = TextEditingController();
   final _addressController = TextEditingController();
+  final _postalCodeController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _savePhoneToProfile = false;
 
@@ -108,12 +111,30 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       if (user.phone != null && user.phone!.isNotEmpty) {
         _phoneController.text = user.phone!;
       }
+      if (user.postalCode != null && user.postalCode!.isNotEmpty) {
+        _postalCodeController.text = user.postalCode!;
+      }
       _savePhoneToProfile = user.phone == null || user.phone!.isEmpty;
     }
   }
 
+  DeliveryMethod _deliveryMethod = DeliveryMethod.courier;
   bool _sending = false;
   String? _error;
+
+  String _friendlyError(Object e) {
+    final s = e.toString();
+    if (s.contains('invalid delivery_method')) {
+      return 'Izabrani način dostave privremeno nije dostupan. Pokušaj ponovo.';
+    }
+    if (s.contains('is currently unavailable')) {
+      return 'Proizvod trenutno nije dostupan.';
+    }
+    if (s.contains('SocketException') || s.contains('network') || s.contains('XMLHttpRequest')) {
+      return 'Nema internet veze. Proveri konekciju i pokušaj ponovo.';
+    }
+    return 'Porudžbina nije mogla biti poslata. Pokušaj ponovo.';
+  }
 
   Future<void> _submit() async {
     if (!widget.product.isAvailable) {
@@ -131,8 +152,18 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           'Maksimalna dostupna količina: ${widget.product.availableFormatted}');
       return;
     }
-    if (_phoneController.text.trim().isEmpty) {
-      setState(() => _error = 'Kontakt telefon je obavezan.');
+    final missing = <String>[];
+    if (_deliveryMethod == DeliveryMethod.courier) {
+      if (_addressController.text.trim().isEmpty) missing.add('adresu');
+      if (_cityController.text.trim().isEmpty) missing.add('grad');
+      if (_postalCodeController.text.trim().isEmpty) missing.add('poštanski broj');
+    }
+    if (_phoneController.text.trim().isEmpty) missing.add('kontakt telefon');
+    if (missing.isNotEmpty) {
+      final joined = missing.length == 1
+          ? missing.first
+          : '${missing.sublist(0, missing.length - 1).join(', ')} i ${missing.last}';
+      setState(() => _error = 'Niste uneli $joined.');
       return;
     }
     final user = context.read<AppState>().user;
@@ -150,6 +181,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       final phone = _phoneController.text.trim();
       final note = _noteController.text.trim();
       final buyerCity = _cityController.text.trim();
+      final buyerPostalCode = _postalCodeController.text.trim();
       final buyerAddress = _addressController.text.trim().isEmpty
           ? null
           : _addressController.text.trim();
@@ -169,10 +201,21 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           buyerCity: buyerCity,
           buyerPhone: phone,
           buyerAddress: buyerAddress,
+          buyerPostalCode: buyerPostalCode,
+          deliveryMethod: _deliveryMethod,
         );
-        if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
-          await usersService.updatePhone(user.id, phone);
-          await appState.refreshUser();
+        if (_savePhoneToProfile) {
+          final shouldUpdatePhone = (user.phone ?? '').trim() != phone;
+          final shouldUpdatePostalCode =
+              (user.postalCode ?? '').trim() != buyerPostalCode;
+          if (shouldUpdatePhone || shouldUpdatePostalCode) {
+            await usersService.upsertProfile(
+              user.id,
+              phone: shouldUpdatePhone ? phone : null,
+              postalCode: shouldUpdatePostalCode ? buyerPostalCode : null,
+            );
+            await appState.refreshUser();
+          }
         }
         await chatService.getOrCreateConversation(
             user.id, widget.product.sellerId,
@@ -198,7 +241,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           note: note,
           buyerCity: buyerCity,
           buyerAddress: buyerAddress,
+          buyerPostalCode: buyerPostalCode,
           buyerPhone: phone,
+          deliveryMethod: _deliveryMethod,
           preferCall: false,
           pickupOptions: [],
           createdAt: DateTime.now(),
@@ -224,7 +269,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Greška: ${e.toString().split('\n').first}';
+          _error = _friendlyError(e);
           _sending = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -259,9 +304,61 @@ class _CheckoutFormState extends State<_CheckoutForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                      '${widget.product.name} – ${widget.product.priceFormatted}',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        if (widget.product.imageUrls.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AppNetworkImage.thumbnail(
+                              imageUrl: widget.product.imageUrls.first,
+                              width: 64,
+                              height: 64,
+                            ),
+                          )
+                        else
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.shopping_basket_outlined),
+                          ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.product.name,
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.product.priceFormatted,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (isOffline) ...[
                     const SizedBox(height: 8),
                     const OfflineReadOnlyBadge(),
@@ -281,30 +378,90 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                       hintText: 'Min ${widget.product.minOrderFormatted}',
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  Text('Način dostave',
+                      style: Theme.of(context).textTheme.titleSmall),
+                  RadioGroup<DeliveryMethod>(
+                    groupValue: _deliveryMethod,
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => _deliveryMethod = v);
+                      }
+                    },
+                    child: const Column(
+                      children: [
+                        RadioListTile<DeliveryMethod>(
+                          value: DeliveryMethod.courier,
+                          title: Text('Kurirska služba'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                        RadioListTile<DeliveryMethod>(
+                          value: DeliveryMethod.pickup,
+                          title: Text('Lično preuzimanje'),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_deliveryMethod == DeliveryMethod.courier) ...[
+                    TextField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                          labelText: 'Adresa (ulica i broj)'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _cityController,
+                      decoration:
+                          const InputDecoration(labelText: 'Grad'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _postalCodeController,
+                      decoration: const InputDecoration(labelText: 'Poštanski broj'),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                    const SizedBox(height: 12),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: Colors.blue.shade700, size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Dogovori se sa prodavcem o mestu i vremenu preuzimanja.',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration:
+                        const InputDecoration(labelText: 'Kontakt telefon *'),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _noteController,
                     maxLines: 2,
                     decoration: const InputDecoration(
                         labelText: 'Napomena (npr. Treba za subotu)'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _cityController,
-                    decoration: const InputDecoration(labelText: 'Grad kupca'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                        labelText: 'Adresa (ulica i broj)'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration:
-                        const InputDecoration(labelText: 'Kontakt telefon *'),
                   ),
                   const SizedBox(height: 4),
                   if (user != null)

@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io';
+import 'package:flutter/foundation.dart'
+    show kIsWeb, consolidateHttpClientResponseBytes;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -22,7 +24,7 @@ import '../widgets/bounce_tap_button.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_network_image.dart';
 
-void _shareProduct(BuildContext context, ProductModel product) {
+Future<void> _shareProduct(BuildContext context, ProductModel product) async {
   final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
       ? SupabaseConfig.shareBaseUrl
       : (kIsWeb ? Uri.base.origin : 'https://domacimarket.rs');
@@ -30,12 +32,47 @@ void _shareProduct(BuildContext context, ProductModel product) {
   final url = '$base/p/${product.id}';
   final text =
       'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:\n$url';
-  SharePlus.instance.share(
-    ShareParams(
-      text: text,
-      subject: product.name,
-    ),
-  );
+
+  // Ako nema slike ili smo na Webu, deli samo tekst i link
+  if (product.imageUrls.isEmpty || kIsWeb) {
+    await SharePlus.instance.share(
+      ShareParams(text: text, subject: product.name),
+    );
+    return;
+  }
+
+  try {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Priprema slike za deljenje...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    // Preuzimanje prve slike u memoriju
+    final request =
+        await HttpClient().getUrl(Uri.parse(product.imageUrls.first));
+    final response = await request.close();
+    final bytes = await consolidateHttpClientResponseBytes(response);
+
+    // Deljenje fajla generisanog direktno iz memorije
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: product.name,
+        files: [
+          XFile.fromData(bytes, mimeType: 'image/jpeg', name: 'proizvod.jpg'),
+        ],
+      ),
+    );
+  } catch (e, st) {
+    ErrorHandlerService().handleError(e,
+        stackTrace: st, context: 'Share product image fallback');
+    // Fallback ako preuzimanje slike ne uspe (npr. loš internet)
+    await SharePlus.instance.share(
+      ShareParams(text: text, subject: product.name),
+    );
+  }
 }
 
 class ProductDetailScreen extends StatefulWidget {
@@ -121,7 +158,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _productFuture ??= context.read<ProductsService>().getProduct(widget.productId);
+    _productFuture ??=
+        context.read<ProductsService>().getProduct(widget.productId);
     _reviewsFuture ??= _loadReviewsFuture();
   }
 
@@ -142,8 +180,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final reviewsService = context.read<ReviewsService>();
     final avg =
         await reviewsService.getAverageRatingForProduct(widget.productId);
-    final reviews =
-        await reviewsService.getReviewsForProduct(widget.productId);
+    final reviews = await reviewsService.getReviewsForProduct(widget.productId);
     final names = await fetchProfileDisplayNames(reviews.map((r) => r.buyerId));
     return ProductReviewsData(
       averageRating: avg,
@@ -173,7 +210,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _retry() => setState(() {
-        _productFuture = context.read<ProductsService>().getProduct(widget.productId);
+        _productFuture =
+            context.read<ProductsService>().getProduct(widget.productId);
         _reviewsFuture = _loadReviewsFuture();
       });
 
@@ -219,28 +257,92 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         Stack(
           children: [
-            SizedBox(
+            Container(
               height: height,
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.3),
               child: product.imageUrls.isEmpty
-                  ? ColoredBox(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.image_not_supported, size: 64),
+                  ? const Center(
+                      child: Icon(Icons.image_not_supported, size: 64),
                     )
                   : PageView.builder(
                       controller: _pageController,
                       onPageChanged: (i) => setState(() => _pageIndex = i),
                       itemCount: product.imageUrls.length,
-                      itemBuilder: (_, i) => AppNetworkImage(
-                        imageUrl: product.imageUrls[i],
-                        width: double.infinity,
-                        fit: BoxFit.contain,
-                        memCacheWidth: 800,
-                        memCacheHeight: 600,
-                        fadeInDuration: Duration.zero,
+                      itemBuilder: (_, i) => GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              opaque: false,
+                              barrierColor: Colors.black87,
+                              barrierDismissible: true,
+                              pageBuilder: (BuildContext context, _, __) {
+                                return _FullScreenImageViewer(
+                                  productId: product.id,
+                                  imageUrls: product.imageUrls,
+                                  initialIndex: i,
+                                );
+                              },
+                              transitionsBuilder: (context, animation,
+                                  secondaryAnimation, child) {
+                                return FadeTransition(
+                                    opacity: animation, child: child);
+                              },
+                            ),
+                          );
+                        },
+                        child: Center(
+                          child: Hero(
+                            tag: 'product_image_${product.id}_$i',
+                            child: AppNetworkImage(
+                              imageUrl: product.imageUrls[i],
+                              width: double.infinity,
+                              height: height,
+                              fit: BoxFit.contain,
+                              memCacheWidth: 800,
+                              fadeInDuration: Duration.zero,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
             ),
+            // Fullscreen indikator overlay
+            if (product.imageUrls.isNotEmpty)
+              Positioned(
+                right: 12,
+                bottom: 12,
+                child: IgnorePointer(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.fullscreen,
+                            color: Colors.white, size: 18),
+                        if (hasMultipleImages) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '${_pageIndex + 1} / ${product.imageUrls.length}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             // Left/right arrows na tablet
             if (isTablet && hasMultipleImages) ...[
               Positioned(
@@ -248,19 +350,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 top: 0,
                 bottom: 0,
                 child: Center(
-                  child: Material(
-                    color: Colors.transparent,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black38,
+                      shape: BoxShape.circle,
+                    ),
                     child: IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.chevron_left,
-                        size: 32,
-                        color: Theme.of(context).colorScheme.surface,
-                        shadows: const [
-                          Shadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                          ),
-                        ],
+                        color: Colors.white,
+                        size: 36,
                       ),
                       onPressed: _pageIndex > 0
                           ? () => _pageController.previousPage(
@@ -268,11 +367,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 curve: Curves.easeInOut,
                               )
                           : null,
-                      splashRadius: 24,
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
+                      tooltip: 'Prethodna slika',
                     ),
                   ),
                 ),
@@ -282,19 +377,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 top: 0,
                 bottom: 0,
                 child: Center(
-                  child: Material(
-                    color: Colors.transparent,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black38,
+                      shape: BoxShape.circle,
+                    ),
                     child: IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.chevron_right,
-                        size: 32,
-                        color: Theme.of(context).colorScheme.surface,
-                        shadows: const [
-                          Shadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                          ),
-                        ],
+                        color: Colors.white,
+                        size: 36,
                       ),
                       onPressed: _pageIndex < product.imageUrls.length - 1
                           ? () => _pageController.nextPage(
@@ -302,11 +394,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 curve: Curves.easeInOut,
                               )
                           : null,
-                      splashRadius: 24,
-                      constraints: const BoxConstraints(
-                        minWidth: 48,
-                        minHeight: 48,
-                      ),
+                      tooltip: 'Sledeća slika',
                     ),
                   ),
                 ),
@@ -314,40 +402,75 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ],
         ),
-        if (hasMultipleImages) _buildGalleryDots(product),
+        if (hasMultipleImages) _buildGalleryThumbnails(product),
       ],
     );
   }
 
-  /// Dots indicator za više slika
-  Widget _buildGalleryDots(ProductModel product) {
+  /// Strip sa thumbnail-ovima slika (kao na svetskim e-commerce sajtovima)
+  Widget _buildGalleryThumbnails(ProductModel product) {
     return Container(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      height: 84,
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          product.imageUrls.length,
-          (i) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Container(
-              width: _pageIndex == i ? 8 : 6,
-              height: _pageIndex == i ? 8 : 6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _pageIndex == i
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.3),
-                border: _pageIndex == i
-                    ? null
-                    : Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 1,
+      child: Center(
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              product.imageUrls.length,
+              (i) {
+                final isSelected = _pageIndex == i;
+                return GestureDetector(
+                  onTap: () => _pageController.animateToPage(
+                    i,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 56,
+                    height: 56,
+                    margin: EdgeInsets.only(
+                      left: i == 0 ? 16 : 6,
+                      right: i == product.imageUrls.length - 1 ? 16 : 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.transparent,
+                        width: 2,
                       ),
-              ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Opacity(
+                        opacity: isSelected ? 1.0 : 0.5,
+                        child: AppNetworkImage.thumbnail(
+                          imageUrl: product.imageUrls[i],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -570,31 +693,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     final cart = context.read<CartProvider>();
-    await cart.addForSeller(
-      sellerId: product.sellerId,
-      productId: product.id,
-      quantity: product.minOrderKg,
-    );
-    if (!mounted) return;
-    final isWideLayout = MediaQuery.of(context).size.width >= 800;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Proizvod je dodat u korpu.'),
-        action: SnackBarAction(
-          label: 'Pregled',
-          onPressed: () => context.push('/checkout-seller/${product.sellerId}'),
-        ),
-        behavior:
-            isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
-        margin: isWideLayout
-            ? EdgeInsets.only(
-                bottom: 16,
-                right: 16,
-                left: MediaQuery.of(context).size.width - 400 - 16,
-              )
-            : null,
+    final result = await ErrorHandlerService().executeWithResult(
+      'Add to cart',
+      () => cart.addForSeller(
+        sellerId: product.sellerId,
+        productId: product.id,
+        quantity: product.minOrderKg,
       ),
     );
+
+    if (!mounted) return;
+
+    if (result.isSuccess) {
+      final isWideLayout = MediaQuery.of(context).size.width >= 800;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Proizvod je dodat u korpu.'),
+          action: SnackBarAction(
+            label: 'Pregled',
+            onPressed: () =>
+                context.push('/checkout-seller/${product.sellerId}'),
+          ),
+          behavior:
+              isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
+          margin: isWideLayout
+              ? EdgeInsets.only(
+                  bottom: 16,
+                  right: 16,
+                  left: MediaQuery.of(context).size.width - 400 - 16,
+                )
+              : null,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error?.getUserMessage() ??
+              'Greška pri dodavanju u korpu.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildDesktopLayout(ProductModel product) {
@@ -682,14 +821,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           FutureBuilder<ProductModel?>(
             future: _productFuture,
             builder: (_, snap) {
-              if (!snap.hasData) return const SizedBox.shrink();
-              final p = snap.data!;
               return IconButton(
                 icon: const Icon(Icons.share),
                 tooltip: 'Podeli proizvod',
-                onPressed: () => withHaptic(() => _shareProduct(context, p)),
+                onPressed: snap.hasData
+                    ? () => withHaptic(() => _shareProduct(context, snap.data!))
+                    : null,
               );
             },
+          ),
+          IconButton(
+            icon: Badge(
+              isLabelVisible: context.watch<CartProvider>().count > 0,
+              label: Text('${context.watch<CartProvider>().count}'),
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
+            tooltip: 'Korpa',
+            onPressed: () => context.push('/cart'),
           ),
           Builder(
             builder: (ctx) {
@@ -763,6 +911,203 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _FullScreenImageViewer extends StatefulWidget {
+  final String productId;
+  final List<String> imageUrls;
+  final int initialIndex;
+
+  const _FullScreenImageViewer({
+    required this.productId,
+    required this.imageUrls,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
+  late PageController _pageController;
+  late int _currentIndex;
+  final TransformationController _transformationController =
+      TransformationController();
+  TapDownDetails? _doubleTapDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    // Postavljamo početnu stranicu na veliki broj kako bismo dobili iluziju
+    // beskonačnog scroll-a unazad (left swipe) od samog početka.
+    final initialPage = widget.imageUrls.isNotEmpty
+        ? 10000 * widget.imageUrls.length + widget.initialIndex
+        : 0;
+    _pageController = PageController(initialPage: initialPage);
+    _currentIndex = widget.initialIndex;
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _nextImage() {
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _previousImage() {
+    _pageController.previousPage(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _handleDoubleTapDown(TapDownDetails details) {
+    _doubleTapDetails = details;
+  }
+
+  void _handleDoubleTap() {
+    if (_transformationController.value != Matrix4.identity()) {
+      _transformationController.value = Matrix4.identity();
+    } else {
+      final position = _doubleTapDetails?.localPosition ?? Offset.zero;
+      _transformationController.value = Matrix4.identity()
+        ..translate(-position.dx * 2, -position.dy * 2)
+        ..scale(3.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              if (widget.imageUrls.isNotEmpty) {
+                setState(() {
+                  _currentIndex = index % widget.imageUrls.length;
+                  _transformationController.value = Matrix4.identity();
+                });
+              }
+            },
+            itemBuilder: (context, index) {
+              if (widget.imageUrls.isEmpty) return const SizedBox.shrink();
+              final realIndex = index % widget.imageUrls.length;
+              return GestureDetector(
+                onDoubleTapDown: _handleDoubleTapDown,
+                onDoubleTap: _handleDoubleTap,
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  minScale: 1.0,
+                  maxScale: 4.0,
+                  child: Center(
+                    child: Hero(
+                      tag: 'product_image_${widget.productId}_$realIndex',
+                      child: AppNetworkImage(
+                        imageUrl: widget.imageUrls[realIndex],
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        height: double.infinity,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 16,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+          if (widget.imageUrls.length > 1) ...[
+            Positioned(
+              left: 16,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.black38,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.chevron_left,
+                        color: Colors.white, size: 36),
+                    onPressed: _previousImage,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.black38,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.chevron_right,
+                        color: Colors.white, size: 36),
+                    onPressed: _nextImage,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 24,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    '${_currentIndex + 1} / ${widget.imageUrls.length}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1025,7 +1370,8 @@ class _MoreFromSellerSectionState extends State<_MoreFromSellerSection> {
   void _ensureStream(String sellerId) {
     if (_lastSellerId == sellerId) return;
     _lastSellerId = sellerId;
-    _productsStream = context.read<ProductsService>().getProductsBySeller(sellerId);
+    _productsStream =
+        context.read<ProductsService>().getProductsBySeller(sellerId);
   }
 
   @override

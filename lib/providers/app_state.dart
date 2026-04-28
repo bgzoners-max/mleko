@@ -97,12 +97,12 @@ class AppState extends ChangeNotifier {
 
         _user = resolvedUser;
         if (_user != null && !_user!.isGuest) {
-          await PushService().registerToken(_user!.id);
-          if (!_isCurrentAuthEvent(authVersion,
-              expectedUserId: sessionUserId)) {
-            return;
-          }
-          await _loadUnreadCount();
+          // Pokreni registraciju tokena i učitavanje unread count-a paralelno
+          await Future.wait([
+            PushService().registerToken(_user!.id),
+            _loadUnreadCount(),
+          ]);
+
           if (!_isCurrentAuthEvent(authVersion,
               expectedUserId: sessionUserId)) {
             return;

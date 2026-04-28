@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,7 @@ import 'package:mleko/services/services.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/location_provider.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/product_card.dart';
@@ -42,19 +44,47 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _isInitialized = false;
   int _querySeq = 0;
   String? _searchError;
   late Future<List<String>> _historyFuture;
   String? _currentSellerIdToExclude;
   String _lastCategoryCountRequestKey = '';
+  final Set<String> _preloadedImages = <String>{};
+
+  void _warmupProductImages(List<ProductModel> products) {
+    final List<String> urls = [];
+    for (var i = 0; i < products.length; i++) {
+      final p = products[i];
+      if (p.imageUrls.isNotEmpty) {
+        urls.add(p.imageUrls.first);
+        // Za top 4 proizvoda preload-uj i drugu sliku (carousel detalji)
+        if (i < 4 && p.imageUrls.length > 1) {
+          urls.add(p.imageUrls[1]);
+        }
+      }
+      if (urls.length >= 12) break; // Limitiramo ukupan broj preloada
+    }
+    if (urls.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      for (final url in urls) {
+        if (!mounted) return;
+        if (_preloadedImages.add(url)) {
+          await precacheImage(
+              CachedNetworkImageProvider(url), context);
+        }
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _category = widget.initialCategory;
     _historyFuture = _searchHistoryService.getHistory();
-    _loadFirstPage();
     _scrollController.addListener(_onScroll);
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
@@ -69,15 +99,29 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _productsService ??= context.read<ProductsService>();
+    final newService = context.read<ProductsService>();
+    final serviceChanged = _productsService != newService;
+    _productsService = newService;
+
     context.read<CategoriesProvider>().load();
     final user = context.read<AppState>().user;
     final favorites = context.read<FavoritesProvider>();
     if (user != null && !user.isGuest && !favorites.isLoaded) {
       favorites.load(user.id);
     }
-    _currentSellerIdToExclude =
-        (user != null && user.isSeller) ? user.id : null;
+    // Više ne isključujemo proizvode prodavca iz pretrage kako bi mogli
+    // da vide svoje proizvode (a kupovina sopstvenih proizvoda je već onemogućena)
+    _currentSellerIdToExclude = null;
+
+    if (!_isInitialized || serviceChanged) {
+      _isInitialized = true;
+      // Sinhronizacija regiona sa glavne strane (ako nije već postavljen)
+      final loc = context.read<LocationProvider>();
+      _region ??= loc.selectedRegion;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadFirstPage();
+      });
+    }
   }
 
   void _onScroll() {
@@ -90,16 +134,40 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadFirstPage() async {
     final querySeq = ++_querySeq;
+    final currentQuery = _debouncedQuery.trim().toLowerCase();
+
     setState(() {
-      _loading = true;
+      if (_products.isEmpty) {
+        _loading = true;
+      } else {
+        _loadingMore = false;
+      }
       _searchError = null;
-      _products = [];
       _offset = 0;
       _hasMore = true;
-      _loadingMore = false;
     });
-    try {
-      final result = await _productsService!.getProductsPage(
+
+    // Brzi prikaz iz keša za FTS pretrage
+    if (currentQuery.isNotEmpty &&
+        _category == null &&
+        _region == null &&
+        _availableNow != true) {
+      final cached = await ProductCacheService()
+          .getCachedProducts(ProductCacheService.searchKey(currentQuery));
+      if (cached != null &&
+          cached.isNotEmpty &&
+          querySeq == _querySeq &&
+          mounted) {
+        setState(() {
+          _products = cached;
+          _loading = false;
+        });
+      }
+    }
+
+    final resultResponse = await ErrorHandlerService().executeWithResult(
+      'Search products (first page)',
+      () => _productsService!.getProductsPage(
         category: _category,
         region: _region,
         availableNow: _availableNow,
@@ -108,8 +176,13 @@ class _SearchScreenState extends State<SearchScreen> {
         sort: _sort,
         limit: productsPageSize,
         offset: 0,
-      );
-      if (!mounted || querySeq != _querySeq) return;
+      ),
+    );
+
+    if (!mounted || querySeq != _querySeq) return;
+
+    if (resultResponse.isSuccess) {
+      final result = resultResponse.data!;
       setState(() {
         _products = result.items;
         _salesCounts = result.salesCounts;
@@ -118,11 +191,12 @@ class _SearchScreenState extends State<SearchScreen> {
         _hasMore = result.hasMore;
         _loading = false;
       });
-    } catch (e) {
-      if (!mounted || querySeq != _querySeq) return;
+      _warmupProductImages(result.items);
+    } else {
       setState(() {
         _loading = false;
-        _searchError = e.toString();
+        _searchError =
+            resultResponse.error?.getUserMessage() ?? 'Greška pri pretrazi.';
       });
     }
   }
@@ -131,8 +205,10 @@ class _SearchScreenState extends State<SearchScreen> {
     if (_loadingMore || !_hasMore || _loading) return;
     final querySeq = _querySeq;
     setState(() => _loadingMore = true);
-    try {
-      final result = await _productsService!.getProductsPage(
+
+    final resultResponse = await ErrorHandlerService().executeWithResult(
+      'Search products (load more)',
+      () => _productsService!.getProductsPage(
         category: _category,
         region: _region,
         availableNow: _availableNow,
@@ -140,14 +216,17 @@ class _SearchScreenState extends State<SearchScreen> {
         sort: _sort,
         limit: productsPageSize,
         offset: _offset,
-      );
-      if (!mounted) return;
-      if (querySeq != _querySeq) {
-        // Nove pretrage su počele dok je loadMore bio u flight-u.
-        // Ne sme se dodavati rezultat starog upita.
-        setState(() => _loadingMore = false);
-        return;
-      }
+      ),
+    );
+
+    if (!mounted) return;
+    if (querySeq != _querySeq) {
+      setState(() => _loadingMore = false);
+      return;
+    }
+
+    if (resultResponse.isSuccess) {
+      final result = resultResponse.data!;
       setState(() {
         _products = [..._products, ...result.items];
         _salesCounts = {..._salesCounts, ...result.salesCounts};
@@ -156,18 +235,20 @@ class _SearchScreenState extends State<SearchScreen> {
         _hasMore = result.hasMore;
         _loadingMore = false;
       });
-    } catch (e) {
-      if (!mounted) return;
+      _warmupProductImages(result.items);
+    } else {
       setState(() => _loadingMore = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Greška pri učitavanju više proizvoda.')),
+        SnackBar(
+            content: Text(resultResponse.error?.getUserMessage() ??
+                'Greška pri učitavanju više proizvoda.')),
       );
     }
   }
 
   Timer? _debounceTimer;
   Timer? _filterDebounceTimer;
-  static const _debounceDuration = Duration(milliseconds: 350);
+  static const _debounceDuration = Duration(milliseconds: 300);
   static const _filterDebounceDuration = Duration(milliseconds: 250);
   String _debouncedQuery = '';
 
@@ -176,11 +257,21 @@ class _SearchScreenState extends State<SearchScreen> {
     _debounceTimer?.cancel();
     _filterDebounceTimer?.cancel();
     _scrollController.dispose();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged(String value) {
+  void _onSearchChanged() {
+    final value = _searchController.text;
+    
+    // Uvek osveži sugestije (istoriju) dok kuca, bez debouncing-a za samu listu sugestija
+    setState(() {
+      _historyFuture = _searchHistoryService.getSuggestions(value);
+    });
+
+    if (value.trim().toLowerCase() == _debouncedQuery) return;
+
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDuration, () {
       if (mounted) {
@@ -220,19 +311,23 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    try {
-      final counts = await _productsService!.getCategoryCounts(
+    final resultResponse = await ErrorHandlerService().executeWithResult(
+      'Load category counts',
+      () => _productsService!.getCategoryCounts(
         categoryNames:
             categories.map<String>((cat) => cat.name as String).toList(),
         region: _region,
         availableNow: _availableNow,
         searchQuery: _debouncedQuery.isEmpty ? null : _debouncedQuery,
         excludeSellerId: _currentSellerIdToExclude,
-      );
-      if (!mounted || requestKey != _lastCategoryCountRequestKey) return;
-      setState(() => _categoryCounts = counts);
-    } catch (_) {
-      if (!mounted || requestKey != _lastCategoryCountRequestKey) return;
+      ),
+    );
+
+    if (!mounted || requestKey != _lastCategoryCountRequestKey) return;
+
+    if (resultResponse.isSuccess) {
+      setState(() => _categoryCounts = resultResponse.data!);
+    } else {
       setState(() => _categoryCounts = {});
     }
   }
@@ -292,26 +387,63 @@ class _SearchScreenState extends State<SearchScreen> {
       builder: (context, snap) {
         final history = snap.data ?? [];
         if (history.isEmpty) return const SizedBox.shrink();
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Row(
+        return Container(
+          width: double.infinity,
+          color: Colors.white.withValues(alpha: 0.5),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Istorija:',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(width: 8),
-              ...history.take(5).map((h) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ActionChip(
-                      label: Text(h, style: const TextStyle(fontSize: 12)),
-                      onPressed: () {
-                        _searchController.text = h;
-                        _applySearchImmediate(h);
-                      },
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(_searchController.text.isEmpty ? 'Nedavne pretrage' : 'Predlozi',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
+                  TextButton(
+                    onPressed: () async {
+                      await _searchHistoryService.clearHistory();
+                      if (mounted) {
+                        setState(() {
+                          _historyFuture = _searchHistoryService.getHistory();
+                        });
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
                     ),
-                  )),
+                    child: const Text('Obriši sve',
+                        style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: history.take(6).map((h) {
+                  return InputChip(
+                    label: Text(h, style: const TextStyle(fontSize: 12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    onPressed: () {
+                      _searchController.text = h;
+                      _applySearchImmediate(h);
+                    },
+                    onDeleted: () async {
+                      await _searchHistoryService.removeFromHistory(h);
+                      if (mounted) {
+                        setState(() {
+                          _historyFuture = _searchHistoryService.getHistory();
+                        });
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
             ],
           ),
         );
@@ -425,7 +557,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
     final categoriesProvider = context.watch<CategoriesProvider>();
-    final topCategories = categoriesProvider.topCategories.take(8).toList();
+    final topCategories = categoriesProvider.topCategories;
     _scheduleCategoryCountReload(topCategories);
     final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
@@ -445,7 +577,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final wideGridExtent = Breakpoints.isDesktop(context) ? 380.0 : 356.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE9E9E9),
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Pretraga'),
         bottom: PreferredSize(
@@ -459,7 +591,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 prefixIcon: Icon(Icons.search),
                 isDense: true,
               ),
-              onChanged: (v) => _onSearchChanged(v),
               onSubmitted: (q) async {
                 await _searchHistoryService.addToHistory(q);
                 if (!mounted) return;
@@ -483,13 +614,13 @@ class _SearchScreenState extends State<SearchScreen> {
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Leva kolona: kategorije (15%)
+                    // Leva kolona: filteri i kategorije (20%)
                     Expanded(
-                      flex: 15,
+                      flex: 20,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           border: Border(
-                            left: Divider.createBorderSide(context),
+                            right: Divider.createBorderSide(context),
                           ),
                         ),
                         child: ListView(
@@ -497,6 +628,63 @@ class _SearchScreenState extends State<SearchScreen> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text('Filteri',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _FilterChip(
+                                    label: 'Sortiraj',
+                                    value: _sort.label,
+                                    options: ProductSort.values.map((s) => s.label).toList(),
+                                    onSelected: (v) {
+                                      final idx = ProductSort.values.indexWhere((s) => s.label == v);
+                                      if (idx >= 0) {
+                                        setState(() {
+                                          _sort = ProductSort.values[idx];
+                                          _onFilterChanged();
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _FilterChip(
+                                    label: 'Region',
+                                    value: _region,
+                                    options: AppConstants.regions,
+                                    onSelected: (v) {
+                                      setState(() => _region = v);
+                                      _onFilterChanged();
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ActionChip(
+                                    label: const Text('Dostupno sada'),
+                                    onPressed: () {
+                                      setState(
+                                          () => _availableNow = _availableNow == true ? null : true);
+                                      _onFilterChanged();
+                                    },
+                                    backgroundColor: _availableNow == true
+                                        ? Theme.of(context).colorScheme.primaryContainer
+                                        : null,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Divider(height: 1),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
                               child: Text('Kategorije',
                                   textAlign: TextAlign.center,
                                   style: Theme.of(context)
@@ -516,29 +704,30 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
                     ),
-                    const VerticalDivider(width: 1, color: Color(0xFFD0D0D0)),
-                    // Desna kolona: filteri + rezultati (85%)
+                    // Desna kolona: rezultati (80%)
                     Expanded(
-                      flex: 85,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: Divider.createBorderSide(context),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildHistoryChips(),
-                            _buildFilterChips(context),
+                      flex: 80,
+                      child: Column(
+                        children: [
+                          if (_debounceTimer?.isActive == true ||
+                              _filterDebounceTimer?.isActive == true)
+                            const LinearProgressIndicator(minHeight: 2),
+                          _buildHistoryChips(),
                             Expanded(
                               child: _loading
                                   ? const ProductListSkeleton()
-                                  : _products.isEmpty
-                                      ? _buildEmptyState()
-                                      : RefreshIndicator(
-                                          onRefresh: _onRefresh,
-                                          child: GridView.builder(
-                                            controller: _scrollController,
+                                  : _searchError != null
+                                      ? AppErrorRetry(
+                                          message: 'Greška pri učitavanju proizvoda.',
+                                          detail: _searchError,
+                                          onRetry: _loadFirstPage,
+                                        )
+                                      : _products.isEmpty
+                                          ? _buildEmptyState()
+                                          : RefreshIndicator(
+                                              onRefresh: _onRefresh,
+                                              child: GridView.builder(
+                                                controller: _scrollController,
                                             padding: EdgeInsets.all(
                                               contentPadding,
                                             ),
@@ -569,11 +758,13 @@ class _SearchScreenState extends State<SearchScreen> {
                           ],
                         ),
                       ),
-                    ),
                   ],
                 )
               : Column(
                   children: [
+                    if (_debounceTimer?.isActive == true ||
+                        _filterDebounceTimer?.isActive == true)
+                      const LinearProgressIndicator(minHeight: 2),
                     // Kategorije grid (mobile)
                     Padding(
                       padding: EdgeInsets.symmetric(

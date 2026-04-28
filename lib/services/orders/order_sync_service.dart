@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/seller_delivery_models.dart';
+import '../../models/app_error.dart';
 import '../core/connectivity_service.dart';
 import '../core/logger_service.dart';
 import 'order_queue_service.dart';
@@ -87,6 +88,7 @@ class OrderSyncService {
             buyerCity: pending.buyerCity,
             buyerPhone: pending.buyerPhone,
             buyerAddress: pending.buyerAddress,
+            buyerPostalCode: pending.buyerPostalCode,
             deliveryMethod: pending.deliveryMethod,
             deliverySelection: deliverySelection,
           );
@@ -111,6 +113,8 @@ class OrderSyncService {
         'source': source,
       });
       return syncedCount;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     } finally {
       stopwatch.stop();
       try {
@@ -133,69 +137,80 @@ class OrderSyncService {
   Future<DeliverySelectionModel?> _buildDeliverySelectionForSync(
     PendingOrder pending,
   ) async {
-    if (pending.deliveryMethod != DeliveryMethod.sellerDelivery) {
-      return null;
-    }
+    try {
+      if (pending.deliveryMethod != DeliveryMethod.sellerDelivery) {
+        return null;
+      }
 
-    final pointId = pending.deliveryPointId;
-    final city = pending.deliveryCity;
-    final pointLabel = pending.deliveryPointLabel;
-    final address = pending.deliveryAddress;
-    final weekday = pending.deliveryWeekday;
-    final timeFrom = pending.deliveryTimeFrom;
-    final timeTo = pending.deliveryTimeTo;
+      final pointId = pending.deliveryPointId;
+      final city = pending.deliveryCity;
+      final pointLabel = pending.deliveryPointLabel;
+      final address = pending.deliveryAddress;
+      final weekday = pending.deliveryWeekday;
+      final timeFrom = pending.deliveryTimeFrom;
+      final timeTo = pending.deliveryTimeTo;
 
-    if ([pointId, city, pointLabel, address, timeFrom, timeTo]
-            .any((value) => value == null || value.isEmpty) ||
-        weekday == null) {
-      throw Exception(
-        'Offline seller-delivery porudžbina nema kompletne podatke za termin.',
-      );
-    }
+      if ([pointId, city, pointLabel, address, timeFrom, timeTo]
+              .any((value) => value == null || value.isEmpty) ||
+          weekday == null) {
+        throw AppError(
+          message: 'Incomplete delivery data for offline order',
+          userMessage:
+              'Offline seller-delivery porudžbina nema kompletne podatke za termin.',
+          type: ErrorType.validation,
+        );
+      }
 
-    final resolvedPointId = pointId!;
-    final resolvedCity = city!;
-    final resolvedPointLabel = pointLabel!;
-    final resolvedAddress = address!;
-    final resolvedWeekday = weekday;
-    final resolvedTimeFrom = timeFrom!;
-    final resolvedTimeTo = timeTo!;
+      final resolvedPointId = pointId!;
+      final resolvedCity = city!;
+      final resolvedPointLabel = pointLabel!;
+      final resolvedAddress = address!;
+      final resolvedWeekday = weekday;
+      final resolvedTimeFrom = timeFrom!;
+      final resolvedTimeTo = timeTo!;
 
-    var slotId = pending.deliverySlotId;
-    double? minOrderAmountRsd = pending.minOrderAmountRsd;
-    double? deliveryFeeRsd = pending.deliveryFeeRsd;
+      var slotId = pending.deliverySlotId;
+      double? minOrderAmountRsd = pending.minOrderAmountRsd;
+      double? deliveryFeeRsd = pending.deliveryFeeRsd;
 
-    if (slotId == null || slotId.isEmpty) {
-      final slot = await _resolveLegacyDeliverySlot(
+      if (slotId == null || slotId.isEmpty) {
+        final slot = await _resolveLegacyDeliverySlot(
+          pointId: resolvedPointId,
+          weekday: resolvedWeekday,
+          timeFrom: resolvedTimeFrom,
+          timeTo: resolvedTimeTo,
+        );
+        slotId = slot['id'] as String?;
+        minOrderAmountRsd ??= (slot['min_order_amount_rsd'] as num?)?.toDouble();
+        deliveryFeeRsd ??= (slot['delivery_fee_rsd'] as num?)?.toDouble();
+      }
+
+      if (slotId == null || slotId.isEmpty) {
+        throw AppError(
+          message: 'Delivery slot resolution failed during sync',
+          userMessage:
+              'Offline seller-delivery porudžbina ne može da pronađe termin za sinhronizaciju.',
+          type: ErrorType.notFound,
+        );
+      }
+
+      return DeliverySelectionModel(
+        method: DeliveryMethod.sellerDelivery,
         pointId: resolvedPointId,
+        slotId: slotId,
+        city: resolvedCity,
+        pointLabel: resolvedPointLabel,
+        address: resolvedAddress,
         weekday: resolvedWeekday,
         timeFrom: resolvedTimeFrom,
         timeTo: resolvedTimeTo,
+        deliveryFeeRsd: deliveryFeeRsd,
+        minOrderAmountRsd: minOrderAmountRsd,
       );
-      slotId = slot['id'] as String?;
-      minOrderAmountRsd ??= (slot['min_order_amount_rsd'] as num?)?.toDouble();
-      deliveryFeeRsd ??= (slot['delivery_fee_rsd'] as num?)?.toDouble();
+    } catch (e, st) {
+      if (e is AppError) rethrow;
+      throw AppError.from(e, stackTrace: st);
     }
-
-    if (slotId == null || slotId.isEmpty) {
-      throw Exception(
-        'Offline seller-delivery porudžbina ne može da pronađe termin za sinhronizaciju.',
-      );
-    }
-
-    return DeliverySelectionModel(
-      method: DeliveryMethod.sellerDelivery,
-      pointId: resolvedPointId,
-      slotId: slotId,
-      city: resolvedCity,
-      pointLabel: resolvedPointLabel,
-      address: resolvedAddress,
-      weekday: resolvedWeekday,
-      timeFrom: resolvedTimeFrom,
-      timeTo: resolvedTimeTo,
-      deliveryFeeRsd: deliveryFeeRsd,
-      minOrderAmountRsd: minOrderAmountRsd,
-    );
   }
 
   Future<Map<String, dynamic>> _resolveLegacyDeliverySlot({
@@ -204,88 +219,96 @@ class OrderSyncService {
     required String timeFrom,
     required String timeTo,
   }) async {
-    final slot = await _client
-        .from('seller_delivery_slots')
-        .select('id, delivery_fee_rsd, min_order_amount_rsd')
-        .eq('delivery_point_id', pointId)
-        .eq('weekday', weekday)
-        .eq('time_from', timeFrom)
-        .eq('time_to', timeTo)
-        .eq('is_active', true)
-        .maybeSingle();
+    try {
+      final slot = await _client
+          .from('seller_delivery_slots')
+          .select('id, delivery_fee_rsd, min_order_amount_rsd')
+          .eq('delivery_point_id', pointId)
+          .eq('weekday', weekday)
+          .eq('time_from', timeFrom)
+          .eq('time_to', timeTo)
+          .eq('is_active', true)
+          .maybeSingle();
 
-    return slot is Map<String, dynamic>
-        ? slot
-        : Map<String, dynamic>.from(slot as Map? ?? const {});
+      return slot is Map<String, dynamic>
+          ? slot
+          : Map<String, dynamic>.from(slot as Map? ?? const {});
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<String?> _findDuplicateOrderId(PendingOrder pending) async {
-    final lookbackSince =
-        DateTime.now().subtract(_duplicateLookback).toIso8601String();
-    final rows = await _client
-        .from('orders')
-        .select(
-            'id, quantity_kg, buyer_phone, buyer_city, buyer_address, note, delivery_method, delivery_city, delivery_point_label, delivery_address, delivery_weekday, delivery_time_from, delivery_time_to, delivery_fee_rsd, created_at')
-        .eq('buyer_id', pending.buyerId)
-        .eq('seller_id', pending.sellerId)
-        .eq('product_id', pending.productId)
-        .gte('created_at', lookbackSince)
-        .order('created_at', ascending: false)
-        .limit(20);
+    try {
+      final lookbackSince =
+          DateTime.now().subtract(_duplicateLookback).toIso8601String();
+      final rows = await _client
+          .from('orders')
+          .select(
+              'id, quantity_kg, buyer_phone, buyer_city, buyer_address, note, delivery_method, delivery_city, delivery_point_label, delivery_address, delivery_weekday, delivery_time_from, delivery_time_to, delivery_fee_rsd, created_at')
+          .eq('buyer_id', pending.buyerId)
+          .eq('seller_id', pending.sellerId)
+          .eq('product_id', pending.productId)
+          .gte('created_at', lookbackSince)
+          .order('created_at', ascending: false)
+          .limit(20);
 
-    final expectedPhone = _normalize(pending.buyerPhone);
-    final expectedCity = _normalize(pending.buyerCity);
-    final expectedAddress = _normalize(pending.buyerAddress ?? '');
-    final expectedNote = _normalize(pending.note ?? '');
-    final expectedDeliveryMethod = pending.deliveryMethod.dbValue;
-    final expectedDeliveryCity = _normalize(pending.deliveryCity ?? '');
-    final expectedDeliveryPoint = _normalize(pending.deliveryPointLabel ?? '');
-    final expectedDeliveryAddress = _normalize(pending.deliveryAddress ?? '');
-    final expectedDeliveryWeekday = pending.deliveryWeekday;
-    final expectedDeliveryFrom = _normalize(pending.deliveryTimeFrom ?? '');
-    final expectedDeliveryTo = _normalize(pending.deliveryTimeTo ?? '');
-    final expectedDeliveryFee = pending.deliveryFeeRsd ?? 0;
+      final expectedPhone = _normalize(pending.buyerPhone);
+      final expectedCity = _normalize(pending.buyerCity);
+      final expectedAddress = _normalize(pending.buyerAddress ?? '');
+      final expectedNote = _normalize(pending.note ?? '');
+      final expectedDeliveryMethod = pending.deliveryMethod.dbValue;
+      final expectedDeliveryCity = _normalize(pending.deliveryCity ?? '');
+      final expectedDeliveryPoint = _normalize(pending.deliveryPointLabel ?? '');
+      final expectedDeliveryAddress = _normalize(pending.deliveryAddress ?? '');
+      final expectedDeliveryWeekday = pending.deliveryWeekday;
+      final expectedDeliveryFrom = _normalize(pending.deliveryTimeFrom ?? '');
+      final expectedDeliveryTo = _normalize(pending.deliveryTimeTo ?? '');
+      final expectedDeliveryFee = pending.deliveryFeeRsd ?? 0;
 
-    for (final row in (rows as List).cast<Map<String, dynamic>>()) {
-      final qty = (row['quantity_kg'] as num?)?.toDouble();
-      if (qty == null || (qty - pending.quantityKg).abs() > 0.0001) {
-        continue;
+      for (final row in (rows as List).cast<Map<String, dynamic>>()) {
+        final qty = (row['quantity_kg'] as num?)?.toDouble();
+        if (qty == null || (qty - pending.quantityKg).abs() > 0.0001) {
+          continue;
+        }
+
+        final phone = _normalize(row['buyer_phone'] as String? ?? '');
+        final city = _normalize(row['buyer_city'] as String? ?? '');
+        final address = _normalize(row['buyer_address'] as String? ?? '');
+        final note = _normalize(row['note'] as String? ?? '');
+        final deliveryMethod =
+            _normalize(row['delivery_method'] as String? ?? 'agreement');
+        final deliveryCity = _normalize(row['delivery_city'] as String? ?? '');
+        final deliveryPoint =
+            _normalize(row['delivery_point_label'] as String? ?? '');
+        final deliveryAddress =
+            _normalize(row['delivery_address'] as String? ?? '');
+        final deliveryWeekday = (row['delivery_weekday'] as num?)?.toInt();
+        final deliveryFrom =
+            _normalize(row['delivery_time_from'] as String? ?? '');
+        final deliveryTo = _normalize(row['delivery_time_to'] as String? ?? '');
+        final deliveryFee = (row['delivery_fee_rsd'] as num?)?.toDouble() ?? 0;
+
+        if (phone == expectedPhone &&
+            city == expectedCity &&
+            address == expectedAddress &&
+            note == expectedNote &&
+            deliveryMethod == expectedDeliveryMethod &&
+            deliveryCity == expectedDeliveryCity &&
+            deliveryPoint == expectedDeliveryPoint &&
+            deliveryAddress == expectedDeliveryAddress &&
+            deliveryWeekday == expectedDeliveryWeekday &&
+            deliveryFrom == expectedDeliveryFrom &&
+            deliveryTo == expectedDeliveryTo &&
+            (deliveryFee - expectedDeliveryFee).abs() < 0.0001) {
+          return row['id'] as String?;
+        }
       }
 
-      final phone = _normalize(row['buyer_phone'] as String? ?? '');
-      final city = _normalize(row['buyer_city'] as String? ?? '');
-      final address = _normalize(row['buyer_address'] as String? ?? '');
-      final note = _normalize(row['note'] as String? ?? '');
-      final deliveryMethod =
-          _normalize(row['delivery_method'] as String? ?? 'agreement');
-      final deliveryCity = _normalize(row['delivery_city'] as String? ?? '');
-      final deliveryPoint =
-          _normalize(row['delivery_point_label'] as String? ?? '');
-      final deliveryAddress =
-          _normalize(row['delivery_address'] as String? ?? '');
-      final deliveryWeekday = (row['delivery_weekday'] as num?)?.toInt();
-      final deliveryFrom =
-          _normalize(row['delivery_time_from'] as String? ?? '');
-      final deliveryTo = _normalize(row['delivery_time_to'] as String? ?? '');
-      final deliveryFee = (row['delivery_fee_rsd'] as num?)?.toDouble() ?? 0;
-
-      if (phone == expectedPhone &&
-          city == expectedCity &&
-          address == expectedAddress &&
-          note == expectedNote &&
-          deliveryMethod == expectedDeliveryMethod &&
-          deliveryCity == expectedDeliveryCity &&
-          deliveryPoint == expectedDeliveryPoint &&
-          deliveryAddress == expectedDeliveryAddress &&
-          deliveryWeekday == expectedDeliveryWeekday &&
-          deliveryFrom == expectedDeliveryFrom &&
-          deliveryTo == expectedDeliveryTo &&
-          (deliveryFee - expectedDeliveryFee).abs() < 0.0001) {
-        return row['id'] as String?;
-      }
+      return null;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     }
-
-    return null;
   }
 
   String _normalize(String input) {

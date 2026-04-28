@@ -64,7 +64,7 @@ class _AboutContent extends StatelessWidget {
       theme.textTheme.titleMedium,
     )?.copyWith(
       fontWeight: FontWeight.w700,
-      color: const Color(0xFF1B5E20),
+      color: theme.colorScheme.primary,
     );
     final lead = Breakpoints.supportingTextStyle(
       context,
@@ -92,10 +92,10 @@ class _AboutContent extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(Breakpoints.cardPadding(context) + 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+            color: theme.colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: const Color(0xFF1B5E20).withValues(alpha: 0.14),
+              color: theme.colorScheme.primary.withValues(alpha: 0.14),
             ),
           ),
           child: Column(
@@ -104,7 +104,7 @@ class _AboutContent extends StatelessWidget {
               Text(
                 'Direktno od domaćina do kupca',
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: const Color(0xFF1B5E20),
+                  color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.2,
                 ),
@@ -152,17 +152,17 @@ class _AboutContent extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.all(Breakpoints.cardPadding(context)),
           decoration: BoxDecoration(
-            color: const Color(0xFF1B5E20).withValues(alpha: 0.07),
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 2),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
                 child: Icon(
                   Icons.eco_outlined,
-                  color: Color(0xFF1B5E20),
+                  color: theme.colorScheme.primary,
                   size: 20,
                 ),
               ),
@@ -171,7 +171,7 @@ class _AboutContent extends StatelessWidget {
                 child: Text(
                   'Platforma je trenutno u fazi razvoja. Prijavite se na waitlistu i bićete među prvima obavešteni kada krenemo.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF1B5E20),
+                    color: theme.colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w600,
                     height: 1.6,
                   ),

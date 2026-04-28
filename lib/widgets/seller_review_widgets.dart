@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../core/utils/error_messages.dart';
 import '../models/review_model.dart';
 import '../services/services.dart';
 
@@ -227,7 +228,7 @@ class _SellerReplyDialogState extends State<SellerReplyDialog> {
       if (!mounted) return;
       final msg = e.toString().contains('reply_not_editable_after_24h')
           ? 'Odgovor nije moguće menjati nakon 24h.'
-          : 'Greška: $e';
+          : friendlyError(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: Colors.red),
       );

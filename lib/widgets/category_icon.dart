@@ -13,51 +13,69 @@ String _normalizeCategoryIconName(String iconName) =>
 
 /// Prikazuje ikonu kategorije - emoji (🥛, 🍯) ili Material ikonu
 Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
+  Widget iconChild;
   if (iconName == null || iconName.isEmpty) {
-    return Icon(Icons.category, size: size, color: color);
+    iconChild = Icon(Icons.category, size: size * 0.6, color: color);
+  } else {
+    final lower = _normalizeCategoryIconName(iconName);
+    final assetPath = _categoryAssetIcons[lower];
+    if (assetPath != null) {
+      iconChild = Image.asset(
+        assetPath,
+        width: size * 0.7,
+        height: size * 0.7,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.category,
+          size: size * 0.6,
+          color: color,
+        ),
+      );
+    } else {
+      final knownIcons = [
+        'eco',
+        'restaurant',
+        'egg',
+        'water_drop',
+        'bakery_dining',
+        'agriculture',
+        'local_florist',
+        'pets'
+      ];
+      if (knownIcons.contains(lower)) {
+        final iconData = switch (lower) {
+          'eco' => Icons.eco,
+          'restaurant' => Icons.restaurant,
+          'egg' => Icons.egg,
+          'water_drop' => Icons.water_drop,
+          'bakery_dining' => Icons.bakery_dining,
+          'agriculture' => Icons.agriculture,
+          'local_florist' => Icons.local_florist,
+          'pets' => Icons.pets,
+          _ => Icons.category,
+        };
+        iconChild = Icon(iconData, size: size * 0.6, color: color);
+      } else {
+        iconChild = EmojiText(
+          iconName,
+          style: TextStyle(fontSize: size * 0.5, color: color),
+        );
+      }
+    }
   }
-  final lower = _normalizeCategoryIconName(iconName);
-  final assetPath = _categoryAssetIcons[lower];
-  if (assetPath != null) {
-    return Image.asset(
-      assetPath,
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.category,
-        size: size,
-        color: color,
+
+  return Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: (color ?? Colors.green).withValues(alpha: 0.1),
+      shape: BoxShape.circle,
+      border: Border.all(
+        color: (color ?? Colors.green).withValues(alpha: 0.2),
+        width: 1.5,
       ),
-    );
-  }
-  final knownIcons = [
-    'eco',
-    'restaurant',
-    'egg',
-    'water_drop',
-    'bakery_dining',
-    'agriculture',
-    'local_florist',
-    'pets'
-  ];
-  if (knownIcons.contains(lower)) {
-    final iconData = switch (lower) {
-      'eco' => Icons.eco,
-      'restaurant' => Icons.restaurant,
-      'egg' => Icons.egg,
-      'water_drop' => Icons.water_drop,
-      'bakery_dining' => Icons.bakery_dining,
-      'agriculture' => Icons.agriculture,
-      'local_florist' => Icons.local_florist,
-      'pets' => Icons.pets,
-      _ => Icons.category,
-    };
-    return Icon(iconData, size: size, color: color);
-  }
-  return EmojiText(
-    iconName,
-    style: TextStyle(fontSize: size * 0.8, color: color),
+    ),
+    child: Center(child: iconChild),
   );
 }

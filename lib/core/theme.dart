@@ -309,6 +309,22 @@ ThemeData _buildBaseTheme({required bool compact}) {
       backgroundColor: Colors.white,
       type: BottomNavigationBarType.fixed,
     ),
+    scrollbarTheme: ScrollbarThemeData(
+      thumbVisibility: WidgetStateProperty.all(true),
+      trackVisibility: WidgetStateProperty.all(true),
+      interactive: true,
+      thickness: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.hovered)) return 12.0;
+        return 8.0;
+      }),
+      radius: const Radius.circular(8),
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.hovered)) {
+          return const Color(0xFF2E7D32).withValues(alpha: 0.8);
+        }
+        return Colors.grey.withValues(alpha: 0.4);
+      }),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       height: navBarHeight,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -435,37 +451,37 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
     ),
     colorScheme: const ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF81C784),
-      onPrimary: Color(0xFF003314),
-      secondary: Color(0xFF8BC34A),
-      onSecondary: Color(0xFF102027),
-      error: Color(0xFFEF5350),
-      onError: Color(0xFF1B0000),
-      surface: Color(0xFF1E1E1E),
-      onSurface: Color(0xFFECEFF1),
-      surfaceContainerHighest: Color(0xFF263238),
-      onSurfaceVariant: Color(0xFFB0BEC5),
-      outline: Color(0xFF546E7A),
+      primary: Color(0xFF99D19C), // Lakša zelena za tamni režim
+      onPrimary: Color(0xFF003916),
+      secondary: Color(0xFFB9F6CA),
+      onSecondary: Color(0xFF003916),
+      error: Color(0xFFF2B8B5),
+      onError: Color(0xFF601410),
+      surface: Color(0xFF1A1C19), // Tamno siva sa zelenim tonom
+      onSurface: Color(0xFFE2E3DD),
+      surfaceContainerHighest: Color(0xFF424940),
+      onSurfaceVariant: Color(0xFFD0D6CB), // Malo svetlije za bolji kontrast (WCAG AA)
+      outline: Color(0xFF8C9388),
       shadow: Colors.black,
-      inverseSurface: Color(0xFFECEFF1),
-      onInverseSurface: Color(0xFF121212),
-      tertiary: Color(0xFF8BC34A),
-      onTertiary: Color(0xFF102027),
-      primaryContainer: Color(0xFF33691E),
-      onPrimaryContainer: Color(0xFFE8F5E9),
-      secondaryContainer: Color(0xFF558B2F),
-      onSecondaryContainer: Color(0xFFF1F8E9),
+      inverseSurface: Color(0xFFE2E3DD),
+      onInverseSurface: Color(0xFF1A1C19),
+      tertiary: Color(0xFFB9F6CA),
+      onTertiary: Color(0xFF003916),
+      primaryContainer: Color(0xFF005223),
+      onPrimaryContainer: Color(0xFFC8FFC6), // Unapređen kontrast za sitan tekst
+      secondaryContainer: Color(0xFF386B41),
+      onSecondaryContainer: Color(0xFFB9F6CA),
     ),
     appBarTheme: const AppBarTheme(
       centerTitle: true,
       elevation: 0,
-      backgroundColor: Color(0xFF1B5E20),
-      foregroundColor: Colors.white,
+      backgroundColor: Color(0xFF1A1C19),
+      foregroundColor: Color(0xFFE2E3DD),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFF99D19C),
+        foregroundColor: const Color(0xFF003916),
         minimumSize: touch,
         padding: EdgeInsets.symmetric(
             horizontal: buttonPaddingH, vertical: buttonPaddingV),
@@ -499,32 +515,32 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       minVerticalPadding: compact ? 4 : 10,
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      selectedItemColor: Color(0xFF81C784),
-      unselectedItemColor: Colors.grey,
+      selectedItemColor: Color(0xFF99D19C),
+      unselectedItemColor: Color(0xFF8C9388),
       type: BottomNavigationBarType.fixed,
     ),
     navigationBarTheme: NavigationBarThemeData(
       height: navBarHeight,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      indicatorColor: const Color(0xFF81C784).withValues(alpha: 0.2),
+      indicatorColor: const Color(0xFF99D19C).withValues(alpha: 0.2),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: Color(0xFF81C784), size: 26);
+          return const IconThemeData(color: Color(0xFF99D19C), size: 26);
         }
-        return const IconThemeData(color: Colors.grey, size: 24);
+        return const IconThemeData(color: Color(0xFF8C9388), size: 24);
       }),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
           return const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF81C784),
+            color: Color(0xFF99D19C),
           );
         }
         return const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w400,
-          color: Colors.grey,
+          color: Color(0xFF8C9388),
         );
       }),
     ),

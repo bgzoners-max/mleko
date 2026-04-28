@@ -17,6 +17,16 @@ extension OrderStatusX on OrderStatus {
         OrderStatus.archived => 'arhivirano',
         _ => name,
       };
+
+  String get displayName => switch (this) {
+        OrderStatus.sent => 'Na čekanju',
+        OrderStatus.accepted => 'Prihvaćeno',
+        OrderStatus.shipped => 'Poslato',
+        OrderStatus.rejected => 'Odbijeno',
+        OrderStatus.delivered => 'Isporučeno',
+        OrderStatus.cancelledBySeller => 'Otkazano',
+        OrderStatus.archived => 'Arhivirano',
+      };
 }
 
 class OrderModel {
@@ -33,6 +43,7 @@ class OrderModel {
   final String buyerCity;
   final String buyerPhone;
   final String? buyerAddress;
+  final String? buyerPostalCode;
   final OrderStatus status;
   final DateTime createdAt;
   final String? cancellationReason;
@@ -67,6 +78,7 @@ class OrderModel {
     required this.buyerCity,
     required this.buyerPhone,
     this.buyerAddress,
+    this.buyerPostalCode,
     this.status = OrderStatus.sent,
     required this.createdAt,
     this.cancellationReason,
@@ -162,6 +174,7 @@ class OrderModel {
       buyerCity: json['buyer_city'] as String? ?? '',
       buyerPhone: json['buyer_phone'] as String? ?? '',
       buyerAddress: json['buyer_address'] as String?,
+      buyerPostalCode: json['buyer_postal_code'] as String?,
       status: status,
       createdAt: date,
       cancellationReason: json['cancellation_reason'] as String?,
@@ -212,6 +225,7 @@ class OrderModel {
       buyerCity: buyerCity,
       buyerPhone: buyerPhone,
       buyerAddress: buyerAddress,
+      buyerPostalCode: buyerPostalCode ?? buyerPostalCode,
       status: status,
       createdAt: createdAt,
       cancellationReason: cancellationReason,
@@ -243,6 +257,7 @@ class OrderModel {
       'buyer_city': buyerCity,
       'buyer_phone': buyerPhone,
       if (buyerAddress != null) 'buyer_address': buyerAddress,
+      if (buyerPostalCode != null) 'buyer_postal_code': buyerPostalCode,
       'status': status.dbValue,
       'delivery_method': deliveryMethod.dbValue,
       if (deliveryCity != null) 'delivery_city': deliveryCity,

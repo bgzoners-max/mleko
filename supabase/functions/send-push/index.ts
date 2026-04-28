@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
     let title: string
     let bodyText: string
     let data: Record<string, string> = {}
+    let type: string = ""
 
     console.log("FCM: Primljena zahteva:", {
       has_record: !!body.record,
@@ -124,14 +125,33 @@ Deno.serve(async (req) => {
     if (body.record) {
       const record = body.record
       user_id = record.user_id
-      title = record.title ?? "Obaveštenje"
+      title = record.title
       bodyText = record.body ?? ""
-      data = { type: record.type ?? "", order_id: record.order_id ?? "" }
+      type = record.type ?? ""
+      data = {
+        type,
+        order_id: record.order_id ?? "",
+        conversation_id: record.conversation_id ?? "",
+      }
     } else {
       user_id = body.user_id
-      title = body.title ?? "Obaveštenje"
+      title = body.title
       bodyText = body.body ?? ""
-      data = { type: body.type ?? "", order_id: body.order_id ?? "" }
+      type = body.type ?? ""
+      data = {
+        type,
+        order_id: body.order_id ?? "",
+        conversation_id: body.conversation_id ?? "",
+      }
+    }
+
+    // Poboljšanje personalizacije naslova na osnovu tipa
+    if (!title || title === "Obaveštenje" || title === "Notification") {
+      if (type === "new_order") title = "Nova porudžbina 🛒";
+      else if (type === "order_status" || type === "order_status_changed") title = "Status porudžbine 📦";
+      else if (type === "new_message") title = "Nova poruka 💬";
+      else if (type === "new_review" || type === "new_buyer_review") title = "Nova recenzija ⭐";
+      else title = title || "Obaveštenje";
     }
 
     console.log("FCM: Procesuirana notifikacija:", {
@@ -154,14 +174,25 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { data: tokens, error } = await supabase
+    // Preuzimamo sve tokene, ali filtriramo jedinstvene u memoriji 
+    // kako bismo izbegli dupliranje ako korisnik ima više instalacija na istom uređaju
+    const { data: allTokens, error } = await supabase
       .from("user_push_tokens")
       .select("token, platform")
       .eq("user_id", user_id)
 
+    // Jedinstveni tokeni (ako isti token postoji pod više installation_id)
+    const uniqueTokensMap = new Map<string, string>();
+    (allTokens || []).forEach(t => {
+      if (t.token) uniqueTokensMap.set(t.token, t.platform || "android");
+    });
+    
+    const tokens = Array.from(uniqueTokensMap.entries()).map(([token, platform]) => ({ token, platform }));
+
     console.log("FCM: Pretraga tokena:", {
       user_id,
-      token_count: tokens?.length || 0,
+      total_found: allTokens?.length || 0,
+      unique_count: tokens.length,
       error: error?.message,
     })
 
@@ -253,11 +284,15 @@ Deno.serve(async (req) => {
           ttl: "86400s",
           notification: {
             channel_id: channelId,
+            title,
+            body: lockscreenBody,
             sound: "default",
             default_vibrate_timings: true,
             default_sound: true,
             visibility: "PUBLIC",
             notification_priority: "PRIORITY_HIGH",
+            icon: "ic_notification",
+            color: "#1B5E20",
           },
         }
       }
@@ -279,7 +314,11 @@ Deno.serve(async (req) => {
           const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
 
           // Označi invalid token za brisanje
-          if (res.status === 404 || res.status === 400) {
+          let errorCode: string | undefined
+          try {
+            errorCode = JSON.parse(errBody)?.error?.details?.[0]?.errorCode
+          } catch { /* nije JSON */ }
+          if (res.status === 404 || errorCode === "UNREGISTERED" || errorCode === "INVALID_ARGUMENT") {
             invalidTokens.push(row.token)
           }
 

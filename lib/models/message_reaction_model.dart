@@ -27,6 +27,17 @@ class SellerResponseStats {
 
   bool get hasData => sampleCount > 0 && avgResponseMinutes != null;
 
+  String get medianLabel {
+    if (medianResponseMinutes == null) return '...';
+    if (medianResponseMinutes! < 1) return 'par sekundi';
+    if (medianResponseMinutes! < 60) {
+      return '${medianResponseMinutes!.round()} min';
+    }
+    final hours = medianResponseMinutes! / 60;
+    if (hours < 24) return '${hours.round()}h';
+    return '${(hours / 24).round()} dana';
+  }
+
   factory SellerResponseStats.fromJson(Map<String, dynamic> json) {
     double? parseNum(dynamic value) {
       if (value == null) return null;

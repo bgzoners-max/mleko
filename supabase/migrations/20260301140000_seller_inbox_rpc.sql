@@ -3,7 +3,11 @@
 
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS buyer_address TEXT;
 
-CREATE OR REPLACE FUNCTION public.get_seller_inbox(p_seller_id UUID)
+CREATE OR REPLACE FUNCTION public.get_seller_inbox(
+  p_seller_id UUID,
+  p_limit INT DEFAULT 20,
+  p_offset INT DEFAULT 0
+)
 RETURNS JSONB
 LANGUAGE SQL
 STABLE
@@ -29,6 +33,7 @@ AS $$
       COALESCE(o.product_name, oi_first.product_name) AS product_name,
       COALESCE(o.quantity_kg::float8, oi_first.quantity_kg::float8) AS quantity_kg,
       COALESCE(o.unit_type, oi_first.unit_type) AS unit_type,
+      o.status AS status,
       CASE o.status
         WHEN 'sent' THEN 'Poslato'
         WHEN 'accepted' THEN 'Prihvaćeno'
@@ -81,6 +86,7 @@ AS $$
       COALESCE(o.product_name, oi_first.product_name) AS product_name,
       COALESCE(o.quantity_kg::float8, oi_first.quantity_kg::float8) AS quantity_kg,
       COALESCE(o.unit_type, oi_first.unit_type) AS unit_type,
+      o.status AS status,
       CASE o.status
         WHEN 'sent' THEN 'Poslato'
         WHEN 'accepted' THEN 'Prihvaćeno'
@@ -127,6 +133,7 @@ AS $$
         'product_name', product_name,
         'quantity_kg', quantity_kg,
         'unit_type', unit_type,
+        'status', status,
         'last_message_body', last_message_body,
         'unread_count', unread_count,
         'status_label', status_label,
@@ -139,7 +146,10 @@ AS $$
     ),
     '[]'::jsonb
   )
-  FROM combined;
+  FROM (
+    SELECT * FROM combined
+    LIMIT p_limit OFFSET p_offset
+  ) AS limited_combined;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.get_seller_inbox(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_seller_inbox(UUID, INT, INT) TO authenticated;

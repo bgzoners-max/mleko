@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -57,11 +58,19 @@ void _showLocalNotification({
   required String body,
   required String type,
   required String orderId,
+  required String conversationId,
+  required Map<String, dynamic> payloadData,
 }) {
   final isOrder = notificationTypeIsOrderRelated(type);
   final channelId = isOrder ? _ordersChannelId : _channelId;
   final channelName = isOrder ? _ordersChannelName : _channelName;
-  final payload = jsonEncode({'type': type, 'order_id': orderId});
+  // Pakujemo ceo payload da ne bismo izgubili 'route' ili 'conversation_id'
+  final payload = jsonEncode({
+    ...payloadData,
+    'type': type,
+    'order_id': orderId,
+    'conversation_id': conversationId,
+  });
 
   // Deterministički ID baziran na sadržaju (type, orderId, naslov i telo).
   // Ako ista notifikacija stigne više puta (npr. zbog više tokena ili FCM retry-a),
@@ -102,6 +111,8 @@ void _showLocalNotification({
         category: AndroidNotificationCategory.message,
         ticker: 'Nova obaveštenja',
         styleInformation: const BigTextStyleInformation(''),
+        icon: 'ic_notification',
+        color: const Color(0xFF1B5E20),
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,
@@ -131,7 +142,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
   // Inicijalizuj local notifications samo ako nije već inicijalizovano
   if (!_isLocalNotificationsInitialized()) {
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('@drawable/ic_notification');
     const darwin = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -161,14 +172,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // Preuzmi podatke iz data payload-a (data-only poruke)
   final data = message.data.isNotEmpty ? message.data : <String, dynamic>{};
-  final title = data['title'] as String? ?? 'Obaveštenje';
-  final body = data['body'] as String? ?? '';
+  final title =
+      message.notification?.title ?? data['title'] as String? ?? 'Obaveštenje';
+  final body = message.notification?.body ?? data['body'] as String? ?? '';
   final type = data['type'] as String? ?? '';
   final orderId = data['order_id'] as String? ?? '';
+  final conversationId = data['conversation_id'] as String? ?? '';
 
   // Prikaži lokalnu notifikaciju sa pravilnim kanalom
   _showLocalNotification(
-      title: title, body: body, type: type, orderId: orderId);
+    title: title,
+    body: body,
+    type: type,
+    orderId: orderId,
+    conversationId: conversationId,
+    payloadData: data,
+  );
 }
 
 class PushService {
@@ -256,7 +275,8 @@ class PushService {
 
     try {
       // Zajedničke postavke
-      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const android =
+          AndroidInitializationSettings('@drawable/ic_notification');
 
       if (Platform.isAndroid) {
         await _localNotifications.initialize(
@@ -445,44 +465,59 @@ class PushService {
           'PushService: Got valid token, uploading to database');
 
       final platform = Platform.isIOS ? 'ios' : 'android';
+
+      // Prvo očisti stare zapise, pa uradi inicijalni upsert
       await _removeOtherUsersForInstallation(installationId, userId);
       if (!_isCurrentRegistration(generation, userId)) return;
-      await _client.from('user_push_tokens').upsert(
-        {
-          'user_id': userId,
-          'installation_id': installationId,
-          'token': token,
-          'platform': platform,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'user_id,installation_id',
-      );
-      if (!_isCurrentRegistration(generation, userId)) return;
+      await _upsertTokenToDatabase(userId, installationId, token, platform);
 
       // Jedan aktivan refresh listener važi za aktuelnog korisnika.
       _onTokenRefreshSub =
           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-        if (!_isCurrentRegistration(generation, userId)) {
-          return;
-        }
-        try {
-          await _client.from('user_push_tokens').upsert(
-            {
-              'user_id': userId,
-              'installation_id': installationId,
-              'token': newToken,
-              'platform': platform,
-              'updated_at': DateTime.now().toIso8601String(),
-            },
-            onConflict: 'user_id,installation_id',
-          );
-        } catch (e, st) {
-          LoggerService.error('Failed to update refreshed push token', e,
-              stackTrace: st);
-        }
+        if (!_isCurrentRegistration(generation, userId)) return;
+        await _upsertTokenToDatabase(
+            userId, installationId, newToken, platform);
       });
     } catch (e, st) {
       LoggerService.error('Failed to register push token', e, stackTrace: st);
+    }
+  }
+
+  /// Pomoćna metoda za siguran upis tokena u bazu
+  Future<void> _upsertTokenToDatabase(String userId, String installationId,
+      String token, String platform) async {
+    const maxRetries = 3;
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        await _client.from('user_push_tokens').upsert(
+          {
+            'user_id': userId,
+            'installation_id': installationId,
+            'token': token,
+            'platform': platform,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          onConflict: 'user_id,installation_id',
+        );
+        // Ako je uspešno, izađi iz petlje
+        return;
+      } catch (e, st) {
+        LoggerService.error(
+          'PushService: Failed to upsert token to database (attempt ${i + 1}/$maxRetries)',
+          e,
+          stackTrace: st,
+          extra: {
+            'userId': userId,
+            'platform': platform,
+            'retry_attempt': i + 1
+          },
+        );
+        if (i < maxRetries - 1) {
+          // Eksponencijalni backoff
+          await Future.delayed(
+              Duration(milliseconds: 1000 * pow(2, i).toInt()));
+        }
+      }
     }
   }
 
@@ -545,12 +580,19 @@ class PushService {
             message.notification?.body ?? data['body'] as String? ?? '';
         final type = data['type'] as String? ?? '';
         final orderId = data['order_id'] as String? ?? '';
+        final conversationId = data['conversation_id'] as String? ?? '';
 
         // Na iOS-u sistem već može prikazati foreground obaveštenje kada
         // poruka sadrži notification payload, pa preskačemo lokalni duplikat.
         if (!shouldSkipLocalNotification) {
           _showLocalNotification(
-              title: title, body: body, type: type, orderId: orderId);
+            title: title,
+            body: body,
+            type: type,
+            orderId: orderId,
+            conversationId: conversationId,
+            payloadData: data,
+          );
         }
 
         // Pozovi callback

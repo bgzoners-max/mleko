@@ -23,7 +23,9 @@ class StorageService {
       data,
       fileOptions: const FileOptions(contentType: 'image/jpeg', upsert: true),
     );
-    return client.storage.from(_bucketProfiles).getPublicUrl(path);
+    final publicUrl = client.storage.from(_bucketProfiles).getPublicUrl(path);
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    return '$publicUrl?t=$ts';
   }
 
   Future<String> uploadProductImage(String userId, List<int> bytes, int index) async {

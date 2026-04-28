@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/conversation_model.dart';
 import '../../models/message_model.dart';
 import '../../models/message_reaction_model.dart';
+import '../../models/app_error.dart';
+import '../media/storage_service.dart';
 import '../core/logger_service.dart';
 
 /// Broj poruka u jednoj stranici (najnovijih).
@@ -18,13 +20,17 @@ class ChatService {
   static const typingStaleThreshold = Duration(seconds: 6);
 
   Future<String?> _findConversationId(String buyerId, String sellerId) async {
-    final existing = await _client
-        .from('conversations')
-        .select('id')
-        .eq('buyer_id', buyerId)
-        .eq('seller_id', sellerId)
-        .maybeSingle();
-    return existing?['id'] as String?;
+    try {
+      final existing = await _client
+          .from('conversations')
+          .select('id')
+          .eq('buyer_id', buyerId)
+          .eq('seller_id', sellerId)
+          .maybeSingle();
+      return existing?['id'] as String?;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   // ─── Razgovori ─────────────────────────────────────────────────────────────
@@ -56,8 +62,7 @@ class ChatService {
       );
       final existingId = await _findConversationId(buyerId, sellerId);
       if (existingId == null) {
-        LoggerService.error('Failed to create conversation', e, stackTrace: st);
-        rethrow;
+        throw AppError.from(e, stackTrace: st);
       }
       if (orderId != null) {
         await _client
@@ -65,25 +70,29 @@ class ChatService {
             .update({'order_id': orderId}).eq('id', existingId);
       }
       return existingId;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     }
   }
 
   /// Učitava razgovore koristeći get_conversations_for_user RPC.
-  /// Jedan round-trip umesto prethodnih 3N poziva
-  /// (profil + poslednja poruka + nepročitane po razgovoru).
   Future<List<ConversationModel>> getConversations(String userId) async {
-    final result = await _client.rpc(
-      'get_conversations_for_user',
-      params: {'p_user_id': userId},
-    );
-    final list = result as List? ?? [];
-    return list
-        .map((e) => ConversationModel.fromJson(
-              e is Map<String, dynamic>
-                  ? e
-                  : Map<String, dynamic>.from(e as Map),
-            ))
-        .toList();
+    try {
+      final result = await _client.rpc(
+        'get_conversations_for_user',
+        params: {'p_user_id': userId},
+      );
+      final list = result as List? ?? [];
+      return list
+          .map((e) => ConversationModel.fromJson(
+                e is Map<String, dynamic>
+                    ? e
+                    : Map<String, dynamic>.from(e as Map),
+              ))
+          .toList();
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> setConversationUserPrefs(
@@ -91,14 +100,18 @@ class ChatService {
     bool? isFavorite,
     bool? hidden,
   }) async {
-    await _client.rpc(
-      'set_conversation_user_prefs',
-      params: {
-        'p_conversation_id': conversationId,
-        'p_is_favorite': isFavorite,
-        'p_hidden': hidden,
-      },
-    );
+    try {
+      await _client.rpc(
+        'set_conversation_user_prefs',
+        params: {
+          'p_conversation_id': conversationId,
+          'p_is_favorite': isFavorite,
+          'p_hidden': hidden,
+        },
+      );
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Stream<List<ConversationModel>> watchConversations(
@@ -204,17 +217,20 @@ class ChatService {
     String conversationId, {
     int limit = _kMsgPageSize,
   }) async {
-    final list = await _client
-        .from('messages')
-        .select()
-        .eq('conversation_id', conversationId)
-        .order('created_at', ascending: false)
-        .limit(limit);
-    // Baza vraća DESC, UI prikazuje ASC (novije na dnu)
-    return (list as List)
-        .reversed
-        .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final list = await _client
+          .from('messages')
+          .select()
+          .eq('conversation_id', conversationId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+      return (list as List)
+          .reversed
+          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   /// Poruke starije od [before] — za paginaciju "učitaj starije".
@@ -223,17 +239,21 @@ class ChatService {
     required DateTime before,
     int limit = _kMsgPageSize,
   }) async {
-    final list = await _client
-        .from('messages')
-        .select()
-        .eq('conversation_id', conversationId)
-        .lt('created_at', before.toIso8601String())
-        .order('created_at', ascending: false)
-        .limit(limit);
-    return (list as List)
-        .reversed
-        .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final list = await _client
+          .from('messages')
+          .select()
+          .eq('conversation_id', conversationId)
+          .lt('created_at', before.toIso8601String())
+          .order('created_at', ascending: false)
+          .limit(limit);
+      return (list as List)
+          .reversed
+          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Stream<List<MessageModel>> watchMessages(
@@ -337,51 +357,59 @@ class ChatService {
     required String userId,
     required bool isTyping,
   }) async {
-    await _client.from('conversation_typing').upsert({
-      'conversation_id': conversationId,
-      'user_id': userId,
-      'is_typing': isTyping,
-      'updated_at': DateTime.now().toIso8601String(),
-    });
+    try {
+      await _client.from('conversation_typing').upsert({
+        'conversation_id': conversationId,
+        'user_id': userId,
+        'is_typing': isTyping,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<List<MessageReactionModel>> getMessageReactions(
     String conversationId,
     String currentUserId,
   ) async {
-    final rows = await _client
-        .from('message_reactions')
-        .select('message_id, reaction, user_id')
-        .eq('conversation_id', conversationId);
+    try {
+      final rows = await _client
+          .from('message_reactions')
+          .select('message_id, reaction, user_id')
+          .eq('conversation_id', conversationId);
 
-    final byMessageAndEmoji = <String, Map<String, Set<String>>>{};
-    for (final row in (rows as List).cast<Map<String, dynamic>>()) {
-      final messageId = row['message_id'] as String?;
-      final reaction = row['reaction'] as String?;
-      final userId = row['user_id'] as String?;
-      if (messageId == null || reaction == null || userId == null) {
-        continue;
+      final byMessageAndEmoji = <String, Map<String, Set<String>>>{};
+      for (final row in (rows as List).cast<Map<String, dynamic>>()) {
+        final messageId = row['message_id'] as String?;
+        final reaction = row['reaction'] as String?;
+        final userId = row['user_id'] as String?;
+        if (messageId == null || reaction == null || userId == null) {
+          continue;
+        }
+
+        final emojiMap = byMessageAndEmoji.putIfAbsent(messageId, () => {});
+        emojiMap.putIfAbsent(reaction, () => <String>{}).add(userId);
       }
 
-      final emojiMap = byMessageAndEmoji.putIfAbsent(messageId, () => {});
-      emojiMap.putIfAbsent(reaction, () => <String>{}).add(userId);
-    }
-
-    final result = <MessageReactionModel>[];
-    byMessageAndEmoji.forEach((messageId, emojiMap) {
-      emojiMap.forEach((emoji, users) {
-        result.add(
-          MessageReactionModel(
-            messageId: messageId,
-            reaction: emoji,
-            count: users.length,
-            reactedByMe: users.contains(currentUserId),
-          ),
-        );
+      final result = <MessageReactionModel>[];
+      byMessageAndEmoji.forEach((messageId, emojiMap) {
+        emojiMap.forEach((emoji, users) {
+          result.add(
+            MessageReactionModel(
+              messageId: messageId,
+              reaction: emoji,
+              count: users.length,
+              reactedByMe: users.contains(currentUserId),
+            ),
+          );
+        });
       });
-    });
 
-    return result;
+      return result;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Stream<List<MessageReactionModel>> watchMessageReactions(
@@ -432,72 +460,80 @@ class ChatService {
     required String userId,
     required String reaction,
   }) async {
-    final existing = await _client
-        .from('message_reactions')
-        .select('id, reaction')
-        .eq('message_id', messageId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (existing == null) {
-      await _client.from('message_reactions').insert({
-        'conversation_id': conversationId,
-        'message_id': messageId,
-        'user_id': userId,
-        'reaction': reaction,
-      });
-      return;
-    }
-
-    final existingReaction = existing['reaction'] as String?;
-    final id = existing['id'] as String;
-    if (existingReaction == reaction) {
-      await _client.from('message_reactions').delete().eq('id', id);
-    } else {
-      await _client
+    try {
+      final existing = await _client
           .from('message_reactions')
-          .update({'reaction': reaction}).eq('id', id);
+          .select('id, reaction')
+          .eq('message_id', messageId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (existing == null) {
+        await _client.from('message_reactions').insert({
+          'conversation_id': conversationId,
+          'message_id': messageId,
+          'user_id': userId,
+          'reaction': reaction,
+        });
+        return;
+      }
+
+      final existingReaction = existing['reaction'] as String?;
+      final id = existing['id'] as String;
+      if (existingReaction == reaction) {
+        await _client.from('message_reactions').delete().eq('id', id);
+      } else {
+        await _client
+            .from('message_reactions')
+            .update({'reaction': reaction}).eq('id', id);
+      }
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     }
   }
 
   Future<SellerResponseStats> getSellerResponseStats(String sellerId) async {
-    final result = await _client.rpc(
-      'get_seller_response_time_stats',
-      params: {'p_seller_id': sellerId},
-    );
-
-    if (result == null) {
-      return const SellerResponseStats(
-        sampleCount: 0,
-        avgResponseMinutes: null,
-        medianResponseMinutes: null,
-        lastResponseMinutes: null,
+    try {
+      final result = await _client.rpc(
+        'get_seller_response_time_stats',
+        params: {'p_seller_id': sellerId},
       );
-    }
 
-    Map<String, dynamic>? json;
-    if (result is List && result.isNotEmpty) {
-      final first = result.first;
-      if (first is Map<String, dynamic>) {
-        json = first;
-      } else if (first is Map) {
-        json = Map<String, dynamic>.from(first);
+      if (result == null) {
+        return const SellerResponseStats(
+          sampleCount: 0,
+          avgResponseMinutes: null,
+          medianResponseMinutes: null,
+          lastResponseMinutes: null,
+        );
       }
-    } else if (result is Map<String, dynamic>) {
-      json = result;
-    } else if (result is Map) {
-      json = Map<String, dynamic>.from(result);
-    }
 
-    if (json == null) {
-      return const SellerResponseStats(
-        sampleCount: 0,
-        avgResponseMinutes: null,
-        medianResponseMinutes: null,
-        lastResponseMinutes: null,
-      );
+      Map<String, dynamic>? json;
+      if (result is List && result.isNotEmpty) {
+        final first = result.first;
+        if (first is Map<String, dynamic>) {
+          json = first;
+        } else if (first is Map) {
+          json = Map<String, dynamic>.from(first);
+        }
+      } else if (result is Map<String, dynamic>) {
+        json = result;
+      } else if (result is Map) {
+        json = Map<String, dynamic>.from(result);
+      }
+
+      if (json == null) {
+        return const SellerResponseStats(
+          sampleCount: 0,
+          avgResponseMinutes: null,
+          medianResponseMinutes: null,
+          lastResponseMinutes: null,
+        );
+      }
+      return SellerResponseStats.fromJson(json);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
     }
-    return SellerResponseStats.fromJson(json);
   }
 
   // ─── Slanje i čitanje ──────────────────────────────────────────────────────
@@ -505,34 +541,71 @@ class ChatService {
   Future<void> sendMessage(
     String conversationId,
     String senderId,
-    String body,
+    String body, {
+    String? imageUrl,
+  }) async {
+    try {
+      await _client.from('messages').insert({
+        'conversation_id': conversationId,
+        'sender_id': senderId,
+        'body': body,
+        if (imageUrl != null) 'image_url': imageUrl,
+      });
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
+  /// Otprema sliku u chat-media bucket i vraća public URL.
+  Future<String> uploadMessageImage(
+    String conversationId,
+    String userId,
+    List<int> bytes,
   ) async {
-    await _client.from('messages').insert({
-      'conversation_id': conversationId,
-      'sender_id': senderId,
-      'body': body,
-    });
+    try {
+      final name = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = 'chat/$conversationId/$userId/$name';
+      
+      // Koristimo postojeći StorageService mehanizam, ali prilagođen chatu
+      await _client.storage.from('product-images').uploadBinary(
+            path,
+            bytes is List<int> ? bytes as dynamic : bytes,
+            fileOptions:
+                const FileOptions(contentType: 'image/jpeg', upsert: true),
+          );
+      return _client.storage.from('product-images').getPublicUrl(path);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> deleteMessage(String messageId) async {
-    await _client.from('messages').delete().eq('id', messageId);
+    try {
+      await _client.from('messages').delete().eq('id', messageId);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<void> markAsRead(
     String conversationId,
     String currentUserId,
   ) async {
-    await _client
-        .from('messages')
-        .update({'read_at': DateTime.now().toIso8601String()})
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', currentUserId)
-        .isFilter('read_at', null);
+    try {
+      await _client
+          .from('messages')
+          .update({'read_at': DateTime.now().toIso8601String()})
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', currentUserId)
+          .isFilter('read_at', null);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   // ─── Info o razgovoru ──────────────────────────────────────────────────────
 
-  /// Dohvata kompletne informacije o razgovoru sa imenima učesnika (jednom RPC-om)
+  /// Dohvata kompletne informacije o razgovoru sa imenima učesnika.
   Future<
       ({
         String? id,
@@ -569,16 +642,7 @@ class ChatService {
         sellerName: (row['seller_name'] as String?) ?? 'Prodavac',
       );
     } catch (e, st) {
-      LoggerService.error('Failed to load conversation info with profiles', e,
-          stackTrace: st);
-      return (
-        id: null,
-        buyerId: null,
-        sellerId: null,
-        orderId: null,
-        buyerName: 'Korisnik',
-        sellerName: 'Korisnik'
-      );
+      throw AppError.from(e, stackTrace: st);
     }
   }
 
@@ -587,10 +651,14 @@ class ChatService {
     String conversationId,
     String currentUserId,
   ) async {
-    final info = await getConversationInfoWithProfiles(conversationId);
-    if (info.id == null) return 'Korisnik';
+    try {
+      final info = await getConversationInfoWithProfiles(conversationId);
+      if (info.id == null) return 'Korisnik';
 
-    final isBuyer = info.buyerId == currentUserId;
-    return isBuyer ? info.sellerName : info.buyerName;
+      final isBuyer = info.buyerId == currentUserId;
+      return isBuyer ? info.sellerName : info.buyerName;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 }

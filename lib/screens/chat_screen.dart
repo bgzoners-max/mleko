@@ -1,12 +1,15 @@
 import 'dart:async';
-import 'dart:math' show min;
+import 'dart:math' show min, sin, pi;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../models/message_model.dart';
 import '../models/message_reaction_model.dart';
 import '../models/order_model.dart';
@@ -49,22 +52,20 @@ class _ChatScreenState extends State<ChatScreen> {
   final _scrollController = ScrollController();
   final _refreshController = StreamController<void>.broadcast();
   late ChatService _chatService;
+  final _imagePicker = ImagePicker();
+  bool _uploadingImage = false;
 
-  // Stream se čuva kao polje — sprečava re-kreiranje kanala na svakom buildu.
   late final Stream<List<MessageModel>> _messagesStream =
       _chatService.watchMessages(widget.conversationId,
           refreshTrigger: _refreshController.stream);
   late final Stream<Set<String>> _typingStream =
       _chatService.watchTypingUsers(widget.conversationId);
-  // Reakcije — inicijalizuju se u initState kad imamo userId
   Stream<List<MessageReactionModel>>? _reactionsStream;
 
-  // Starije poruke učitane paginacijom ("Učitaj starije poruke")
   final List<MessageModel> _olderMessages = [];
   bool _hasOlderMessages = true;
   bool _loadingOlder = false;
 
-  // Typing indicator
   bool _isTyping = false;
   Timer? _typingTimer;
 
@@ -76,8 +77,6 @@ class _ChatScreenState extends State<ChatScreen> {
   List<String> _sellerCustomReplies = const [];
   SellerResponseStats? _sellerStats;
 
-  // Debounce: markAsRead se poziva samo kada stigne nova poruka,
-  // ne na svakom rebuildu widgeta.
   int _lastMarkedReadCount = 0;
 
   @override
@@ -86,7 +85,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _chatService = context.read<ChatService>();
     _loadConversationInfo();
     _messageController.addListener(_onTypingChanged);
-    // Inicijalizuj stream reakcija čim imamo userId (async safe: initState ne smije biti async)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = context.read<AppState>().user?.id;
       if (userId != null && mounted) {
@@ -102,7 +100,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.removeListener(_onTypingChanged);
     _typingTimer?.cancel();
-    // Obavesti server da korisnik više ne kuca
     final userId = context.read<AppState>().user?.id;
     if (userId != null && _isTyping) {
       _chatService.setTyping(
@@ -189,7 +186,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final ordersService = context.read<OrdersService>();
     final user = context.read<AppState>().user;
     if (user == null) return;
-    // Koristi jedan RPC umesto dva upita (getConversationInfo + profili)
     final info = await _chatService
         .getConversationInfoWithProfiles(widget.conversationId);
 
@@ -249,9 +245,51 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<void> _pickAndSendImage() async {
+    if (_uploadingImage) return;
+    final user = context.read<AppState>().user;
+    if (user == null) return;
+
+    try {
+      final file = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+        maxWidth: 1200,
+      );
+      if (file == null) return;
+
+      setState(() => _uploadingImage = true);
+      final bytes = await file.readAsBytes();
+
+      final url = await _chatService.uploadMessageImage(
+        widget.conversationId,
+        user.id,
+        bytes,
+      );
+
+      await _chatService.sendMessage(
+        widget.conversationId,
+        user.id,
+        '',
+        imageUrl: url,
+      );
+      _refreshController.add(null);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Greška pri slanju slike: ${friendlyError(e)}'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
     }
   }
 
@@ -268,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -298,7 +336,6 @@ class _ChatScreenState extends State<ChatScreen> {
       Offset.zero & overlay.size,
     );
 
-    // Emoji reactions row as a custom widget in a PopupMenuItem
     final result = await showMenu<String>(
       context: context,
       position: rel,
@@ -423,8 +460,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _send([String? textOverride]) async {
     final text = (textOverride ?? _messageController.text).trim();
-    if (text.isEmpty) return;
-    if (textOverride != null) _messageController.clear();
+    if (text.isEmpty && textOverride == null) return;
     final user = context.read<AppState>().user;
     if (user == null) return;
 
@@ -452,7 +488,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -519,8 +555,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         final recent = snap.data ?? [];
                         final messages = [..._olderMessages, ...recent];
 
-                        // markAsRead samo kada se promeni broj poruka (nova poruka stigla),
-                        // ne na svakom rebuildu (npr. rebuild zbog setState).
                         if (messages.length != _lastMarkedReadCount) {
                           _lastMarkedReadCount = messages.length;
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -539,7 +573,6 @@ class _ChatScreenState extends State<ChatScreen> {
                           );
                         }
 
-                        // Gradi flat listu: "učitaj starije" + separatori + poruke
                         final items = _buildChatItems(messages);
                         final totalCount =
                             items.length + (_hasOlderMessages ? 1 : 0);
@@ -613,16 +646,42 @@ class _ChatScreenState extends State<ChatScreen> {
                                             : CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text(
-                                            m.body,
-                                            style: TextStyle(
-                                              color: isMe
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimaryContainer
-                                                  : Colors.black87,
+                                          if (m.imageUrl != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 8),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: CachedNetworkImage(
+                                                  imageUrl: m.imageUrl!,
+                                                  width: 200,
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (_, __) =>
+                                                      Container(
+                                                    width: 200,
+                                                    height: 150,
+                                                    color: Colors.black12,
+                                                    child: const Center(
+                                                        child:
+                                                            CircularProgressIndicator()),
+                                                  ),
+                                                  errorWidget: (_, __, ___) =>
+                                                      const Icon(Icons.error),
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                          if (m.body.isNotEmpty)
+                                            Text(
+                                              m.body,
+                                              style: TextStyle(
+                                                color: isMe
+                                                    ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onPrimaryContainer
+                                                    : Colors.black87,
+                                              ),
+                                            ),
                                           Padding(
                                             padding:
                                                 const EdgeInsets.only(top: 4),
@@ -755,10 +814,20 @@ class _ChatScreenState extends State<ChatScreen> {
                           Expanded(
                             child: TextField(
                               controller: _messageController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Poruka...',
-                                border: OutlineInputBorder(),
+                                border: const OutlineInputBorder(),
                                 isDense: true,
+                                prefixIcon: IconButton(
+                                  icon: _uploadingImage
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2))
+                                      : const Icon(Icons.image_outlined),
+                                  onPressed: _pickAndSendImage,
+                                ),
                               ),
                               maxLines: 3,
                               minLines: 1,
@@ -795,8 +864,7 @@ class _OrderContextCard extends StatelessWidget {
 
   const _OrderContextCard({required this.order});
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.all(12),
@@ -844,11 +912,104 @@ class _OrderContextCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildOrderActions(BuildContext context) {
+    if (order.status != OrderStatus.sent) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _handleAction(context, OrderStatus.rejected),
+              icon: const Icon(Icons.close, size: 18),
+              label: const Text('Odbij'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+                side: BorderSide(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () => _handleAction(context, OrderStatus.accepted),
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Prihvati'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleAction(BuildContext context, OrderStatus status) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(status == OrderStatus.accepted
+            ? 'Prihvati porudžbinu?'
+            : 'Odbij porudžbinu?'),
+        content: Text(status == OrderStatus.accepted
+            ? 'Da li ste sigurni da želite da prihvatite ovu porudžbinu?'
+            : 'Da li ste sigurni da želite da odbijete ovu porudžbinu?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Odustani')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              foregroundColor: status == OrderStatus.accepted
+                  ? null
+                  : Theme.of(context).colorScheme.error,
+            ),
+            child: Text(status == OrderStatus.accepted ? 'Prihvati' : 'Odbij'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true || !context.mounted) return;
+
+    try {
+      await context.read<OrdersService>().updateOrderStatus(order.id, status);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(status == OrderStatus.accepted
+                ? 'Porudžbina prihvaćena.'
+                : 'Porudžbina odbijena.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = context.watch<AppState>().user;
+    final isSeller = user?.id == order.sellerId;
+
+    return Column(
+      children: [
+        _buildCard(context),
+        if (isSeller) _buildOrderActions(context),
+      ],
+    );
+  }
 }
 
-// ─── Chat item types (za ListView koji meša separatore i poruke) ──────────────
+// ─── Chat item types ─────────────────────────────────────────────────────────
 
-sealed class _ChatItem {}
+abstract class _ChatItem {}
 
 class _MessageChatItem extends _ChatItem {
   final MessageModel message;
@@ -860,91 +1021,35 @@ class _DateSeparatorItem extends _ChatItem {
   _DateSeparatorItem(this.date);
 }
 
-// ─── Seller stats card ────────────────────────────────────────────────────────
-
-class _SellerStatsCard extends StatelessWidget {
-  final SellerResponseStats stats;
-  const _SellerStatsCard({required this.stats});
-
-  String _formatResponseTime(double minutes) {
-    if (minutes < 15) return 'u roku od 15 minuta';
-    if (minutes < 60) return 'u roku od sat vremena';
-    if (minutes < 1440) return 'u roku od jednog dana';
-    return 'u roku od više dana';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final avg = stats.avgResponseMinutes;
-    if (avg == null) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.timer_outlined,
-              size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Prodavac obično odgovara ${_formatResponseTime(avg)}.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.grey.shade700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Date separator ───────────────────────────────────────────────────────────
-
 class _DateSeparator extends StatelessWidget {
   final DateTime date;
   const _DateSeparator({required this.date});
 
-  String _label() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    if (date == today) return 'Danas';
-    if (date == yesterday) return 'Juče';
-    return '${date.day}.${date.month}.${date.year}.';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Expanded(child: Divider(color: Colors.grey.shade300, thickness: 0.8)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              _label(),
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${date.day}.${date.month}.${date.year}.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          Expanded(child: Divider(color: Colors.grey.shade300, thickness: 0.8)),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Chip koji prikazuje jednu emoji reakciju sa brojem korisnika.
 class _ReactionChip extends StatelessWidget {
   final MessageReactionModel reaction;
   final VoidCallback onTap;
@@ -955,40 +1060,32 @@ class _ReactionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: reaction.reactedByMe
               ? Theme.of(context).colorScheme.primaryContainer
-              : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12),
+              : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: reaction.reactedByMe
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
-                : Colors.transparent,
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade300,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            EmojiText(
-              reaction.reaction,
-              style: const TextStyle(fontSize: 14),
-            ),
-            if (reaction.count > 1) ...[
-              const SizedBox(width: 4),
-              Text(
-                '${reaction.count}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: reaction.reactedByMe
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey.shade700,
-                ),
+            EmojiText(reaction.reaction, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 4),
+            Text(
+              '${reaction.count}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight:
+                    reaction.reactedByMe ? FontWeight.bold : FontWeight.normal,
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -996,7 +1093,33 @@ class _ReactionChip extends StatelessWidget {
   }
 }
 
-/// Tri animovane tačke koje pokazuju da sagovornik kuca.
+class _SellerStatsCard extends StatelessWidget {
+  final SellerResponseStats stats;
+  const _SellerStatsCard({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_outlined, size: 16, color: Colors.blue),
+          const SizedBox(width: 8),
+          Text(
+            'Obično odgovara za ${stats.medianLabel}',
+            style: TextStyle(fontSize: 12, color: Colors.blue.shade800),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TypingDots extends StatefulWidget {
   @override
   State<_TypingDots> createState() => _TypingDotsState();
@@ -1004,10 +1127,16 @@ class _TypingDots extends StatefulWidget {
 
 class _TypingDotsState extends State<_TypingDots>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..repeat();
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat();
+  }
 
   @override
   void dispose() {
@@ -1019,21 +1148,18 @@ class _TypingDotsState extends State<_TypingDots>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (_, __) {
+      builder: (context, child) {
         return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: List.generate(3, (i) {
-            final offset = ((_controller.value * 3) - i).clamp(0.0, 1.0);
-            final opacity = offset < 0.5 ? offset * 2 : (1 - offset) * 2;
-            return Opacity(
-              opacity: opacity.clamp(0.2, 1.0),
-              child: Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade500,
-                  shape: BoxShape.circle,
-                ),
+            final val = sin((_controller.value * 2 * pi) - (i * pi / 3));
+            return Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400
+                    .withValues(alpha: 0.3 + (val + 1) / 2 * 0.7),
+                shape: BoxShape.circle,
               ),
             );
           }),

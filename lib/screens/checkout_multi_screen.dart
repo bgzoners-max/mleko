@@ -97,10 +97,7 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
         items.add((product: p, quantity: e.value));
       }
     }
-    String? sellerName;
-    if (items.isNotEmpty) {
-      sellerName = await _fetchSellerName();
-    }
+    final sellerName = items.isNotEmpty ? await _fetchSellerName() : null;
     if (mounted) {
       setState(() {
         _items = items;
@@ -179,14 +176,16 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
   final _cityController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _postalCodeController = TextEditingController();
   bool _sending = false;
   String? _error;
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   bool _savePhoneToProfile = false;
   bool _deliveryLoading = true;
   List<SellerDeliveryPointModel> _allDeliveryPoints = const [];
   List<SellerDeliveryPointModel> _deliveryPoints = const [];
   String? _deliveryRestrictionMessage;
-  DeliveryMethod _deliveryMethod = DeliveryMethod.agreement;
+  DeliveryMethod _deliveryMethod = DeliveryMethod.courier;
   String? _selectedDeliveryCity;
   SellerDeliveryPointModel? _selectedDeliveryPoint;
   SellerDeliverySlotModel? _selectedDeliverySlot;
@@ -206,6 +205,9 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
       if (user.phone != null && user.phone!.isNotEmpty) {
         _phoneController.text = user.phone!;
       }
+      if (user.postalCode != null && user.postalCode!.isNotEmpty) {
+        _postalCodeController.text = user.postalCode!;
+      }
       _savePhoneToProfile = user.phone == null || user.phone!.isEmpty;
     }
     _loadDeliveryOptions();
@@ -223,6 +225,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     _cityController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _postalCodeController.dispose();
     super.dispose();
   }
 
@@ -258,7 +261,10 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
         case ProductDeliveryMode.allSellerPoints:
           continue;
         case ProductDeliveryMode.selectedPoints:
-          final ids = item.product.selectedDeliveryPointIds.toSet();
+          // Uzimamo u obzir samo one lokacije koje su i dalje aktivne za prodavca
+          final ids = item.product.selectedDeliveryPointIds
+              .toSet()
+              .intersection(allPointIds);
           if (ids.isEmpty) return <String>{};
           allowed = allowed == null ? ids : allowed.intersection(ids);
       }
@@ -270,10 +276,14 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
   String? _buildDeliveryRestrictionMessage(Set<String> allowedIds) {
     if (_items
         .any((item) => item.product.deliveryMode == ProductDeliveryMode.none)) {
-      return 'Bar jedan proizvod ne podržava ličnu dostavu domaćina.';
+      return _items.length == 1
+          ? 'Ovaj proizvod ne podržava ličnu dostavu domaćina.'
+          : 'Bar jedan proizvod ne podržava ličnu dostavu domaćina.';
     }
     if (_allDeliveryPoints.isNotEmpty && allowedIds.isEmpty) {
-      return 'Odabrani proizvodi nemaju zajedničku lokaciju za ličnu dostavu.';
+      return _items.length == 1
+          ? 'Ovaj proizvod trenutno nema aktivnih lokacija za ličnu dostavu.'
+          : 'Odabrani proizvodi nemaju zajedničku lokaciju za ličnu dostavu.';
     }
     return null;
   }
@@ -414,13 +424,114 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
   }
 
   void _remove(int index) {
-    final productId = _items[index].product.id;
+    final removedItem = _items[index];
+    final productId = removedItem.product.id;
+
+    _listKey.currentState?.removeItem(
+      index,
+      (context, animation) => _buildItem(context, removedItem, animation),
+      duration: const Duration(milliseconds: 300),
+    );
+
     setState(() => _items.removeAt(index));
     context.read<CartProvider>().removeFromSeller(
           sellerId: widget.sellerId,
           productId: productId,
         );
     _refreshDeliveryAvailability();
+  }
+
+  Widget _buildItem(BuildContext context,
+      ({ProductModel product, double quantity}) item, Animation<double> animation) {
+    final theme = Theme.of(context);
+    final p = item.product;
+    final index = _items.indexWhere((e) => e.product.id == p.id);
+    // Ako je index -1, znači da gradimo item koji se upravo uklanja
+    final actualIndex = index;
+
+    final step = p.quantityStep;
+    final itemTotal = (p.pricePerKg * item.quantity).toStringAsFixed(0);
+
+    return SizeTransition(
+      sizeFactor: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        p.name,
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${p.formatQuantity(item.quantity)} × ${p.priceFormatted} = $itemTotal RSD',
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Smanji količinu',
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: actualIndex == -1 || item.quantity <= p.minOrderKg
+                          ? null
+                          : () => _setQuantity(actualIndex, item.quantity - step),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(40, 40),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 48,
+                      child: Text(
+                        p.formatQuantity(item.quantity),
+                        style: theme.textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Povećaj količinu',
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: actualIndex == -1
+                          ? null
+                          : () => _setQuantity(actualIndex, item.quantity + step),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(40, 40),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Ukloni proizvod',
+                      icon: Icon(Icons.delete_outline,
+                          color: Colors.red.shade400),
+                      onPressed: actualIndex == -1 ? null : () => _remove(actualIndex),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(40, 40),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   double get _totalAmount =>
@@ -470,9 +581,44 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     return 'Ukupno količina: ${parts.join(' + ')}';
   }
 
+  String _friendlyError(Object e) {
+    final s = e.toString();
+    if (s.contains('invalid delivery_method')) {
+      return 'Izabrani način dostave privremeno nije dostupan. Pokušaj ponovo.';
+    }
+    if (s.contains('is currently unavailable')) {
+      return 'Jedan od proizvoda trenutno nije dostupan.';
+    }
+    if (s.contains('below min_order')) {
+      return 'Količina je ispod minimalne porudžbine za jedan od proizvoda.';
+    }
+    if (s.contains('below delivery slot minimum')) {
+      return 'Ukupan iznos nije dostigao minimum za izabrani termin dostave.';
+    }
+    if (s.contains('SocketException') ||
+        s.contains('network') ||
+        s.contains('XMLHttpRequest')) {
+      return 'Nema internet veze. Proveri konekciju i pokušaj ponovo.';
+    }
+    return 'Porudžbina nije mogla biti poslata. Pokušaj ponovo.';
+  }
+
+  String _missingFieldsError(List<String> fields) {
+    if (fields.length == 1) return 'Niste uneli ${fields.first}.';
+    final all =
+        '${fields.sublist(0, fields.length - 1).join(', ')} i ${fields.last}';
+    return 'Niste uneli $all.';
+  }
+
   Future<void> _submit() async {
-    if (_phoneController.text.trim().isEmpty) {
-      setState(() => _error = 'Kontakt telefon je obavezan.');
+    final missing = <String>[];
+    if (_deliveryMethod == DeliveryMethod.courier) {
+      if (_addressController.text.trim().isEmpty) missing.add('adresu');
+      if (_cityController.text.trim().isEmpty) missing.add('grad');
+    }
+    if (_phoneController.text.trim().isEmpty) missing.add('kontakt telefon');
+    if (missing.isNotEmpty) {
+      setState(() => _error = _missingFieldsError(missing));
       return;
     }
     if (_deliveryMethod == DeliveryMethod.sellerDelivery &&
@@ -503,118 +649,132 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
       _sending = true;
     });
 
-    try {
-      final appState = context.read<AppState>();
-      final ordersService = context.read<OrdersService>();
-      final chatService = context.read<ChatService>();
-      final usersService = context.read<UsersService>();
-      final isOnline = appState.isOnline;
-      final note = _noteController.text.trim();
-      final buyerCity = _deliveryMethod == DeliveryMethod.sellerDelivery
-          ? (_selectedDeliveryCity ?? _cityController.text.trim())
-          : _cityController.text.trim();
-      final buyerAddress = _addressController.text.trim();
-      final phone = _phoneController.text.trim();
-      final deliverySelection = _deliverySelection;
+    final appState = context.read<AppState>();
+    final ordersService = context.read<OrdersService>();
+    final chatService = context.read<ChatService>();
+    final usersService = context.read<UsersService>();
+    final isOnline = appState.isOnline;
+    final note = _noteController.text.trim();
+    final buyerCity = _deliveryMethod == DeliveryMethod.sellerDelivery
+        ? (_selectedDeliveryCity ?? _cityController.text.trim())
+        : _cityController.text.trim();
+    final buyerAddress = _addressController.text.trim();
+    final buyerPostalCode = _postalCodeController.text.trim();
+    final phone = _phoneController.text.trim();
+    final deliverySelection = _deliverySelection;
 
-      if (isOnline) {
-        final orderItems = _items
-            .map((e) => OrderItemModel(
-                  productId: e.product.id,
-                  productName: e.product.name,
-                  quantityKg: e.quantity,
-                  unitType: e.product.unitType,
-                  unitPrice: e.product.pricePerKg,
-                ))
-            .toList();
+    // 🚀 NOVI SISTEM: Vraća true za online uspeh, false za offline uspeh, ili hvata grešku
+    final result = await ErrorHandlerService().executeWithResult<bool>(
+      'Submit Order',
+      () async {
+        if (isOnline) {
+          final orderItems = _items
+              .map((e) => OrderItemModel(
+                    productId: e.product.id,
+                    productName: e.product.name,
+                    quantityKg: e.quantity,
+                    unitType: e.product.unitType,
+                    unitPrice: e.product.pricePerKg,
+                  ))
+              .toList();
 
-        final orderId = await ordersService.createOrderWithItems(
-          buyerId: user.id,
-          sellerId: widget.sellerId,
-          items: orderItems,
-          note: note,
-          buyerCity: buyerCity,
-          buyerPhone: phone,
-          buyerAddress: buyerAddress,
-          deliveryMethod: _deliveryMethod,
-          deliverySelection: deliverySelection,
-        );
-
-        await chatService.getOrCreateConversation(user.id, widget.sellerId,
-            orderId: orderId);
-
-        if (_savePhoneToProfile && (user.phone ?? '').trim() != phone) {
-          await usersService.updatePhone(user.id, phone);
-          await appState.refreshUser();
-        }
-
-        if (!mounted) return;
-        final cart = context.read<CartProvider>();
-        await cart.clearSeller(widget.sellerId);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Porudžbina je poslata prodavcu.')),
-        );
-      } else {
-        for (final item in _items) {
-          final pendingOrder = PendingOrder(
-            id: 'pending_${DateTime.now().millisecondsSinceEpoch}_${item.product.id}',
+          final orderId = await ordersService.createOrderWithItems(
             buyerId: user.id,
             sellerId: widget.sellerId,
-            productId: item.product.id,
-            productName: item.product.name,
-            quantityKg: item.quantity,
-            unitType: item.product.unitType,
+            items: orderItems,
             note: note,
             buyerCity: buyerCity,
-            buyerAddress: buyerAddress,
             buyerPhone: phone,
+            buyerAddress: buyerAddress,
+            buyerPostalCode: buyerPostalCode,
             deliveryMethod: _deliveryMethod,
-            deliveryCity: deliverySelection?.city,
-            deliveryPointId: deliverySelection?.pointId,
-            deliverySlotId: deliverySelection?.slotId,
-            deliveryPointLabel: deliverySelection?.pointLabel,
-            deliveryAddress: deliverySelection?.address,
-            deliveryWeekday: deliverySelection?.weekday,
-            deliveryTimeFrom: deliverySelection?.timeFrom,
-            deliveryTimeTo: deliverySelection?.timeTo,
-            deliveryFeeRsd: deliverySelection?.deliveryFeeRsd,
-            minOrderAmountRsd: deliverySelection?.minOrderAmountRsd,
-            preferCall: false,
-            pickupOptions: [],
-            createdAt: DateTime.now(),
+            deliverySelection: deliverySelection,
           );
-          await appState.orderQueue.addPendingOrder(pendingOrder);
+
+          await chatService.getOrCreateConversation(user.id, widget.sellerId,
+              orderId: orderId);
+
+          if (_savePhoneToProfile) {
+            final shouldUpdatePhone = (user.phone ?? '').trim() != phone;
+            final shouldUpdatePostalCode =
+                (user.postalCode ?? '').trim() != buyerPostalCode;
+            if (shouldUpdatePhone || shouldUpdatePostalCode) {
+              await usersService.upsertProfile(
+                user.id,
+                phone: shouldUpdatePhone ? phone : null,
+                postalCode: shouldUpdatePostalCode ? buyerPostalCode : null,
+              );
+              await appState.refreshUser();
+            }
+          }
+
+          if (!mounted) return false;
+          final cart = context.read<CartProvider>();
+          await cart.clearSeller(widget.sellerId);
+          return true; // Online
+        } else {
+          for (final item in _items) {
+            final pendingOrder = PendingOrder(
+              id: 'pending_${DateTime.now().millisecondsSinceEpoch}_${item.product.id}',
+              buyerId: user.id,
+              sellerId: widget.sellerId,
+              productId: item.product.id,
+              productName: item.product.name,
+              quantityKg: item.quantity,
+              unitType: item.product.unitType,
+              note: note,
+              buyerCity: buyerCity,
+              buyerAddress: buyerAddress,
+              buyerPostalCode: buyerPostalCode,
+              buyerPhone: phone,
+              deliveryMethod: _deliveryMethod,
+              deliveryCity: deliverySelection?.city,
+              deliveryPointId: deliverySelection?.pointId,
+              deliverySlotId: deliverySelection?.slotId,
+              deliveryPointLabel: deliverySelection?.pointLabel,
+              deliveryAddress: deliverySelection?.address,
+              deliveryWeekday: deliverySelection?.weekday,
+              deliveryTimeFrom: deliverySelection?.timeFrom,
+              deliveryTimeTo: deliverySelection?.timeTo,
+              deliveryFeeRsd: deliverySelection?.deliveryFeeRsd,
+              minOrderAmountRsd: deliverySelection?.minOrderAmountRsd,
+              preferCall: false,
+              pickupOptions: [],
+              createdAt: DateTime.now(),
+            );
+            await appState.orderQueue.addPendingOrder(pendingOrder);
+          }
+
+          if (!mounted) return false;
+          final cart = context.read<CartProvider>();
+          await cart.clearSeller(widget.sellerId);
+          return false; // Offline
         }
+      },
+    );
 
-        if (!mounted) return;
-        final cart = context.read<CartProvider>();
-        await cart.clearSeller(widget.sellerId);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Porudžbine su sačuvane. Biće poslane kada je dostupan Internet.'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
+    if (!mounted) return;
 
-      if (!mounted) return;
+    if (result.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.data == true
+              ? 'Porudžbina je poslata prodavcu.'
+              : 'Porudžbine su sačuvane. Biće poslane kada je dostupan Internet.'),
+          backgroundColor: result.data == true ? null : Colors.orange,
+          duration: result.data == true
+              ? const Duration(seconds: 2)
+              : const Duration(seconds: 4),
+        ),
+      );
       context.go('/orders');
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Greška: ${e.toString().split('\n').first}';
-          _sending = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Nije moguće poslati upit.'),
-              backgroundColor: Colors.red),
-        );
-      }
+    } else {
+      setState(() {
+        // Koristi staru dobru _friendlyError funkciju da ne izgubimo specifične "min_order" poruke
+        _error =
+            _friendlyError(result.error?.originalException ?? result.error!);
+        _sending = false;
+      });
     }
   }
 
@@ -732,90 +892,15 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                       ),
                     )
                   else ...[
-                    ...List.generate(_items.length, (i) {
-                      final e = _items[i];
-                      final p = e.product;
-                      final step = p.quantityStep;
-                      final itemTotal =
-                          (p.pricePerKg * e.quantity).toStringAsFixed(0);
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      p.name,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w600),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${p.formatQuantity(e.quantity)} × ${p.priceFormatted} = $itemTotal RSD',
-                                      style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    tooltip: 'Smanji količinu',
-                                    icon:
-                                        const Icon(Icons.remove_circle_outline),
-                                    onPressed: e.quantity <= p.minOrderKg
-                                        ? null
-                                        : () =>
-                                            _setQuantity(i, e.quantity - step),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: const Size(40, 40),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 48,
-                                    child: Text(
-                                      p.formatQuantity(e.quantity),
-                                      style: theme.textTheme.bodyMedium,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Povećaj količinu',
-                                    icon: const Icon(Icons.add_circle_outline),
-                                    onPressed: () =>
-                                        _setQuantity(i, e.quantity + step),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: const Size(40, 40),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Ukloni proizvod',
-                                    icon: Icon(Icons.delete_outline,
-                                        color: Colors.red.shade400),
-                                    onPressed: () => _remove(i),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: const Size(40, 40),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
+                    AnimatedList(
+                      key: _listKey,
+                      initialItemCount: _items.length,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemBuilder: (context, index, animation) {
+                        return _buildItem(context, _items[index], animation);
+                      },
+                    ),
                     const SizedBox(height: 8),
                     if (_totalQuantityLabel.isNotEmpty)
                       Text(
@@ -846,45 +931,58 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                       style: TextStyle(color: Colors.orange.shade800),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _noteController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                        labelText: 'Napomena (npr. Treba za subotu)'),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Način dostave',
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  // ignore: deprecated_member_use
+                  RadioListTile<DeliveryMethod>(
+                    value: DeliveryMethod.courier,
+                    // ignore: deprecated_member_use
+                    groupValue: _deliveryMethod,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Kurirska služba'),
+                    subtitle: const Text(
+                        'Dostava na adresu putem kurira (npr. Post Express, D Express)'),
+                    // ignore: deprecated_member_use
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _deliveryMethod = value);
+                    },
+                  ),
+                  // ignore: deprecated_member_use
+                  RadioListTile<DeliveryMethod>(
+                    value: DeliveryMethod.pickup,
+                    // ignore: deprecated_member_use
+                    groupValue: _deliveryMethod,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Lično preuzimanje'),
+                    subtitle: const Text(
+                        'Preuzimanje na dogovorenoj lokaciji kod prodavca'),
+                    // ignore: deprecated_member_use
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() => _deliveryMethod = value);
+                    },
                   ),
                   if (_deliveryLoading) ...[
                     const SizedBox(height: 12),
                     const LinearProgressIndicator(),
                   ] else if (_hasSellerDeliveryOptions) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'Način dostave',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
-                    RadioListTile<DeliveryMethod>(
-                      value: DeliveryMethod.agreement,
-                      groupValue: _deliveryMethod, // ignore: deprecated_member_use
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Dogovor sa domaćinom'),
-                      subtitle:
-                          const Text('Grad i adresa kupca se unose ručno.'),
-                      onChanged: (value) { // ignore: deprecated_member_use
-                        if (value == null) return;
-                        setState(() => _deliveryMethod = value);
-                      },
-                    ),
+                    // ignore: deprecated_member_use
                     RadioListTile<DeliveryMethod>(
                       value: DeliveryMethod.sellerDelivery,
-                      groupValue: _deliveryMethod, // ignore: deprecated_member_use
+                      // ignore: deprecated_member_use
+                      groupValue: _deliveryMethod,
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Lična dostava domaćina'),
+                      title: const Text('Dostava od strane prodavca'),
                       subtitle: const Text(
-                        'Kupac bira grad, punkt i termin koje je prodavac definisao.',
-                      ),
-                      onChanged: (value) { // ignore: deprecated_member_use
+                          'Prodavac lično dostavlja na definisane lokacije i termine'),
+                      // ignore: deprecated_member_use
+                      onChanged: (value) {
                         if (value == null) return;
                         setState(() {
                           _deliveryMethod = value;
@@ -895,10 +993,14 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                       },
                     ),
                     if (_deliveryRestrictionMessage != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _deliveryRestrictionMessage!,
-                        style: TextStyle(color: Colors.orange.shade800),
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          _deliveryRestrictionMessage!,
+                          style: TextStyle(
+                              color: Colors.orange.shade800, fontSize: 13),
+                        ),
                       ),
                     ],
                     if (_deliveryMethod == DeliveryMethod.sellerDelivery) ...[
@@ -982,24 +1084,57 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                     ],
                   ],
                   const SizedBox(height: 12),
-                  if (_deliveryMethod != DeliveryMethod.sellerDelivery) ...[
+                  if (_deliveryMethod == DeliveryMethod.courier) ...[
+                    TextField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                          labelText: 'Adresa (ulica i broj)'),
+                    ),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: _cityController,
+                      decoration: const InputDecoration(labelText: 'Grad'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _postalCodeController,
+                      keyboardType: TextInputType.number,
                       decoration:
-                          const InputDecoration(labelText: 'Grad kupca'),
+                          const InputDecoration(labelText: 'Poštanski broj'),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (_deliveryMethod == DeliveryMethod.pickup) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: Colors.blue.shade700, size: 18),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Dogovori se sa prodavcem o mestu i vremenu preuzimanja.',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ] else if (_deliveryMethod ==
+                      DeliveryMethod.sellerDelivery) ...[
+                    TextField(
+                      controller: _addressController,
+                      decoration: const InputDecoration(
+                          labelText: 'Napomena za preuzimanje (opciono)'),
                     ),
                     const SizedBox(height: 12),
                   ],
-                  TextField(
-                    controller: _addressController,
-                    decoration: InputDecoration(
-                      labelText:
-                          _deliveryMethod == DeliveryMethod.sellerDelivery
-                              ? 'Dodatna napomena za preuzimanje (opciono)'
-                              : 'Adresa (ulica i broj)',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
@@ -1019,6 +1154,13 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
                         style: TextStyle(fontSize: 13),
                       ),
                     ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                        labelText: 'Napomena (npr. Treba za subotu)'),
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
                     Container(

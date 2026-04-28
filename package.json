@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart",
+    "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart && node -e \"const fs=require('fs'); if(fs.existsSync('web/.well-known/assetlinks.json')){ fs.mkdirSync('build/vercel-deploy/.well-known', {recursive:true}); fs.copyFileSync('web/.well-known/assetlinks.json', 'build/vercel-deploy/.well-known/assetlinks.json'); }\"",
     "vercel:deploy": "npm run vercel:prepare && npx vercel link --cwd build/vercel-deploy --yes --scope vladimir-ivanovics-projects --project mleko && npx vercel deploy --cwd build/vercel-deploy --prod --yes --scope vladimir-ivanovics-projects",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",
     "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts"

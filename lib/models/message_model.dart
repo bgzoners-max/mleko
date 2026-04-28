@@ -3,6 +3,7 @@ class MessageModel {
   final String conversationId;
   final String senderId;
   final String body;
+  final String? imageUrl;
   final DateTime? readAt;
   final DateTime createdAt;
 
@@ -11,6 +12,7 @@ class MessageModel {
     required this.conversationId,
     required this.senderId,
     required this.body,
+    this.imageUrl,
     this.readAt,
     required this.createdAt,
   });
@@ -27,7 +29,8 @@ class MessageModel {
       id: json['id'] as String,
       conversationId: json['conversation_id'] as String,
       senderId: json['sender_id'] as String,
-      body: json['body'] as String,
+      body: json['body'] as String? ?? '',
+      imageUrl: json['image_url'] as String?,
       readAt: read,
       createdAt: created,
     );

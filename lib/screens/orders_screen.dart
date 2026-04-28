@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../providers/app_state.dart';
@@ -13,6 +14,7 @@ import 'package:mleko/services/services.dart';
 import '../models/order_item_model.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/add_review_dialog.dart';
+import '../models/seller_delivery_models.dart';
 import '../widgets/order_delivery_summary.dart';
 import '../widgets/order_status_audit_log_section.dart';
 import '../widgets/order_status_timeline.dart';
@@ -832,7 +834,7 @@ class _BySellerTabState extends State<_BySellerTab> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -1168,14 +1170,37 @@ class _BuyerOrderCard extends StatelessWidget {
                   value: ProductModel.formatQuantityWithUnit(
                       o.quantityKg ?? 0, o.unitType ?? ProductModel.unitKg)),
             ],
+            if (o.totalAmount != null)
+              _DetailRow(
+                icon: Icons.payments_outlined,
+                label: 'Ukupno',
+                value: formatRsdAmount(o.totalAmount) ?? '',
+              ),
             _DetailRow(
               icon: Icons.calendar_today,
               label: 'Datum',
               value: DateFormat('dd.MM.yyyy. HH:mm', 'sr').format(o.createdAt),
             ),
+            if (!o.hasSellerDelivery)
+              _DetailRow(
+                icon: switch (o.deliveryMethod) {
+                  DeliveryMethod.courier => Icons.local_shipping,
+                  DeliveryMethod.pickup => Icons.store,
+                  _ => Icons.handshake,
+                },
+                label: 'Dostava',
+                value: o.deliveryMethodLabel,
+              ),
+            if (o.buyerAddress != null && o.buyerAddress!.isNotEmpty)
+              _DetailRow(
+                  icon: Icons.location_on,
+                  label: 'Adresa',
+                  value: o.buyerAddress!),
             if (o.buyerCity.isNotEmpty)
               _DetailRow(
-                  icon: Icons.location_on, label: 'Grad', value: o.buyerCity),
+                  icon: Icons.location_city,
+                  label: 'Grad',
+                  value: o.buyerCity),
             if (o.hasSellerDelivery) OrderDeliverySummary(order: o),
             if (o.note.isNotEmpty)
               Padding(
@@ -1227,7 +1252,7 @@ class _BuyerOrderCard extends StatelessWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                              content: Text('Greška: $e'),
+                              content: Text(friendlyError(e)),
                               backgroundColor: Colors.red),
                         );
                       }

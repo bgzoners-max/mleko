@@ -11,6 +11,7 @@ import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/seller_product_card.dart';
 import '../../widgets/skeleton.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   // Stream se čuva kao polje — sprečava re-kreiranje kanala na svakom buildu.
   Stream<List<ProductModel>>? _productsStream;
   String? _lastUserId;
+  List<ProductModel>? _lastProducts;
 
   @override
   void didChangeDependencies() {
@@ -36,9 +38,9 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       _lastUserId = user.id;
       _statsFuture = context.read<OrdersService>().getSellerStats(user.id);
       _productsStream = context.read<ProductsService>().getProductsBySeller(
-        user.id,
-        refreshTrigger: _refreshController.stream,
-      );
+            user.id,
+            refreshTrigger: _refreshController.stream,
+          );
     }
   }
 
@@ -49,7 +51,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   Future<void> _onRefresh() async {
+    final user = context.read<AppState>().user;
+    if (user != null) {
+      setState(() {
+        _statsFuture = context.read<OrdersService>().getSellerStats(user.id);
+      });
+    }
     _refreshController.add(null);
+    // Mala pauza za bolji UX (prikaz spinner-a)
     await Future.delayed(const Duration(milliseconds: 400));
   }
 
@@ -99,220 +108,307 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     }
 
     void goToAddProduct() => context.go('/add-product');
-    final productsService = context.read<ProductsService>();
+    final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Moji proizvodi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Dodaj novi proizvod',
-            onPressed: goToAddProduct,
-          ),
-        ],
+        actions: isTwoPaneLayout
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  tooltip: 'Dodaj novi proizvod',
+                  onPressed: goToAddProduct,
+                ),
+              ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: goToAddProduct,
-        icon: const Icon(Icons.add),
-        label: const Text('Dodaj proizvod'),
-      ),
+      floatingActionButton: isTwoPaneLayout
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: goToAddProduct,
+              icon: const Icon(Icons.add),
+              label: const Text('Dodaj proizvod'),
+            ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                    Breakpoints.horizontalPadding(context),
-                    12,
-                    Breakpoints.horizontalPadding(context),
-                    4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+          constraints: BoxConstraints(
+            maxWidth:
+                isTwoPaneLayout ? Breakpoints.dataContentWidth(context) : 800,
+          ),
+          child: isTwoPaneLayout
+              ? _buildDesktopLayout(context)
+              : _buildMobileLayout(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context) {
+    final productsService = context.read<ProductsService>();
+    return Column(
+      children: [
+        FutureBuilder<SellerStats>(
+          future: _statsFuture,
+          builder: (context, statsSnap) {
+            final stats = statsSnap.data;
+            if (stats == null) return const SizedBox.shrink();
+            return Card(
+              margin: const EdgeInsets.all(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Pregled prodaje',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Brzi pregled aktivnih porudžbina, ukupnog broja i prihoda.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Colors.grey.shade600),
-                    ),
+                    _StatItem(
+                        label: 'Na čekanju',
+                        value: '${stats.pendingCount}',
+                        icon: Icons.pending_actions),
+                    _StatItem(
+                        label: 'Ukupno',
+                        value: '${stats.totalCount}',
+                        icon: Icons.receipt_long),
+                    _StatItem(
+                        label: 'Prihod',
+                        value: '${stats.revenue.toStringAsFixed(0)} RSD',
+                        icon: Icons.monetization_on),
                   ],
                 ),
               ),
-              FutureBuilder<SellerStats>(
-                future: _statsFuture,
-                builder: (context, statsSnap) {
-                  final stats = statsSnap.data;
-                  if (stats == null) return const SizedBox.shrink();
-                  return Card(
-                    margin: const EdgeInsets.all(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _StatItem(
-                              label: 'Na čekanju',
-                              value: '${stats.pendingCount}',
-                              icon: Icons.pending_actions),
-                          _StatItem(
-                              label: 'Ukupno porudžbina',
-                              value: '${stats.totalCount}',
-                              icon: Icons.receipt_long),
-                          _StatItem(
-                              label: 'Prihod',
-                              value: '${stats.revenue.toStringAsFixed(0)} RSD',
-                              icon: Icons.monetization_on),
-                        ],
+            );
+          },
+        ),
+        Expanded(
+          child: StreamBuilder<List<ProductModel>>(
+            stream: _productsStream,
+            builder: (context, snap) {
+              if (snap.hasError) {
+                return AppErrorRetry(
+                  message: 'Greška pri učitavanju proizvoda.',
+                  detail: snap.error?.toString(),
+                  onRetry: _onRefresh,
+                );
+              }
+
+              if (snap.connectionState == ConnectionState.waiting &&
+                  !snap.hasData) {
+                return const SellerProductListSkeleton();
+              }
+
+              final list = snap.data ?? [];
+
+              if (list.isEmpty) {
+                return RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height - 300,
                       ),
-                    ),
-                  );
-                },
-              ),
-              Expanded(
-                child: StreamBuilder<List<ProductModel>>(
-                  stream: _productsStream,
-                  builder: (context, snap) {
-                    if (snap.hasError) {
-                      return AppErrorRetry(
-                        message: 'Greška pri učitavanju proizvoda.',
-                        detail: snap.error?.toString(),
-                        onRetry: _onRefresh,
-                      );
-                    }
-
-                    if (snap.connectionState == ConnectionState.waiting &&
-                        !snap.hasData) {
-                      return const SellerProductListSkeleton();
-                    }
-
-                    final list = snap.data ?? [];
-
-                    if (list.isEmpty) {
-                      return RefreshIndicator(
-                        onRefresh: _onRefresh,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight:
-                                  MediaQuery.of(context).size.height - 200,
-                            ),
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.inventory_2_outlined,
-                                        size: 80, color: Colors.grey.shade300),
-                                    const SizedBox(height: 24),
-                                    Text(
-                                      'Još nema proizvoda.',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w600),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Dodaj prvi proizvod i pojaviće se u pretrazi kupaca i na tvom prodajnom profilu.',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                              color: Colors.grey.shade600),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 24),
-                                    FilledButton.icon(
-                                      onPressed: goToAddProduct,
-                                      icon: const Icon(Icons.add),
-                                      label: const Text('Dodaj proizvod'),
-                                    ),
-                                  ],
-                                ),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.inventory_2_outlined,
+                                  size: 80, color: Colors.grey.shade300),
+                              const SizedBox(height: 24),
+                              Text(
+                                'Još nema proizvoda.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
-                            ),
+                              const SizedBox(height: 24),
+                              FilledButton.icon(
+                                onPressed: () => context.go('/add-product'),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Dodaj proizvod'),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: _onRefresh,
-                      child: ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        itemCount: list.length,
-                        itemBuilder: (context, i) {
-                          final p = list[i];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading: p.imageUrls.isNotEmpty
-                                  ? CachedNetworkImage(
-                                      imageUrl: p.imageUrls.first,
-                                      width: 56,
-                                      memCacheWidth: 120,
-                                      memCacheHeight: 120,
-                                      height: 56,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : const Icon(Icons.image_not_supported),
-                              title: Text(p.name),
-                              subtitle:
-                                  Text('${p.priceFormatted} · ${p.location}'),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Tooltip(
-                                    message: p.availableNow
-                                        ? 'Dostupno sada – uključeno'
-                                        : 'Nedostupno danas – isključeno',
-                                    child: Switch(
-                                      value: p.availableNow,
-                                      onChanged: (v) async {
-                                        await productsService
-                                            .updateAvailableNow(p.id, v);
-                                        _refreshController.add(null);
-                                      },
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: () =>
-                                        context.push('/product/edit/${p.id}'),
-                                  ),
-                                ],
-                              ),
-                              onTap: () => context.push('/product/${p.id}'),
-                            ),
-                          );
-                        },
                       ),
+                    ),
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: list.length,
+                  itemBuilder: (context, i) {
+                    return SellerProductCard(
+                      product: list[i],
+                      productsService: productsService,
+                      onRefresh: () => _refreshController.add(null),
                     );
                   },
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    final productsService = context.read<ProductsService>();
+    final sidebarWidth = Breakpoints.desktopSidebarWidth(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Sidebar sa statistikom i brzim akcijama
+        SizedBox(
+          width: sidebarWidth,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Statistika prodaje',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 20),
+                        FutureBuilder<SellerStats>(
+                          future: _statsFuture,
+                          builder: (context, snap) {
+                            if (!snap.hasData) {
+                              return const LinearProgressIndicator();
+                            }
+                            final s = snap.data!;
+                            return Column(
+                              children: [
+                                _SidebarStatRow(
+                                  label: 'Na čekanju',
+                                  value: '${s.pendingCount}',
+                                  icon: Icons.pending_actions,
+                                ),
+                                const Divider(height: 24),
+                                _SidebarStatRow(
+                                  label: 'Ukupno',
+                                  value: '${s.totalCount}',
+                                  icon: Icons.receipt_long,
+                                ),
+                                const Divider(height: 24),
+                                _SidebarStatRow(
+                                  label: 'Prihod',
+                                  value: '${s.revenue.toStringAsFixed(0)} RSD',
+                                  icon: Icons.monetization_on,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => context.go('/add-product'),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Dodaj novi proizvod'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Glavna lista proizvoda
+        Expanded(
+          child: StreamBuilder<List<ProductModel>>(
+            stream: _productsStream,
+            builder: (context, snap) {
+              if (snap.hasError) {
+                return AppErrorRetry(
+                  message: 'Greška pri učitavanju proizvoda.',
+                  onRetry: _onRefresh,
+                );
+              }
+              if (snap.connectionState == ConnectionState.waiting &&
+                  !snap.hasData) {
+                return const SellerProductListSkeleton();
+              }
+              final list = snap.data ?? [];
+              if (list.isEmpty) {
+                return const Center(child: Text('Nema proizvoda.'));
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: list.length,
+                itemBuilder: (context, i) {
+                  return SellerProductCard(
+                    product: list[i],
+                    productsService: productsService,
+                    onRefresh: () => _refreshController.add(null),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SidebarStatRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _SidebarStatRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+      ],
     );
   }
 }

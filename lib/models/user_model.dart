@@ -7,6 +7,7 @@ class UserModel {
   final String? displayName;
   final String? city;
   final String? address;
+  final String? postalCode;
   final UserRole role;
   final bool isGuest;
 
@@ -34,6 +35,7 @@ class UserModel {
     this.displayName,
     this.city,
     this.address,
+    this.postalCode,
     this.role = UserRole.buyer,
     this.isGuest = false,
     this.farmName,
@@ -66,6 +68,7 @@ class UserModel {
       displayName: json['display_name'] as String?,
       city: json['city'] as String?,
       address: address,
+      postalCode: json['postal_code'] as String?,
       role: role,
       isGuest: json['is_guest'] as bool? ?? false,
       farmName: json['farm_name'] as String?,
@@ -101,6 +104,7 @@ class UserModel {
       if (phone != null) 'phone': phone,
       if (displayName != null) 'display_name': displayName,
       if (city != null) 'city': city,
+      if (postalCode != null) 'postal_code': postalCode,
       // `address` (kupci) i `location` (prodavci) dele istu DB kolonu `location`.
       if (location != null) 'location': location,
       if (address != null && location == null) 'location': address,
@@ -121,6 +125,7 @@ class UserModel {
     String? displayName,
     String? city,
     String? address,
+    String? postalCode,
     UserRole? role,
     bool? isGuest,
     String? farmName,
@@ -144,6 +149,7 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       city: city ?? this.city,
       address: address ?? this.address,
+      postalCode: postalCode ?? this.postalCode,
       role: role ?? this.role,
       isGuest: isGuest ?? this.isGuest,
       farmName: farmName ?? this.farmName,

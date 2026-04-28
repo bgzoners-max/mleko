@@ -1,10 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
@@ -475,7 +477,7 @@ class _SellerProfilePhotoSectionState
     } catch (e) {
       if (mounted) {
         messenger.showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -666,6 +668,7 @@ class _ProfileDataCard extends StatelessWidget {
                 ),
               ),
             if (user.city != null) _DataRow(label: 'Grad', value: user.city!),
+            if (user.postalCode != null) _DataRow(label: 'Poštanski broj', value: user.postalCode!),
             if (user.address != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
@@ -764,6 +767,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _cityCtrl;
+  late final TextEditingController _postalCodeCtrl;
   late final TextEditingController _addressCtrl;
   late final TextEditingController _farmNameCtrl;
   late List<String> _selectedTags;
@@ -778,6 +782,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _nameCtrl = TextEditingController(text: u.displayName ?? '');
     _phoneCtrl = TextEditingController(text: u.phone ?? '');
     _cityCtrl = TextEditingController(text: u.city ?? '');
+    _postalCodeCtrl = TextEditingController(text: u.postalCode ?? '');
     _addressCtrl = TextEditingController(text: u.address ?? '');
     _farmNameCtrl = TextEditingController(text: u.farmName ?? '');
     _selectedTags = List.from(u.sellerTags);
@@ -789,6 +794,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _cityCtrl.dispose();
+    _postalCodeCtrl.dispose();
     _addressCtrl.dispose();
     _farmNameCtrl.dispose();
     super.dispose();
@@ -807,6 +813,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
+        postalCode:
+            _postalCodeCtrl.text.trim().isEmpty ? null : _postalCodeCtrl.text.trim(),
         location:
             _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
         phonePublic: _phonePublic,
@@ -826,7 +834,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -923,6 +931,14 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _postalCodeCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Poštanski broj', border: OutlineInputBorder()),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1029,7 +1045,7 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
     } catch (e) {
       if (mounted) {
         messenger.showSnackBar(
-            SnackBar(content: Text('Greška: $e'), backgroundColor: Colors.red));
+            SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

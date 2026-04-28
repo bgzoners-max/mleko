@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../providers/app_state.dart';
 import '../services/services.dart';
 
@@ -115,7 +116,7 @@ class _NewTicketTabState extends State<_NewTicketTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Greška pri slanju: $e'),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
           ),
         );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/utils/error_messages.dart';
 import '../models/seller_delivery_models.dart';
 import '../providers/app_state.dart';
 import '../services/services.dart';
@@ -157,7 +158,7 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
                   if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
-                      content: Text('Greška: $e'),
+                      content: Text(friendlyError(e)),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -343,7 +344,7 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
                   if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
-                      content: Text('Greška: $e'),
+                      content: Text(friendlyError(e)),
                       backgroundColor: Colors.red,
                     ),
                   );

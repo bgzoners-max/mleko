@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/seller_delivery_models.dart';
+import '../../models/app_error.dart';
 import '../core/logger_service.dart';
 
 /// Model za porudžbinu koja čeka sinhronizaciju (offline queue)
@@ -17,6 +18,7 @@ class PendingOrder {
   final String? note;
   final String buyerCity;
   final String? buyerAddress;
+  final String? buyerPostalCode;
   final String buyerPhone;
   final DeliveryMethod deliveryMethod;
   final String? deliveryCity;
@@ -45,6 +47,7 @@ class PendingOrder {
     this.note,
     required this.buyerCity,
     this.buyerAddress,
+    this.buyerPostalCode,
     required this.buyerPhone,
     this.deliveryMethod = DeliveryMethod.agreement,
     this.deliveryCity,
@@ -76,6 +79,7 @@ class PendingOrder {
         'note': note,
         'buyer_city': buyerCity,
         'buyer_address': buyerAddress,
+        'buyer_postal_code': buyerPostalCode,
         'buyer_phone': buyerPhone,
         'delivery_method': deliveryMethod.dbValue,
         'delivery_city': deliveryCity,
@@ -105,6 +109,7 @@ class PendingOrder {
         note: json['note'] as String?,
         buyerCity: json['buyer_city'] as String,
         buyerAddress: json['buyer_address'] as String?,
+        buyerPostalCode: json['buyer_postal_code'] as String?,
         buyerPhone: json['buyer_phone'] as String,
         deliveryMethod:
             deliveryMethodFromDb(json['delivery_method'] as String?),
@@ -178,8 +183,11 @@ class OrderQueueService {
         LoggerService.info('Added pending order to queue',
             extra: {'orderId': order.id});
       } catch (e, st) {
-        LoggerService.error('Failed to add pending order', e, stackTrace: st);
-        rethrow;
+        throw AppError(
+          message: 'Failed to add pending order: $e',
+          userMessage: 'Greška pri čuvanju porudžbine u lokalu.',
+          type: ErrorType.unknown,
+        );
       }
     });
   }
@@ -210,6 +218,7 @@ class OrderQueueService {
           note: order.note,
           buyerCity: order.buyerCity,
           buyerAddress: order.buyerAddress,
+          buyerPostalCode: order.buyerPostalCode,
           buyerPhone: order.buyerPhone,
           deliveryMethod: order.deliveryMethod,
           deliveryCity: order.deliveryCity,

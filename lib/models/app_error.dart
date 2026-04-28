@@ -92,6 +92,7 @@ class AppError {
       ErrorType.notFound => 'Traženi sadržaj nije pronađen.',
       ErrorType.validation => 'Nepravilni unos. Proveri podatke.',
       ErrorType.conflict => 'Ova stavka već postoji.',
+      ErrorType.configuration => 'Greška u podešavanju aplikacije.',
       _ => 'Došlo je do greške. Pokušaj ponovno.'
     };
   }
@@ -113,5 +114,6 @@ enum ErrorType {
   notFound,
   validation,
   conflict,
+  configuration,
   unknown,
 }

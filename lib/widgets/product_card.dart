@@ -51,10 +51,12 @@ class _ProductCardState extends State<ProductCard> {
     final image = Stack(
       fit: gridMode ? StackFit.expand : StackFit.loose,
       children: [
-        if (gridMode)
-          imageChild
-        else
-          AspectRatio(aspectRatio: 16 / 10, child: imageChild),
+        Hero(
+          tag: 'product_image_${widget.product.id}_0',
+          child: gridMode
+              ? imageChild
+              : AspectRatio(aspectRatio: 16 / 10, child: imageChild),
+        ),
         Positioned(
           top: 8,
           left: 8,
@@ -184,28 +186,36 @@ class _ProductCardState extends State<ProductCard> {
       ),
     );
 
-    return Card(
-      elevation: kIsWeb && _isHovered ? 6 : null,
-      clipBehavior: Clip.antiAlias,
-      child: Semantics(
-        button: true,
-        enabled: true,
-        label:
-            'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
-        child: InkWell(
-          onTap: () =>
-              withHaptic(() => context.push('/product/${widget.product.id}')),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              if (gridMode) Expanded(child: image) else image,
-              textContent,
-            ],
+    final card = AnimatedScale(
+      scale: _isHovered ? 1.02 : 1.0,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      child: Card(
+        elevation: _isHovered ? 8 : 1,
+        clipBehavior: Clip.antiAlias,
+        child: Semantics(
+          button: true,
+          enabled: true,
+          label: 'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
+          child: InkWell(
+            onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                if (gridMode) 
+                  Expanded(child: image) 
+                else 
+                  image,
+                textContent,
+              ],
+            ),
           ),
         ),
       ),
     );
+
+    return card;
   }
 
   @override

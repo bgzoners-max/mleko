@@ -33,8 +33,26 @@ class SearchHistoryService {
     await prefs.setStringList(_storageKey, history);
   }
 
+  Future<void> removeFromHistory(String query) async {
+    final history = await getHistory();
+    if (history.remove(query.trim())) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_storageKey, history);
+    }
+  }
+
   Future<void> clearHistory() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);
+  }
+
+  /// Vraća listu istorije koja počinje ili sadrži zadati query.
+  Future<List<String>> getSuggestions(String query) async {
+    if (query.trim().isEmpty) return getHistory();
+    final history = await getHistory();
+    final normalized = query.trim().toLowerCase();
+    return history
+        .where((h) => h.toLowerCase().contains(normalized))
+        .toList();
   }
 }

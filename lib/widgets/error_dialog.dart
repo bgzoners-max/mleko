@@ -164,8 +164,7 @@ class ErrorDialog extends StatelessWidget {
   }
 
   static bool _shouldShowDetails(AppError error) {
-    // Prikaži detaljи samo za development ili za bepatne greške
-    return error.type == ErrorType.unknown;
+    return false;
   }
 }
 
