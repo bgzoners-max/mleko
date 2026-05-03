@@ -2,7 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
-import type { Database } from "../../types/database.types.ts"
+import type { Database, Json } from "../../types/database.types.ts"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +26,8 @@ function getLockscreenBody(input: string, maxLen = 88): string {
   return safe.trimEnd() + "..."
 }
 
-async function getAccessToken(serviceAccountJson: string, projectId: string): Promise<string> {
+async function getAccessToken(sa: any): Promise<string> {
+  const projectId = sa.project_id
   // Prvo proveri cache
   const cached = tokenCache.get(projectId)
   if (cached && Date.now() < cached.expiresAt) {
@@ -36,15 +37,20 @@ async function getAccessToken(serviceAccountJson: string, projectId: string): Pr
 
   // Generisanje novog token-a ako cache nije validan
   console.log(`FCM: Generiši novi token za ${projectId}`)
-  const sa = JSON.parse(serviceAccountJson)
-  const key = await jose.importPKCS8(sa.private_key, "RS256")
+  
+  // Fix literal \n in private key
+  const privateKey = sa.private_key.includes('\n') 
+    ? sa.private_key 
+    : sa.private_key.replace(/\\n/g, '\n')
+    
+  const key = await jose.importPKCS8(privateKey, "RS256")
   const jwt = await new jose.SignJWT({ scope: "https://www.googleapis.com/auth/firebase.messaging" })
     .setProtectedHeader({ alg: "RS256" })
     .setIssuer(sa.client_email)
     .setSubject(sa.client_email)
     .setAudience("https://oauth2.googleapis.com/token")
     .setIssuedAt()
-    .setExpirationTime("1h")
+    .setExpirationTime("5m") // 5 minuta je dovoljno za razmenu
     .sign(key)
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -61,7 +67,7 @@ async function getAccessToken(serviceAccountJson: string, projectId: string): Pr
   const accessToken = data.access_token
   const expiresIn = data.expires_in || 3600 // Default 1 hour
 
-  // Cache token sa 5 minut margine pre nego što istekne (55 minuta umesto 60)
+  // Cache token sa 5 minuta margine
   const expiresAt = Date.now() + (expiresIn - 300) * 1000
   tokenCache.set(projectId, { token: accessToken, expiresAt })
 
@@ -102,19 +108,35 @@ Deno.serve(async (req) => {
           sent_count: params.sentCount ?? 0,
           failed_count: failedCount,
           status: params.status,
-          errors: params.errors ?? [],
-          payload: params.payload ?? {},
+          errors: (params.errors ?? []) as Json,
+          payload: (params.payload ?? {}) as Json,
         })
       } catch (logErr) {
         console.error("FCM: upis push_delivery_logs nije uspeo", String(logErr))
       }
     }
 
-    let body = await req.json()
+    let body: any
+    try {
+      body = await req.json()
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (!body) {
+      return new Response(
+        JSON.stringify({ error: "Request body is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
     let user_id: string
     let title: string
     let bodyText: string
-    let data: Record<string, string> = {}
+    let fcmData: Record<string, string> = {}
     let type: string = ""
 
     console.log("FCM: Primljena zahteva:", {
@@ -128,20 +150,20 @@ Deno.serve(async (req) => {
       title = record.title
       bodyText = record.body ?? ""
       type = record.type ?? ""
-      data = {
+      fcmData = {
         type,
-        order_id: record.order_id ?? "",
-        conversation_id: record.conversation_id ?? "",
+        order_id: String(record.order_id ?? ""),
+        conversation_id: String(record.conversation_id ?? ""),
       }
     } else {
       user_id = body.user_id
       title = body.title
       bodyText = body.body ?? ""
       type = body.type ?? ""
-      data = {
+      fcmData = {
         type,
-        order_id: body.order_id ?? "",
-        conversation_id: body.conversation_id ?? "",
+        order_id: String(body.order_id ?? ""),
+        conversation_id: String(body.conversation_id ?? ""),
       }
     }
 
@@ -158,7 +180,7 @@ Deno.serve(async (req) => {
       user_id,
       title,
       bodyText: bodyText.slice(0, 50),
-      type: data.type,
+      type: fcmData.type,
     })
 
     if (!user_id) {
@@ -201,7 +223,7 @@ Deno.serve(async (req) => {
       await writeDeliveryLog({
         userId: user_id,
         title,
-        type: data.type,
+        type: fcmData.type,
         tokenCount: tokens?.length ?? 0,
         sentCount: 0,
         status: "no_tokens",
@@ -220,7 +242,7 @@ Deno.serve(async (req) => {
       await writeDeliveryLog({
         userId: user_id,
         title,
-        type: data.type,
+        type: fcmData.type,
         tokenCount: tokens.length,
         sentCount: 0,
         status: "error",
@@ -241,7 +263,7 @@ Deno.serve(async (req) => {
 
     const sa = JSON.parse(serviceAccountJson)
     const projectId = sa.project_id
-    const accessToken = await getAccessToken(serviceAccountJson, projectId)
+    const accessToken = await getAccessToken(sa)
 
     const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`
 
@@ -251,6 +273,9 @@ Deno.serve(async (req) => {
     const errors: string[] = []
     const invalidTokens: string[] = [] // Tokeni koji su 404/400 – za bulk delete
 
+    // Pre-calculate content once per request
+    const lockscreenBody = getLockscreenBody(bodyText)
+
     // Helper: Prati jedan token i vraća {success: boolean, token: string, error?: string}
     const sendSingleMessage = async (row: { token: string; platform: string }): Promise<{
       success: boolean
@@ -258,10 +283,9 @@ Deno.serve(async (req) => {
       error?: string
     }> => {
       const platform = (row.platform ?? "android") as string
-      const lockscreenBody = getLockscreenBody(bodyText)
       const baseMessage: Record<string, unknown> = {
         token: row.token,
-        data: { ...data, title, body: bodyText },
+        data: { ...fcmData, title, body: bodyText },
       }
 
       if (platform === "ios") {
@@ -277,7 +301,7 @@ Deno.serve(async (req) => {
           },
         }
       } else {
-        const isOrder = data.type === "new_order" || data.type === "order_status" || data.type === "order_status_changed";
+        const isOrder = fcmData.type === "new_order" || fcmData.type === "order_status" || fcmData.type === "order_status_changed";
         const channelId = isOrder ? "orders_high_v2" : "mleko_urgent_v2";
         baseMessage.android = {
           priority: "HIGH",
@@ -366,14 +390,14 @@ Deno.serve(async (req) => {
     await writeDeliveryLog({
       userId: user_id,
       title,
-      type: data.type,
+      type: fcmData.type,
       tokenCount: tokens.length,
       sentCount: sent,
       status: errors.length === 0 ? "success" : sent > 0 ? "partial" : "error",
       errors,
       payload: {
         request_source: body.record ? "db_trigger" : "direct_call",
-        order_id: data.order_id,
+        order_id: fcmData.order_id,
       },
     })
 
