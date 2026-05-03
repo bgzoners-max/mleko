@@ -23,7 +23,7 @@ class AppSettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _animationsEnabled = true;
   double _fontScale = 1.0;
-  bool _compactMode = false;
+  bool _compactMode = true; // kompaktan prikaz je podrazumevano uključen
 
   ThemeMode get themeMode => _themeMode;
   bool get animationsEnabled => _animationsEnabled;
@@ -84,18 +84,19 @@ class AppSettingsProvider extends ChangeNotifier {
 
       if (!bootstrapDone) {
         if (_hasPriorAppUsage(prefs)) {
-          // Nadogradnja: implicitne starije vrednosti (system, normalan font) ako nije bilo čuvanja.
-          _readFromPrefs(prefs, defaultTheme: 0, defaultFont: 1.0);
+          // Nadogradnja: stare vrednosti, compact=false ako nije eksplicitno upisano.
+          _readFromPrefs(prefs, defaultTheme: 0, defaultFont: 1.0, defaultCompact: false);
         } else {
-          // Prva instalacija aplikacije: svetla tema + „Velika” (1.15).
+          // Prva instalacija: svetla tema + normalan font + kompaktan prikaz.
           _themeMode = ThemeMode.light;
-          _fontScale = 1.15;
+          _fontScale = 1.0;
+          _compactMode = true;
         }
         await _persistBootstrapState(prefs);
         await prefs.setBool(_keyInstallDefaultsBootstrap, true);
       } else {
-        // Samo sačuvano stanje (fallback samo ako je ključ oštećen / obrisan).
-        _readFromPrefs(prefs, defaultTheme: 1, defaultFont: 1.15);
+        // Samo sacuvano stanje (fallback ako je kljuc ostecen).
+        _readFromPrefs(prefs, defaultTheme: 1, defaultFont: 1.0, defaultCompact: true);
       }
 
       // Finalna sinhronizacija internog stanja sa dozvoljenim granicama
@@ -107,11 +108,11 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   void _readFromPrefs(SharedPreferences prefs,
-      {required int defaultTheme, required double defaultFont}) {
+      {required int defaultTheme, required double defaultFont, bool defaultCompact = true}) {
     _themeMode = _themeModeFromInt(prefs.getInt(_keyThemeMode) ?? defaultTheme);
     _fontScale = prefs.getDouble(_keyFontScale) ?? defaultFont;
     _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
-    _compactMode = prefs.getBool(_keyCompactMode) ?? false;
+    _compactMode = prefs.getBool(_keyCompactMode) ?? defaultCompact;
   }
 
   static ThemeMode _themeModeFromInt(int v) {

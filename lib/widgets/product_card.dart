@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'app_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../core/constants.dart';
+import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
 
@@ -60,15 +62,12 @@ class _ProductCardState extends State<ProductCard> {
         Positioned(
           top: 8,
           left: 8,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Wrap(
+            spacing: 4,
             children: [
               if (!widget.product.isAvailable)
                 const _Badge(label: 'Nedostupno', color: Colors.grey),
-              if (!widget.product.isAvailable && (_isNew || widget.isPopular))
-                const SizedBox(width: 6),
               if (_isNew) const _Badge(label: 'Novo', color: Colors.green),
-              if (_isNew && widget.isPopular) const SizedBox(width: 6),
               if (widget.isPopular)
                 const _Badge(label: 'Popularno', color: Colors.orange),
             ],
@@ -76,52 +75,72 @@ class _ProductCardState extends State<ProductCard> {
         ),
         if (widget.onFavoriteToggle != null)
           Positioned(
-            top: 8,
-            right: 8,
-            child: IconButton(
-              tooltip: widget.isFavorite == true
-                  ? 'Ukloni iz omiljenih'
-                  : 'Dodaj u omiljene',
-              icon: Icon(
-                widget.isFavorite == true
-                    ? Icons.favorite
-                    : Icons.favorite_border,
-                color: widget.isFavorite == true ? Colors.red : Colors.white,
-                size: 28,
+            top: 4,
+            right: 4,
+            child: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                tooltip: widget.isFavorite == true
+                    ? 'Ukloni iz omiljenih'
+                    : 'Dodaj u omiljene',
+                icon: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    widget.isFavorite == true
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    key: ValueKey(widget.isFavorite),
+                    color: widget.isFavorite == true ? Colors.red : Colors.white,
+                    size: 26,
+                  ),
+                ),
+                onPressed: widget.onFavoriteToggle != null
+                    ? () => withHaptic(widget.onFavoriteToggle)
+                    : null,
               ),
-              onPressed: widget.onFavoriteToggle != null
-                  ? () => withHaptic(widget.onFavoriteToggle)
-                  : null,
             ),
           ),
       ],
     );
 
     final textContent = Padding(
-      padding: EdgeInsets.all(gridMode ? 8 : 12),
+      padding: EdgeInsets.all(gridMode ? AppDesign.spaceS : AppDesign.spaceM),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Kategorija kao mali tekst (ne chip) u grid modu — štedi prostor
-          Text(
-            widget.product.category,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+                child: Text(
+                  widget.product.category.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                        fontSize: 9,
+                      ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   widget.product.name,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                        letterSpacing: -0.2,
                       ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -129,56 +148,67 @@ class _ProductCardState extends State<ProductCard> {
               ),
               if (widget.product.sellerIsVerified) ...[
                 const SizedBox(width: 4),
-                Tooltip(
-                  message: 'Proveren prodavac',
-                  child: Icon(Icons.verified,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.primary),
-                ),
+                Icon(Icons.verified,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.primary),
               ],
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            widget.product.priceFormatted,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w700,
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.product.priceFormatted,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+              ),
+              if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.avgRating!.toStringAsFixed(1),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey.shade700,
+                          ),
+                    ),
+                  ],
                 ),
+            ],
           ),
-          if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0) ...[
-            const SizedBox(height: 3),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.star, size: 12, color: Colors.amber),
-                const SizedBox(width: 3),
-                Text(
-                  '${widget.avgRating!.toStringAsFixed(1)} (${widget.reviewCount})',
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, size: 12, color: Colors.grey.shade500),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.product.location,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.grey.shade600,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 3),
-          Text(
-            widget.product.location,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.grey.shade500,
-                ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
           if (!gridMode) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.tonal(
+              child: ElevatedButton(
                 onPressed: () => withHaptic(
                     () => context.push('/product/${widget.product.id}')),
-                child: const Text('Pogledaj'),
+                child: const Text('Pogledaj detalje'),
               ),
             ),
           ],
@@ -186,29 +216,52 @@ class _ProductCardState extends State<ProductCard> {
       ),
     );
 
-    final card = AnimatedScale(
-      scale: _isHovered ? 1.02 : 1.0,
-      duration: const Duration(milliseconds: 200),
+    final card = AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
-      child: Card(
-        elevation: _isHovered ? 8 : 1,
-        clipBehavior: Clip.antiAlias,
-        child: Semantics(
-          button: true,
-          enabled: true,
-          label: 'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
-          child: InkWell(
-            onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                if (gridMode) 
-                  Expanded(child: image) 
-                else 
-                  image,
-                textContent,
-              ],
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppDesign.radiusL),
+        border: Border.all(
+          color: _isHovered 
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+              : Colors.transparent,
+          width: 2,
+        ),
+        boxShadow: _isHovered 
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ]
+            : [],
+      ),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.01 : 1.0,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        child: Card(
+          elevation: _isHovered ? 0 : 0.5,
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: Semantics(
+            button: true,
+            enabled: true,
+            label: 'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
+            child: InkWell(
+              onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  if (gridMode) 
+                    Expanded(child: image) 
+                  else 
+                    image,
+                  textContent,
+                ],
+              ),
             ),
           ),
         ),
@@ -250,19 +303,28 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-      fontWeight: FontWeight.w600,
-      color: Colors.white,
-      fontSize: 11,
-    );
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 2, offset: Offset(0, 1))],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.white24, width: 0.5),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
       ),
-      child: Text(label, style: textStyle ?? const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
     );
   }
 }

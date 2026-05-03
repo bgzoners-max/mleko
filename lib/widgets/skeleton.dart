@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'app_shimmer.dart';
+import '../core/design_system.dart';
 
-/// Boje shimmer-a usklađene sa temom (zelene nijanse)
-const Color _shimmerBaseColor = Color(0xFFC8E6C9); // green 100
-const Color _shimmerHighlightColor = Color(0xFFE8F5E9); // green 50
+const _shimmerBaseColor = Color(0xFFE0E0E0);
+const _shimmerHighlightColor = Color(0xFFF5F5F5);
 
 /// Skeleton za listu proizvoda (ProductCard stil)
 class ProductListSkeleton extends StatelessWidget {
@@ -16,13 +17,11 @@ class ProductListSkeleton extends StatelessWidget {
     const baseColor = _shimmerBaseColor;
     const highlightColor = _shimmerHighlightColor;
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: AppDesign.paddingL,
       itemCount: itemCount,
       itemBuilder: (_, i) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Shimmer.fromColors(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
+        padding: const EdgeInsets.only(bottom: AppDesign.spaceL),
+        child: AppShimmer(
           child: Card(
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -105,13 +104,11 @@ class SellerProductListSkeleton extends StatelessWidget {
     const baseColor = _shimmerBaseColor;
     const highlightColor = _shimmerHighlightColor;
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: AppDesign.paddingL,
       physics: const AlwaysScrollableScrollPhysics(),
       itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, __) => Shimmer.fromColors(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
+      separatorBuilder: (_, __) => AppDesign.boxM,
+      itemBuilder: (_, __) => AppShimmer(
         child: Card(
           child: ListTile(
             leading: Container(
@@ -154,24 +151,20 @@ class OrderListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
     return ListView.builder(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: 16 + MediaQuery.of(context).padding.bottom,
+        left: AppDesign.spaceL,
+        right: AppDesign.spaceL,
+        top: AppDesign.spaceM,
+        bottom: AppDesign.spaceL + MediaQuery.of(context).padding.bottom,
       ),
       itemCount: itemCount,
       itemBuilder: (_, i) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Shimmer.fromColors(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
+        padding: const EdgeInsets.only(bottom: AppDesign.spaceM),
+        child: AppShimmer(
           child: Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: AppDesign.paddingM,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -181,61 +174,28 @@ class OrderListSkeleton extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: const BoxDecoration(
-                            color: baseColor, shape: BoxShape.circle),
+                            color: Colors.white, shape: BoxShape.circle),
                       ),
-                      const SizedBox(width: 12),
+                      AppDesign.boxM,
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                                width: 120,
-                                height: 14,
-                                decoration: BoxDecoration(
-                                    color: baseColor,
-                                    borderRadius: BorderRadius.circular(4))),
-                            const SizedBox(height: 6),
-                            Container(
-                                width: 80,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                    color: baseColor,
-                                    borderRadius: BorderRadius.circular(4))),
+                            const ShimmerBlock(width: 120, height: 14),
+                            AppDesign.boxXS,
+                            const ShimmerBlock(width: 80, height: 12),
                           ],
                         ),
                       ),
-                      Container(
-                          width: 70,
-                          height: 24,
-                          decoration: BoxDecoration(
-                              color: baseColor,
-                              borderRadius: BorderRadius.circular(12))),
+                      const ShimmerBlock(width: 70, height: 24, borderRadius: 12),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                      width: double.infinity, height: 1, color: baseColor),
-                  const SizedBox(height: 12),
-                  Container(
-                      width: 180,
-                      height: 14,
-                      decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(4))),
-                  const SizedBox(height: 8),
-                  Container(
-                      width: 100,
-                      height: 12,
-                      decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(4))),
-                  const SizedBox(height: 8),
-                  Container(
-                      width: 140,
-                      height: 12,
-                      decoration: BoxDecoration(
-                          color: baseColor,
-                          borderRadius: BorderRadius.circular(4))),
+                  AppDesign.boxM,
+                  const Divider(height: 1),
+                  AppDesign.boxM,
+                  const ShimmerBlock(width: 180, height: 14),
+                  AppDesign.boxS,
+                  const ShimmerBlock(width: 100, height: 12),
                 ],
               ),
             ),

@@ -14,6 +14,7 @@ import '../providers/location_provider.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/product_card.dart';
+import '../widgets/app_shimmer.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/category_icon.dart';
 
@@ -715,7 +716,17 @@ class _SearchScreenState extends State<SearchScreen> {
                           _buildHistoryChips(),
                             Expanded(
                               child: _loading
-                                  ? const ProductListSkeleton()
+                                  ? GridView.builder(
+                                      padding: EdgeInsets.all(contentPadding),
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: wideGridColumns,
+                                        crossAxisSpacing: stackedGridSpacing,
+                                        mainAxisSpacing: stackedGridSpacing,
+                                        mainAxisExtent: wideGridExtent,
+                                      ),
+                                      itemCount: 8,
+                                      itemBuilder: (_, __) => const ProductCardSkeleton(),
+                                    )
                                   : _searchError != null
                                       ? AppErrorRetry(
                                           message: 'Greška pri učitavanju proizvoda.',
@@ -788,7 +799,17 @@ class _SearchScreenState extends State<SearchScreen> {
                     _buildFilterChips(context),
                     Expanded(
                       child: _loading
-                          ? const ProductListSkeleton()
+                          ? GridView.builder(
+                              padding: EdgeInsets.all(contentPadding),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: mobileResultsAsGrid ? stackedResultColumns : 2,
+                                crossAxisSpacing: stackedGridSpacing,
+                                mainAxisSpacing: stackedGridSpacing,
+                                mainAxisExtent: mobileResultsAsGrid ? stackedGridExtent : 255,
+                              ),
+                              itemCount: 8,
+                              itemBuilder: (_, __) => const ProductCardSkeleton(),
+                            )
                           : _searchError != null
                               ? AppErrorRetry(
                                   message: 'Greška pri učitavanju proizvoda.',

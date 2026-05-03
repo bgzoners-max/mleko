@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/haptic.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/seller_delivery_models.dart';
@@ -220,6 +221,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         await chatService.getOrCreateConversation(
             user.id, widget.product.sellerId,
             orderId: orderId);
+        AppHaptics.success();
         if (!mounted) return;
         await context.read<CartProvider>().removeFromSeller(
               sellerId: widget.product.sellerId,

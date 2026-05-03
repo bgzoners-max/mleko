@@ -39,6 +39,18 @@ class SellerStats {
   });
 }
 
+class BuyerStats {
+  final int pendingCount;
+  final int totalSuccessCount;
+  final double totalSpent;
+
+  BuyerStats({
+    required this.pendingCount,
+    required this.totalSuccessCount,
+    required this.totalSpent,
+  });
+}
+
 mixin OrderQueryMixin {
   SupabaseClient get client;
   static const String statusFilterActiveNonArchived = 'active';
@@ -278,6 +290,24 @@ mixin OrderQueryMixin {
       pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
       totalCount: (json['total_count'] as num?)?.toInt() ?? 0,
       revenue: (json['revenue'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Future<BuyerStats> getBuyerStats(String buyerId) async {
+    final result = await client.rpc(
+      'get_buyer_stats_dashboard',
+      params: {'p_buyer_id': buyerId},
+    );
+    if (result == null) {
+      return BuyerStats(pendingCount: 0, totalSuccessCount: 0, totalSpent: 0);
+    }
+    final json = result is Map<String, dynamic>
+        ? result
+        : Map<String, dynamic>.from(result as Map);
+    return BuyerStats(
+      pendingCount: (json['pending_count'] as num?)?.toInt() ?? 0,
+      totalSuccessCount: (json['total_success_count'] as num?)?.toInt() ?? 0,
+      totalSpent: (json['total_spent'] as num?)?.toDouble() ?? 0,
     );
   }
 

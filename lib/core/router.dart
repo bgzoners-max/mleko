@@ -45,6 +45,52 @@ import '../providers/app_state.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Pomoćna funkcija za premium tranzicije između ekrana.
+Page<T> buildPageTransition<T>({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      // Suptilna "Shared Axis" tranzicija (Fade + Slide + Scale)
+      final fadeAnimation = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeInOut,
+      );
+
+      final slideAnimation = Tween<Offset>(
+        begin: const Offset(0.0, 0.03), // Blagi pomak odozdo
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      ));
+
+      final scaleAnimation = Tween<double>(
+        begin: 0.98, // Blago skaliranje
+        end: 1.0,
+      ).animate(CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      ));
+
+      return FadeTransition(
+        opacity: fadeAnimation,
+        child: SlideTransition(
+          position: slideAnimation,
+          child: ScaleTransition(
+            scale: scaleAnimation,
+            child: child,
+          ),
+        ),
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 300),
+  );
+}
+
 GoRouter createRouter(AppState appState) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -134,169 +180,255 @@ GoRouter createRouter(AppState appState) {
     routes: [
       GoRoute(
         path: '/search',
-        builder: (_, state) => TabSearchOrProductsScreen(
-          initialCategory: state.uri.queryParameters['category'],
-          openSellerProducts: state.uri.queryParameters['view'] == 'products',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: TabSearchOrProductsScreen(
+            initialCategory: state.uri.queryParameters['category'],
+            openSellerProducts: state.uri.queryParameters['view'] == 'products',
+          ),
         ),
       ),
       GoRoute(
         path: '/splash',
-        builder: (_, __) => const SplashScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SplashScreen(),
+        ),
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const OnboardingScreen(),
+        ),
       ),
       GoRoute(
         path: '/login',
-        builder: (_, __) => const LoginScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const LoginScreen(),
+        ),
       ),
       GoRoute(
         path: '/register',
-        builder: (_, __) => const RegisterScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const RegisterScreen(),
+        ),
       ),
       GoRoute(
         path: '/becoming-seller',
-        builder: (_, __) => const BecomingSellerScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const BecomingSellerScreen(),
+        ),
       ),
       GoRoute(
         path: '/seller-settings',
-        builder: (_, __) => const SellerSettingsScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SellerSettingsScreen(),
+        ),
       ),
       GoRoute(
         path: '/map-picker',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          return MapPickerScreen(
-            initialLat: (extra?['lat'] as num?)?.toDouble(),
-            initialLng: (extra?['lng'] as num?)?.toDouble(),
+          return buildPageTransition(
+            state: state,
+            child: MapPickerScreen(
+              initialLat: (extra?['lat'] as num?)?.toDouble(),
+              initialLng: (extra?['lng'] as num?)?.toDouble(),
+            ),
           );
         },
       ),
       GoRoute(
         path: '/add-product',
-        builder: (_, __) => const AddEditProductScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const AddEditProductScreen(),
+        ),
       ),
       GoRoute(
         path: '/product/:id',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
           final scrollToReviews = state.uri.queryParameters['reviews'] == '1';
-          return ProductDetailScreen(
-            productId: id,
-            scrollToReviews: scrollToReviews,
+          return buildPageTransition(
+            state: state,
+            child: ProductDetailScreen(
+              productId: id,
+              scrollToReviews: scrollToReviews,
+            ),
           );
         },
       ),
       GoRoute(
         path: '/checkout/:productId',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['productId']!;
           final extra = state.extra as Map<String, dynamic>?;
           final initialQty = (extra?['quantity'] as num?)?.toDouble();
-          return CheckoutScreen(productId: id, initialQuantity: initialQty);
+          return buildPageTransition(
+            state: state,
+            child: CheckoutScreen(productId: id, initialQuantity: initialQty),
+          );
         },
       ),
       GoRoute(
         path: '/checkout-seller/:sellerId',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final sellerId = state.pathParameters['sellerId']!;
           final extra = state.extra as Map<String, dynamic>?;
           final productQuantities =
               extra?['productQuantities'] as Map<String, double>? ?? {};
-          return CheckoutMultiScreen(
-              sellerId: sellerId, productQuantities: productQuantities);
+          return buildPageTransition(
+            state: state,
+            child: CheckoutMultiScreen(
+                sellerId: sellerId, productQuantities: productQuantities),
+          );
         },
       ),
       GoRoute(
         path: '/product/edit/:id',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return AddEditProductScreen(productId: id);
+          return buildPageTransition(
+            state: state,
+            child: AddEditProductScreen(productId: id),
+          );
         },
       ),
       GoRoute(
         path: '/seller/:sellerId/reviews',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['sellerId']!;
-          return SellerReviewsScreen(sellerId: id);
+          return buildPageTransition(
+            state: state,
+            child: SellerReviewsScreen(sellerId: id),
+          );
         },
       ),
       GoRoute(
         path: '/seller/:sellerId',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['sellerId']!;
-          return SellerProfileScreen(sellerId: id);
+          return buildPageTransition(
+            state: state,
+            child: SellerProfileScreen(sellerId: id),
+          );
         },
       ),
       GoRoute(
         path: '/buyer/:buyerId/reviews',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['buyerId']!;
-          return BuyerReviewsHubScreen(buyerId: id);
+          return buildPageTransition(
+            state: state,
+            child: BuyerReviewsHubScreen(buyerId: id),
+          );
         },
       ),
       GoRoute(
         path: '/buyer/:buyerId',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['buyerId']!;
-          return BuyerProfileScreen(buyerId: id);
+          return buildPageTransition(
+            state: state,
+            child: BuyerProfileScreen(buyerId: id),
+          );
         },
       ),
       GoRoute(
         path: '/cart',
-        builder: (_, __) => const CartScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const CartScreen(),
+        ),
       ),
       GoRoute(
         path: '/favorites',
-        builder: (_, __) => const FavoritesScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const FavoritesScreen(),
+        ),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (_, __) => const NotificationsScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const NotificationsScreen(),
+        ),
       ),
       GoRoute(
         path: '/settings',
-        builder: (_, __) => const SettingsScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SettingsScreen(),
+        ),
       ),
       GoRoute(
         path: '/support',
-        builder: (_, __) => const SupportScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SupportScreen(),
+        ),
       ),
       GoRoute(
         path: '/support/ticket/:id',
-        builder: (_, state) => SupportTicketChatScreen(
-          ticketId: state.pathParameters['id']!,
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: SupportTicketChatScreen(
+            ticketId: state.pathParameters['id']!,
+          ),
         ),
       ),
       GoRoute(
         path: '/admin/tickets',
-        builder: (_, __) => const AdminTicketsScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const AdminTicketsScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/tickets/:id',
-        builder: (_, state) =>
-            AdminTicketDetailScreen(ticketId: state.pathParameters['id']!),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: AdminTicketDetailScreen(ticketId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/admin/push-health',
-        builder: (_, __) => const AdminPushHealthScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const AdminPushHealthScreen(),
+        ),
       ),
       GoRoute(
         path: '/favorite-sellers',
-        builder: (_, __) => const FavoriteSellersScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const FavoriteSellersScreen(),
+        ),
       ),
       GoRoute(
         path: '/politika-privatnosti',
-        builder: (_, __) => const PrivacyPolicyScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const PrivacyPolicyScreen(),
+        ),
       ),
       GoRoute(
         path: '/uslovi-koriscenja',
-        builder: (_, __) => const TermsScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const TermsScreen(),
+        ),
       ),
       GoRoute(
         path: '/terms',
@@ -304,29 +436,44 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/about',
-        builder: (_, __) => const AboutScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const AboutScreen(),
+        ),
       ),
       GoRoute(
         path: '/verify-email',
-        builder: (_, state) => VerifyEmailScreen(
-          email: (state.extra as String?) ?? '',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: VerifyEmailScreen(
+            email: (state.extra as String?) ?? '',
+          ),
         ),
       ),
       GoRoute(
         path: '/auth/confirmed',
-        builder: (_, __) => const AuthConfirmedScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const AuthConfirmedScreen(),
+        ),
       ),
       GoRoute(
         path: '/sellers-map',
-        builder: (_, __) => const SellersMapScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SellersMapScreen(),
+        ),
       ),
       GoRoute(
         path: '/categories',
-        builder: (_, __) => const CategoriesScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const CategoriesScreen(),
+        ),
       ),
       GoRoute(
         path: '/categories/:parentId',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final extra = state.extra;
           final parent = extra is Category
               ? extra
@@ -334,19 +481,30 @@ GoRouter createRouter(AppState appState) {
                   ? Category.fromJson(extra)
                   : null;
           if (parent == null) {
-            return const CategoriesScreen();
+            return buildPageTransition(
+              state: state,
+              child: const CategoriesScreen(),
+            );
           }
-          return ChildCategoriesScreen(parentCategory: parent);
+          return buildPageTransition(
+            state: state,
+            child: ChildCategoriesScreen(parentCategory: parent),
+          );
         },
       ),
       GoRoute(
         path: '/conversations',
-        builder: (_, __) => const ConversationsScreen(),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const ConversationsScreen(),
+        ),
       ),
       GoRoute(
         path: '/chat/:id',
-        builder: (_, state) =>
-            ChatScreen(conversationId: state.pathParameters['id']!),
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: ChatScreen(conversationId: state.pathParameters['id']!),
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -357,7 +515,10 @@ GoRouter createRouter(AppState appState) {
             routes: [
               GoRoute(
                 path: '/',
-                builder: (_, __) => const HomeScreen(),
+                pageBuilder: (context, state) => buildPageTransition(
+                  state: state,
+                  child: const HomeScreen(),
+                ),
               ),
             ],
           ),
@@ -365,7 +526,10 @@ GoRouter createRouter(AppState appState) {
             routes: [
               GoRoute(
                 path: '/orders',
-                builder: (_, __) => const TabOrdersOrInboxScreen(),
+                pageBuilder: (context, state) => buildPageTransition(
+                  state: state,
+                  child: const TabOrdersOrInboxScreen(),
+                ),
               ),
             ],
           ),
@@ -373,7 +537,10 @@ GoRouter createRouter(AppState appState) {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (_, __) => const ProfileScreen(),
+                pageBuilder: (context, state) => buildPageTransition(
+                  state: state,
+                  child: const ProfileScreen(),
+                ),
               ),
             ],
           ),

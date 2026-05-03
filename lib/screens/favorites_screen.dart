@@ -132,22 +132,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Omiljeni proizvodi')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.favorite_border,
-                  size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text('Prijavite se da sačuvate omiljene proizvode',
-                  style: TextStyle(color: Colors.grey.shade600)),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => context.go('/login'),
-                child: const Text('Prijavi se'),
-              ),
-            ],
-          ),
+        body: AppEmptyState(
+          icon: Icons.favorite_outline,
+          title: 'Prijavite se za listu želja',
+          subtitle: 'Sačuvajte proizvode koje volite i lako ih pronađite kasnije.',
+          ctaLabel: 'Prijavi se',
+          onCtaPressed: () => context.go('/login'),
         ),
       );
     }
@@ -175,25 +165,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             _warmupProductImages(list);
           }
           if (list.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _onRefresh,
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: constraints.maxHeight,
-                    child: AppEmptyState(
-                      icon: Icons.favorite_border,
-                      title: 'Nemate omiljenih proizvoda',
-                      subtitle:
-                          'Dodajte srcem na karticama proizvoda da ih nađete brzo ovde.',
-                      ctaLabel: 'Pretraži proizvode',
-                      ctaIcon: Icons.search,
-                      onCtaPressed: () => context.go('/'),
-                    ),
-                  ),
-                ),
-              ),
+            return AppEmptyState(
+              icon: Icons.favorite_border,
+              title: 'Nemate omiljenih proizvoda',
+              subtitle:
+                  'Dodajte srcem na karticama proizvoda da ih nađete brzo ovde.',
+              ctaLabel: 'Pretraži proizvode',
+              ctaIcon: Icons.search,
+              onCtaPressed: () => context.go('/'),
             );
           }
           final visible = list.take(_displayCount).toList();

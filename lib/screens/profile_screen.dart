@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../core/design_system.dart';
 import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../models/user_model.dart';
@@ -15,9 +16,7 @@ import 'favorites_screen.dart';
 import 'favorite_sellers_screen.dart';
 import 'notifications_screen.dart';
 import 'conversations_screen.dart';
-import 'categories_screen.dart';
 import 'seller/becoming_seller_screen.dart';
-import 'buyer/buyer_reviews_hub_screen.dart';
 import 'seller/seller_reviews_screen.dart';
 
 const _kSellerTags = [
@@ -108,6 +107,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                   _ProfileDataCard(user: user),
                   const SizedBox(height: 6),
+                  if (!user.isGuest) ...[
+                    _BuyerStatsCard(user: user),
+                    const SizedBox(height: 6),
+                  ],
                   if (user.isSeller) ...[
                     _MiniStoreCard(user: user),
                     const SizedBox(height: 6),
@@ -144,6 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (user.isSeller) _SellerProfilePhotoSection(user: user),
       if (user.isSeller) _SellerGallerySection(user: user),
       _ProfileDataCard(user: user),
+      if (!user.isGuest) _BuyerStatsCard(user: user),
     ];
     return ListView(
       padding: EdgeInsets.all(isSmallTablet ? 12 : 8),
@@ -167,141 +171,126 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bool isActive(String section) => isWide && _activeSection == section;
 
     return [
+      _SectionHeader(title: 'KUPOVINA'),
       ListTile(
-        leading: const Icon(Icons.settings_outlined),
-        title: const Text('Podešavanja'),
-        subtitle: const Text('Obaveštenja, prodavac, podrška'),
-        selected: isActive('settings'),
-        onTap: () => isWide
-            ? openPanel('settings', const SettingsScreen())
-            : push('/settings'),
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.shopping_bag_outlined),
+        title: const Text('Moje porudžbine', style: TextStyle(fontWeight: FontWeight.w600)),
+        onTap: () => push('/orders'),
       ),
-      if (!user.isGuest)
-        ListTile(
-          leading: const Icon(Icons.rate_review_outlined),
-          title: const Text('Recenzije'),
-          subtitle: Text(
-            user.isSeller
-                ? 'Ocene kupaca i tvoji odgovori'
-                : 'Primljene i ostavljene ocene (međusobno ocenjivanje)',
-          ),
-          selected: isActive('reviews'),
-          onTap: () {
-            if (isWide) {
-              openPanel(
-                'reviews',
-                user.isSeller
-                    ? SellerReviewsScreen(sellerId: user.id)
-                    : BuyerReviewsHubScreen(buyerId: user.id),
-              );
-            } else {
-              if (user.isSeller) {
-                push('/seller/${user.id}/reviews');
-              } else {
-                push('/buyer/${user.id}/reviews');
-              }
-            }
-          },
-        ),
-      const Divider(height: 1),
-      if (user.isSeller) ...[
-        if (!user.isGuest)
-          ListTile(
-            leading: const Icon(Icons.chat),
-            title: const Text('Poruke'),
-            selected: isActive('messages'),
-            onTap: () => isWide
-                ? openPanel('messages', const ConversationsScreen())
-                : push('/conversations'),
-          ),
-        if (!user.isGuest)
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Obaveštenja'),
-            selected: isActive('notifications'),
-            onTap: () => isWide
-                ? openPanel('notifications', const NotificationsScreen())
-                : push('/notifications'),
-          ),
-        ListTile(
-          leading: const Icon(Icons.location_on),
-          title: const Text('Lokacija za mapu'),
-          subtitle: Text(user.lat != null && user.lng != null
-              ? 'Lokacija postavljena'
-              : 'Odaberi na mapi da te kupci vide'),
-          onTap: () => push('/seller-settings'),
-        ),
-      ] else ...[
-        ListTile(
-          leading: const Icon(Icons.favorite),
-          title: const Text('Omiljeni proizvodi'),
-          selected: isActive('favorites'),
-          onTap: () => isWide
-              ? openPanel('favorites', const FavoritesScreen())
-              : push('/favorites'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.people),
-          title: const Text('Pratim prodavce'),
-          selected: isActive('favorite-sellers'),
-          onTap: () => isWide
-              ? openPanel('favorite-sellers', const FavoriteSellersScreen())
-              : push('/favorite-sellers'),
-        ),
-        if (!user.isGuest)
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('Obaveštenja'),
-            selected: isActive('notifications'),
-            onTap: () => isWide
-                ? openPanel('notifications', const NotificationsScreen())
-                : push('/notifications'),
-          ),
-      ],
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.favorite_outline),
+        title: const Text('Omiljeni proizvodi'),
+        selected: isActive('favorites'),
+        onTap: () => isWide
+            ? openPanel('favorites', const FavoritesScreen())
+            : push('/favorites'),
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.people_outline),
+        title: const Text('Pratim prodavce'),
+        selected: isActive('favorite-sellers'),
+        onTap: () => isWide
+            ? openPanel('favorite-sellers', const FavoriteSellersScreen())
+            : push('/favorite-sellers'),
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.rate_review_outlined),
+        title: const Text('Moje recenzije'),
+        onTap: () => push('/buyer/${user.id}/reviews'),
+      ),
       if (!user.isGuest && !user.isSeller)
         ListTile(
-          leading: const Icon(Icons.chat),
+          visualDensity: VisualDensity.compact,
+          leading: const Icon(Icons.chat_bubble_outline),
           title: const Text('Poruke'),
           selected: isActive('messages'),
           onTap: () => isWide
               ? openPanel('messages', const ConversationsScreen())
               : push('/conversations'),
         ),
-      ListTile(
-        leading: const Icon(Icons.map),
-        title: const Text('Prodavci na mapi'),
-        onTap: () => push('/sellers-map'),
-      ),
-      ListTile(
-        leading: const Icon(Icons.category),
-        title: const Text('Kategorije'),
-        selected: isActive('categories'),
-        onTap: () => isWide
-            ? openPanel('categories', const CategoriesScreen())
-            : push('/categories'),
-      ),
-      if (!user.isSeller && !user.isGuest) ...[
+      
+      const SizedBox(height: 8),
+      _SectionHeader(title: 'PRODAVNICA'),
+      if (user.isSeller) ...[
+        if (!user.isGuest)
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.chat_bubble_outline),
+            title: const Text('Poruke'),
+            selected: isActive('messages'),
+            onTap: () => isWide
+                ? openPanel('messages', const ConversationsScreen())
+                : push('/conversations'),
+          ),
         ListTile(
-          leading: const Icon(Icons.store),
+          visualDensity: VisualDensity.compact,
+          leading: const Icon(Icons.location_on_outlined),
+          title: const Text('Moja lokacija na mapi'),
+          onTap: () => push('/seller-settings'),
+        ),
+        ListTile(
+          visualDensity: VisualDensity.compact,
+          leading: const Icon(Icons.rate_review_outlined),
+          title: const Text('Recenzije kupaca'),
+          selected: isActive('reviews'),
+          onTap: () => isWide
+              ? openPanel('reviews', SellerReviewsScreen(sellerId: user.id))
+              : push('/seller/${user.id}/reviews'),
+        ),
+      ] else if (!user.isGuest) ...[
+        ListTile(
+          visualDensity: VisualDensity.compact,
+          leading: const Icon(Icons.storefront_outlined),
           title: const Text('Postani prodavac'),
           selected: isActive('becoming-seller'),
           onTap: () => isWide
               ? openPanel('becoming-seller', const BecomingSellerScreen())
               : push('/becoming-seller'),
         ),
-      ] else if (user.isGuest) ...[
+      ] else ...[
         ListTile(
+          visualDensity: VisualDensity.compact,
           leading: const Icon(Icons.info_outline),
-          title: const Text('Da bi postao prodavac, registruj nalog'),
-          subtitle: const Text('Gost može samo da pregleda proizvode.'),
+          title: const Text('Registruj se za prodaju'),
           onTap: () => push('/register'),
         ),
       ],
+      
+      const SizedBox(height: 8),
+      _SectionHeader(title: 'NALOG I PODRŠKA'),
       ListTile(
-        leading: const Icon(Icons.support),
-        title: const Text('Podrška / prijava problema'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/support'),
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.notifications_outlined),
+        title: const Text('Obaveštenja'),
+        selected: isActive('notifications'),
+        onTap: () => isWide
+            ? openPanel('notifications', const NotificationsScreen())
+            : push('/notifications'),
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.settings_outlined),
+        title: const Text('Podešavanja'),
+        selected: isActive('settings'),
+        onTap: () => isWide
+            ? openPanel('settings', const SettingsScreen())
+            : push('/settings'),
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.help_outline),
+        title: const Text('Podrška i pomoć'),
+        onTap: () => push('/support'),
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.info_outline),
+        title: const Text('O aplikaciji'),
+        onTap: () => push('/about'),
       ),
       const Divider(),
       ListTile(
@@ -369,7 +358,7 @@ class _MiniStoreCard extends StatelessWidget {
         onTap: () =>
             context.go(user.isSeller ? '/search?view=products' : '/search'),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppDesign.paddingM,
           child: Row(
             children: [
               Container(
@@ -414,6 +403,143 @@ class _MiniStoreCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BuyerStatsCard extends StatefulWidget {
+  final UserModel user;
+  const _BuyerStatsCard({required this.user});
+
+  @override
+  State<_BuyerStatsCard> createState() => _BuyerStatsCardState();
+}
+
+class _BuyerStatsCardState extends State<_BuyerStatsCard> {
+  late final Future<BuyerStats> _statsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsFuture = context.read<OrdersService>().getBuyerStats(widget.user.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<BuyerStats>(
+      future: _statsFuture,
+      builder: (context, snap) {
+        if (!snap.hasData) return const SizedBox.shrink();
+        final stats = snap.data!;
+        
+        // Prikaži samo ako ima šta da se prikaže
+        if (stats.totalSuccessCount == 0 && stats.pendingCount == 0) {
+          return const SizedBox.shrink();
+        }
+
+        return Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.go('/conversations'), // Ili na neku posebnu stranu za porudžbine ako postoji (npr /orders)
+            child: Padding(
+              padding: AppDesign.paddingM,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.shopping_bag_outlined,
+                          color: Colors.green.shade800,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Moje kupovine',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  AppDesign.boxM,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _StatColumn(
+                        label: 'Isporučeno',
+                        value: stats.totalSuccessCount.toString(),
+                        icon: Icons.check_circle_outline,
+                        color: Colors.green.shade700,
+                      ),
+                      _StatColumn(
+                        label: 'Na čekanju',
+                        value: stats.pendingCount.toString(),
+                        icon: Icons.hourglass_bottom,
+                        color: Colors.orange.shade700,
+                      ),
+                      _StatColumn(
+                        label: 'Potrošeno',
+                        value: '${stats.totalSpent.toStringAsFixed(0)} RSD',
+                        icon: Icons.account_balance_wallet_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _StatColumn({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -737,7 +863,7 @@ class _DataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: AppDesign.spaceXS - 3), // very tight
       child: RichText(
         text: TextSpan(
           style: DefaultTextStyle.of(context).style,
@@ -1151,6 +1277,28 @@ class _SellerGallerySectionState extends State<_SellerGallerySection> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: Colors.grey.shade500,
+          letterSpacing: 1.2,
         ),
       ),
     );

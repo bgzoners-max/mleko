@@ -8,6 +8,7 @@ import '../../models/buyer_review_model.dart';
 import '../../models/review_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
+import '../../widgets/app_empty_state.dart';
 import '../../widgets/buyer_review_widgets.dart';
 import '../../widgets/skeleton.dart';
 
@@ -67,27 +68,13 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
         user.id != widget.buyerId) {
       return Scaffold(
         appBar: AppBar(title: const Text('Recenzije')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_outline, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Ovu stranicu može da vidi samo kupac na svom nalogu.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => context.pop(),
-                  child: const Text('Nazad'),
-                ),
-              ],
-            ),
-          ),
+        body: AppEmptyState(
+          icon: Icons.lock_outline,
+          title: 'Privatan pristup',
+          subtitle: 'Ovu stranicu može da vidi samo kupac na svom nalogu.',
+          ctaLabel: 'Nazad',
+          ctaIcon: Icons.arrow_back,
+          onCtaPressed: () => context.pop(),
         ),
       );
     }
@@ -126,6 +113,16 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
           final reviewsLeftByBuyer = data['reviewsLeftByBuyer'] as List<ReviewModel>;
           final reviewsForBuyer = data['reviewsForBuyer'] as List<BuyerReviewModel>;
           final sellerNames = data['sellerNames'] as Map<String, String>;
+
+          if (reviewsForBuyer.isEmpty && reviewsLeftByBuyer.isEmpty) {
+            return AppEmptyState(
+              icon: Icons.reviews_outlined,
+              title: 'Još nema recenzija',
+              subtitle: 'Kada obavite prve kupovine, ovde ćete moći da ocenite prodavce i vidite njihove utiske o vama.',
+              ctaLabel: 'Istraži proizvode',
+              onCtaPressed: () => context.go('/'),
+            );
+          }
 
           return ListView(
             padding: const EdgeInsets.all(16),

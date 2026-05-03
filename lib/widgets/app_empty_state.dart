@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/design_system.dart';
+import '../utils/animations.dart';
 
 /// Prazno stanje – jasna poruka i opciono CTA dugme kada nema podataka za prikaz.
 class AppEmptyState extends StatelessWidget {
@@ -28,51 +30,87 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final minHeight =
             constraints.hasBoundedHeight ? constraints.maxHeight : 0.0;
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppDesign.spaceXL),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
+            constraints: BoxConstraints(minHeight: minHeight - AppDesign.spaceXL * 2),
             child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 80, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade700,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (subtitle != null && subtitle!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+              child: FadeInSlide(
+                duration: const Duration(milliseconds: 600),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Premium Icon Container
+                    Container(
+                      padding: const EdgeInsets.all(AppDesign.spaceL),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 64,
+                        color: colorScheme.primary.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    const SizedBox(height: AppDesign.spaceL),
+                    
+                    // Title
                     Text(
-                      subtitle!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey.shade600,
-                          ),
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
+                        letterSpacing: -0.5,
+                      ),
                       textAlign: TextAlign.center,
                     ),
+                    
+                    // Subtitle
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: AppDesign.spaceS),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        child: Text(
+                          subtitle!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                    
+                    // Call to Action
+                    if (cta != null) ...[
+                      const SizedBox(height: AppDesign.spaceXL),
+                      cta!,
+                    ] else if (ctaLabel != null && onCtaPressed != null) ...[
+                      const SizedBox(height: AppDesign.spaceXL),
+                      SizedBox(
+                        height: 48,
+                        child: FilledButton.icon(
+                          onPressed: onCtaPressed,
+                          icon: Icon(ctaIcon ?? Icons.search, size: 20),
+                          label: Text(
+                            ctaLabel!,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                  if (cta != null) ...[
-                    const SizedBox(height: 24),
-                    cta!,
-                  ] else if (ctaLabel != null && onCtaPressed != null) ...[
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: onCtaPressed,
-                      icon: Icon(ctaIcon ?? Icons.search, size: 20),
-                      label: Text(ctaLabel!),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),

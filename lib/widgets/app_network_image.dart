@@ -172,8 +172,17 @@ class AppNetworkImage extends StatelessWidget {
       memCacheWidth: memCacheWidth,
       memCacheHeight: memCacheHeight,
       fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 500),
+      fadeInCurve: Curves.easeInCubic,
       placeholder: (_, __) => placeholder ?? _defaultPlaceholder(),
       errorWidget: (_, __, ___) => errorWidget ?? _defaultError(),
+      imageBuilder: (context, imageProvider) => Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: imageProvider,
+            fit: fit,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../core/haptic.dart';
+import '../core/design_system.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/user_model.dart';
@@ -10,6 +12,7 @@ import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_network_image.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_empty_state.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -107,6 +110,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 );
                 if (ok == true) {
+                  AppHaptics.light();
                   await cart.clear();
                   _loadData();
                 }
@@ -124,23 +128,12 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            'Vaša korpa je prazna',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => context.go('/'),
-            child: const Text('Istraži proizvode'),
-          ),
-        ],
-      ),
+    return AppEmptyState(
+      icon: Icons.shopping_basket_outlined,
+      title: 'Vaša korpa je prazna',
+      subtitle: 'Dodajte domaće proizvode u korpu i podržite lokalne proizvođače.',
+      ctaLabel: 'Istraži proizvode',
+      onCtaPressed: () => context.go('/'),
     );
   }
 
@@ -223,6 +216,7 @@ class _SellerCartCardState extends State<_SellerCartCard> {
     final sellerId = widget.sellerId;
     
     // 1. Pozovi provider da ukloni iz baze/state-a
+    AppHaptics.light();
     await context.read<CartProvider>().removeFromSeller(
       sellerId: sellerId,
       productId: item.product.id,
@@ -300,7 +294,7 @@ class _SellerCartCardState extends State<_SellerCartCard> {
           // Progress Bar
           if (widget.minOrder != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(AppDesign.spaceL, AppDesign.spaceL, AppDesign.spaceL, AppDesign.spaceS),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -322,7 +316,7 @@ class _SellerCartCardState extends State<_SellerCartCard> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  AppDesign.boxS,
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
@@ -341,7 +335,7 @@ class _SellerCartCardState extends State<_SellerCartCard> {
               ),
             ),
 
-          const Divider(height: 32),
+          const Divider(height: AppDesign.spaceL),
 
           // Items (AnimatedList)
           AnimatedList(
@@ -368,7 +362,7 @@ class _SellerCartCardState extends State<_SellerCartCard> {
 
           // Footer
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppDesign.paddingL,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -437,7 +431,7 @@ class _CartItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = item.product;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppDesign.spaceL, vertical: AppDesign.spaceS),
       child: Row(
         children: [
           ClipRRect(

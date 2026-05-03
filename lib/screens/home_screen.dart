@@ -20,6 +20,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_shimmer.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/cache_status_widget.dart';
@@ -33,7 +34,8 @@ import '../models/home_side_panel.dart';
 import '../models/map_card.dart';
 import '../models/seller_dashboard_sliver.dart';
 import '../models/sellers_near_you_section.dart';
-import '../models/sticky_search_header_delegate.dart';
+import '../widgets/sticky_search_header_delegate.dart';
+import '../utils/animations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -152,42 +154,47 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
     return Scaffold(
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        title: const Text(AppConstants.appName,
-            style: TextStyle(color: Colors.white)),
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Row(
+          children: [
+            const Icon(Icons.eco_outlined, size: 28),
+            const SizedBox(width: 8),
+            Text(
+              AppConstants.appName,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+            ),
+          ],
+        ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: IconButton(
-              icon: Badge(
-                isLabelVisible: unreadCount > 0,
-                label: Text('$unreadCount'),
-                child: const Icon(Icons.notifications_outlined),
-              ),
-              tooltip: 'Obaveštenja',
-              onPressed: () => context.push('/notifications'),
+          IconButton(
+            icon: Badge(
+              isLabelVisible: unreadCount > 0,
+              label: Text('$unreadCount'),
+              backgroundColor: Colors.red,
+              child: const Icon(Icons.notifications_none_rounded),
             ),
+            onPressed: () => context.push('/notifications'),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: IconButton(
-              icon: Badge(
-                isLabelVisible: context.watch<CartProvider>().count > 0,
-                label: Text('${context.watch<CartProvider>().count}'),
-                child: const Icon(Icons.shopping_cart_checkout),
-              ),
-              tooltip: 'Korpa',
-              onPressed: () => context.push('/cart'),
+          IconButton(
+            icon: Badge(
+              isLabelVisible: context.watch<CartProvider>().count > 0,
+              label: Text('${context.watch<CartProvider>().count}'),
+              child: const Icon(Icons.shopping_cart_outlined),
             ),
+            onPressed: () => context.push('/cart'),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: IconButton(
-              icon: const Icon(Icons.location_on),
-              tooltip: selectedRegion ?? 'Izaberi lokaciju',
-              onPressed: () => _showLocationPicker(context),
-            ),
+          IconButton(
+            icon: const Icon(Icons.location_on_outlined),
+            onPressed: () => _showLocationPicker(context),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SafeArea(
@@ -205,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onRefresh: _onRefresh,
                     child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      cacheExtent: 400,
+                      cacheExtent: 600,
                       slivers: [
                         // Search header se prikazuje samo na mobilnim uređajima kada se skroluje
                         if (!isWide) _buildStickySearch(context),
@@ -236,10 +243,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 isWide: true),
                                             if (isSeller) ...[
                                               SizedBox(height: compactSpacing),
-                                              RepaintBoundary(
-                                                child: SellerDashboardSliver(
-                                                  statsFuture:
-                                                      _sellerStatsFuture,
+                                              FadeInSlide(
+                                                delay: Duration(milliseconds: 200),
+                                                child: RepaintBoundary(
+                                                  child: SellerDashboardSliver(
+                                                    statsFuture: _sellerStatsFuture,
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -262,11 +271,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 }
                                                 if (snap.connectionState ==
                                                     ConnectionState.waiting) {
-                                                  return const Padding(
-                                                    padding: EdgeInsets.only(
-                                                        bottom: 24),
-                                                    child:
-                                                        ProductCarouselSkeleton(),
+                                                  return GridView.builder(
+                                                    shrinkWrap: true,
+                                                    physics: const NeverScrollableScrollPhysics(),
+                                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                                      crossAxisCount: Breakpoints.isDesktop(context) ? 4 : 2,
+                                                      mainAxisSpacing: 6,
+                                                      crossAxisSpacing: 6,
+                                                      mainAxisExtent: productGridExtent,
+                                                    ),
+                                                    itemCount: 4,
+                                                    itemBuilder: (_, __) => const ProductCardSkeleton(),
                                                   );
                                                 }
                                                 final list =
@@ -297,27 +312,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 final canFavorite =
                                                     user != null &&
                                                         !user.isGuest;
-                                                return Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              bottom: 12),
-                                                      child: Text(
-                                                        newProducts.isNotEmpty
-                                                            ? 'Najnoviji proizvodi'
-                                                            : 'Poslednje dodato',
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .titleMedium
-                                                            ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold),
+                                                return FadeInSlide(
+                                                  delay: const Duration(milliseconds: 300),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.start,
+                                                    children: [
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                                bottom: 12),
+                                                        child: Text(
+                                                          newProducts.isNotEmpty
+                                                              ? 'Najnoviji proizvodi'
+                                                              : 'Poslednje dodato',
+                                                          style: Theme.of(context)
+                                                              .textTheme
+                                                              .titleLarge
+                                                              ?.copyWith(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w800),
+                                                        ),
                                                       ),
-                                                    ),
                                                     GridView.builder(
                                                       shrinkWrap: true,
                                                       physics:
@@ -392,7 +409,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                     SizedBox(
                                                         height: sectionSpacing),
-                                                  ],
+                                                   ],
+                                                  ),
                                                 );
                                               },
                                             ),
@@ -416,22 +434,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                             ),
                                             SizedBox(height: sidePanelSpacing),
-                                            RepaintBoundary(
-                                              child: HomeSidePanel(
-                                                homeProductsStream: stream,
-                                                initialData: _latestHomeData,
-                                                isSeller: isSeller,
+                                              FadeInSlide(
+                                                delay: const Duration(milliseconds: 400),
+                                                child: RepaintBoundary(
+                                                  child: HomeSidePanel(
+                                                    homeProductsStream: stream,
+                                                    initialData: _latestHomeData,
+                                                    isSeller: isSeller,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                            if (selectedRegion != null) ...[
+                                              if (selectedRegion != null) ...[
+                                                SizedBox(height: sectionSpacing),
+                                                FadeInSlide(
+                                                  delay: const Duration(milliseconds: 500),
+                                                  child: RepaintBoundary(
+                                                    child: SellersNearYouSection(
+                                                        region: selectedRegion),
+                                                  ),
+                                                ),
+                                              ],
                                               SizedBox(height: sectionSpacing),
-                                              RepaintBoundary(
-                                                child: SellersNearYouSection(
-                                                    region: selectedRegion),
+                                              const FadeInSlide(
+                                                delay: Duration(milliseconds: 600),
+                                                child: RepaintBoundary(child: MapCard()),
                                               ),
-                                            ],
-                                            SizedBox(height: sectionSpacing),
-                                            RepaintBoundary(child: MapCard()),
                                           ],
                                         ),
                                       ),
@@ -445,9 +472,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         children: [
                                           _buildCategoryHeader(context),
                                           SizedBox(height: compactSpacing),
-                                          CategoryGrid(
-                                              topCategories: topCategories,
-                                              isWide: false),
+                                          FadeInSlide(
+                                            delay: const Duration(milliseconds: 100),
+                                            child: CategoryGrid(
+                                                topCategories: topCategories,
+                                                isWide: false),
+                                          ),
                                         ],
                                       ),
                                       SizedBox(height: sectionSpacing),
@@ -484,11 +514,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ],
                                       ] else ...[
-                                        RepaintBoundary(
-                                          child: HomeSidePanel(
-                                            homeProductsStream: stream,
-                                            initialData: _latestHomeData,
-                                            isSeller: isSeller,
+                                        FadeInSlide(
+                                          delay: const Duration(milliseconds: 200),
+                                          child: RepaintBoundary(
+                                            child: HomeSidePanel(
+                                              homeProductsStream: stream,
+                                              initialData: _latestHomeData,
+                                              isSeller: isSeller,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -522,10 +555,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               }
                               if (snap.connectionState ==
                                   ConnectionState.waiting) {
-                                return const SliverToBoxAdapter(
-                                  child: Padding(
-                                    padding: EdgeInsets.only(bottom: 24),
-                                    child: ProductCarouselSkeleton(),
+                                return SliverPadding(
+                                  padding: EdgeInsets.symmetric(horizontal: Breakpoints.horizontalPadding(context)),
+                                  sliver: SliverGrid(
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      mainAxisSpacing: 4,
+                                      crossAxisSpacing: 4,
+                                      mainAxisExtent: 255,
+                                    ),
+                                    delegate: SliverChildBuilderDelegate(
+                                      (context, i) => const ProductCardSkeleton(),
+                                      childCount: 4,
+                                    ),
                                   ),
                                 );
                               }

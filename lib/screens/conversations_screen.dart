@@ -389,7 +389,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Poruke')),
-        body: const Center(child: Text('Prijavite se da vidite poruke.')),
+        body: AppEmptyState(
+          icon: Icons.chat_bubble_outline,
+          title: 'Vaše poruke',
+          subtitle: 'Prijavite se da biste mogli da komunicirate sa prodavcima.',
+          ctaLabel: 'Prijavi se',
+          onCtaPressed: () => context.go('/login'),
+        ),
       );
     }
 

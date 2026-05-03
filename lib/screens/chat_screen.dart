@@ -17,6 +17,7 @@ import '../models/product_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/skeleton.dart';
@@ -564,12 +565,10 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
 
                         if (messages.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'Nema poruka.\nPošaljite prvu poruku.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
+                          return AppEmptyState(
+                            icon: Icons.chat_bubble_outline,
+                            title: 'Nema poruka',
+                            subtitle: 'Započnite razgovor sa prodavcem.',
                           );
                         }
 

@@ -10,6 +10,7 @@ import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../models/product_model.dart';
 
+import '../core/haptic.dart';
 import '../widgets/offline_indicator.dart';
 import '../widgets/skeleton.dart';
 
@@ -414,7 +415,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
 
   void _setQuantity(int index, double quantity) {
     final p = _items[index].product;
-    if (quantity < p.minOrderKg) return;
+    AppHaptics.selection();
     setState(() => _items[index] = (product: p, quantity: quantity));
     context.read<CartProvider>().setQuantityForSeller(
           sellerId: widget.sellerId,
@@ -756,17 +757,7 @@ class _CheckoutMultiFormState extends State<_CheckoutMultiForm> {
     if (!mounted) return;
 
     if (result.isSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.data == true
-              ? 'Porudžbina je poslata prodavcu.'
-              : 'Porudžbine su sačuvane. Biće poslane kada je dostupan Internet.'),
-          backgroundColor: result.data == true ? null : Colors.orange,
-          duration: result.data == true
-              ? const Duration(seconds: 2)
-              : const Duration(seconds: 4),
-        ),
-      );
+      AppHaptics.success();
       context.go('/orders');
     } else {
       setState(() {

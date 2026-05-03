@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
+import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../core/profile_display_names.dart';
 import '../core/responsive.dart';
+import '../core/utils/error_messages.dart';
 import '../core/web_seo.dart';
 import '../models/product_model.dart';
 import '../models/product_reviews_data.dart';
@@ -15,6 +17,7 @@ import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
+import '../utils/animations.dart';
 
 import '../models/user_model.dart';
 import '../supabase_config.dart';
@@ -178,9 +181,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Future<ProductReviewsData> _loadReviewsFuture() async {
     final reviewsService = context.read<ReviewsService>();
-    final avg =
-        await reviewsService.getAverageRatingForProduct(widget.productId);
     final reviews = await reviewsService.getReviewsForProduct(widget.productId);
+    final avg = ReviewsService.computeAverage(reviews.map((r) => r.rating));
     final names = await fetchProfileDisplayNames(reviews.map((r) => r.buyerId));
     return ProductReviewsData(
       averageRating: avg,
@@ -484,7 +486,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       width: desktopMode ? (isLargeTablet ? 220.0 : 200.0) : double.infinity,
       height: isLargeTablet ? 50 : 52,
       child: BounceTapButton(
-        onPressed: product.isAvailable ? () => _addToCart(product) : null,
+        onPressed: product.isAvailable ? () => withHaptic(() => _addToCart(product), medium: true) : null,
         builder: (onPressed) => ElevatedButton(
           onPressed: product.isAvailable ? onPressed : null,
           child: Text(
@@ -555,32 +557,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             onTap: _scrollToReviews,
           ),
           const SizedBox(height: 16),
-          _InfoBlock(title: 'Opis', content: product.description),
-          _InfoBlock(
-              title: 'Minimalna porudžbina',
-              content: product.minOrderFormatted),
-          _InfoBlock(
-              title: 'Dostupna količina',
-              content: product.isAvailable
-                  ? product.availableFormatted
-                  : 'Nedostupno'),
-          _InfoBlock(title: 'Lokacija', content: product.location),
-          _InfoBlock(
-              title: 'Način preuzimanja',
-              content: product.pickupOptions.join(', ')),
+          FadeInSlide(
+            delay: const Duration(milliseconds: 100),
+            child: _InfoBlock(title: 'Opis', content: product.description),
+          ),
+          FadeInSlide(
+            delay: const Duration(milliseconds: 150),
+            child: _InfoBlock(
+                title: 'Minimalna porudžbina',
+                content: product.minOrderFormatted),
+          ),
+          FadeInSlide(
+            delay: const Duration(milliseconds: 200),
+            child: _InfoBlock(
+                title: 'Dostupna količina',
+                content: product.isAvailable
+                    ? product.availableFormatted
+                    : 'Nedostupno'),
+          ),
+          FadeInSlide(
+            delay: const Duration(milliseconds: 250),
+            child: _InfoBlock(title: 'Lokacija', content: product.location),
+          ),
+          FadeInSlide(
+            delay: const Duration(milliseconds: 300),
+            child: _InfoBlock(
+                title: 'Način preuzimanja',
+                content: product.pickupOptions.join(', ')),
+          ),
           const SizedBox(height: 16),
           if (includeCart) ...[
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: BounceTapButton(
-                onPressed:
-                    product.isAvailable ? () => _addToCart(product) : null,
-                builder: (onPressed) => ElevatedButton(
-                  onPressed: product.isAvailable ? onPressed : null,
-                  child: Text(product.isAvailable
-                      ? 'Dodaj u korpu'
-                      : 'Trenutno nedostupno'),
+            FadeInSlide(
+              delay: const Duration(milliseconds: 300),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: BounceTapButton(
+                  onPressed:
+                      product.isAvailable ? () => withHaptic(() => _addToCart(product), medium: true) : null,
+                  builder: (onPressed) => ElevatedButton(
+                    onPressed: product.isAvailable ? onPressed : null,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(product.isAvailable
+                        ? 'Dodaj u korpu'
+                        : 'Trenutno nedostupno'),
+                  ),
                 ),
               ),
             ),
@@ -624,6 +647,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ],
           ),
+          Builder(builder: (context) {
+            final user = context.watch<AppState>().user;
+            // Sakrij dugme samo ako je ulogovan pravi korisnik (nije gost) i on je prodavac.
+            if (user != null && !user.isGuest && user.id == product.sellerId) {
+              return const SizedBox.shrink();
+            }
+
+            return Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      if (user == null || user.isGuest) {
+                        context.push('/login');
+                        return;
+                      }
+                      try {
+                        final convId = await context
+                            .read<ChatService>()
+                            .getOrCreateConversation(user.id, product.sellerId);
+                        if (context.mounted) context.push('/chat/$convId');
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(friendlyError(e)),
+                                backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.chat_outlined,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Pošalji poruku prodavcu',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
           const SizedBox(height: 16),
           if (!product.isAvailable)
             Container(
@@ -822,7 +899,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             future: _productFuture,
             builder: (_, snap) {
               return IconButton(
-                icon: const Icon(Icons.share),
+                icon: Icon(Icons.adaptive.share),
                 tooltip: 'Podeli proizvod',
                 onPressed: snap.hasData
                     ? () => withHaptic(() => _shareProduct(context, snap.data!))
@@ -1338,15 +1415,16 @@ class _InfoBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppDesign.spaceS),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 2),
-          Text(content, style: Theme.of(context).textTheme.bodyLarge),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500)),
+          const SizedBox(height: 1),
+          Text(content, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );
@@ -1595,6 +1673,7 @@ class _SellerInlineCartSection extends StatelessWidget {
                             onPressed: e.quantity <= minQty
                                 ? null
                                 : () {
+                                    AppHaptics.selection();
                                     final next = e.quantity - step;
                                     if (next < minQty) return;
                                     cart.setQuantityForSeller(
@@ -1609,6 +1688,7 @@ class _SellerInlineCartSection extends StatelessWidget {
                             icon: const Icon(Icons.add, size: 18),
                             visualDensity: VisualDensity.compact,
                             onPressed: () {
+                              AppHaptics.selection();
                               final next = e.quantity + step;
                               cart.setQuantityForSeller(
                                 sellerId: sellerId,

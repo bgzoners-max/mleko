@@ -75,30 +75,23 @@ class ReviewsService {
     }
   }
 
+  /// Izračunava prosečnu ocenu iz liste ocena na strani klijenta.
+  /// Prihvata bilo koji Iterable<int> — radi i za ReviewModel i za BuyerReviewModel.
+  static double? computeAverage(Iterable<int> ratings) {
+    final list = ratings.toList();
+    if (list.isEmpty) return null;
+    final sum = list.fold<int>(0, (acc, r) => acc + r);
+    return sum / list.length;
+  }
+
   Future<double?> getAverageRatingForSeller(String sellerId) async {
-    try {
-      final result = await _client
-          .from('reviews')
-          .select('rating.avg()')
-          .eq('seller_id', sellerId)
-          .single();
-      return (result['avg'] as num?)?.toDouble();
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
+    final reviews = await getReviewsForSeller(sellerId);
+    return computeAverage(reviews.map((r) => r.rating));
   }
 
   Future<double?> getAverageRatingForProduct(String productId) async {
-    try {
-      final result = await _client
-          .from('reviews')
-          .select('rating.avg()')
-          .eq('product_id', productId)
-          .single();
-      return (result['avg'] as num?)?.toDouble();
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
+    final reviews = await getReviewsForProduct(productId);
+    return computeAverage(reviews.map((r) => r.rating));
   }
 
   Future<List<BuyerReviewModel>> getReviewsForBuyer(String buyerId) async {
@@ -120,17 +113,8 @@ class ReviewsService {
   }
 
   Future<double?> getAverageRatingForBuyer(String buyerId) async {
-    try {
-      final result = await _client
-          .from('buyer_reviews')
-          .select('rating.avg()')
-          .eq('buyer_id', buyerId)
-          .single();
-      return (result['avg'] as num?)?.toDouble();
-    } on PostgrestException catch (e) {
-      if (e.code == '42P01') return null;
-      rethrow;
-    }
+    final reviews = await getReviewsForBuyer(buyerId);
+    return computeAverage(reviews.map((r) => r.rating));
   }
 
   Future<bool> canReviewOrder(String buyerId, String orderId) async {

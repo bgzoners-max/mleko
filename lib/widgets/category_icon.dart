@@ -65,17 +65,34 @@ Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
     }
   }
 
-  return Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      color: (color ?? Colors.green).withValues(alpha: 0.1),
-      shape: BoxShape.circle,
-      border: Border.all(
-        color: (color ?? Colors.green).withValues(alpha: 0.2),
-        width: 1.5,
-      ),
-    ),
-    child: Center(child: iconChild),
+  return TweenAnimationBuilder<double>(
+    duration: const Duration(milliseconds: 500),
+    curve: Curves.easeOutBack,
+    tween: Tween(begin: 0.0, end: 1.0),
+    builder: (context, value, child) {
+      return Transform.scale(
+        scale: value,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: (color ?? const Color(0xFF1B5E20)).withValues(alpha: 0.08),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: (color ?? const Color(0xFF1B5E20)).withValues(alpha: 0.15),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (color ?? const Color(0xFF1B5E20)).withValues(alpha: 0.05),
+                blurRadius: 10,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: Center(child: iconChild),
+        ),
+      );
+    },
   );
 }
