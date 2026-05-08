@@ -93,6 +93,7 @@ class _MoreFromSellerSectionState extends State<MoreFromSellerSection> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(

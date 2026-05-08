@@ -139,6 +139,7 @@ class _ConversationInboxCardState extends State<ConversationInboxCard> {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
