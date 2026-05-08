@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
   public: {
     Tables: {
       buyer_reviews: {
@@ -60,31 +55,28 @@ export type Database = {
       }
       categories: {
         Row: {
-          created_at: string
-          icon: string
+          icon: string | null
           id: string
           name: string
-          order: number
+          order: number | null
           parent_id: string | null
           section: string | null
           slug: string | null
         }
         Insert: {
-          created_at?: string
-          icon: string
-          id: string
+          icon?: string | null
+          id?: string
           name: string
-          order?: number
+          order?: number | null
           parent_id?: string | null
           section?: string | null
           slug?: string | null
         }
         Update: {
-          created_at?: string
-          icon?: string
+          icon?: string | null
           id?: string
           name?: string
-          order?: number
+          order?: number | null
           parent_id?: string | null
           section?: string | null
           slug?: string | null
@@ -153,44 +145,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "conversation_user_prefs_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversation_user_settings: {
-        Row: {
-          conversation_id: string
-          created_at: string
-          hidden_at: string | null
-          id: string
-          is_favorite: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          created_at?: string
-          hidden_at?: string | null
-          id?: string
-          is_favorite?: boolean
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          created_at?: string
-          hidden_at?: string | null
-          id?: string
-          is_favorite?: boolean
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_user_settings_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
@@ -357,24 +311,6 @@ export type Database = {
           },
         ]
       }
-      message_retention_notice_log: {
-        Row: {
-          created_at: string
-          user_id: string
-          week_start: string
-        }
-        Insert: {
-          created_at?: string
-          user_id: string
-          week_start: string
-        }
-        Update: {
-          created_at?: string
-          user_id?: string
-          week_start?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           body: string
@@ -416,12 +352,11 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           id: string
-          metadata: Json
           order_id: string | null
           read_at: string | null
           ticket_id: string | null
           title: string
-          type: Database["public"]["Enums"]["notification_type"]
+          type: string
           user_id: string
         }
         Insert: {
@@ -429,12 +364,11 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           id?: string
-          metadata?: Json
           order_id?: string | null
           read_at?: string | null
           ticket_id?: string | null
           title: string
-          type: Database["public"]["Enums"]["notification_type"]
+          type: string
           user_id: string
         }
         Update: {
@@ -442,12 +376,11 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           id?: string
-          metadata?: Json
           order_id?: string | null
           read_at?: string | null
           ticket_id?: string | null
           title?: string
-          type?: Database["public"]["Enums"]["notification_type"]
+          type?: string
           user_id?: string
         }
         Relationships: [
@@ -581,7 +514,6 @@ export type Database = {
           buyer_city: string | null
           buyer_id: string
           buyer_phone: string
-          buyer_postal_code: string | null
           cancellation_reason: string | null
           created_at: string | null
           delivery_address: string | null
@@ -602,7 +534,6 @@ export type Database = {
           quantity_kg: number | null
           seller_id: string
           status: string | null
-          status_changed_at: string | null
           total_amount: number | null
           unit_type: string
         }
@@ -612,7 +543,6 @@ export type Database = {
           buyer_city?: string | null
           buyer_id: string
           buyer_phone: string
-          buyer_postal_code?: string | null
           cancellation_reason?: string | null
           created_at?: string | null
           delivery_address?: string | null
@@ -633,7 +563,6 @@ export type Database = {
           quantity_kg?: number | null
           seller_id: string
           status?: string | null
-          status_changed_at?: string | null
           total_amount?: number | null
           unit_type?: string
         }
@@ -643,7 +572,6 @@ export type Database = {
           buyer_city?: string | null
           buyer_id?: string
           buyer_phone?: string
-          buyer_postal_code?: string | null
           cancellation_reason?: string | null
           created_at?: string | null
           delivery_address?: string | null
@@ -664,7 +592,6 @@ export type Database = {
           quantity_kg?: number | null
           seller_id?: string
           status?: string | null
-          status_changed_at?: string | null
           total_amount?: number | null
           unit_type?: string
         }
@@ -720,52 +647,6 @@ export type Database = {
             foreignKeyName: "product_delivery_points_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products_with_ratings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      product_stats: {
-        Row: {
-          avg_rating: number
-          order_count: number
-          product_id: string
-          review_count: number
-          updated_at: string
-        }
-        Insert: {
-          avg_rating?: number
-          order_count?: number
-          product_id: string
-          review_count?: number
-          updated_at?: string
-        }
-        Update: {
-          avg_rating?: number
-          order_count?: number
-          product_id?: string
-          review_count?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_stats_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "product_listing_autoflags"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "product_stats_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_stats_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
             referencedRelation: "products_with_ratings"
             referencedColumns: ["id"]
           },
@@ -857,7 +738,6 @@ export type Database = {
           location: string | null
           phone: string | null
           phone_public: boolean
-          postal_code: string | null
           profile_image_url: string | null
           role: string | null
           seller_quick_replies: string[] | null
@@ -881,7 +761,6 @@ export type Database = {
           location?: string | null
           phone?: string | null
           phone_public?: boolean
-          postal_code?: string | null
           profile_image_url?: string | null
           role?: string | null
           seller_quick_replies?: string[] | null
@@ -905,7 +784,6 @@ export type Database = {
           location?: string | null
           phone?: string | null
           phone_public?: boolean
-          postal_code?: string | null
           profile_image_url?: string | null
           role?: string | null
           seller_quick_replies?: string[] | null
@@ -958,48 +836,6 @@ export type Database = {
           status?: string
           title?: string | null
           token_count?: number
-          type?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      push_logs: {
-        Row: {
-          body: string | null
-          created_at: string
-          error: string | null
-          id: number
-          platform: string | null
-          status: number | null
-          success: boolean
-          title: string | null
-          token: string | null
-          type: string | null
-          user_id: string | null
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          error?: string | null
-          id?: number
-          platform?: string | null
-          status?: number | null
-          success: boolean
-          title?: string | null
-          token?: string | null
-          type?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          error?: string | null
-          id?: number
-          platform?: string | null
-          status?: number | null
-          success?: boolean
-          title?: string | null
-          token?: string | null
           type?: string | null
           user_id?: string | null
         }
@@ -1203,53 +1039,44 @@ export type Database = {
       support_tickets: {
         Row: {
           admin_note: string | null
-          admin_reply: string | null
           body: string
           category: string
           created_at: string
-          email: string | null
           id: string
-          message: string
           status: string
           subject: string
-          ticket_number: string | null
+          ticket_number: string
           updated_at: string
           user_email: string | null
-          user_id: string
+          user_id: string | null
           user_name: string | null
         }
         Insert: {
           admin_note?: string | null
-          admin_reply?: string | null
           body: string
           category?: string
           created_at?: string
-          email?: string | null
           id?: string
-          message: string
           status?: string
           subject: string
-          ticket_number?: string | null
+          ticket_number?: string
           updated_at?: string
           user_email?: string | null
-          user_id: string
+          user_id?: string | null
           user_name?: string | null
         }
         Update: {
           admin_note?: string | null
-          admin_reply?: string | null
           body?: string
           category?: string
           created_at?: string
-          email?: string | null
           id?: string
-          message?: string
           status?: string
           subject?: string
-          ticket_number?: string | null
+          ticket_number?: string
           updated_at?: string
           user_email?: string | null
-          user_id?: string
+          user_id?: string | null
           user_name?: string | null
         }
         Relationships: []
@@ -1281,24 +1108,6 @@ export type Database = {
           token?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      waitlist: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: string
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: string
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: string
         }
         Relationships: []
       }
@@ -1426,7 +1235,6 @@ export type Database = {
           unit_type: string
         }[]
       }
-      auto_archive_stale_orders_5_days: { Args: never; Returns: undefined }
       build_order_notification_body: {
         Args: {
           p_fallback_product_name?: string
@@ -1440,45 +1248,26 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
-      check_email_exists: { Args: { p_email: string }; Returns: boolean }
       cleanup_push_tokens: {
         Args: { p_keep_per_user?: number; p_max_age?: string }
         Returns: number
       }
-      create_order_with_items:
-        | {
-            Args: {
-              p_buyer_address?: string
-              p_buyer_city?: string
-              p_buyer_id: string
-              p_buyer_phone: string
-              p_buyer_postal_code?: string
-              p_delivery_fee_rsd?: number
-              p_delivery_method?: string
-              p_delivery_point_id?: string
-              p_delivery_slot_id?: string
-              p_items: Json
-              p_note?: string
-              p_seller_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_buyer_address?: string
-              p_buyer_city?: string
-              p_buyer_id: string
-              p_buyer_phone: string
-              p_delivery_fee_rsd?: number
-              p_delivery_method?: string
-              p_delivery_point_id?: string
-              p_delivery_slot_id?: string
-              p_items: Json
-              p_note?: string
-              p_seller_id: string
-            }
-            Returns: string
-          }
+      create_order_with_items: {
+        Args: {
+          p_buyer_address?: string
+          p_buyer_city?: string
+          p_buyer_id: string
+          p_buyer_phone: string
+          p_delivery_fee_rsd?: number
+          p_delivery_method?: string
+          p_delivery_point_id?: string
+          p_delivery_slot_id?: string
+          p_items: Json
+          p_note?: string
+          p_seller_id: string
+        }
+        Returns: string
+      }
       get_buyer_stats_dashboard: { Args: { p_buyer_id: string }; Returns: Json }
       get_conversation_info_with_profile: {
         Args: { p_conversation_id: string }
@@ -1510,7 +1299,6 @@ export type Database = {
           location: string | null
           phone: string | null
           phone_public: boolean
-          postal_code: string | null
           profile_image_url: string | null
           role: string | null
           seller_quick_replies: string[] | null
@@ -1623,15 +1411,13 @@ export type Database = {
         Args: { p_buyer_id: string; p_seller_id: string }
         Returns: Json
       }
-      get_seller_inbox: { Args: { p_seller_id: string }; Returns: Json }
+      get_seller_inbox:
+        | { Args: { p_seller_id: string }; Returns: Json }
+        | {
+            Args: { p_limit?: number; p_offset?: number; p_seller_id: string }
+            Returns: Json
+          }
       get_seller_loyalty_stats: { Args: { p_seller_id: string }; Returns: Json }
-      get_seller_popular_products: {
-        Args: { p_limit?: number; p_seller_id: string }
-        Returns: {
-          product: Json
-          sales_count: number
-        }[]
-      }
       get_seller_response_time_stats: {
         Args: { p_seller_id: string }
         Returns: {
@@ -1647,6 +1433,7 @@ export type Database = {
         Returns: Json
       }
       handle_order_retention: { Args: never; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
       normalize_listing_key: { Args: { input_value: string }; Returns: string }
       push_health_summary: {
         Args: never
@@ -1684,12 +1471,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      refresh_all_product_stats: { Args: never; Returns: undefined }
-      refresh_product_stats: {
-        Args: { p_product_id: string }
-        Returns: undefined
-      }
-      run_message_retention_maintenance: { Args: never; Returns: Json }
       search_products_fts: {
         Args: {
           p_available_now?: boolean
@@ -1749,17 +1530,7 @@ export type Database = {
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
-      notification_type:
-        | "new_order"
-        | "order_status"
-        | "order_status_changed"
-        | "new_message"
-        | "order_auto_archived"
-        | "system"
-        | "promo"
-        | "new_review"
-        | "new_buyer_review"
-        | "support_ticket_created"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1886,19 +1657,7 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      notification_type: [
-        "new_order",
-        "order_status",
-        "order_status_changed",
-        "new_message",
-        "order_auto_archived",
-        "system",
-        "promo",
-        "new_review",
-        "new_buyer_review",
-        "support_ticket_created",
-      ],
-    },
+    Enums: {},
   },
 } as const
+

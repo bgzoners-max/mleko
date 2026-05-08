@@ -15,7 +15,6 @@ class ProductListSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
     return ListView.builder(
       padding: AppDesign.paddingL,
       itemCount: itemCount,
@@ -102,7 +101,6 @@ class SellerProductListSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
     return ListView.separated(
       padding: AppDesign.paddingL,
       physics: const AlwaysScrollableScrollPhysics(),

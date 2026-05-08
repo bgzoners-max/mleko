@@ -4,15 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
-import '../../models/user_model.dart';
 import '../../models/app_error.dart';
-import '../core/logger_service.dart';
-import '../core/retry_utils.dart';
-import 'product_cache_service.dart';
-
-import '../../models/product_autoflag.dart';
 import '../../models/product_sort.dart';
-import '../../utils/search_utils.dart';
 import 'mixins/product_search_mixin.dart';
 import 'mixins/product_listing_mixin.dart';
 import 'mixins/product_stats_mixin.dart';

@@ -29,6 +29,9 @@ jobs:
       - name: Scan SECURITY DEFINER migrations (heuristic)
         run: dart run tool/scan_security_definer_migrations.dart
 
+      - name: Create dummy .env for analyzer
+        run: mkdir -p assets && touch assets/.env
+
       - name: Flutter analyze
         run: flutter analyze
 
