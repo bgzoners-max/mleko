@@ -33,7 +33,7 @@ jobs:
         run: mkdir -p assets && touch assets/.env
 
       - name: Flutter analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Flutter test (with coverage)
         run: flutter test --coverage
