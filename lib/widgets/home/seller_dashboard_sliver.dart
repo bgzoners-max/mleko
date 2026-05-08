@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import '../services/services.dart';
+﻿import 'package:flutter/material.dart';
+import '../../services/services.dart';
 
 /// Dashboard za prodavca na Home ekranu
 class SellerDashboardSliver extends StatelessWidget {
@@ -47,7 +47,7 @@ class SellerDashboardSliver extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _SellerStatItem(
-                        label: 'Na čekanju',
+                        label: 'Na Äekanju',
                         value: '${stats.pendingCount}',
                         icon: Icons.pending_actions),
                     _SellerStatItem(

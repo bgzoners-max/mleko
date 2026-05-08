@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'user_model.dart';
-import '../providers/app_state.dart';
-import '../services/services.dart';
-import '../widgets/skeleton.dart';
-import '../widgets/app_network_image.dart';
+import '../../models/user_model.dart';
+import '../../providers/app_state.dart';
+import '../../services/services.dart';
+import '../skeleton.dart';
+import '../app_network_image.dart';
 
-/// Lista gazdinstava koje kupac prati (isti podatak kao ekran „Pratim prodavce“).
+/// Lista gazdinstava koje kupac prati (isti podatak kao ekran â€žPratim prodavceâ€œ).
 class FavoriteFarmsList extends StatefulWidget {
   final TabController? tabController;
 
@@ -143,7 +143,7 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Greška pri učitavanju.',
+                  Text('GreÅ¡ka pri uÄitavanju.',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -151,7 +151,7 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
                       textAlign: TextAlign.center),
                   TextButton(
                       onPressed: _refreshForCurrentUser,
-                      child: const Text('Pokušaj ponovo')),
+                      child: const Text('PokuÅ¡aj ponovo')),
                 ],
               ),
             ),
@@ -171,12 +171,12 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
                   Icon(Icons.people_outline,
                       size: 40, color: Colors.grey.shade400),
                   const SizedBox(height: 8),
-                  Text('Još ne pratite nijedno gazdinstvo.',
+                  Text('JoÅ¡ ne pratite nijedno gazdinstvo.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall),
                   TextButton(
                       onPressed: () => context.push('/search'),
-                      child: const Text('Pretraži proizvode')),
+                      child: const Text('PretraÅ¾i proizvode')),
                 ],
               ),
             ),

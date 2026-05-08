@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../core/responsive.dart';
-import '../widgets/category_icon.dart';
+import '../../core/responsive.dart';
+import '../category_icon.dart';
 
 class CategoryGrid extends StatelessWidget {
   final List topCategories;

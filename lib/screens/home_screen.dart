@@ -2,40 +2,24 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
-import '../models/user_model.dart';
+import '../models/home_products_data.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
-import '../providers/favorites_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/location_provider.dart';
-import '../models/app_error.dart';
-import 'package:mleko/services/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/services.dart';
 
-import '../widgets/app_empty_state.dart';
-import '../widgets/app_error_retry.dart';
-import '../widgets/app_shimmer.dart';
-import '../widgets/category_icon.dart';
-import '../widgets/skeleton.dart';
-import '../widgets/cache_status_widget.dart';
-import '../widgets/app_network_image.dart';
-import '../widgets/product_card.dart';
-import '../models/home_products_data.dart';
-import '../models/category_grid.dart';
-import '../models/favorite_farms_list.dart';
-import '../models/home_product_item.dart';
-import '../models/home_side_panel.dart';
-import '../models/map_card.dart';
-import '../models/seller_dashboard_sliver.dart';
-import '../models/sellers_near_you_section.dart';
 import '../widgets/sticky_search_header_delegate.dart';
-import '../utils/animations.dart';
+import '../widgets/home/home_wide_layout.dart';
+import '../widgets/home/home_narrow_top_section.dart';
+import '../widgets/home/home_narrow_products_sliver.dart';
+import '../widgets/home/seller_dashboard_sliver.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final p in products.take(4)) {
       if (p.imageUrls.isNotEmpty) {
         urls.add(p.imageUrls.first);
-        // Preload-uj i drugu sliku ako postoji za još brži prelaz na detalje
         if (p.imageUrls.length > 1) {
           urls.add(p.imageUrls[1]);
         }
@@ -89,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _lastSellerId = user.id;
       _sellerStatsFuture = _ordersService!.getSellerStats(user.id);
     }
-    // Koristi listen: false unutar didChangeDependencies ako samo uzimaš vrednost
     final loc = Provider.of<LocationProvider>(context, listen: false);
     if (_homeProductsStream == null) {
       _homeProductsStream = _productsService!.getHomeProducts(
@@ -129,11 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
         context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
     final unreadCount =
         context.select<AppState, int>((s) => s.unreadNotificationCount);
+    
     final isWide = isTwoPaneLayout;
     final isTablet = Breakpoints.isTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isTabletLayout = isTablet && !isWide;
+    
     final outerHorizontalPadding =
         isWide ? 12.0 : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 10.0));
     final sectionSpacing =
@@ -144,6 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final productGridExtent = isWide
         ? 364.0
         : (isLargeTablet ? 352.0 : (isSmallTablet ? 344.0 : 368.0));
+        
     final stream = _homeProductsStream;
     if (stream == null) {
       return Scaffold(
@@ -153,15 +138,21 @@ class _HomeScreenState extends State<HomeScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
+    
     return Scaffold(
       extendBodyBehindAppBar: false,
       appBar: AppBar(
         centerTitle: false,
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         title: Row(
           children: [
-            const Icon(Icons.eco_outlined, size: 28),
+            Icon(
+              Icons.eco_outlined,
+              size: 28,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Text(
               AppConstants.appName,
@@ -214,9 +205,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       cacheExtent: 600,
                       slivers: [
-                        // Search header se prikazuje samo na mobilnim uređajima kada se skroluje
                         if (!isWide) _buildStickySearch(context),
-
+                        
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: EdgeInsets.fromLTRB(
@@ -226,309 +216,37 @@ class _HomeScreenState extends State<HomeScreen> {
                               4,
                             ),
                             child: isWide
-                                ? Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        flex: 70,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            _buildCategoryHeader(context),
-                                            SizedBox(height: compactSpacing),
-                                            CategoryGrid(
-                                                topCategories: topCategories,
-                                                isWide: true),
-                                            if (isSeller) ...[
-                                              SizedBox(height: compactSpacing),
-                                              FadeInSlide(
-                                                delay: Duration(milliseconds: 200),
-                                                child: RepaintBoundary(
-                                                  child: SellerDashboardSliver(
-                                                    statsFuture: _sellerStatsFuture,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                            SizedBox(height: sectionSpacing),
-                                            StreamBuilder<HomeProductsData>(
-                                              initialData: _latestHomeData,
-                                              stream: stream,
-                                              builder: (context, snap) {
-                                                if (snap.hasError) {
-                                                  final appError =
-                                                      AppError.from(snap.error);
-                                                  return AppErrorRetry(
-                                                    message: appError
-                                                        .getUserMessage(),
-                                                    detail: appError.code,
-                                                    onRetry: () =>
-                                                        _refreshController
-                                                            .add(null),
-                                                  );
-                                                }
-                                                if (snap.connectionState ==
-                                                    ConnectionState.waiting) {
-                                                  return GridView.builder(
-                                                    shrinkWrap: true,
-                                                    physics: const NeverScrollableScrollPhysics(),
-                                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                                      crossAxisCount: Breakpoints.isDesktop(context) ? 4 : 2,
-                                                      mainAxisSpacing: 6,
-                                                      crossAxisSpacing: 6,
-                                                      mainAxisExtent: productGridExtent,
-                                                    ),
-                                                    itemCount: 4,
-                                                    itemBuilder: (_, __) => const ProductCardSkeleton(),
-                                                  );
-                                                }
-                                                final list =
-                                                    snap.data?.products ?? [];
-                                                final salesCounts =
-                                                    snap.data?.salesCounts ??
-                                                        {};
-                                                final ratings =
-                                                    snap.data?.ratings ?? {};
-                                                final newProducts = list
-                                                    .where((p) =>
-                                                        DateTime.now()
-                                                            .difference(
-                                                                p.createdAt)
-                                                            .inDays <
-                                                        AppConstants
-                                                            .newProductDays)
-                                                    .toList();
-                                                final displayList =
-                                                    newProducts.isNotEmpty
-                                                        ? newProducts
-                                                        : list;
-                                                _warmupCarouselImages(
-                                                    displayList);
-                                                final user = context.select<
-                                                    AppState,
-                                                    UserModel?>((s) => s.user);
-                                                final canFavorite =
-                                                    user != null &&
-                                                        !user.isGuest;
-                                                return FadeInSlide(
-                                                  delay: const Duration(milliseconds: 300),
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment.start,
-                                                    children: [
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                                bottom: 12),
-                                                        child: Text(
-                                                          newProducts.isNotEmpty
-                                                              ? 'Najnoviji proizvodi'
-                                                              : 'Poslednje dodato',
-                                                          style: Theme.of(context)
-                                                              .textTheme
-                                                              .titleLarge
-                                                              ?.copyWith(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w800),
-                                                        ),
-                                                      ),
-                                                    GridView.builder(
-                                                      shrinkWrap: true,
-                                                      physics:
-                                                          const NeverScrollableScrollPhysics(),
-                                                      gridDelegate:
-                                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                                        crossAxisCount: Breakpoints
-                                                                .isDesktop(
-                                                                    context)
-                                                            ? 4
-                                                            : Breakpoints
-                                                                .productGridColumns(
-                                                                    context),
-                                                        mainAxisSpacing: 6,
-                                                        crossAxisSpacing: 6,
-                                                        mainAxisExtent:
-                                                            productGridExtent,
-                                                      ),
-                                                      itemCount: displayList
-                                                          .take(8)
-                                                          .length,
-                                                      itemBuilder:
-                                                          (context, i) {
-                                                        final product =
-                                                            displayList[i];
-                                                        final rating =
-                                                            ratings[product.id];
-                                                        return Selector<
-                                                            FavoritesProvider,
-                                                            bool>(
-                                                          selector: (_, fav) =>
-                                                              fav.isFavorite(
-                                                                  product.id),
-                                                          builder: (_,
-                                                                  isFavorite,
-                                                                  __) =>
-                                                              ProductCard(
-                                                            product: product,
-                                                            isPopular: (salesCounts[
-                                                                        product
-                                                                            .id] ??
-                                                                    0) >=
-                                                                AppConstants
-                                                                    .popularProductMinSales,
-                                                            isFavorite:
-                                                                canFavorite
-                                                                    ? isFavorite
-                                                                    : null,
-                                                            onFavoriteToggle: canFavorite
-                                                                ? () => context
-                                                                    .read<
-                                                                        FavoritesProvider>()
-                                                                    .toggle(
-                                                                        user.id,
-                                                                        product
-                                                                            .id)
-                                                                : null,
-                                                            avgRating:
-                                                                rating?.avg,
-                                                            reviewCount:
-                                                                rating?.count,
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                    SizedBox(
-                                                        height: compactSpacing),
-                                                    CacheStatusIndicator(
-                                                      onRefresh: () =>
-                                                          _refreshController
-                                                              .add(null),
-                                                    ),
-                                                    SizedBox(
-                                                        height: sectionSpacing),
-                                                   ],
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(width: sectionSpacing),
-                                      Expanded(
-                                        flex: 30,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            TextField(
-                                              readOnly: true,
-                                              onTap: () => _openSearch(context),
-                                              decoration: const InputDecoration(
-                                                hintText:
-                                                    'Traži proizvode, proizvođače…',
-                                                prefixIcon: Icon(Icons.search),
-                                              ),
-                                            ),
-                                            SizedBox(height: sidePanelSpacing),
-                                              FadeInSlide(
-                                                delay: const Duration(milliseconds: 400),
-                                                child: RepaintBoundary(
-                                                  child: HomeSidePanel(
-                                                    homeProductsStream: stream,
-                                                    initialData: _latestHomeData,
-                                                    isSeller: isSeller,
-                                                  ),
-                                                ),
-                                              ),
-                                              if (selectedRegion != null) ...[
-                                                SizedBox(height: sectionSpacing),
-                                                FadeInSlide(
-                                                  delay: const Duration(milliseconds: 500),
-                                                  child: RepaintBoundary(
-                                                    child: SellersNearYouSection(
-                                                        region: selectedRegion),
-                                                  ),
-                                                ),
-                                              ],
-                                              SizedBox(height: sectionSpacing),
-                                              const FadeInSlide(
-                                                delay: Duration(milliseconds: 600),
-                                                child: RepaintBoundary(child: MapCard()),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                ? HomeWideLayout(
+                                    topCategories: topCategories,
+                                    isSeller: isSeller,
+                                    sellerStatsFuture: _sellerStatsFuture,
+                                    stream: stream,
+                                    latestHomeData: _latestHomeData,
+                                    selectedRegion: selectedRegion,
+                                    refreshController: _refreshController,
+                                    warmupCarouselImages: _warmupCarouselImages,
+                                    productGridExtent: productGridExtent,
+                                    compactSpacing: compactSpacing,
+                                    sectionSpacing: sectionSpacing,
+                                    sidePanelSpacing: sidePanelSpacing,
+                                    categoryHeader: _buildCategoryHeader(context),
+                                    onSearchTap: () => _openSearch(context),
                                   )
-                                : Column(
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _buildCategoryHeader(context),
-                                          SizedBox(height: compactSpacing),
-                                          FadeInSlide(
-                                            delay: const Duration(milliseconds: 100),
-                                            child: CategoryGrid(
-                                                topCategories: topCategories,
-                                                isWide: false),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: sectionSpacing),
-                                      if (isTabletLayout) ...[
-                                        Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              flex: isLargeTablet ? 6 : 5,
-                                              child: RepaintBoundary(
-                                                child: HomeSidePanel(
-                                                  homeProductsStream: stream,
-                                                  initialData: _latestHomeData,
-                                                  isSeller: isSeller,
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(width: sectionSpacing),
-                                            Expanded(
-                                              flex: isLargeTablet ? 4 : 5,
-                                              child: RepaintBoundary(
-                                                child: MapCard(),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        if (selectedRegion != null) ...[
-                                          SizedBox(height: sectionSpacing),
-                                          RepaintBoundary(
-                                            child: SellersNearYouSection(
-                                              region: selectedRegion,
-                                            ),
-                                          ),
-                                        ],
-                                      ] else ...[
-                                        FadeInSlide(
-                                          delay: const Duration(milliseconds: 200),
-                                          child: RepaintBoundary(
-                                            child: HomeSidePanel(
-                                              homeProductsStream: stream,
-                                              initialData: _latestHomeData,
-                                              isSeller: isSeller,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
+                                : HomeNarrowTopSection(
+                                    topCategories: topCategories,
+                                    isTabletLayout: isTabletLayout,
+                                    isLargeTablet: isLargeTablet,
+                                    compactSpacing: compactSpacing,
+                                    sectionSpacing: sectionSpacing,
+                                    stream: stream,
+                                    latestHomeData: _latestHomeData,
+                                    isSeller: isSeller,
+                                    selectedRegion: selectedRegion,
+                                    categoryHeader: _buildCategoryHeader(context),
                                   ),
                           ),
                         ),
+                        
                         if (!isWide && isSeller)
                           SliverToBoxAdapter(
                             child: RepaintBoundary(
@@ -536,142 +254,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                   statsFuture: _sellerStatsFuture),
                             ),
                           ),
+                          
                         if (!isWide)
                           const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          
                         if (!isWide)
-                          StreamBuilder<HomeProductsData>(
-                            initialData: _latestHomeData,
+                          HomeNarrowProductsSliver(
                             stream: stream,
-                            builder: (context, snap) {
-                              if (snap.hasError) {
-                                final appError = AppError.from(snap.error);
-                                return SliverToBoxAdapter(
-                                  child: AppErrorRetry(
-                                    message: appError.getUserMessage(),
-                                    detail: appError.code,
-                                    onRetry: () => _refreshController.add(null),
-                                  ),
-                                );
-                              }
-                              if (snap.connectionState ==
-                                  ConnectionState.waiting) {
-                                return SliverPadding(
-                                  padding: EdgeInsets.symmetric(horizontal: Breakpoints.horizontalPadding(context)),
-                                  sliver: SliverGrid(
-                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      mainAxisSpacing: 4,
-                                      crossAxisSpacing: 4,
-                                      mainAxisExtent: 255,
-                                    ),
-                                    delegate: SliverChildBuilderDelegate(
-                                      (context, i) => const ProductCardSkeleton(),
-                                      childCount: 4,
-                                    ),
-                                  ),
-                                );
-                              }
-                              final list = snap.data?.products ?? [];
-                              final salesCounts = snap.data?.salesCounts ?? {};
-                              final ratings = snap.data?.ratings ?? {};
-                              final newProducts = list
-                                  .where((p) =>
-                                      DateTime.now()
-                                          .difference(p.createdAt)
-                                          .inDays <
-                                      AppConstants.newProductDays)
-                                  .toList();
-                              final displayList =
-                                  newProducts.isNotEmpty ? newProducts : list;
-                              _warmupCarouselImages(displayList);
-                              final user = context.read<AppState>().user;
-                              final canFavorite = user != null && !user.isGuest;
-
-                              return SliverMainAxisGroup(
-                                slivers: [
-                                  SliverToBoxAdapter(
-                                    child: Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        Breakpoints.horizontalPadding(context),
-                                        sidePanelSpacing,
-                                        Breakpoints.horizontalPadding(context),
-                                        12,
-                                      ),
-                                      child: Text(
-                                        newProducts.isNotEmpty
-                                            ? 'Najnoviji proizvodi'
-                                            : 'Poslednje dodato',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                                fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ),
-                                  SliverPadding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal:
-                                            Breakpoints.horizontalPadding(
-                                                context)),
-                                    sliver: SliverGrid(
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: isTabletLayout
-                                            ? (isLargeTablet ? 3 : 2)
-                                            : 2,
-                                        mainAxisSpacing: isTabletLayout ? 8 : 4,
-                                        crossAxisSpacing:
-                                            isTabletLayout ? 8 : 4,
-                                        mainAxisExtent: isTabletLayout
-                                            ? (isLargeTablet ? 348 : 356)
-                                            : 255,
-                                      ),
-                                      delegate: SliverChildBuilderDelegate(
-                                        (context, i) {
-                                          final product = displayList[i];
-                                          final rating = ratings[product.id];
-                                          return HomeProductItem(
-                                            product: product,
-                                            salesCount:
-                                                salesCounts[product.id] ?? 0,
-                                            canFavorite: canFavorite,
-                                            userId: user?.id,
-                                            avgRating: rating?.avg,
-                                            reviewCount: rating?.count,
-                                          );
-                                        },
-                                        childCount: displayList.take(6).length,
-                                      ),
-                                    ),
-                                  ),
-                                  SliverToBoxAdapter(
-                                    child: Column(
-                                      children: [
-                                        if (!isTabletLayout &&
-                                            selectedRegion != null) ...[
-                                          SizedBox(height: sectionSpacing),
-                                          RepaintBoundary(
-                                            child: SellersNearYouSection(
-                                                region: selectedRegion),
-                                          ),
-                                        ],
-                                        if (!isTabletLayout) ...[
-                                          SizedBox(height: sectionSpacing),
-                                          RepaintBoundary(child: MapCard()),
-                                        ],
-                                        SizedBox(height: compactSpacing),
-                                        CacheStatusIndicator(
-                                          onRefresh: () =>
-                                              _refreshController.add(null),
-                                        ),
-                                        SizedBox(height: sectionSpacing),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                            latestHomeData: _latestHomeData,
+                            refreshController: _refreshController,
+                            warmupCarouselImages: _warmupCarouselImages,
+                            isTabletLayout: isTabletLayout,
+                            isLargeTablet: isLargeTablet,
+                            sectionSpacing: sectionSpacing,
+                            compactSpacing: compactSpacing,
+                            selectedRegion: selectedRegion,
                           ),
                       ],
                     ),
@@ -763,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return SliverPersistentHeader(
       pinned: false,
       delegate: StickySearchHeaderDelegate(
-        isWide: false, // Prosleđujemo false jer je u !isWide bloku
+        isWide: false,
         onTapSearch: () => _openSearch(context),
       ),
     );

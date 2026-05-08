@@ -573,7 +573,7 @@ class _LoginFormState extends State<_LoginForm> {
         ),
         const SizedBox(height: 16),
         RichText(
-          textAlign: TextAlign.center,
+          textAlign: TextAlign.left,
           text: TextSpan(
             style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
             children: [

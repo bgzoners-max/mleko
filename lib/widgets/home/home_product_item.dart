@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/constants.dart';
-import 'product_model.dart';
-import '../providers/favorites_provider.dart';
-import '../widgets/product_card.dart';
+import '../../core/constants.dart';
+import '../../models/product_model.dart';
+import '../../providers/favorites_provider.dart';
+import '../product_card.dart';
 
 class HomeProductItem extends StatelessWidget {
   final ProductModel product;

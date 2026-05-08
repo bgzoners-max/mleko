@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import '../core/responsive.dart';
-import 'home_products_data.dart';
-import '../widgets/skeleton.dart';
-import '../widgets/app_empty_state.dart';
+import '../../core/responsive.dart';
+import '../../models/home_products_data.dart';
+import '../skeleton.dart';
+import '../app_empty_state.dart';
 import 'favorite_farms_list.dart';
 
 class HomeSidePanel extends StatefulWidget {
@@ -163,7 +163,7 @@ class TopProductsList extends StatelessWidget {
         }
         if (snapshot.hasError) {
           return Center(
-              child: Text('Greška pri učitavanju proizvoda.',
+              child: Text('GreÅ¡ka pri uÄitavanju proizvoda.',
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -175,10 +175,10 @@ class TopProductsList extends StatelessWidget {
         if (list.isEmpty) {
           return AppEmptyState(
             icon: Icons.shopping_basket_outlined,
-            title: 'Još nema proizvoda u katalogu',
+            title: 'JoÅ¡ nema proizvoda u katalogu',
             subtitle:
-                'Proverite ponovo kasnije ili pretražite po kategorijama.',
-            ctaLabel: 'Pretraži proizvode',
+                'Proverite ponovo kasnije ili pretraÅ¾ite po kategorijama.',
+            ctaLabel: 'PretraÅ¾i proizvode',
             ctaIcon: Icons.search,
             onCtaPressed: () => context.push('/search'),
           );

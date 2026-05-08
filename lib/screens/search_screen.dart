@@ -15,8 +15,10 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/product_card.dart';
 import '../widgets/app_shimmer.dart';
-import '../widgets/skeleton.dart';
-import '../widgets/category_icon.dart';
+
+import '../widgets/search/search_category_pill.dart';
+import '../widgets/search/search_filter_chip.dart';
+import '../widgets/search/search_history_panel.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key, this.initialCategory});
@@ -354,7 +356,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildCategoryItem(BuildContext context, dynamic cat,
       {bool fullWidth = false}) {
     final selected = _category == cat.name;
-    return _CategoryPill(
+    return SearchCategoryPill(
       label: cat.name,
       count: _categoryCounts[cat.name],
       icon: cat.icon,
@@ -383,71 +385,28 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildHistoryChips() {
-    return FutureBuilder<List<String>>(
-      future: _historyFuture,
-      builder: (context, snap) {
-        final history = snap.data ?? [];
-        if (history.isEmpty) return const SizedBox.shrink();
-        return Container(
-          width: double.infinity,
-          color: Colors.white.withValues(alpha: 0.5),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(_searchController.text.isEmpty ? 'Nedavne pretrage' : 'Predlozi',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant)),
-                  TextButton(
-                    onPressed: () async {
-                      await _searchHistoryService.clearHistory();
-                      if (mounted) {
-                        setState(() {
-                          _historyFuture = _searchHistoryService.getHistory();
-                        });
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text('Obriši sve',
-                        style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: history.take(6).map((h) {
-                  return InputChip(
-                    label: Text(h, style: const TextStyle(fontSize: 12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    onPressed: () {
-                      _searchController.text = h;
-                      _applySearchImmediate(h);
-                    },
-                    onDeleted: () async {
-                      await _searchHistoryService.removeFromHistory(h);
-                      if (mounted) {
-                        setState(() {
-                          _historyFuture = _searchHistoryService.getHistory();
-                        });
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        );
+    return SearchHistoryPanel(
+      historyFuture: _historyFuture,
+      isSearchEmpty: _searchController.text.isEmpty,
+      onClearAll: () async {
+        await _searchHistoryService.clearHistory();
+        if (mounted) {
+          setState(() {
+            _historyFuture = _searchHistoryService.getHistory();
+          });
+        }
+      },
+      onSelectHistory: (h) {
+        _searchController.text = h;
+        _applySearchImmediate(h);
+      },
+      onRemoveHistory: (h) async {
+        await _searchHistoryService.removeFromHistory(h);
+        if (mounted) {
+          setState(() {
+            _historyFuture = _searchHistoryService.getHistory();
+          });
+        }
       },
     );
   }
@@ -458,7 +417,7 @@ class _SearchScreenState extends State<SearchScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _FilterChip(
+          SearchFilterChip(
             label: 'Sortiraj',
             value: _sort.label,
             options: ProductSort.values.map((s) => s.label).toList(),
@@ -473,7 +432,7 @@ class _SearchScreenState extends State<SearchScreen> {
             },
           ),
           const SizedBox(width: 8),
-          _FilterChip(
+          SearchFilterChip(
             label: 'Region',
             value: _region,
             options: AppConstants.regions,
@@ -641,7 +600,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _FilterChip(
+                                  SearchFilterChip(
                                     label: 'Sortiraj',
                                     value: _sort.label,
                                     options: ProductSort.values.map((s) => s.label).toList(),
@@ -656,7 +615,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     },
                                   ),
                                   const SizedBox(height: 8),
-                                  _FilterChip(
+                                  SearchFilterChip(
                                     label: 'Region',
                                     value: _region,
                                     options: AppConstants.regions,
@@ -890,138 +849,6 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
         ),
       ),
-    );
-  }
-}
-
-class _CategoryPill extends StatefulWidget {
-  final String label;
-  final int? count;
-  final String? icon;
-  final bool selected;
-  final bool fullWidth;
-  final VoidCallback onTap;
-
-  const _CategoryPill({
-    required this.label,
-    required this.count,
-    required this.icon,
-    required this.selected,
-    required this.fullWidth,
-    required this.onTap,
-  });
-
-  @override
-  State<_CategoryPill> createState() => _CategoryPillState();
-}
-
-class _CategoryPillState extends State<_CategoryPill> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final activeColor = const Color(0xFF1F5A3B);
-    final selected = widget.selected;
-    final hasCount = widget.count != null;
-    final foregroundColor = selected ? Colors.white : const Color(0xFF244030);
-    final backgroundColor = selected
-        ? activeColor
-        : (_hovered ? const Color(0xFFE6F0E9) : Colors.white);
-    final borderColor = selected
-        ? activeColor
-        : (_hovered ? const Color(0xFF7FA489) : const Color(0xFFD6E1D9));
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            width: widget.fullWidth ? double.infinity : null,
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.fullWidth ? 14 : 16,
-              vertical: widget.fullWidth ? 12 : 10,
-            ),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: borderColor),
-              boxShadow: _hovered || selected
-                  ? [
-                      BoxShadow(
-                        color: selected
-                            ? activeColor.withValues(alpha: 0.24)
-                            : const Color(0x1A244030),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : const [],
-            ),
-            child: Row(
-              mainAxisSize:
-                  widget.fullWidth ? MainAxisSize.max : MainAxisSize.min,
-              children: [
-                buildCategoryIcon(
-                  widget.icon,
-                  size: 18,
-                  color: foregroundColor,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: widget.fullWidth ? 1 : 0,
-                  child: Text(
-                    hasCount
-                        ? '${widget.label} (${widget.count})'
-                        : widget.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foregroundColor,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final String? value;
-  final List<String> options;
-  final ValueChanged<String?> onSelected;
-
-  const _FilterChip(
-      {required this.label,
-      required this.value,
-      required this.options,
-      required this.onSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String?>(
-      onSelected: onSelected,
-      tooltip: label,
-      child: Chip(
-        label: Text(value ?? label),
-        avatar: value != null
-            ? const Icon(Icons.close, size: 18, color: Colors.white)
-            : null,
-        onDeleted: value != null ? () => onSelected(null) : null,
-      ),
-      itemBuilder: (_) =>
-          options.map((o) => PopupMenuItem(value: o, child: Text(o))).toList(),
     );
   }
 }

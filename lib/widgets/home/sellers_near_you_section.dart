@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'user_model.dart';
-import '../services/services.dart';
-import '../widgets/skeleton.dart';
+import '../../models/user_model.dart';
+import '../../services/services.dart';
+import '../skeleton.dart';
 
-/// Sekcija „Prodavci u tvom okruženju” – prikazuje prodavce u izabranom regionu.
+/// Sekcija â€žProdavci u tvom okruÅ¾enjuâ€ â€“ prikazuje prodavce u izabranom regionu.
 class SellersNearYouSection extends StatelessWidget {
   final String region;
 
@@ -19,7 +19,7 @@ class SellersNearYouSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Prodavci u tvom okruženju',
+            'Prodavci u tvom okruÅ¾enju',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium

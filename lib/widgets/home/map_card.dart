@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Kartica mape – kompaktno, tap otvara punu mapu
+/// Kartica mape â€“ kompaktno, tap otvara punu mapu
 class MapCard extends StatelessWidget {
   const MapCard({super.key});
 
@@ -68,7 +68,7 @@ class MapCard extends StatelessWidget {
                                     color: Colors.white),
                           ),
                           Text(
-                            'Pronađi domaće u svojoj blizini',
+                            'PronaÄ‘i domaÄ‡e u svojoj blizini',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -87,24 +87,70 @@ class MapCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextButton(
-                onPressed: () => context.push('/about'),
-                child: const Text('O platformi')),
-            TextButton(
-                onPressed: () => context.push('/support'),
-                child: const Text('Podrška')),
-            TextButton(
-              onPressed: () => context.push('/uslovi-koriscenja'),
-              child: const Text('Uslovi korišćenja'),
-            ),
-            TextButton(
-              onPressed: () => context.push('/politika-privatnosti'),
-              child: const Text('Politika privatnosti'),
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextButton(
+                    onPressed: () => context.push('/about'),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('O platformi'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/support'),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('PodrÅ¡ka'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/uslovi-koriscenja'),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Uslovi koriÅ¡Ä‡enja'),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/politika-privatnosti'),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Politika privatnosti'),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: Image.asset(
+                  'assets/images/footer_badge.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.broken_image, color: Colors.red),
+                      Text('Error', style: TextStyle(fontSize: 8, color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

@@ -1,6 +1,6 @@
-import 'order_model.dart';
+﻿import '../../models/order_model.dart';
 
-/// Stavka u jedinstvenom inbox-u prodavca – porudžbina ili razgovor
+/// Stavka u jedinstvenom inbox-u prodavca â€“ porudÅ¾bina ili razgovor
 enum SellerInboxItemType { order, conversation }
 
 class SellerInboxItem {
