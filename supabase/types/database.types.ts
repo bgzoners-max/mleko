@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
   public: {
     Tables: {
       buyer_reviews: {
@@ -55,28 +60,31 @@ export type Database = {
       }
       categories: {
         Row: {
-          icon: string | null
+          created_at: string
+          icon: string
           id: string
           name: string
-          order: number | null
+          order: number
           parent_id: string | null
           section: string | null
           slug: string | null
         }
         Insert: {
-          icon?: string | null
-          id?: string
+          created_at?: string
+          icon: string
+          id: string
           name: string
-          order?: number | null
+          order?: number
           parent_id?: string | null
           section?: string | null
           slug?: string | null
         }
         Update: {
-          icon?: string | null
+          created_at?: string
+          icon?: string
           id?: string
           name?: string
-          order?: number | null
+          order?: number
           parent_id?: string | null
           section?: string | null
           slug?: string | null
@@ -145,6 +153,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "conversation_user_prefs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_user_settings: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          hidden_at: string | null
+          id: string
+          is_favorite: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          is_favorite?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          is_favorite?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_user_settings_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
@@ -311,6 +357,24 @@ export type Database = {
           },
         ]
       }
+      message_retention_notice_log: {
+        Row: {
+          created_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -349,38 +413,51 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          conversation_id: string | null
           created_at: string | null
           id: string
+          metadata: Json
           order_id: string | null
           read_at: string | null
           ticket_id: string | null
           title: string
-          type: string
+          type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Insert: {
           body?: string | null
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
+          metadata?: Json
           order_id?: string | null
           read_at?: string | null
           ticket_id?: string | null
           title: string
-          type: string
+          type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Update: {
           body?: string | null
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
+          metadata?: Json
           order_id?: string | null
           read_at?: string | null
           ticket_id?: string | null
           title?: string
-          type?: string
+          type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_order_id_fkey"
             columns: ["order_id"]
@@ -504,6 +581,7 @@ export type Database = {
           buyer_city: string | null
           buyer_id: string
           buyer_phone: string
+          buyer_postal_code: string | null
           cancellation_reason: string | null
           created_at: string | null
           delivery_address: string | null
@@ -524,6 +602,7 @@ export type Database = {
           quantity_kg: number | null
           seller_id: string
           status: string | null
+          status_changed_at: string | null
           total_amount: number | null
           unit_type: string
         }
@@ -533,6 +612,7 @@ export type Database = {
           buyer_city?: string | null
           buyer_id: string
           buyer_phone: string
+          buyer_postal_code?: string | null
           cancellation_reason?: string | null
           created_at?: string | null
           delivery_address?: string | null
@@ -553,6 +633,7 @@ export type Database = {
           quantity_kg?: number | null
           seller_id: string
           status?: string | null
+          status_changed_at?: string | null
           total_amount?: number | null
           unit_type?: string
         }
@@ -562,6 +643,7 @@ export type Database = {
           buyer_city?: string | null
           buyer_id?: string
           buyer_phone?: string
+          buyer_postal_code?: string | null
           cancellation_reason?: string | null
           created_at?: string | null
           delivery_address?: string | null
@@ -582,6 +664,7 @@ export type Database = {
           quantity_kg?: number | null
           seller_id?: string
           status?: string | null
+          status_changed_at?: string | null
           total_amount?: number | null
           unit_type?: string
         }
@@ -642,6 +725,52 @@ export type Database = {
           },
         ]
       }
+      product_stats: {
+        Row: {
+          avg_rating: number
+          order_count: number
+          product_id: string
+          review_count: number
+          updated_at: string
+        }
+        Insert: {
+          avg_rating?: number
+          order_count?: number
+          product_id: string
+          review_count?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_rating?: number
+          order_count?: number
+          product_id?: string
+          review_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_stats_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "product_listing_autoflags"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_stats_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_stats_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_with_ratings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           available_kg: number | null
@@ -660,6 +789,7 @@ export type Database = {
           origin: string
           pickup_options: string[] | null
           price_per_kg: number
+          search_vector: unknown
           seller_id: string
           shelf_life_days: number
           unit_type: string
@@ -681,6 +811,7 @@ export type Database = {
           origin?: string
           pickup_options?: string[] | null
           price_per_kg: number
+          search_vector?: unknown
           seller_id: string
           shelf_life_days?: number
           unit_type?: string
@@ -702,6 +833,7 @@ export type Database = {
           origin?: string
           pickup_options?: string[] | null
           price_per_kg?: number
+          search_vector?: unknown
           seller_id?: string
           shelf_life_days?: number
           unit_type?: string
@@ -725,6 +857,7 @@ export type Database = {
           location: string | null
           phone: string | null
           phone_public: boolean
+          postal_code: string | null
           profile_image_url: string | null
           role: string | null
           seller_quick_replies: string[] | null
@@ -748,6 +881,7 @@ export type Database = {
           location?: string | null
           phone?: string | null
           phone_public?: boolean
+          postal_code?: string | null
           profile_image_url?: string | null
           role?: string | null
           seller_quick_replies?: string[] | null
@@ -771,6 +905,7 @@ export type Database = {
           location?: string | null
           phone?: string | null
           phone_public?: boolean
+          postal_code?: string | null
           profile_image_url?: string | null
           role?: string | null
           seller_quick_replies?: string[] | null
@@ -823,6 +958,48 @@ export type Database = {
           status?: string
           title?: string | null
           token_count?: number
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      push_logs: {
+        Row: {
+          body: string | null
+          created_at: string
+          error: string | null
+          id: number
+          platform: string | null
+          status: number | null
+          success: boolean
+          title: string | null
+          token: string | null
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          error?: string | null
+          id?: number
+          platform?: string | null
+          status?: number | null
+          success: boolean
+          title?: string | null
+          token?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          error?: string | null
+          id?: number
+          platform?: string | null
+          status?: number | null
+          success?: boolean
+          title?: string | null
+          token?: string | null
           type?: string | null
           user_id?: string | null
         }
@@ -1026,44 +1203,53 @@ export type Database = {
       support_tickets: {
         Row: {
           admin_note: string | null
+          admin_reply: string | null
           body: string
           category: string
           created_at: string
+          email: string | null
           id: string
+          message: string
           status: string
           subject: string
-          ticket_number: string
+          ticket_number: string | null
           updated_at: string
           user_email: string | null
-          user_id: string | null
+          user_id: string
           user_name: string | null
         }
         Insert: {
           admin_note?: string | null
+          admin_reply?: string | null
           body: string
           category?: string
           created_at?: string
+          email?: string | null
           id?: string
+          message: string
           status?: string
           subject: string
-          ticket_number?: string
+          ticket_number?: string | null
           updated_at?: string
           user_email?: string | null
-          user_id?: string | null
+          user_id: string
           user_name?: string | null
         }
         Update: {
           admin_note?: string | null
+          admin_reply?: string | null
           body?: string
           category?: string
           created_at?: string
+          email?: string | null
           id?: string
+          message?: string
           status?: string
           subject?: string
-          ticket_number?: string
+          ticket_number?: string | null
           updated_at?: string
           user_email?: string | null
-          user_id?: string | null
+          user_id?: string
           user_name?: string | null
         }
         Relationships: []
@@ -1095,6 +1281,24 @@ export type Database = {
           token?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
         }
         Relationships: []
       }
@@ -1150,6 +1354,7 @@ export type Database = {
           price_per_kg: number | null
           review_count: number | null
           seller_id: string | null
+          seller_is_verified: boolean | null
           unit_type: string | null
         }
         Relationships: []
@@ -1200,6 +1405,10 @@ export type Database = {
         Args: { p_reply: string; p_review_id: string }
         Returns: undefined
       }
+      admin_set_seller_verified: {
+        Args: { p_seller_id: string; p_verified: boolean }
+        Returns: undefined
+      }
       archive_and_expire_orders: { Args: never; Returns: undefined }
       audit_product_ordering: {
         Args: { p_limit?: number }
@@ -1217,6 +1426,7 @@ export type Database = {
           unit_type: string
         }[]
       }
+      auto_archive_stale_orders_5_days: { Args: never; Returns: undefined }
       build_order_notification_body: {
         Args: {
           p_fallback_product_name?: string
@@ -1230,26 +1440,46 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
+      check_email_exists: { Args: { p_email: string }; Returns: boolean }
       cleanup_push_tokens: {
         Args: { p_keep_per_user?: number; p_max_age?: string }
         Returns: number
       }
-      create_order_with_items: {
-        Args: {
-          p_buyer_address?: string
-          p_buyer_city?: string
-          p_buyer_id: string
-          p_buyer_phone: string
-          p_delivery_fee_rsd?: number
-          p_delivery_method?: string
-          p_delivery_point_id?: string
-          p_delivery_slot_id?: string
-          p_items: Json
-          p_note?: string
-          p_seller_id: string
-        }
-        Returns: string
-      }
+      create_order_with_items:
+        | {
+            Args: {
+              p_buyer_address?: string
+              p_buyer_city?: string
+              p_buyer_id: string
+              p_buyer_phone: string
+              p_buyer_postal_code?: string
+              p_delivery_fee_rsd?: number
+              p_delivery_method?: string
+              p_delivery_point_id?: string
+              p_delivery_slot_id?: string
+              p_items: Json
+              p_note?: string
+              p_seller_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_buyer_address?: string
+              p_buyer_city?: string
+              p_buyer_id: string
+              p_buyer_phone: string
+              p_delivery_fee_rsd?: number
+              p_delivery_method?: string
+              p_delivery_point_id?: string
+              p_delivery_slot_id?: string
+              p_items: Json
+              p_note?: string
+              p_seller_id: string
+            }
+            Returns: string
+          }
+      get_buyer_stats_dashboard: { Args: { p_buyer_id: string }; Returns: Json }
       get_conversation_info_with_profile: {
         Args: { p_conversation_id: string }
         Returns: {
@@ -1280,6 +1510,7 @@ export type Database = {
           location: string | null
           phone: string | null
           phone_public: boolean
+          postal_code: string | null
           profile_image_url: string | null
           role: string | null
           seller_quick_replies: string[] | null
@@ -1301,7 +1532,6 @@ export type Database = {
           available_now: boolean
           category: string
           created_at: string
-          delivery_mode: string
           description: string
           id: string
           image_urls: string[]
@@ -1310,11 +1540,9 @@ export type Database = {
           min_order_kg: number
           name: string
           order_count: number
-          order_step: number
           pickup_options: string[]
           price_per_kg: number
           seller_id: string
-          unit_type: string
         }[]
       }
       get_my_product_listing_autoflag_summary: {
@@ -1379,6 +1607,7 @@ export type Database = {
           origin: string
           pickup_options: string[] | null
           price_per_kg: number
+          search_vector: unknown
           seller_id: string
           shelf_life_days: number
           unit_type: string
@@ -1396,6 +1625,13 @@ export type Database = {
       }
       get_seller_inbox: { Args: { p_seller_id: string }; Returns: Json }
       get_seller_loyalty_stats: { Args: { p_seller_id: string }; Returns: Json }
+      get_seller_popular_products: {
+        Args: { p_limit?: number; p_seller_id: string }
+        Returns: {
+          product: Json
+          sales_count: number
+        }[]
+      }
       get_seller_response_time_stats: {
         Args: { p_seller_id: string }
         Returns: {
@@ -1448,6 +1684,52 @@ export type Database = {
           user_id: string
         }[]
       }
+      refresh_all_product_stats: { Args: never; Returns: undefined }
+      refresh_product_stats: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
+      run_message_retention_maintenance: { Args: never; Returns: Json }
+      search_products_fts: {
+        Args: {
+          p_available_now?: boolean
+          p_category?: string
+          p_exclude_seller_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_query: string
+          p_region?: string
+        }
+        Returns: {
+          available_kg: number | null
+          available_now: boolean | null
+          avg_rating: number | null
+          category: string | null
+          created_at: string | null
+          delivery_mode: string | null
+          description: string | null
+          id: string | null
+          image_urls: string[] | null
+          is_domestic: boolean | null
+          location: string | null
+          min_order_kg: number | null
+          name: string | null
+          order_count: number | null
+          order_step: number | null
+          pickup_options: string[] | null
+          price_per_kg: number | null
+          review_count: number | null
+          seller_id: string | null
+          seller_is_verified: boolean | null
+          unit_type: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products_with_ratings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       set_conversation_user_prefs: {
         Args: {
           p_conversation_id: string
@@ -1464,9 +1746,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      notification_type:
+        | "new_order"
+        | "order_status"
+        | "order_status_changed"
+        | "new_message"
+        | "order_auto_archived"
+        | "system"
+        | "promo"
+        | "new_review"
+        | "new_buyer_review"
+        | "support_ticket_created"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1593,7 +1886,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      notification_type: [
+        "new_order",
+        "order_status",
+        "order_status_changed",
+        "new_message",
+        "order_auto_archived",
+        "system",
+        "promo",
+        "new_review",
+        "new_buyer_review",
+        "support_ticket_created",
+      ],
+    },
   },
 } as const
-
