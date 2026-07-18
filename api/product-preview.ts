@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+export const runtime = "edge";
 
-// Deklaracija kako TypeScript ne bi prijavljivao grešku za 'process' u okruženjima bez Node tipova
+import { createClient } from "@supabase/supabase-js";
+
 declare const process: any;
 
 type ProductRow = {
@@ -21,12 +22,12 @@ type HtmlPayload = {
   imageUrl: string;
 };
 
-const FALLBACK_TITLE = 'Domaće, baš kako treba! | domaćimarket.rs';
+const FALLBACK_TITLE = "Domaće, baš kako treba! | domaćimarket.rs";
 const FALLBACK_DESCRIPTION =
-  'Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.';
+  "Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.";
 
 function normalizeBaseUrl(value: string): string {
-  return value.trim().replace(/\/+$/, '');
+  return value.trim().replace(/\/+$/, "");
 }
 
 function resolvePublicBaseUrl(origin: string): string {
@@ -35,11 +36,11 @@ function resolvePublicBaseUrl(origin: string): string {
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+    .replaceAll("&", "&")
+    .replaceAll("<", "<")
+    .replaceAll(">", ">")
+    .replaceAll('"', '"')
+    .replaceAll("'", "&#39;");
 }
 
 function normalizeImageUrl(
@@ -47,14 +48,14 @@ function normalizeImageUrl(
   origin: string,
 ): string {
   const fallback = `${origin}/icons/Icon-512.png`;
-  if (!imageUrl || typeof imageUrl !== 'string') return fallback;
+  if (!imageUrl || typeof imageUrl !== "string") return fallback;
 
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  const cleanOrigin = origin.replace(/\/+$/, '');
-  if (imageUrl.startsWith('/')) {
+  const cleanOrigin = origin.replace(/\/+$/, "");
+  if (imageUrl.startsWith("/")) {
     return `${cleanOrigin}${imageUrl}`;
   }
   return `${cleanOrigin}/${imageUrl}`;
@@ -66,9 +67,9 @@ function formatPrice(
 ): string | null {
   if (pricePerKg == null) return null;
   switch (unitType) {
-    case 'L':
+    case "L":
       return `${Math.round(pricePerKg)} RSD/L`;
-    case 'kom':
+    case "kom":
       return `${Math.round(pricePerKg)} RSD/kom`;
     default:
       return `${Math.round(pricePerKg)} RSD/kg`;
@@ -78,8 +79,8 @@ function formatPrice(
 function buildDescription(product: ProductRow | null): string {
   if (product == null) return FALLBACK_DESCRIPTION;
 
-  const location = product.location?.trim() || '';
-  const description = product.description?.trim() || '';
+  const location = product.location?.trim() || "";
+  const description = product.description?.trim() || "";
   const priceInfo = formatPrice(product.price_per_kg, product.unit_type);
 
   const parts = [
@@ -87,10 +88,10 @@ function buildDescription(product: ProductRow | null): string {
     location ? `Lokacija: ${location}` : null,
     description.length > 10
       ? description
-      : 'Pogledajte detalje proizvoda i lokalnu ponudu na Domaćem marketu.',
+      : "Pogledajte detalje proizvoda i lokalnu ponudu na Domaćem marketu.",
   ].filter((part): part is string => Boolean(part));
 
-  const text = parts.join('. ').replace(/\s+/g, ' ').trim();
+  const text = parts.join(". ").replace(/\s+/g, " ").trim();
   if (text.length <= 220) return text;
   return `${text.slice(0, 217).trimEnd()}...`;
 }
@@ -107,7 +108,7 @@ function buildHtml({
   const escapedPreviewUrl = escapeHtml(previewUrl);
   const escapedCanonicalUrl = escapeHtml(canonicalUrl);
   const escapedImageUrl = escapeHtml(imageUrl);
-  const redirectTarget = canonicalUrl.replaceAll('"', '%22');
+  const redirectTarget = canonicalUrl.replaceAll('"', "%22");
 
   return `<!DOCTYPE html>
 <html lang="sr">
@@ -147,16 +148,15 @@ function buildHtml({
 </html>`;
 }
 
-export default {
-  async fetch(request: Request, env?: Record<string, string>): Promise<Response> {
-    try {
+export async function GET(request: Request): Promise<Response> {
+  try {
     const requestUrl = new URL(request.url);
-    const productId = requestUrl.searchParams.get('id')?.trim();
+    const productId = requestUrl.searchParams.get("id")?.trim();
     const origin = normalizeBaseUrl(requestUrl.origin);
     const publicBaseUrl = resolvePublicBaseUrl(origin);
 
     if (!productId) {
-      return new Response('Missing product id.', { status: 400 });
+      return new Response("Missing product id.", { status: 400 });
     }
 
     const encodedProductId = encodeURIComponent(productId);
@@ -164,9 +164,12 @@ export default {
     const previewUrl = `${publicBaseUrl}/p/${encodedProductId}`;
     const fallbackImageUrl = `${origin}/icons/Icon-512.png`;
 
-    // Podrška za Cloudflare Workers (env) i Vercel/Node.js (process.env)
-    const supabaseUrl = env?.SUPABASE_URL || (typeof process !== 'undefined' ? process.env.SUPABASE_URL : undefined);
-    const supabaseAnonKey = env?.SUPABASE_ANON_KEY || (typeof process !== 'undefined' ? process.env.SUPABASE_ANON_KEY : undefined);
+    const supabaseUrl = typeof process !== "undefined"
+      ? process.env.SUPABASE_URL
+      : undefined;
+    const supabaseAnonKey = typeof process !== "undefined"
+      ? process.env.SUPABASE_ANON_KEY
+      : undefined;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       const html = buildHtml({
@@ -180,31 +183,34 @@ export default {
       return new Response(html, {
         status: 200,
         headers: {
-          'content-type': 'text/html; charset=utf-8',
-          'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=3600',
+          "content-type": "text/html; charset=utf-8",
+          "cache-control":
+            "public, max-age=0, s-maxage=60, stale-while-revalidate=3600",
         },
       });
     }
 
-    // Koristimo createClient direktno bez nepotrebnih opcija za brži cold start
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
     const { data, error } = await supabase
-      .from('products')
-      .select('id, name, description, location, price_per_kg, unit_type, image_urls')
-      .eq('id', productId)
+      .from("products")
+      .select(
+        "id, name, description, location, price_per_kg, unit_type, image_urls",
+      )
+      .eq("id", productId)
       .maybeSingle();
 
     const product = error ? null : (data as ProductRow | null);
     const title = product
       ? `${product.name} | Domaći market`
-      : 'Proizvod nije pronađen | Domaći market';
+      : "Proizvod nije pronađen | Domaći market";
     const description = buildDescription(product);
 
-    // Pronalazimo prvu sliku koja nije prazan string
-    const rawImageUrl = product?.image_urls?.find(url => url && url.trim().length > 0);
+    const rawImageUrl = product?.image_urls?.find((url) =>
+      url && url.trim().length > 0
+    );
     const imageUrl = normalizeImageUrl(rawImageUrl ?? null, origin);
 
     const html = buildHtml({
@@ -218,23 +224,25 @@ export default {
     return new Response(html, {
       status: product ? 200 : 404,
       headers: {
-        'content-type': 'text/html; charset=utf-8',
-        'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=86400',
+        "content-type": "text/html; charset=utf-8",
+        "cache-control":
+          "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
       },
     });
-    } catch (err) {
-      // Globalni fallback u slučaju neočekivane greške (World-class resilience)
-      console.error('Edge Function Error:', err);
-      return new Response(buildHtml({
+  } catch (err) {
+    console.error("Edge Function Error:", err);
+    return new Response(
+      buildHtml({
         title: FALLBACK_TITLE,
         description: FALLBACK_DESCRIPTION,
         previewUrl: request.url,
         canonicalUrl: request.url,
         imageUrl: `${new URL(request.url).origin}/icons/Icon-512.png`,
-      }), {
+      }),
+      {
         status: 200,
-        headers: { 'content-type': 'text/html; charset=utf-8' },
-      });
-    }
-  },
-};
+        headers: { "content-type": "text/html; charset=utf-8" },
+      },
+    );
+  }
+}
