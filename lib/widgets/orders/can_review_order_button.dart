@@ -26,11 +26,22 @@ class _CanReviewOrderButtonState extends State<CanReviewOrderButton> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _canReviewFuture ??= context.read<ReviewsService>().canReviewOrder(widget.userId, widget.order.id);
+    if (widget.order.isReviewed == null) {
+      _canReviewFuture ??= context.read<ReviewsService>().canReviewOrder(widget.userId, widget.order.id);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.order.isReviewed != null) {
+      if (widget.order.isReviewed == true) return const SizedBox.shrink();
+      return FilledButton.tonalIcon(
+        icon: const Icon(Icons.star_outline, size: 20),
+        label: const Text('Ostavi recenziju'),
+        onPressed: widget.onPressed,
+      );
+    }
+
     return FutureBuilder<bool>(
       future: _canReviewFuture,
       builder: (ctx, snap) {

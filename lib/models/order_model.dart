@@ -14,7 +14,7 @@ enum OrderStatus {
 extension OrderStatusX on OrderStatus {
   String get dbValue => switch (this) {
         OrderStatus.cancelledBySeller => 'cancelled_by_seller',
-        OrderStatus.archived => 'arhivirano',
+        OrderStatus.archived => 'archived',
         _ => name,
       };
 
@@ -66,6 +66,9 @@ class OrderModel {
   /// Nije deo DB tabele, ne šalje se na insert/update.
   final String? counterpartyName;
 
+  /// Da li je kupac ostavio recenziju za ovu porudžbinu (batch-učitava se na klijentu).
+  final bool? isReviewed;
+
   const OrderModel({
     required this.id,
     required this.buyerId,
@@ -95,6 +98,7 @@ class OrderModel {
     this.deliveryFeeRsd,
     this.totalAmount,
     this.counterpartyName,
+    this.isReviewed,
   });
 
   bool get isArchived => status == OrderStatus.archived;
@@ -192,6 +196,7 @@ class OrderModel {
           normalizeDeliveryTimeString(json['delivery_time_to'] as String?),
       deliveryFeeRsd: (json['delivery_fee_rsd'] as num?)?.toDouble(),
       totalAmount: (json['total_amount'] as num?)?.toDouble(),
+      isReviewed: json['is_reviewed'] as bool?,
     );
   }
 
@@ -212,7 +217,10 @@ class OrderModel {
     return '${sellerDeliveryWeekdayLabel(deliveryWeekday!)}, ${formatDeliveryWindow(deliveryTimeFrom!, deliveryTimeTo!)}';
   }
 
-  OrderModel copyWith({String? counterpartyName}) {
+  OrderModel copyWith({
+    String? counterpartyName,
+    bool? isReviewed,
+  }) {
     return OrderModel(
       id: id,
       buyerId: buyerId,
@@ -225,7 +233,7 @@ class OrderModel {
       buyerCity: buyerCity,
       buyerPhone: buyerPhone,
       buyerAddress: buyerAddress,
-      buyerPostalCode: buyerPostalCode ?? buyerPostalCode,
+      buyerPostalCode: buyerPostalCode,
       status: status,
       createdAt: createdAt,
       cancellationReason: cancellationReason,
@@ -242,6 +250,7 @@ class OrderModel {
       deliveryFeeRsd: deliveryFeeRsd,
       totalAmount: totalAmount,
       counterpartyName: counterpartyName ?? this.counterpartyName,
+      isReviewed: isReviewed ?? this.isReviewed,
     );
   }
 

@@ -51,8 +51,7 @@
 </head>
 <body>
   <script>
-    // Ostaviti samo za development ili verzije sa velikim promenama
-    /* window.addEventListener('load', async function () {
+    window.addEventListener('load', async function () {
       if (!('serviceWorker' in navigator) || !('caches' in window)) {
         return;
       }
@@ -66,7 +65,7 @@
       } catch (error) {
         console.warn('Web cache cleanup failed', error);
       }
-    }); */
+    });
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>

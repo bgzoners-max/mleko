@@ -76,7 +76,7 @@ class ReviewsService {
   }
 
   /// Izračunava prosečnu ocenu iz liste ocena na strani klijenta.
-  /// Prihvata bilo koji Iterable<int> — radi i za ReviewModel i za BuyerReviewModel.
+  /// Prihvata bilo koji `Iterable<int>` — radi i za ReviewModel i za BuyerReviewModel.
   static double? computeAverage(Iterable<int> ratings) {
     final list = ratings.toList();
     if (list.isEmpty) return null;

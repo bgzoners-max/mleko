@@ -4,7 +4,6 @@ import '../../models/conversation_model.dart';
 import '../../models/message_model.dart';
 import '../../models/message_reaction_model.dart';
 import '../../models/app_error.dart';
-import '../media/storage_service.dart';
 import '../core/logger_service.dart';
 
 /// Broj poruka u jednoj stranici (najnovijih).
@@ -160,6 +159,9 @@ class ChatService {
     controller.onCancel = () {
       refreshSub?.cancel();
       if (channel != null) _client.removeChannel(channel!);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;
@@ -296,6 +298,9 @@ class ChatService {
     controller.onCancel = () {
       refreshSub?.cancel();
       _client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;
@@ -347,6 +352,9 @@ class ChatService {
 
     controller.onCancel = () {
       _client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;
@@ -449,6 +457,9 @@ class ChatService {
 
     controller.onCancel = () {
       _client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;
@@ -565,11 +576,11 @@ class ChatService {
     try {
       final name = '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final path = 'chat/$conversationId/$userId/$name';
-      
+
       // Koristimo postojeći StorageService mehanizam, ali prilagođen chatu
       await _client.storage.from('product-images').uploadBinary(
             path,
-            bytes is List<int> ? bytes as dynamic : bytes,
+            bytes as dynamic,
             fileOptions:
                 const FileOptions(contentType: 'image/jpeg', upsert: true),
           );

@@ -28,7 +28,7 @@ void main() {
       expect(
         OrderStatusFlowRules.isAllowedTransition(
           oldStatus: 'delivered',
-          newStatus: 'arhivirano',
+          newStatus: 'archived',
         ),
         isTrue,
       );
@@ -51,7 +51,7 @@ void main() {
       );
       expect(
         OrderStatusFlowRules.isAllowedTransition(
-          oldStatus: 'arhivirano',
+          oldStatus: 'archived',
           newStatus: 'sent',
         ),
         isFalse,
@@ -75,7 +75,7 @@ void main() {
       expect(delivered.title, 'Kupac potvrdio prijem');
 
       expect(
-        OrderStatusFlowRules.notificationForNewStatus('arhivirano'),
+        OrderStatusFlowRules.notificationForNewStatus('archived'),
         isNull,
       );
     });

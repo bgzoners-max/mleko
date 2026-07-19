@@ -209,8 +209,13 @@ class PushService {
 
   static bool _localNotificationsInitialized = false;
 
-  static Future<void> _cancelSub<T>(StreamSubscription<T>? sub) async {
-    await sub?.cancel();
+  static Future<void> dispose() async {
+    await _onTokenRefreshSub?.cancel();
+    _onTokenRefreshSub = null;
+    await _onMessageSub?.cancel();
+    _onMessageSub = null;
+    await _onMessageOpenedSub?.cancel();
+    _onMessageOpenedSub = null;
   }
 
   static Future<String> _getInstallationId() async {
@@ -262,11 +267,19 @@ class PushService {
     return generation == _registrationGeneration && _registeredUserId == userId;
   }
 
+  static Future<void> _cancelAllMessageSubscriptions() async {
+    await _onMessageSub?.cancel();
+    _onMessageSub = null;
+    await _onMessageOpenedSub?.cancel();
+    _onMessageOpenedSub = null;
+  }
+
   static Future<void> clearRegistrationState() async {
     _registrationGeneration++;
     _registeredUserId = null;
-    await _cancelSub(_onTokenRefreshSub);
+    await _onTokenRefreshSub?.cancel();
     _onTokenRefreshSub = null;
+    await _cancelAllMessageSubscriptions();
   }
 
   static Future<void> initialize() async {
@@ -418,7 +431,7 @@ class PushService {
     try {
       final generation = ++_registrationGeneration;
       _registeredUserId = userId;
-      await _cancelSub(_onTokenRefreshSub);
+      await _onTokenRefreshSub?.cancel();
       _onTokenRefreshSub = null;
       final installationId = await _getInstallationId();
       if (!_isCurrentRegistration(generation, userId)) return;
@@ -540,8 +553,9 @@ class PushService {
       final installationId = await _getInstallationId();
 
       // Prekini refresh upite pre brisanja tokena.
-      await _cancelSub(_onTokenRefreshSub);
+      await _onTokenRefreshSub?.cancel();
       _onTokenRefreshSub = null;
+      await _cancelAllMessageSubscriptions();
 
       if (generation != _registrationGeneration) return;
       await _client
@@ -559,7 +573,8 @@ class PushService {
     if (kIsWeb) return;
     _foregroundHandler = handler;
     // Pričekaj da se prethodna pretplata prekine pre nego što kreiramo novu
-    _cancelSub(_onMessageSub).then((_) {
+    final cancelFuture = _onMessageSub?.cancel() ?? Future<void>.value();
+    cancelFuture.then((_) {
       _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
         final shouldSkipLocalNotification =
             (Platform.isIOS || Platform.isAndroid) &&
@@ -606,7 +621,8 @@ class PushService {
     if (kIsWeb) return;
     _messageOpenedHandler = handler;
     // Pričekaj da se prethodna pretplata prekine pre nego što kreiramo novu
-    _cancelSub(_onMessageOpenedSub).then((_) {
+    final cancelFuture = _onMessageOpenedSub?.cancel() ?? Future<void>.value();
+    cancelFuture.then((_) {
       _onMessageOpenedSub =
           FirebaseMessaging.onMessageOpenedApp.listen((message) {
         _messageOpenedHandler?.call(message);

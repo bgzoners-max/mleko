@@ -24,7 +24,7 @@ void main() {
   }
   deployDir.createSync(recursive: true);
 
-  _copyDirectory(buildWebDir, deployDir);
+  _copyDirectory(buildWebDir, Directory('${deployDir.path}/public'));
   _copyDirectory(apiDir, Directory('${deployDir.path}/api'));
 
   final filesToCopy = <String>[

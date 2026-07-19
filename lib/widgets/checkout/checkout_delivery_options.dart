@@ -42,46 +42,43 @@ class CheckoutDeliveryOptions extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Način dostave',
-          style: theme.textTheme.titleSmall
-              ?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        RadioListTile<DeliveryMethod>(
-          value: DeliveryMethod.courier,
-          groupValue: deliveryMethod,
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Kurirska služba'),
-          subtitle: const Text(
-              'Dostava na adresu putem kurira (npr. Post Express, D Express)'),
-          onChanged: onDeliveryMethodChanged,
-        ),
-        RadioListTile<DeliveryMethod>(
-          value: DeliveryMethod.pickup,
-          groupValue: deliveryMethod,
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Lično preuzimanje'),
-          subtitle: const Text(
-              'Preuzimanje na dogovorenoj lokaciji kod prodavca'),
-          onChanged: onDeliveryMethodChanged,
-        ),
-        if (deliveryLoading) ...[
-          const SizedBox(height: 12),
-          const LinearProgressIndicator(),
-        ] else if (hasSellerDeliveryOptions) ...[
-          RadioListTile<DeliveryMethod>(
-            value: DeliveryMethod.sellerDelivery,
-            groupValue: deliveryMethod,
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Dostava od strane prodavca'),
-            subtitle: const Text(
-                'Prodavac lično dostavlja na definisane lokacije i termine'),
-            onChanged: onDeliveryMethodChanged,
+    return RadioGroup<DeliveryMethod>(
+      groupValue: deliveryMethod,
+      onChanged: onDeliveryMethodChanged,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Način dostave',
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
+          const SizedBox(height: 4),
+          const RadioListTile<DeliveryMethod>(
+            value: DeliveryMethod.courier,
+            contentPadding: EdgeInsets.zero,
+            title: Text('Kurirska služba'),
+            subtitle: Text(
+                'Dostava na adresu putem kurira (npr. Post Express, D Express)'),
+          ),
+          const RadioListTile<DeliveryMethod>(
+            value: DeliveryMethod.pickup,
+            contentPadding: EdgeInsets.zero,
+            title: Text('Lično preuzimanje'),
+            subtitle: Text(
+                'Preuzimanje na dogovorenoj lokaciji kod prodavca'),
+          ),
+          if (deliveryLoading) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+          ] else if (hasSellerDeliveryOptions) ...[
+            const RadioListTile<DeliveryMethod>(
+              value: DeliveryMethod.sellerDelivery,
+              contentPadding: EdgeInsets.zero,
+              title: Text('Dostava od strane prodavca'),
+              subtitle: Text(
+                  'Prodavac lično dostavlja na definisane lokacije i termine'),
+            ),
           if (deliveryRestrictionMessage != null) ...[
             const SizedBox(height: 4),
             Padding(
@@ -170,6 +167,7 @@ class CheckoutDeliveryOptions extends StatelessWidget {
           ],
         ],
       ],
-    );
+    ),
+  );
   }
 }

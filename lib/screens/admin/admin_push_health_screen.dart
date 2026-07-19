@@ -682,7 +682,7 @@ class _AdminPushHealthScreenState extends State<AdminPushHealthScreen> {
           (issue.latestDeliveryStatus?.toLowerCase().contains(query) ?? false);
     }).toList();
 
-    DateTime epoch = DateTime.fromMillisecondsSinceEpoch(0);
+    final DateTime epoch = DateTime.fromMillisecondsSinceEpoch(0);
     filtered.sort((left, right) {
       return switch (_sortBy) {
         _IssueSort.latestNotificationDesc =>

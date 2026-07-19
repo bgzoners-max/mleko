@@ -12,6 +12,7 @@ import '../../providers/favorites_provider.dart';
 import '../../services/services.dart';
 import '../../utils/animations.dart';
 
+import '../app_empty_state.dart';
 import '../app_error_retry.dart';
 import '../cache_status_widget.dart';
 import '../product_card.dart';
@@ -122,6 +123,22 @@ class HomeWideLayout extends StatelessWidget {
                   final user =
                       context.select<AppState, UserModel?>((s) => s.user);
                   final canFavorite = user != null && !user.isGuest;
+                  if (displayList.isEmpty) {
+                    return FadeInSlide(
+                      delay: const Duration(milliseconds: 300),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 24),
+                        child: AppEmptyState(
+                          icon: Icons.storefront_outlined,
+                          title: 'Nema proizvoda za prikaz',
+                          subtitle:
+                              'Trenutno nema dostupnih proizvoda u ovom regionu. Pokušaj kasnije ili promeni filter.',
+                          ctaLabel: 'Pretraži proizvode',
+                          onCtaPressed: onSearchTap,
+                        ),
+                      ),
+                    );
+                  }
                   return FadeInSlide(
                     delay: const Duration(milliseconds: 300),
                     child: Column(
@@ -142,7 +159,8 @@ class HomeWideLayout extends StatelessWidget {
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: Breakpoints.isDesktop(context)
                                 ? 4
                                 : Breakpoints.productGridColumns(context),
@@ -155,8 +173,7 @@ class HomeWideLayout extends StatelessWidget {
                             final product = displayList[i];
                             final rating = ratings[product.id];
                             return Selector<FavoritesProvider, bool>(
-                              selector: (_, fav) =>
-                                  fav.isFavorite(product.id),
+                              selector: (_, fav) => fav.isFavorite(product.id),
                               builder: (_, isFavorite, __) => ProductCard(
                                 product: product,
                                 isPopular: (salesCounts[product.id] ?? 0) >=

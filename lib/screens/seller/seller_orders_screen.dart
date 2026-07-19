@@ -145,14 +145,43 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Text(
-                    _isArchive
-                        ? 'Ovde su porudžbine koje ste ručno arhivirali. Brisanje nakon isteka roka čuvanja (expires_at), ako je podešeno.'
-                        : 'Aktivne porudžbine (bez arhive). Završene — isporučeno, odbijeno ili otkazano — možete arhivirati da nestanu sa ove liste.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey.shade600),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.16),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.tips_and_updates_outlined,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _isArchive
+                                ? 'Ovde su porudžbine koje ste ručno arhivirali. Brisanje nakon isteka roka čuvanja (expires_at), ako je podešeno.'
+                                : 'Aktivne porudžbine (bez arhive). Kada kupac pošalje zahtev, vi odlučujete da li ćete ga prihvatiti, poslati ili odbiti.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(height: 1.35),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Expanded(
@@ -413,6 +442,56 @@ class _SellerOrderCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.14),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      switch (o.status) {
+                        OrderStatus.sent =>
+                          'Ovo je nova porudžbina. Prihvatite je ili je odbijte.',
+                        OrderStatus.accepted =>
+                          'Porudžbina je potvrđena. Kada bude spremna, označite je kao poslatu.',
+                        OrderStatus.shipped =>
+                          'Porudžbina je na putu. Kupac će je potvrditi po prijemu.',
+                        OrderStatus.delivered =>
+                          'Porudžbina je isporučena. Možete ostaviti recenziju kupca.',
+                        OrderStatus.rejected => 'Odbili ste ovu porudžbinu.',
+                        OrderStatus.cancelledBySeller =>
+                          'Otkazali ste ovu porudžbinu.',
+                        OrderStatus.archived => 'Porudžbina je u arhivi.',
+                      },
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(height: 1.35),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
             OrderStatusAuditLogSection(orderId: o.id),
             if (o.status == OrderStatus.accepted ||
                 o.status == OrderStatus.shipped ||
@@ -486,9 +565,7 @@ class _SellerOrderCard extends StatelessWidget {
                   value: o.buyerAddress!),
             if (o.buyerCity.isNotEmpty)
               _DetailRow(
-                  icon: Icons.location_city,
-                  label: 'Grad',
-                  value: o.buyerCity),
+                  icon: Icons.location_city, label: 'Grad', value: o.buyerCity),
             if (o.hasSellerDelivery) OrderDeliverySummary(order: o),
             if (o.buyerPhone.isNotEmpty)
               _DetailRow(

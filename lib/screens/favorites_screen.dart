@@ -102,6 +102,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
+    final favoritesProvider = context.watch<FavoritesProvider>();
     final isDesktop = Breakpoints.isDesktop(context);
     final isWideDesktop = Breakpoints.isWideDesktop(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
@@ -160,7 +161,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               !snap.hasData) {
             return const ProductListSkeleton();
           }
-          final list = snap.data ?? [];
+          final rawList = snap.data ?? [];
+          final list = rawList
+              .where((p) => favoritesProvider.isFavorite(p.id))
+              .toList();
           if (list.isNotEmpty) {
             _warmupProductImages(list);
           }

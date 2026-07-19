@@ -53,25 +53,25 @@ class ProductCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return const Card(
       clipBehavior: Clip.antiAlias,
       child: AppShimmer(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Expanded(child: ShimmerBlock(borderRadius: 0)),
+            Expanded(child: ShimmerBlock(borderRadius: 0)),
             Padding(
               padding: AppDesign.paddingS,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const ShimmerBlock(width: 60, height: 10),
+                  ShimmerBlock(width: 60, height: 10),
                   AppDesign.boxXS,
-                  const ShimmerBlock(width: 120, height: 14),
+                  ShimmerBlock(width: 120, height: 14),
                   AppDesign.boxS,
-                  const ShimmerBlock(width: 80, height: 16),
+                  ShimmerBlock(width: 80, height: 16),
                   AppDesign.boxS,
-                  const ShimmerBlock(width: 100, height: 10),
+                  ShimmerBlock(width: 100, height: 10),
                 ],
               ),
             ),
@@ -88,24 +88,24 @@ class ListItemSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesign.spaceL, vertical: AppDesign.spaceS),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppDesign.spaceL, vertical: AppDesign.spaceS),
       child: AppShimmer(
         child: Row(
           children: [
-            const ShimmerBlock(width: 50, height: 50, borderRadius: AppDesign.radiusS),
+            ShimmerBlock(width: 50, height: 50, borderRadius: AppDesign.radiusS),
             AppDesign.boxM,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const ShimmerBlock(width: 150, height: 14),
+                  ShimmerBlock(width: 150, height: 14),
                   AppDesign.boxXS,
-                  const ShimmerBlock(width: 100, height: 12),
+                  ShimmerBlock(width: 100, height: 12),
                 ],
               ),
             ),
-            const ShimmerBlock(width: 60, height: 16),
+            ShimmerBlock(width: 60, height: 16),
           ],
         ),
       ),

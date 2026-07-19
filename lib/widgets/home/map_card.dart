@@ -140,10 +140,10 @@ class MapCard extends StatelessWidget {
                 child: Image.asset(
                   'assets/images/footer_badge.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => Column(
+                  errorBuilder: (context, error, stackTrace) => const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.broken_image, color: Colors.red),
+                      Icon(Icons.broken_image, color: Colors.red),
                       Text('Error', style: TextStyle(fontSize: 8, color: Colors.red)),
                     ],
                   ),

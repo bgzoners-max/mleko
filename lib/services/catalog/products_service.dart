@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
@@ -110,6 +107,11 @@ class ProductsService
       case ProductSort.location:
         return a.location.toLowerCase().compareTo(b.location.toLowerCase());
       case ProductSort.ratingDesc:
+        final rA = a.avgRating ?? 0.0;
+        final rB = b.avgRating ?? 0.0;
+        if (rA != rB) {
+          return rB.compareTo(rA);
+        }
         return b.createdAt.compareTo(a.createdAt);
     }
   }

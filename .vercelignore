@@ -5,7 +5,8 @@
 .dart_tool/
 .venv/
 node_modules/
-build/
+build/*
+!build/vercel-deploy/
 coverage/
 backups/
 flutter_*.log

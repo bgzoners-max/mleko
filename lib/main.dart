@@ -8,7 +8,6 @@ import 'package:provider/provider.dart' as p_provider;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_providers.dart';
-import 'core/notification_types.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
 import 'firebase_options.dart';

@@ -16,9 +16,15 @@ class FavoritesProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    _ids = await _service.getFavoriteProductIds(userId);
-    _loaded = true;
-    notifyListeners();
+    try {
+      _ids = await _service.getFavoriteProductIds(userId);
+    } catch (e, st) {
+      LoggerService.error('Failed to load favorites', e, stackTrace: st);
+      _ids = [];
+    } finally {
+      _loaded = true;
+      notifyListeners();
+    }
   }
 
   final Set<String> _togglingIds = {};
@@ -35,7 +41,11 @@ class FavoritesProvider extends ChangeNotifier {
     }
     notifyListeners();
     try {
-      await _service.toggleFavorite(userId, productId);
+      if (wasFavorite) {
+        await _service.removeFavorite(userId, productId);
+      } else {
+        await _service.addFavorite(userId, productId);
+      }
     } catch (e, st) {
       // Revert state na prethodnu vrednost
       if (wasFavorite) {

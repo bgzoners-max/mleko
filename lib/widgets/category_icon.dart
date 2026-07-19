@@ -15,7 +15,10 @@ String _normalizeCategoryIconName(String iconName) =>
 Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
   Widget iconChild;
   if (iconName == null || iconName.isEmpty) {
-    iconChild = Icon(Icons.category, size: size * 0.6, color: color);
+    iconChild = Semantics(
+      label: 'Kategorija',
+      child: Icon(Icons.category, size: size * 0.6, color: color),
+    );
   } else {
     final lower = _normalizeCategoryIconName(iconName);
     final assetPath = _categoryAssetIcons[lower];
@@ -59,40 +62,11 @@ Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
       } else {
         iconChild = EmojiText(
           iconName,
-          style: TextStyle(fontSize: size * 0.5, color: color),
+          style: TextStyle(fontSize: size * 0.75),
         );
       }
     }
   }
 
-  return TweenAnimationBuilder<double>(
-    duration: const Duration(milliseconds: 500),
-    curve: Curves.easeOutBack,
-    tween: Tween(begin: 0.0, end: 1.0),
-    builder: (context, value, child) {
-      return Transform.scale(
-        scale: value,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: (color ?? const Color(0xFF1B5E20)).withValues(alpha: 0.08),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: (color ?? const Color(0xFF1B5E20)).withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (color ?? const Color(0xFF1B5E20)).withValues(alpha: 0.05),
-                blurRadius: 10,
-                spreadRadius: 2,
-              )
-            ],
-          ),
-          child: Center(child: iconChild),
-        ),
-      );
-    },
-  );
+  return iconChild;
 }

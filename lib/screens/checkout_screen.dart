@@ -10,10 +10,13 @@ import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
+import '../utils/quantity_engine.dart';
 
+import '../widgets/app_empty_state.dart';
 import '../widgets/app_network_image.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/offline_indicator.dart';
+import '../widgets/purchase_guidance_card.dart';
 import '../widgets/skeleton.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -33,11 +36,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _productFuture ??= context.read<ProductsService>().getProduct(widget.productId);
+    _productFuture ??=
+        context.read<ProductsService>().getProduct(widget.productId);
   }
 
   void _retry() => setState(() {
-        _productFuture = context.read<ProductsService>().getProduct(widget.productId);
+        _productFuture =
+            context.read<ProductsService>().getProduct(widget.productId);
       });
 
   @override
@@ -64,8 +69,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final product = snap.data;
         if (product == null) {
           return Scaffold(
-              appBar: AppBar(),
-              body: const Center(child: Text('Proizvod nije pronađen.')));
+            appBar: AppBar(title: const Text('Porudžbina')),
+            body: const AppEmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'Proizvod nije pronađen',
+              subtitle: 'Ovaj proizvod više nije dostupan ili je uklonjen.',
+            ),
+          );
         }
         return _CheckoutForm(
             product: product, initialQuantity: widget.initialQuantity);
@@ -131,7 +141,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
     if (s.contains('is currently unavailable')) {
       return 'Proizvod trenutno nije dostupan.';
     }
-    if (s.contains('SocketException') || s.contains('network') || s.contains('XMLHttpRequest')) {
+    if (s.contains('SocketException') ||
+        s.contains('network') ||
+        s.contains('XMLHttpRequest')) {
       return 'Nema internet veze. Proveri konekciju i pokušaj ponovo.';
     }
     return 'Porudžbina nije mogla biti poslata. Pokušaj ponovo.';
@@ -153,11 +165,30 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           'Maksimalna dostupna količina: ${widget.product.availableFormatted}');
       return;
     }
+    final step = widget.product.quantityStep;
+    final normalizedUnit = widget.product.unitType == ProductModel.unitG
+        ? ProductModel.unitKg
+        : widget.product.unitType;
+    if (!QuantityEngine.isValidQuantity(
+      quantity: qty,
+      minQuantity: widget.product.minOrderKg,
+      step: step,
+    )) {
+      setState(() => _error =
+          'Količina mora biti od minimuma i u koracima od ${ProductModel.formatQuantityWithUnit(step, normalizedUnit)}.');
+      return;
+    }
     final missing = <String>[];
     if (_deliveryMethod == DeliveryMethod.courier) {
-      if (_addressController.text.trim().isEmpty) missing.add('adresu');
-      if (_cityController.text.trim().isEmpty) missing.add('grad');
-      if (_postalCodeController.text.trim().isEmpty) missing.add('poštanski broj');
+      if (_addressController.text.trim().isEmpty) {
+        missing.add('adresu');
+      }
+      if (_cityController.text.trim().isEmpty) {
+        missing.add('grad');
+      }
+      if (_postalCodeController.text.trim().isEmpty) {
+        missing.add('poštanski broj');
+      }
     }
     if (_phoneController.text.trim().isEmpty) missing.add('kontakt telefon');
     if (missing.isNotEmpty) {
@@ -306,13 +337,24 @@ class _CheckoutFormState extends State<_CheckoutForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  PurchaseGuidanceCard(
+                    icon: Icons.info_outline,
+                    title: 'Šta će se desiti sledeće?',
+                    body:
+                        'Nakon što pošalješ upit, prodavac će ga dobiti u obaveštenjima i moći će da odluči da li prihvata porudžbinu.',
+                    accentColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outlineVariant
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                     child: Row(
@@ -331,7 +373,9 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(Icons.shopping_basket_outlined),
@@ -343,7 +387,10 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                             children: [
                               Text(
                                 widget.product.name,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -381,6 +428,43 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Nakon slanja upita, prodavac će dobiti vaše podatke i kontaktirati vas o daljem dogovoru.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      height: 1.4,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text('Način dostave',
                       style: Theme.of(context).textTheme.titleSmall),
                   RadioGroup<DeliveryMethod>(
@@ -408,6 +492,43 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Kad pošalješ upit, prodavac će ga primiti i nastaviti razgovor sa tobom o količini, mestu i načinu isporuke.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   if (_deliveryMethod == DeliveryMethod.courier) ...[
                     TextField(
                       controller: _addressController,
@@ -417,13 +538,13 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _cityController,
-                      decoration:
-                          const InputDecoration(labelText: 'Grad'),
+                      decoration: const InputDecoration(labelText: 'Grad'),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _postalCodeController,
-                      decoration: const InputDecoration(labelText: 'Poštanski broj'),
+                      decoration:
+                          const InputDecoration(labelText: 'Poštanski broj'),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),

@@ -182,7 +182,7 @@ class OrderQueueService {
         await _saveOrders(prefs, orders);
         LoggerService.info('Added pending order to queue',
             extra: {'orderId': order.id});
-      } catch (e, st) {
+      } catch (e) {
         throw AppError(
           message: 'Failed to add pending order: $e',
           userMessage: 'Greška pri čuvanju porudžbine u lokalu.',
@@ -335,7 +335,15 @@ class OrderQueueService {
       return;
     }
 
-    await _secureStorage.write(key: _storageKey, value: json);
-    await prefs.remove(_storageKey);
+    try {
+      await _secureStorage.write(key: _storageKey, value: json);
+      await prefs.remove(_storageKey);
+    } catch (e, st) {
+      LoggerService.warning(
+        'Secure storage write failed, falling back to legacy storage',
+        extra: {'error': e.toString(), 'stackTrace': st.toString()},
+      );
+      await prefs.setString(_storageKey, json);
+    }
   }
 }

@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 
 import '../../providers/app_state.dart';
 
+import '../app_empty_state.dart';
 import '../app_error_retry.dart';
 import '../cache_status_widget.dart';
 import '../app_shimmer.dart';
@@ -27,6 +28,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
   final double sectionSpacing;
   final double compactSpacing;
   final String? selectedRegion;
+  final VoidCallback onSearchTap;
 
   const HomeNarrowProductsSliver({
     super.key,
@@ -39,6 +41,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
     required this.sectionSpacing,
     required this.compactSpacing,
     required this.selectedRegion,
+    required this.onSearchTap,
   });
 
   @override
@@ -88,6 +91,25 @@ class HomeNarrowProductsSliver extends StatelessWidget {
         final user = context.read<AppState>().user;
         final canFavorite = user != null && !user.isGuest;
 
+        if (displayList.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: Breakpoints.horizontalPadding(context),
+                vertical: sectionSpacing,
+              ),
+              child: AppEmptyState(
+                icon: Icons.storefront_outlined,
+                title: 'Nema proizvoda za prikaz',
+                subtitle:
+                    'Trenutno nema dostupnih proizvoda u ovom regionu. Pokušaj kasnije ili promeni filter.',
+                ctaLabel: 'Pretraži proizvode',
+                onCtaPressed: onSearchTap,
+              ),
+            ),
+          );
+        }
+
         return SliverMainAxisGroup(
           slivers: [
             SliverToBoxAdapter(
@@ -114,8 +136,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                   horizontal: Breakpoints.horizontalPadding(context)),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount:
-                      isTabletLayout ? (isLargeTablet ? 3 : 2) : 2,
+                  crossAxisCount: isTabletLayout ? (isLargeTablet ? 3 : 2) : 2,
                   mainAxisSpacing: isTabletLayout ? 8 : 4,
                   crossAxisSpacing: isTabletLayout ? 8 : 4,
                   mainAxisExtent:

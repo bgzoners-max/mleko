@@ -230,6 +230,7 @@ class AppState extends ChangeNotifier {
     _connectivity.removeListener(_connectivityListener);
     _connectivity.dispose();
     _syncManager.dispose();
+    unawaited(PushService.dispose());
     super.dispose();
   }
 

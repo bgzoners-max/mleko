@@ -31,8 +31,8 @@ class OrderStatusFlowRules {
       case 'rejected':
       case 'cancelled_by_seller':
       case 'delivered':
-        return newStatus == 'arhivirano';
-      case 'arhivirano':
+        return newStatus == 'archived';
+      case 'archived':
         return false;
       default:
         return false;

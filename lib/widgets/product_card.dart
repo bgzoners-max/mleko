@@ -85,13 +85,15 @@ class _ProductCardState extends State<ProductCard> {
                     : 'Dodaj u omiljene',
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
                   child: Icon(
                     widget.isFavorite == true
                         ? Icons.favorite
                         : Icons.favorite_border,
                     key: ValueKey(widget.isFavorite),
-                    color: widget.isFavorite == true ? Colors.red : Colors.white,
+                    color:
+                        widget.isFavorite == true ? Colors.red : Colors.white,
                     size: 26,
                   ),
                 ),
@@ -115,7 +117,10 @@ class _ProductCardState extends State<ProductCard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -149,8 +154,7 @@ class _ProductCardState extends State<ProductCard> {
               if (widget.product.sellerIsVerified) ...[
                 const SizedBox(width: 4),
                 Icon(Icons.verified,
-                    size: 14,
-                    color: Theme.of(context).colorScheme.primary),
+                    size: 14, color: Theme.of(context).colorScheme.primary),
               ],
             ],
           ),
@@ -186,7 +190,8 @@ class _ProductCardState extends State<ProductCard> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.location_on_outlined, size: 12, color: Colors.grey.shade500),
+              Icon(Icons.location_on_outlined,
+                  size: 12, color: Colors.grey.shade500),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -201,8 +206,44 @@ class _ProductCardState extends State<ProductCard> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _InfoPill(
+                icon: widget.product.isAvailable
+                    ? Icons.check_circle_outline
+                    : Icons.cancel_outlined,
+                label: widget.product.isAvailable ? 'Na stanju' : 'Nedostupno',
+                color: widget.product.isAvailable
+                    ? Colors.green.shade700
+                    : Colors.grey.shade700,
+              ),
+              _InfoPill(
+                icon: Icons.inventory_2_outlined,
+                label: 'Min ${widget.product.minOrderFormatted}',
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
           if (!gridMode) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.open_in_new,
+                    size: 14, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'Klikni za detalje proizvoda',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -210,6 +251,24 @@ class _ProductCardState extends State<ProductCard> {
                     () => context.push('/product/${widget.product.id}')),
                 child: const Text('Pogledaj detalje'),
               ),
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.touch_app_outlined,
+                    size: 13, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Dodirni za detalje proizvoda',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -222,12 +281,12 @@ class _ProductCardState extends State<ProductCard> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppDesign.radiusL),
         border: Border.all(
-          color: _isHovered 
+          color: _isHovered
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
               : Colors.transparent,
           width: 2,
         ),
-        boxShadow: _isHovered 
+        boxShadow: _isHovered
             ? [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.1),
@@ -248,17 +307,16 @@ class _ProductCardState extends State<ProductCard> {
           child: Semantics(
             button: true,
             enabled: true,
-            label: 'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
+            label:
+                'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
             child: InkWell(
-              onTap: () => withHaptic(() => context.push('/product/${widget.product.id}')),
+              onTap: () => withHaptic(
+                  () => context.push('/product/${widget.product.id}')),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.max,
                 children: [
-                  if (gridMode) 
-                    Expanded(child: image) 
-                  else 
-                    image,
+                  if (gridMode) Expanded(child: image) else image,
                   textContent,
                 ],
               ),
@@ -294,6 +352,43 @@ class _ProductCardState extends State<ProductCard> {
   }
 }
 
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _Badge extends StatelessWidget {
   final String label;

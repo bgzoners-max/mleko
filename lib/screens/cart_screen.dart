@@ -6,12 +6,9 @@ import '../core/design_system.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/user_model.dart';
-import '../models/seller_delivery_models.dart';
-import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_network_image.dart';
-import '../widgets/skeleton.dart';
 import '../widgets/app_empty_state.dart';
 
 class CartScreen extends StatefulWidget {
@@ -23,7 +20,8 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   bool _loading = true;
-  Map<String, List<({ProductModel product, double quantity})>> _groupedItems = {};
+  Map<String, List<({ProductModel product, double quantity})>> _groupedItems =
+      {};
   Map<String, UserModel> _sellerProfiles = {};
   Map<String, double> _sellerMinimums = {};
 
@@ -56,7 +54,8 @@ class _CartScreenState extends State<CartScreen> {
 
       final minsMap = <String, double>{};
       for (final sid in sellerIds) {
-        final points = await deliveryService.getSellerDeliveryPoints(sid, onlyActive: true);
+        final points = await deliveryService.getSellerDeliveryPoints(sid,
+            onlyActive: true);
         double? minOrder;
         for (final p in points) {
           for (final s in p.activeSlots) {
@@ -90,7 +89,7 @@ class _CartScreenState extends State<CartScreen> {
     // If cart count changes, we might need to refresh grouped items
     // but getProductsGroupedBySeller has internal cache.
     // However, if a seller is removed completely, we should re-fetch.
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Korpa'),
@@ -102,10 +101,15 @@ class _CartScreenState extends State<CartScreen> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: const Text('Isprazni korpu?'),
-                    content: const Text('Svi proizvodi će biti uklonjeni iz korpe.'),
+                    content:
+                        const Text('Svi proizvodi će biti uklonjeni iz korpe.'),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Odustani')),
-                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Isprazni')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Odustani')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Isprazni')),
                     ],
                   ),
                 );
@@ -131,7 +135,8 @@ class _CartScreenState extends State<CartScreen> {
     return AppEmptyState(
       icon: Icons.shopping_basket_outlined,
       title: 'Vaša korpa je prazna',
-      subtitle: 'Dodajte domaće proizvode u korpu i podržite lokalne proizvođače.',
+      subtitle:
+          'Dodajte domaće proizvode u korpu i podržite lokalne proizvođače.',
       ctaLabel: 'Istraži proizvode',
       onCtaPressed: () => context.go('/'),
     );
@@ -153,10 +158,11 @@ class _CartScreenState extends State<CartScreen> {
             final items = _groupedItems[sellerId] ?? [];
             final profile = _sellerProfiles[sellerId];
             final minOrder = _sellerMinimums[sellerId];
-            
+
             return _SellerCartCard(
               sellerId: sellerId,
-              sellerName: profile?.farmName ?? profile?.displayName ?? 'Prodavac',
+              sellerName:
+                  profile?.farmName ?? profile?.displayName ?? 'Prodavac',
               location: profile?.city ?? 'Nepoznata lokacija',
               items: items,
               minOrder: minOrder,
@@ -214,13 +220,13 @@ class _SellerCartCardState extends State<_SellerCartCard> {
   Future<void> _removeItem(int index) async {
     final item = _currentItems[index];
     final sellerId = widget.sellerId;
-    
+
     // 1. Pozovi provider da ukloni iz baze/state-a
     AppHaptics.light();
     await context.read<CartProvider>().removeFromSeller(
-      sellerId: sellerId,
-      productId: item.product.id,
-    );
+          sellerId: sellerId,
+          productId: item.product.id,
+        );
 
     // 2. Animacija uklanjanja
     _listKey.currentState?.removeItem(
@@ -246,8 +252,11 @@ class _SellerCartCardState extends State<_SellerCartCard> {
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.items.fold<double>(0, (sum, item) => sum + (item.product.pricePerKg * item.quantity));
-    final progress = widget.minOrder != null ? (total / widget.minOrder!).clamp(0.0, 1.0) : 1.0;
+    final total = widget.items.fold<double>(
+        0, (sum, item) => sum + (item.product.pricePerKg * item.quantity));
+    final progress = widget.minOrder != null
+        ? (total / widget.minOrder!).clamp(0.0, 1.0)
+        : 1.0;
     final remaining = widget.minOrder != null ? widget.minOrder! - total : 0.0;
     final isMet = remaining <= 0;
 
@@ -262,7 +271,10 @@ class _SellerCartCardState extends State<_SellerCartCard> {
           // Header
           Container(
             padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+            color: Theme.of(context)
+                .colorScheme
+                .primaryContainer
+                .withValues(alpha: 0.3),
             child: Row(
               children: [
                 const Icon(Icons.storefront, size: 20),
@@ -273,11 +285,17 @@ class _SellerCartCardState extends State<_SellerCartCard> {
                     children: [
                       Text(
                         widget.sellerName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         widget.location,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.grey.shade600),
                       ),
                     ],
                   ),
@@ -291,28 +309,77 @@ class _SellerCartCardState extends State<_SellerCartCard> {
             ),
           ),
 
-          // Progress Bar
           if (widget.minOrder != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppDesign.spaceL, AppDesign.spaceL, AppDesign.spaceL, AppDesign.spaceS),
+              padding: const EdgeInsets.fromLTRB(AppDesign.spaceL,
+                  AppDesign.spaceL, AppDesign.spaceL, AppDesign.spaceS),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color:
+                          isMet ? Colors.green.shade50 : Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isMet
+                            ? Colors.green.shade200
+                            : Colors.orange.shade200,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isMet
+                              ? Icons.check_circle_outline
+                              : Icons.info_outline,
+                          size: 16,
+                          color: isMet
+                              ? Colors.green.shade700
+                              : Colors.orange.shade800,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            isMet
+                                ? 'Minimalni iznos je dostignut. Možeš nastaviti sa porudžbinom.'
+                                : 'Još ti fali ${remaining.toStringAsFixed(0)} RSD da dostigneš minimum za ovu porudžbinu.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isMet
+                                  ? Colors.green.shade800
+                                  : Colors.orange.shade800,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        isMet ? 'Ispunjen minimum za porudžbinu' : 'Do minimuma za porudžbinu:',
+                        isMet
+                            ? 'Ispunjen minimum za porudžbinu'
+                            : 'Do minimuma za porudžbinu:',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: isMet ? Colors.green.shade700 : Colors.orange.shade800,
+                          color: isMet
+                              ? Colors.green.shade700
+                              : Colors.orange.shade800,
                         ),
                       ),
                       if (!isMet)
                         Text(
                           'još ${remaining.toStringAsFixed(0)} RSD',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade800),
                         ),
                     ],
                   ),
@@ -323,7 +390,8 @@ class _SellerCartCardState extends State<_SellerCartCard> {
                       value: progress,
                       minHeight: 8,
                       backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(isMet ? Colors.green : Colors.orange),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          isMet ? Colors.green : Colors.orange),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -334,6 +402,47 @@ class _SellerCartCardState extends State<_SellerCartCard> {
                 ],
               ),
             ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppDesign.spaceL, 0, AppDesign.spaceL, AppDesign.spaceS),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.18),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Minimum označava najmanji iznos za jednu porudžbinu. Kad dostigneš cilj, dugme „Naruči“ postaje dostupno za nastavak.',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
           const Divider(height: AppDesign.spaceL),
 
@@ -369,10 +478,15 @@ class _SellerCartCardState extends State<_SellerCartCard> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Ukupno:', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    Text('Ukupno:',
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12)),
                     Text(
                       '${total.toStringAsFixed(0)} RSD',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -381,8 +495,10 @@ class _SellerCartCardState extends State<_SellerCartCard> {
                   icon: const Icon(Icons.shopping_cart_checkout),
                   label: const Text('Naruči'),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
@@ -394,7 +510,9 @@ class _SellerCartCardState extends State<_SellerCartCard> {
   }
 
   void _goToCheckOut(BuildContext context) {
-    final quantities = {for (var item in widget.items) item.product.id: item.quantity};
+    final quantities = {
+      for (var item in widget.items) item.product.id: item.quantity
+    };
     context.push(
       '/checkout-seller/${widget.sellerId}',
       extra: {'productQuantities': quantities},
@@ -406,10 +524,15 @@ class _SellerCartCardState extends State<_SellerCartCard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Ukloni proizvode?'),
-        content: Text('Svi proizvodi od prodavca "${widget.sellerName}" će biti uklonjeni.'),
+        content: Text(
+            'Svi proizvodi od prodavca "${widget.sellerName}" će biti uklonjeni.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Odustani')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Ukloni')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Odustani')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Ukloni')),
         ],
       ),
     );
@@ -425,13 +548,15 @@ class _CartItemTile extends StatelessWidget {
   final String sellerId;
   final VoidCallback onRemove;
 
-  const _CartItemTile({required this.item, required this.sellerId, required this.onRemove});
+  const _CartItemTile(
+      {required this.item, required this.sellerId, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     final p = item.product;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDesign.spaceL, vertical: AppDesign.spaceS),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppDesign.spaceL, vertical: AppDesign.spaceS),
       child: Row(
         children: [
           ClipRRect(
@@ -448,7 +573,8 @@ class _CartItemTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(p.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 Text(
                   '${p.priceFormatted} × ${p.formatQuantity(item.quantity)}',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
@@ -462,7 +588,8 @@ class _CartItemTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.remove_circle_outline, size: 20, color: Colors.grey),
+            icon: const Icon(Icons.remove_circle_outline,
+                size: 20, color: Colors.grey),
             onPressed: onRemove,
           ),
         ],

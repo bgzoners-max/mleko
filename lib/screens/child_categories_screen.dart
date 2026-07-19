@@ -249,11 +249,11 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                   ),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: Breakpoints.isWideDesktop(context)
+                      crossAxisCount: Breakpoints.isDesktop(context)
                           ? 4
                           : Breakpoints.isLargeTablet(context)
                               ? 3
-                              : 2,
+                              : (Breakpoints.isSmallTablet(context) ? 3 : 2),
                       mainAxisSpacing: Breakpoints.adaptiveDouble(
                         context,
                         phone: 6,
@@ -270,46 +270,62 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                       ),
                       mainAxisExtent: Breakpoints.adaptiveDouble(
                         context,
-                        phone: 64,
-                        smallTabletValue: 72,
-                        largeTabletValue: 76,
-                        desktop: 76,
+                        phone: 50,
+                        smallTabletValue: 52,
+                        largeTabletValue: 54,
+                        desktop: 54,
                       ),
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final cat = _categories[index];
+                        final colorScheme = Theme.of(context).colorScheme;
                         return Semantics(
                           button: true,
                           label: 'Kategorija ${cat.name}',
-                          child: InkWell(
-                            onTap: () => context.go(
-                                '/search?category=${Uri.encodeComponent(cat.name)}'),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                children: [
-                                  buildCategoryIcon(
-                                    cat.icon,
-                                    size: 30,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      cat.name,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w500),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                          child: Card(
+                            margin: EdgeInsets.zero,
+                            clipBehavior: Clip.antiAlias,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              side: BorderSide(
+                                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                                width: 1,
+                              ),
+                            ),
+                            color: colorScheme.surfaceContainerLow,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: () => context.go(
+                                  '/search?category=${Uri.encodeComponent(cat.name)}'),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                child: Row(
+                                  children: [
+                                    buildCategoryIcon(
+                                      cat.icon,
+                                      size: 24,
+                                      color: colorScheme.primary,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        cat.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -384,32 +400,18 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                       horizontal: Breakpoints.horizontalPadding(context)),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: Breakpoints.isWideDesktop(context)
-                          ? 4
+                      crossAxisCount: Breakpoints.isDesktop(context)
+                          ? 5
+                          : Breakpoints.productGridColumns(context),
+                      crossAxisSpacing: 6,
+                      mainAxisSpacing: 6,
+                      mainAxisExtent: Breakpoints.isDesktop(context)
+                          ? 364.0
                           : Breakpoints.isLargeTablet(context)
-                              ? 4
-                              : (Breakpoints.isSmallTablet(context) ? 3 : 2),
-                      crossAxisSpacing: Breakpoints.adaptiveDouble(
-                        context,
-                        phone: 6,
-                        smallTabletValue: 10,
-                        largeTabletValue: 12,
-                        desktop: 12,
-                      ),
-                      mainAxisSpacing: Breakpoints.adaptiveDouble(
-                        context,
-                        phone: 6,
-                        smallTabletValue: 10,
-                        largeTabletValue: 12,
-                        desktop: 12,
-                      ),
-                      mainAxisExtent: Breakpoints.isWideDesktop(context)
-                          ? 308
-                          : Breakpoints.isLargeTablet(context)
-                              ? 292
+                              ? 352.0
                               : (Breakpoints.isSmallTablet(context)
-                                  ? 284
-                                  : 255),
+                                  ? 344.0
+                                  : 368.0),
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) =>

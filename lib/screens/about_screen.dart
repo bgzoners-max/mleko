@@ -120,6 +120,35 @@ class _AboutContent extends StatelessWidget {
           ),
         ),
         SizedBox(height: sectionSpacing),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.16),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Ova stranica ti daje kratku sliku o tome šta platforma želi da postigne i kako se razlikuje od klasičnih tržišta.',
+                  style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: sectionSpacing),
         Text('Naša vizija', style: heading),
         const SizedBox(height: 16),
         Text(

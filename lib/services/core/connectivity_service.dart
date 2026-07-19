@@ -33,9 +33,9 @@ class ConnectivityService extends ChangeNotifier {
 
   void _updateConnectivity(dynamic result) {
     final newIsOnline = switch (result) {
-      List<ConnectivityResult> results =>
+      final List<ConnectivityResult> results =>
         !results.contains(ConnectivityResult.none),
-      ConnectivityResult r => r != ConnectivityResult.none,
+      final ConnectivityResult r => r != ConnectivityResult.none,
       _ => true,
     };
 

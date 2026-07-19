@@ -175,13 +175,13 @@ class OrderListSkeleton extends StatelessWidget {
                             color: Colors.white, shape: BoxShape.circle),
                       ),
                       AppDesign.boxM,
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const ShimmerBlock(width: 120, height: 14),
+                            ShimmerBlock(width: 120, height: 14),
                             AppDesign.boxXS,
-                            const ShimmerBlock(width: 80, height: 12),
+                            ShimmerBlock(width: 80, height: 12),
                           ],
                         ),
                       ),

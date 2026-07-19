@@ -26,6 +26,7 @@ import '../widgets/product/product_seller_banner.dart';
 import '../widgets/product/product_image_gallery.dart';
 import '../widgets/product/product_cart_block.dart';
 import '../widgets/product/product_info_section.dart';
+import '../widgets/purchase_guidance_card.dart';
 
 Future<void> _shareProduct(BuildContext context, ProductModel product) async {
   final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
@@ -263,6 +264,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ProductImageGallery(
           product: product,
           height: isLargeTablet ? 360 : (isSmallTablet ? 280 : 220),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: PurchaseGuidanceCard(
+            icon: Icons.lightbulb_outline,
+            title: 'Kako da poručiš?',
+            body:
+                'Dodaj proizvod u korpu, potvrdi količinu i pošalji upit prodavcu. On će ti odgovoriti u najkraćem mogućem roku.',
+            accentColor: Theme.of(context).colorScheme.primary,
+          ),
         ),
         ProductInfoSection(
           product: product,

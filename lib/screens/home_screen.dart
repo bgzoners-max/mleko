@@ -111,13 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
         context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
     final unreadCount =
         context.select<AppState, int>((s) => s.unreadNotificationCount);
-    
+
     final isWide = isTwoPaneLayout;
     final isTablet = Breakpoints.isTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isTabletLayout = isTablet && !isWide;
-    
+
     final outerHorizontalPadding =
         isWide ? 12.0 : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 10.0));
     final sectionSpacing =
@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final productGridExtent = isWide
         ? 364.0
         : (isLargeTablet ? 352.0 : (isSmallTablet ? 344.0 : 368.0));
-        
+
     final stream = _homeProductsStream;
     if (stream == null) {
       return Scaffold(
@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     return Scaffold(
       extendBodyBehindAppBar: false,
       appBar: AppBar(
@@ -206,7 +206,64 @@ class _HomeScreenState extends State<HomeScreen> {
                       cacheExtent: 600,
                       slivers: [
                         if (!isWide) _buildStickySearch(context),
-                        
+                        if (selectedRegion != null)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                outerHorizontalPadding,
+                                8,
+                                outerHorizontalPadding,
+                                0,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                      .withValues(alpha: 0.35),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 18,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Prikazujemo proizvode za region: $selectedRegion',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          _showLocationPicker(context),
+                                      child: const Text('Promeni'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
                         SliverToBoxAdapter(
                           child: Padding(
                             padding: EdgeInsets.fromLTRB(
@@ -229,7 +286,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     compactSpacing: compactSpacing,
                                     sectionSpacing: sectionSpacing,
                                     sidePanelSpacing: sidePanelSpacing,
-                                    categoryHeader: _buildCategoryHeader(context),
+                                    categoryHeader:
+                                        _buildCategoryHeader(context),
                                     onSearchTap: () => _openSearch(context),
                                   )
                                 : HomeNarrowTopSection(
@@ -242,11 +300,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     latestHomeData: _latestHomeData,
                                     isSeller: isSeller,
                                     selectedRegion: selectedRegion,
-                                    categoryHeader: _buildCategoryHeader(context),
+                                    categoryHeader:
+                                        _buildCategoryHeader(context),
                                   ),
                           ),
                         ),
-                        
                         if (!isWide && isSeller)
                           SliverToBoxAdapter(
                             child: RepaintBoundary(
@@ -254,10 +312,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   statsFuture: _sellerStatsFuture),
                             ),
                           ),
-                          
                         if (!isWide)
                           const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                          
                         if (!isWide)
                           HomeNarrowProductsSliver(
                             stream: stream,
@@ -269,6 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             sectionSpacing: sectionSpacing,
                             compactSpacing: compactSpacing,
                             selectedRegion: selectedRegion,
+                            onSearchTap: () => _openSearch(context),
                           ),
                       ],
                     ),

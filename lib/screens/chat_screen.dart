@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' show min, sin, pi;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -7,13 +6,11 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../models/message_model.dart';
 import '../models/message_reaction_model.dart';
 import '../models/order_model.dart';
-import '../models/product_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
@@ -182,14 +179,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return items;
   }
 
-  String _formatTime(DateTime dt) {
-    final now = DateTime.now();
-    if (dt.day == now.day && dt.month == now.month && dt.year == now.year) {
-      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    }
-    return '${dt.day}.${dt.month}.';
-  }
-
   Future<void> _loadConversationInfo() async {
     final ordersService = context.read<OrdersService>();
     final user = context.read<AppState>().user;
@@ -253,7 +242,8 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -314,7 +304,8 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -496,7 +487,8 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -537,7 +529,47 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             children: [
               if (_order != null) ChatOrderContextCard(order: _order!),
-              if (_sellerStats != null) ChatSellerStatsCard(stats: _sellerStats!),
+              if (_sellerStats != null)
+                ChatSellerStatsCard(stats: _sellerStats!),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.tips_and_updates_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Možeš odmah poslati brzi odgovor, priložiti sliku ili koristiti opcije za kopiranje i brisanje poruke.',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    height: 1.4,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               Expanded(
                 child: StreamBuilder<List<MessageReactionModel>>(
                   stream: _reactionsStream,
@@ -572,7 +604,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
 
                         if (messages.isEmpty) {
-                          return AppEmptyState(
+                          return const AppEmptyState(
                             icon: Icons.chat_bubble_outline,
                             title: 'Nema poruka',
                             subtitle: 'Započnite razgovor sa prodavcem.',
@@ -641,7 +673,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                     child: Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 24,
                           height: 16,
                           child: ChatTypingIndicator(),
@@ -676,6 +708,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
 abstract class _ChatItem {}
 
 class _MessageChatItem extends _ChatItem {

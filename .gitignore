@@ -55,3 +55,8 @@ backups/*.bundle
 backups/*.zip
 
 .vercel
+.env*
+.vercel_backup/
+ci_log.txt
+patch.diff
+supabase/.branches/

@@ -6,12 +6,87 @@ import '../../core/responsive.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/error_dialog.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width >= 850;
+
+    if (isDesktop) {
+      return Scaffold(
+        body: Row(
+          children: [
+            // Left Side: Marketing Content
+            Expanded(
+              flex: 5,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF083313), // Deep forest green
+                      Color(0xFF0F5A22), // Warm nature green
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Center(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+                    child: MarketingContent(isDesktop: true),
+                  ),
+                ),
+              ),
+            ),
+            // Right Side: Register Form
+            Expanded(
+              flex: 5,
+              child: Container(
+                color: theme.scaffoldBackgroundColor,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Kreirajte nalog',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Povežite se sa lokalnim proizvođačima',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 32),
+                          _RegisterForm(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Registracija')),
       body: Align(

@@ -84,7 +84,8 @@ class ProductInfoSection extends StatelessWidget {
           const SizedBox(height: 16),
           FadeInSlide(
             delay: const Duration(milliseconds: 100),
-            child: ProductInfoBlock(title: 'Opis', content: product.description),
+            child:
+                ProductInfoBlock(title: 'Opis', content: product.description),
           ),
           FadeInSlide(
             delay: const Duration(milliseconds: 150),
@@ -102,13 +103,50 @@ class ProductInfoSection extends StatelessWidget {
           ),
           FadeInSlide(
             delay: const Duration(milliseconds: 250),
-            child: ProductInfoBlock(title: 'Lokacija', content: product.location),
+            child:
+                ProductInfoBlock(title: 'Lokacija', content: product.location),
           ),
           FadeInSlide(
             delay: const Duration(milliseconds: 300),
             child: ProductInfoBlock(
                 title: 'Način preuzimanja',
                 content: product.pickupOptions.join(', ')),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.18),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.support_agent_outlined,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Možeš odmah poslati poruku prodavcu ili otvoriti njegov profil da proveriš detalje i dostupnost.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          height: 1.4,
+                        ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           if (includeCart) ...[

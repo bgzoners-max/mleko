@@ -3,7 +3,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../core/responsive.dart';
 import '../../core/web_seo.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
@@ -16,7 +15,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final isDesktop = width >= Breakpoints.tablet;
+    final isDesktop = width >= 850;
 
     setPageMetadata(
       title: 'Prijava | Domaći market',
@@ -31,25 +30,36 @@ class LoginScreen extends StatelessWidget {
           children: [
             // Left Side: Marketing Content
             Expanded(
-              flex: 6,
+              flex: 5,
               child: Container(
-                color: const Color(0xFF0E521E),
-                child: const SingleChildScrollView(
-                  padding: EdgeInsets.all(64),
-                  child: _MarketingContent(isDesktop: true),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF083313), // Deep forest green
+                      Color(0xFF0F5A22), // Warm nature green
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: const Center(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+                    child: MarketingContent(isDesktop: true),
+                  ),
                 ),
               ),
             ),
             // Right Side: Login Form
             Expanded(
-              flex: 4,
+              flex: 5,
               child: Container(
                 color: theme.scaffoldBackgroundColor,
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(48),
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -70,7 +80,7 @@ class LoginScreen extends StatelessWidget {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 48),
+                          const SizedBox(height: 32),
                           _LoginForm(),
                         ],
                       ),
@@ -107,9 +117,9 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-class _MarketingContent extends StatelessWidget {
+class MarketingContent extends StatelessWidget {
   final bool isDesktop;
-  const _MarketingContent({required this.isDesktop});
+  const MarketingContent({super.key, required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
@@ -155,27 +165,27 @@ class _MarketingContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 48),
-        const _AnimatedBenefit(
+        const AnimatedBenefit(
           delay: 200,
-          child: _BenefitItem(
+          child: BenefitItem(
             icon: Icons.verified_user_outlined,
             title: 'Provereni proizvođači',
             subtitle: 'Direktna saradnja sa lokalnim domaćinstvima.',
           ),
         ),
         const SizedBox(height: 24),
-        const _AnimatedBenefit(
+        const AnimatedBenefit(
           delay: 400,
-          child: _BenefitItem(
+          child: BenefitItem(
             icon: Icons.local_shipping_outlined,
             title: 'Direktna dostava',
             subtitle: 'Sveže namirnice direktno do vaših vrata.',
           ),
         ),
         const SizedBox(height: 24),
-        const _AnimatedBenefit(
+        const AnimatedBenefit(
           delay: 600,
-          child: _BenefitItem(
+          child: BenefitItem(
             icon: Icons.favorite_border,
             title: 'Podrška lokalu',
             subtitle: 'Kupovinom podržavate razvoj malih proizvođača.',
@@ -186,11 +196,11 @@ class _MarketingContent extends StatelessWidget {
   }
 }
 
-class _AnimatedBenefit extends StatelessWidget {
+class AnimatedBenefit extends StatelessWidget {
   final int delay;
   final Widget child;
 
-  const _AnimatedBenefit({required this.delay, required this.child});
+  const AnimatedBenefit({super.key, required this.delay, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -216,12 +226,13 @@ class _AnimatedBenefit extends StatelessWidget {
   }
 }
 
-class _BenefitItem extends StatelessWidget {
+class BenefitItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
 
-  const _BenefitItem({
+  const BenefitItem({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

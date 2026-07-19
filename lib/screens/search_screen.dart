@@ -74,8 +74,7 @@ class _SearchScreenState extends State<SearchScreen> {
       for (final url in urls) {
         if (!mounted) return;
         if (_preloadedImages.add(url)) {
-          await precacheImage(
-              CachedNetworkImageProvider(url), context);
+          await precacheImage(CachedNetworkImageProvider(url), context);
         }
       }
     });
@@ -267,7 +266,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onSearchChanged() {
     final value = _searchController.text;
-    
+
     // Uvek osveži sugestije (istoriju) dok kuca, bez debouncing-a za samu listu sugestija
     setState(() {
       _historyFuture = _searchHistoryService.getSuggestions(value);
@@ -523,6 +522,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final contentPadding = Breakpoints.horizontalPadding(context);
+    final hasActiveFilters =
+        _category != null || _region != null || _availableNow == true;
     final mobileResultsAsGrid = isSmallTablet || isLargeTablet;
     final stackedResultColumns = isLargeTablet ? 3 : 2;
     final stackedGridExtent = isLargeTablet ? 336.0 : 348.0;
@@ -596,16 +597,20 @@ class _SearchScreenState extends State<SearchScreen> {
                                       ?.copyWith(fontWeight: FontWeight.bold)),
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   SearchFilterChip(
                                     label: 'Sortiraj',
                                     value: _sort.label,
-                                    options: ProductSort.values.map((s) => s.label).toList(),
+                                    options: ProductSort.values
+                                        .map((s) => s.label)
+                                        .toList(),
                                     onSelected: (v) {
-                                      final idx = ProductSort.values.indexWhere((s) => s.label == v);
+                                      final idx = ProductSort.values
+                                          .indexWhere((s) => s.label == v);
                                       if (idx >= 0) {
                                         setState(() {
                                           _sort = ProductSort.values[idx];
@@ -628,12 +633,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                   ActionChip(
                                     label: const Text('Dostupno sada'),
                                     onPressed: () {
-                                      setState(
-                                          () => _availableNow = _availableNow == true ? null : true);
+                                      setState(() => _availableNow =
+                                          _availableNow == true ? null : true);
                                       _onFilterChanged();
                                     },
                                     backgroundColor: _availableNow == true
-                                        ? Theme.of(context).colorScheme.primaryContainer
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer
                                         : null,
                                   ),
                                 ],
@@ -673,61 +680,130 @@ class _SearchScreenState extends State<SearchScreen> {
                               _filterDebounceTimer?.isActive == true)
                             const LinearProgressIndicator(minHeight: 2),
                           _buildHistoryChips(),
-                            Expanded(
-                              child: _loading
-                                  ? GridView.builder(
-                                      padding: EdgeInsets.all(contentPadding),
-                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: wideGridColumns,
-                                        crossAxisSpacing: stackedGridSpacing,
-                                        mainAxisSpacing: stackedGridSpacing,
-                                        mainAxisExtent: wideGridExtent,
-                                      ),
-                                      itemCount: 8,
-                                      itemBuilder: (_, __) => const ProductCardSkeleton(),
-                                    )
-                                  : _searchError != null
-                                      ? AppErrorRetry(
-                                          message: 'Greška pri učitavanju proizvoda.',
-                                          detail: _searchError,
-                                          onRetry: _loadFirstPage,
-                                        )
-                                      : _products.isEmpty
-                                          ? _buildEmptyState()
-                                          : RefreshIndicator(
-                                              onRefresh: _onRefresh,
-                                              child: GridView.builder(
-                                                controller: _scrollController,
-                                            padding: EdgeInsets.all(
-                                              contentPadding,
-                                            ),
-                                            gridDelegate:
-                                                SliverGridDelegateWithFixedCrossAxisCount(
-                                              crossAxisCount: wideGridColumns,
-                                              crossAxisSpacing:
-                                                  stackedGridSpacing,
-                                              mainAxisSpacing:
-                                                  stackedGridSpacing,
-                                              mainAxisExtent: wideGridExtent,
-                                            ),
-                                            itemCount: _products.length +
-                                                (_loadingMore ? 4 : 0),
-                                            itemBuilder: (_, i) {
-                                              if (i >= _products.length) {
-                                                return const Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                            strokeWidth: 2));
-                                              }
-                                              return _buildProductCard(
-                                                  context, i, user);
-                                            },
-                                          ),
-                                        ),
+                          if (hasActiveFilters)
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: contentPadding,
+                                vertical: 4,
+                              ),
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _category = null;
+                                      _region = null;
+                                      _availableNow = null;
+                                    });
+                                    _onFilterChanged();
+                                  },
+                                  icon: const Icon(Icons.clear_all_rounded,
+                                      size: 18),
+                                  label: const Text('Očisti filtere'),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: contentPadding,
+                              vertical: 4,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer
+                                    .withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.18),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.tips_and_updates_outlined,
+                                    size: 18,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Koristi filtere za region, kategoriju i dostupnost. „Dostupno sada“ prikazuje samo proizvode koji su trenutno dostupni.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(height: 1.4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: _loading
+                                ? GridView.builder(
+                                    padding: EdgeInsets.all(contentPadding),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: wideGridColumns,
+                                      crossAxisSpacing: stackedGridSpacing,
+                                      mainAxisSpacing: stackedGridSpacing,
+                                      mainAxisExtent: wideGridExtent,
+                                    ),
+                                    itemCount: 8,
+                                    itemBuilder: (_, __) =>
+                                        const ProductCardSkeleton(),
+                                  )
+                                : _searchError != null
+                                    ? AppErrorRetry(
+                                        message:
+                                            'Greška pri učitavanju proizvoda.',
+                                        detail: _searchError,
+                                        onRetry: _loadFirstPage,
+                                      )
+                                    : _products.isEmpty
+                                        ? _buildEmptyState()
+                                        : RefreshIndicator(
+                                            onRefresh: _onRefresh,
+                                            child: GridView.builder(
+                                              controller: _scrollController,
+                                              padding: EdgeInsets.all(
+                                                contentPadding,
+                                              ),
+                                              gridDelegate:
+                                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: wideGridColumns,
+                                                crossAxisSpacing:
+                                                    stackedGridSpacing,
+                                                mainAxisSpacing:
+                                                    stackedGridSpacing,
+                                                mainAxisExtent: wideGridExtent,
+                                              ),
+                                              itemCount: _products.length +
+                                                  (_loadingMore ? 4 : 0),
+                                              itemBuilder: (_, i) {
+                                                if (i >= _products.length) {
+                                                  return const Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                              strokeWidth: 2));
+                                                }
+                                                return _buildProductCard(
+                                                    context, i, user);
+                                              },
+                                            ),
+                                          ),
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                 )
               : Column(
@@ -756,18 +832,85 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     _buildHistoryChips(),
                     _buildFilterChips(context),
+                    if (hasActiveFilters)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _category = null;
+                                _region = null;
+                                _availableNow = null;
+                              });
+                              _onFilterChanged();
+                            },
+                            icon: const Icon(Icons.clear_all_rounded, size: 18),
+                            label: const Text('Očisti filtere'),
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: contentPadding,
+                        vertical: 4,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.tips_and_updates_outlined,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Koristi filtere za region, kategoriju i dostupnost. „Dostupno sada“ prikazuje samo proizvode koji su trenutno dostupni.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: _loading
                           ? GridView.builder(
                               padding: EdgeInsets.all(contentPadding),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: mobileResultsAsGrid ? stackedResultColumns : 2,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: mobileResultsAsGrid
+                                    ? stackedResultColumns
+                                    : 2,
                                 crossAxisSpacing: stackedGridSpacing,
                                 mainAxisSpacing: stackedGridSpacing,
-                                mainAxisExtent: mobileResultsAsGrid ? stackedGridExtent : 255,
+                                mainAxisExtent: mobileResultsAsGrid
+                                    ? stackedGridExtent
+                                    : 255,
                               ),
                               itemCount: 8,
-                              itemBuilder: (_, __) => const ProductCardSkeleton(),
+                              itemBuilder: (_, __) =>
+                                  const ProductCardSkeleton(),
                             )
                           : _searchError != null
                               ? AppErrorRetry(

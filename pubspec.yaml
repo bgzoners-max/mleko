@@ -12,27 +12,27 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  supabase_flutter: ^2.8.0
-  firebase_core: ^4.4.0
-  firebase_messaging: ^16.1.1
+  supabase_flutter: ^2.12.0
+  firebase_core: ^4.6.0
+  firebase_messaging: ^16.1.3
   flutter_local_notifications: ^21.0.0
-  permission_handler: ^12.0.1
+  permission_handler: ^12.0.3
   geolocator: ^14.0.2
 
   # Connectivity
-  connectivity_plus: ^7.0.0
+  connectivity_plus: ^7.1.0
 
   # UI & navigation
-  go_router: ^17.1.0
+  go_router: ^17.2.0
   provider: ^6.1.1
   cached_network_image: ^3.3.1
-  image_picker: ^1.0.7
+  image_picker: ^1.2.0
   carousel_slider: ^5.0.0
   cupertino_icons: ^1.0.8
 
   # Utils
   intl: ^0.20.2
-  uuid: ^4.2.2
+  uuid: ^4.5.0
   url_launcher: ^6.2.4
   share_plus: ^12.0.2
   shimmer: ^3.0.0

@@ -118,9 +118,31 @@ mixin OrderQueryMixin {
         p['id'] as String:
             (p['farm_name'] ?? p['display_name']) as String? ?? fallback,
     };
+
+    Set<String> reviewedOrderIds = {};
+    if (loadSeller) {
+      try {
+        final orderIds = orders.map((o) => o.id).toList();
+        final reviewsList = await client
+            .from('reviews')
+            .select('order_id')
+            .inFilter('order_id', orderIds);
+        reviewedOrderIds = (reviewsList as List)
+            .map((e) => e['order_id'] as String)
+            .toSet();
+      } catch (e, st) {
+        LoggerService.warning('Failed to batch-fetch reviews for orders',
+            extra: {'error': e.toString(), 'stackTrace': st.toString()});
+      }
+    }
+
     return orders.map((o) {
       final id = loadSeller ? o.sellerId : o.buyerId;
-      return o.copyWith(counterpartyName: nameMap[id] ?? fallback);
+      final isReviewed = loadSeller ? reviewedOrderIds.contains(o.id) : null;
+      return o.copyWith(
+        counterpartyName: nameMap[id] ?? fallback,
+        isReviewed: isReviewed,
+      );
     }).toList();
   }
 
@@ -239,6 +261,9 @@ mixin OrderQueryMixin {
     controller.onCancel = () {
       refreshSub?.cancel();
       client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;

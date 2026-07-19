@@ -9,7 +9,8 @@ import '../../../utils/search_utils.dart';
 mixin ProductListingMixin {
   SupabaseClient get client;
 
-  Future<List<ProductModel>> attachSelectedDeliveryPointIds(List<ProductModel> products);
+  Future<List<ProductModel>> attachSelectedDeliveryPointIds(
+      List<ProductModel> products);
 
   /// Najnoviji proizvodi za listu kategorija (parent category page).
   Future<({List<ProductModel> items, bool hasMore})> getProductsByCategories({
@@ -106,6 +107,9 @@ mixin ProductListingMixin {
     controller.onCancel = () {
       refreshSub?.cancel();
       client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;

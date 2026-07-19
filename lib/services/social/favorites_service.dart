@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
@@ -87,33 +88,6 @@ class FavoritesService {
     }
   }
 
-  Future<void> toggleFavorite(String userId, String productId) async {
-    try {
-      // Prvo proverimo da li postoji
-      final existing = await _client
-          .from('favorites')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('product_id', productId)
-          .maybeSingle();
-
-      if (existing != null) {
-        // Ako postoji, obriši
-        await removeFavorite(userId, productId);
-      } else {
-        // Ako ne postoji, dodaj
-        await addFavorite(userId, productId);
-      }
-    } catch (e, st) {
-      if (_isMissingFavoritesTableError(e)) {
-        LoggerService.warning(
-            'Favorites table missing. Skipping toggleFavorite.');
-        return;
-      }
-      LoggerService.error('Failed to toggle favorite', e, stackTrace: st);
-      rethrow;
-    }
-  }
 
   Future<List<ProductModel>> getFavoriteProducts(String userId) async {
     final favIds = await getFavoriteProductIds(userId);
@@ -126,21 +100,29 @@ class FavoritesService {
 
   Stream<List<ProductModel>> streamFavoriteProducts(String userId,
       {Stream<void>? refreshTrigger}) async* {
-    while (true) {
-      final products = await getFavoriteProducts(userId);
-      yield products;
-      if (refreshTrigger != null) {
-        try {
-          await Future.any([
-            Future.delayed(const Duration(seconds: 5)),
-            refreshTrigger.first,
-          ]);
-        } on StateError {
-          return;
-        }
-      } else {
-        await Future.delayed(const Duration(seconds: 5));
+    final controller = StreamController<void>();
+
+    final timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!controller.isClosed) controller.add(null);
+    });
+
+    StreamSubscription? triggerSub;
+    if (refreshTrigger != null) {
+      triggerSub = refreshTrigger.listen((_) {
+        if (!controller.isClosed) controller.add(null);
+      });
+    }
+
+    try {
+      yield await getFavoriteProducts(userId);
+
+      await for (final _ in controller.stream) {
+        yield await getFavoriteProducts(userId);
       }
+    } finally {
+      timer.cancel();
+      await triggerSub?.cancel();
+      await controller.close();
     }
   }
 }

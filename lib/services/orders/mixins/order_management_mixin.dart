@@ -6,7 +6,7 @@ import '../../../models/product_model.dart';
 import '../../../models/seller_delivery_models.dart';
 import '../../../models/app_error.dart';
 import '../../../utils/quantity_engine.dart';
-import '../../../utils/search_utils.dart'; // for formatRsdAmount if it exists there, but usually it's in a more common place
+// for formatRsdAmount if it exists there, but usually it's in a more common place
 
 mixin OrderManagementMixin {
   SupabaseClient get client;
@@ -106,11 +106,7 @@ mixin OrderManagementMixin {
           unitType == ProductModel.unitG ? ProductModel.unitKg : unitType;
       final step = (explicitStep != null && explicitStep > 0)
           ? explicitStep
-          : (unitType == ProductModel.unitPiece
-              ? 10.0
-              : unitType == ProductModel.unitL
-                  ? 1.0
-                  : 0.5);
+          : (minQuantity > 0 ? minQuantity : 1.0);
 
       if (!QuantityEngine.isValidQuantity(
         quantity: item.quantityKg,

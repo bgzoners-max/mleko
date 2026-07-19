@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/product_model.dart';
 import '../../../models/product_sort.dart';
-import '../../../models/home_products_data.dart';
 import '../../../utils/search_utils.dart';
 import '../../core/logger_service.dart';
 import '../../core/retry_utils.dart';
@@ -43,38 +42,56 @@ mixin ProductSearchMixin {
         'p_limit': limit,
         'p_offset': offset,
       };
-      if (category != null && category.isNotEmpty) params['p_category'] = category;
-      if (region != null && region.isNotEmpty) params['p_region'] = region;
-      if (availableNow == true) params['p_available_now'] = true;
+      if (category != null && category.isNotEmpty) {
+        params['p_category'] = category;
+      }
+      if (region != null && region.isNotEmpty) {
+        params['p_region'] = region;
+      }
+      if (availableNow == true) {
+        params['p_available_now'] = true;
+      }
       if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
         params['p_exclude_seller_id'] = excludeSellerId;
       }
-      rows = await withRetry(() => client.rpc('search_products_fts', params: params)) as List;
+      rows = await withRetry(
+          () => client.rpc('search_products_fts', params: params)) as List;
     } else {
       const table = 'products_with_ratings';
       var query = client.from(table).select();
-      if (category != null && category.isNotEmpty) query = query.eq('category', category);
+      if (category != null && category.isNotEmpty) {
+        query = query.eq('category', category);
+      }
       if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
         query = query.neq('seller_id', excludeSellerId);
       }
-      if (region != null && region.isNotEmpty) query = query.eq('location', region);
-      if (availableNow == true) query = query.eq('available_now', true);
-      if (minPrice != null) query = query.gte('price_per_kg', minPrice);
-      if (maxPrice != null) query = query.lte('price_per_kg', maxPrice);
+      if (region != null && region.isNotEmpty) {
+        query = query.eq('location', region);
+      }
+      if (availableNow == true) {
+        query = query.eq('available_now', true);
+      }
+      if (minPrice != null) {
+        query = query.gte('price_per_kg', minPrice);
+      }
+      if (maxPrice != null) {
+        query = query.lte('price_per_kg', maxPrice);
+      }
 
       final (orderColumn, orderAsc) = switch (sort) {
-        ProductSort.dateDesc  => ('created_at', false),
-        ProductSort.dateAsc   => ('created_at', true),
-        ProductSort.priceAsc  => ('price_per_kg', true),
+        ProductSort.dateDesc => ('created_at', false),
+        ProductSort.dateAsc => ('created_at', true),
+        ProductSort.priceAsc => ('price_per_kg', true),
         ProductSort.priceDesc => ('price_per_kg', false),
-        ProductSort.location  => ('location', true),
+        ProductSort.location => ('location', true),
         ProductSort.ratingDesc => ('avg_rating', false),
       };
       var ordered = query.order(orderColumn, ascending: orderAsc);
       if (sort == ProductSort.ratingDesc) {
         ordered = ordered.order('created_at', ascending: false);
       }
-      rows = await withRetry(() => ordered.range(offset, offset + limit - 1)) as List;
+      rows = await withRetry(() => ordered.range(offset, offset + limit - 1))
+          as List;
     }
 
     final products = rows
@@ -131,7 +148,7 @@ mixin ProductSearchMixin {
         safeSearch != null ? nameSearchTokens(safeSearch) : <String>[];
 
     final allCached = await cache.getAllCachedProducts();
-    var filtered = allCached.where((p) {
+    final filtered = allCached.where((p) {
       if (category != null && category.isNotEmpty && p.category != category) {
         return false;
       }
@@ -319,6 +336,9 @@ mixin ProductSearchMixin {
         regionNotifier.removeListener(regionListener);
       }
       client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;

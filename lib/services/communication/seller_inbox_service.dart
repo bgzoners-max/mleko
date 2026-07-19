@@ -89,6 +89,9 @@ class SellerInboxService {
     controller.onCancel = () {
       refreshSub?.cancel();
       _client.removeChannel(channel);
+      if (!controller.isClosed) {
+        controller.close();
+      }
     };
 
     return controller.stream;

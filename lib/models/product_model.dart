@@ -49,6 +49,8 @@ class ProductModel {
   final List<String> selectedDeliveryPointIds;
   final DateTime createdAt;
   final bool sellerIsVerified;
+  final double? avgRating;
+  final int reviewCount;
 
   const ProductModel({
     required this.id,
@@ -70,6 +72,8 @@ class ProductModel {
     this.selectedDeliveryPointIds = const [],
     required this.createdAt,
     this.sellerIsVerified = false,
+    this.avgRating,
+    this.reviewCount = 0,
   });
 
   bool get isVolumeUnit => unitType == unitL;
@@ -204,6 +208,8 @@ class ProductModel {
               const [],
       createdAt: date,
       sellerIsVerified: json['seller_is_verified'] as bool? ?? false,
+      avgRating: (json['avg_rating'] as num?)?.toDouble(),
+      reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -257,6 +263,11 @@ class ProductModel {
       'is_domestic': isDomestic,
       'available_now': availableNow,
       'delivery_mode': deliveryMode.dbValue,
+      'selected_delivery_point_ids': selectedDeliveryPointIds,
+      'created_at': createdAt.toIso8601String(),
+      'seller_is_verified': sellerIsVerified,
+      if (avgRating != null) 'avg_rating': avgRating,
+      'review_count': reviewCount,
     };
   }
 }

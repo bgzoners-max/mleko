@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/responsive.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +27,6 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   // Stream se čuva kao polje — sprečava re-kreiranje kanala na svakom buildu.
   Stream<List<ProductModel>>? _productsStream;
   String? _lastUserId;
-  List<ProductModel>? _lastProducts;
 
   @override
   void didChangeDependencies() {
@@ -154,28 +152,70 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           builder: (context, statsSnap) {
             final stats = statsSnap.data;
             if (stats == null) return const SizedBox.shrink();
-            return Card(
-              margin: const EdgeInsets.all(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _StatItem(
-                        label: 'Na čekanju',
-                        value: '${stats.pendingCount}',
-                        icon: Icons.pending_actions),
-                    _StatItem(
-                        label: 'Ukupno',
-                        value: '${stats.totalCount}',
-                        icon: Icons.receipt_long),
-                    _StatItem(
-                        label: 'Prihod',
-                        value: '${stats.revenue.toStringAsFixed(0)} RSD',
-                        icon: Icons.monetization_on),
-                  ],
+            return Column(
+              children: [
+                Card(
+                  margin: const EdgeInsets.all(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _StatItem(
+                            label: 'Na čekanju',
+                            value: '${stats.pendingCount}',
+                            icon: Icons.pending_actions),
+                        _StatItem(
+                            label: 'Ukupno',
+                            value: '${stats.totalCount}',
+                            icon: Icons.receipt_long),
+                        _StatItem(
+                            label: 'Prihod',
+                            value: '${stats.revenue.toStringAsFixed(0)} RSD',
+                            icon: Icons.monetization_on),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Brojke prikazuju stanje vaših proizvoda i zahteve kupaca. „Dodaj proizvod“ otvara formu za novu ponudu.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -223,7 +263,16 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                                     .titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Dodajte prvi proizvod da počnete da se pojavljujete kupcima.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.grey.shade600),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 20),
                               FilledButton.icon(
                                 onPressed: () => context.go('/add-product'),
                                 icon: const Icon(Icons.add),
@@ -324,6 +373,43 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Dodavanje proizvoda odmah ga čini vidljivim kupcima i otvara novu ponudu.',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 FilledButton.icon(
                   onPressed: () => context.go('/add-product'),
                   icon: const Icon(Icons.add),

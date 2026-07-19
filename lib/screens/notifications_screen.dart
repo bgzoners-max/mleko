@@ -659,6 +659,45 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         padding: EdgeInsets.all(contentPadding),
                         child: permissionBanner,
                       ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: contentPadding),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.tips_and_updates_outlined,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Možeš ih označiti kao pročitana, obrisati ili otvoriti direktno iz porudžbine ili podrške.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(height: 1.4),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const Expanded(
                       child: AppEmptyState(
                         icon: Icons.notifications_none,
@@ -688,6 +727,45 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       padding: EdgeInsets.all(contentPadding),
                       child: permissionBanner,
                     ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: contentPadding),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            .withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.18),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.tips_and_updates_outlined,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Pritisni obaveštenje da otvoriš povezani sadržaj. Možeš ih i označiti kao pročitana ili obrisati.',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: ListView.builder(
                       padding: EdgeInsets.all(contentPadding),

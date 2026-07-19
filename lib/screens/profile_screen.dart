@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../core/design_system.dart';
 import '../core/responsive.dart';
 import '../models/user_model.dart';
 import '../providers/app_state.dart';
@@ -99,6 +97,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                   ProfileDataCard(user: user),
                   const SizedBox(height: 6),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.tips_and_updates_outlined,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Brži pristup svim važnim stvarima',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Na profilu možeš brzo otvoriti porudžbine, omiljene proizvode, poruke i podešavanja.',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(height: 1.4),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   if (!user.isGuest) ...[
                     BuyerStatsCard(user: user),
                     const SizedBox(height: 6),
@@ -146,6 +183,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         ...profileCards,
         SizedBox(height: isSmallTablet ? 12 : 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.tips_and_updates_outlined,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Brži pristup svim važnim stvarima',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Na profilu možeš brzo otvoriti porudžbine, omiljene proizvode, poruke i podešavanja.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: isSmallTablet ? 8 : 4),
         if (user.isSeller) ...[
           MiniStoreCard(user: user),
           SizedBox(height: isSmallTablet ? 8 : 4),
@@ -167,13 +243,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ListTile(
         visualDensity: VisualDensity.compact,
         leading: const Icon(Icons.shopping_bag_outlined),
-        title: const Text('Moje porudžbine', style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text('Moje porudžbine',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Praćenje statusa i istorija'),
         onTap: () => push('/orders'),
       ),
       ListTile(
         visualDensity: VisualDensity.compact,
         leading: const Icon(Icons.favorite_outline),
         title: const Text('Omiljeni proizvodi'),
+        subtitle: const Text('Brzi pristup najdražim proizvodima'),
         selected: isActive('favorites'),
         onTap: () => isWide
             ? openPanel('favorites', const FavoritesScreen())
@@ -204,7 +283,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? openPanel('messages', const ConversationsScreen())
               : push('/conversations'),
         ),
-      
       const SizedBox(height: 8),
       const ProfileSectionHeader(title: 'PRODAVNICA'),
       if (user.isSeller) ...[
@@ -251,13 +329,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onTap: () => push('/register'),
         ),
       ],
-      
       const SizedBox(height: 8),
       const ProfileSectionHeader(title: 'NALOG I PODRŠKA'),
       ListTile(
         visualDensity: VisualDensity.compact,
         leading: const Icon(Icons.notifications_outlined),
         title: const Text('Obaveštenja'),
+        subtitle: const Text('Nove poruke i ažuriranja'),
         selected: isActive('notifications'),
         onTap: () => isWide
             ? openPanel('notifications', const NotificationsScreen())
