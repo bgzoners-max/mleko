@@ -42,60 +42,62 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
 
     return Column(
       children: [
-        Stack(
-          children: [
-            Container(
-              height: widget.height,
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.3),
-              child: widget.product.imageUrls.isEmpty
-                  ? const Center(
-                      child: Icon(Icons.image_not_supported, size: 64),
-                    )
-                  : PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (i) => setState(() => _pageIndex = i),
-                      itemCount: widget.product.imageUrls.length,
-                      itemBuilder: (_, i) => GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              opaque: false,
-                              barrierColor: Colors.black87,
-                              barrierDismissible: true,
-                              pageBuilder: (BuildContext context, _, __) {
-                                return FullScreenImageViewer(
-                                  productId: widget.product.id,
-                                  imageUrls: widget.product.imageUrls,
-                                  initialIndex: i,
-                                );
-                              },
-                              transitionsBuilder: (context, animation,
-                                  secondaryAnimation, child) {
-                                return FadeTransition(
-                                    opacity: animation, child: child);
-                              },
-                            ),
-                          );
-                        },
-                        child: Center(
-                          child: Hero(
-                            tag: 'product_image_${widget.product.id}_$i',
-                            child: AppNetworkImage(
-                              imageUrl: widget.product.imageUrls[i],
-                              width: double.infinity,
-                              height: widget.height,
-                              fit: BoxFit.contain,
-                              memCacheWidth: 800,
-                              fadeInDuration: Duration.zero,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              Container(
+                height: widget.height,
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.2),
+                child: widget.product.imageUrls.isEmpty
+                    ? const Center(
+                        child: Icon(Icons.image_not_supported, size: 64),
+                      )
+                    : PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: (i) => setState(() => _pageIndex = i),
+                        itemCount: widget.product.imageUrls.length,
+                        itemBuilder: (_, i) => GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              PageRouteBuilder(
+                                opaque: false,
+                                barrierColor: Colors.black87,
+                                barrierDismissible: true,
+                                pageBuilder: (BuildContext context, _, __) {
+                                  return FullScreenImageViewer(
+                                    productId: widget.product.id,
+                                    imageUrls: widget.product.imageUrls,
+                                    initialIndex: i,
+                                  );
+                                },
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  return FadeTransition(
+                                      opacity: animation, child: child);
+                                },
+                              ),
+                            );
+                          },
+                          child: Center(
+                            child: Hero(
+                              tag: 'product_image_${widget.product.id}_$i',
+                              child: AppNetworkImage(
+                                imageUrl: widget.product.imageUrls[i],
+                                width: double.infinity,
+                                height: widget.height,
+                                fit: BoxFit.contain,
+                                memCacheWidth: 800,
+                                fadeInDuration: Duration.zero,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-            ),
+              ),
             if (widget.product.imageUrls.isNotEmpty)
               Positioned(
                 right: 12,
@@ -187,6 +189,7 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
             ],
           ],
         ),
+      ),
         if (hasMultipleImages) _buildGalleryThumbnails(widget.product),
       ],
     );

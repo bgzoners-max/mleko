@@ -279,31 +279,34 @@ class _ProductCardState extends State<ProductCard> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppDesign.radiusL),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _isHovered
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-              : Colors.transparent,
-          width: 2,
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
+              : Colors.grey.shade200,
+          width: 1.5,
         ),
-        boxShadow: _isHovered
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                )
-              ]
-            : [],
+        boxShadow: [
+          BoxShadow(
+            color: _isHovered
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: _isHovered ? 16 : 8,
+            offset: Offset(0, _isHovered ? 6 : 2),
+          ),
+        ],
       ),
       child: AnimatedScale(
-        scale: _isHovered ? 1.01 : 1.0,
+        scale: _isHovered ? 1.015 : 1.0,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
         child: Card(
-          elevation: _isHovered ? 0 : 0.5,
+          elevation: 0,
           margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           child: Semantics(
             button: true,
             enabled: true,
@@ -399,23 +402,30 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(8),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white24, width: 0.5),
+            color: color.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 9,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
               color: Colors.white,
-              letterSpacing: 0.2,
+              letterSpacing: 0.3,
             ),
           ),
         ),

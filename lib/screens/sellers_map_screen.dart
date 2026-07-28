@@ -1,12 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/map_tiles.dart';
 
-/// Mapa prodavaca – prikazuje prodavce na mapi ako imaju koordinate.
-/// Srbija centar: ~44.0, 21.0
+/// Mapa prodavaca – prikazuje prodavce na mapi sa interaktivnim profilima i geolokacijom.
 class SellersMapScreen extends StatefulWidget {
   const SellersMapScreen({super.key});
 
@@ -16,24 +17,226 @@ class SellersMapScreen extends StatefulWidget {
 
 class _SellersMapScreenState extends State<SellersMapScreen> {
   static const LatLng _srbijaCentar = LatLng(44.0, 21.0);
+  final MapController _mapController = MapController();
 
   late final Future<List<Map<String, dynamic>>> _sellersFuture;
+  bool _locatingUser = false;
 
   @override
   void initState() {
     super.initState();
     _sellersFuture = Supabase.instance.client
         .from('profiles')
-        .select('id, farm_name, location, lat, lng')
+        .select('id, farm_name, location, city, lat, lng, profile_image_url')
         .eq('role', 'seller')
         .not('lat', 'is', null)
         .not('lng', 'is', null);
   }
 
+  void _fitBounds(List<Map<String, dynamic>> sellers) {
+    if (sellers.isEmpty) return;
+    final points = sellers
+        .map((e) => LatLng(
+              (e['lat'] as num).toDouble(),
+              (e['lng'] as num).toDouble(),
+            ))
+        .toList();
+
+    if (points.length == 1) {
+      _mapController.move(points.first, 12);
+      return;
+    }
+
+    final bounds = LatLngBounds.fromPoints(points);
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(48),
+      ),
+    );
+  }
+
+  Future<void> _goToMyLocation() async {
+    setState(() => _locatingUser = true);
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 10),
+          ),
+        );
+        _mapController.move(LatLng(pos.latitude, pos.longitude), 12);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Prikazana vaša trenutna lokacija.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Dozvola za geolokaciju nije odobrena.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Greška pri određivanju lokacije.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _locatingUser = false);
+    }
+  }
+
+  void _showSellerPreview(BuildContext context, Map<String, dynamic> seller) {
+    final farmName =
+        (seller['farm_name'] ?? seller['location'] ?? 'Domaće gazdinstvo')
+            as String;
+    final locationText = (seller['city'] ?? seller['location'] ?? '') as String;
+    final imageUrl = seller['profile_image_url'] as String?;
+
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
+                      backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                          ? CachedNetworkImageProvider(imageUrl)
+                          : null,
+                      child: imageUrl == null || imageUrl.isEmpty
+                          ? Icon(Icons.storefront,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 28)
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            farmName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (locationText.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_outlined,
+                                    size: 16, color: Colors.grey.shade600),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    locationText,
+                                    style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 13),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.push('/seller/${seller['id']}');
+                    },
+                    icon: const Icon(Icons.store),
+                    label: const Text('Pogledaj profil i ponudu'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Prodavci na mapi')),
+      appBar: AppBar(
+        title: const Text('Prodavci na mapi'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.center_focus_strong),
+            tooltip: 'Prikaži sve prodavce',
+            onPressed: () async {
+              final list = await _sellersFuture;
+              _fitBounds(list);
+            },
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _locatingUser ? null : _goToMyLocation,
+        tooltip: 'Moja lokacija',
+        child: _locatingUser
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              )
+            : const Icon(Icons.my_location),
+      ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _sellersFuture,
         builder: (context, snap) {
@@ -82,21 +285,43 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
           final markers = list.map((e) {
             final lat = (e['lat'] as num).toDouble();
             final lng = (e['lng'] as num).toDouble();
+            final farmName =
+                (e['farm_name'] ?? e['location'] ?? '') as String;
+
             return Marker(
               point: LatLng(lat, lng),
-              width: 40,
-              height: 54,
+              width: 80,
+              height: 64,
               child: GestureDetector(
-                onTap: () => context.push('/seller/${e['id']}'),
+                onTap: () => _showSellerPreview(context, e),
                 child: Column(
                   children: [
-                    Icon(Icons.location_on,
-                        color: Theme.of(context).colorScheme.primary, size: 36),
-                    Text(
-                      (e['farm_name'] ?? e['location'] ?? '') as String,
-                      style: const TextStyle(fontSize: 10),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        farmName,
+                        style: const TextStyle(
+                            fontSize: 10, fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      Icons.location_on,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 36,
                     ),
                   ],
                 ),
@@ -105,9 +330,10 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
           }).toList();
 
           return FlutterMap(
+            mapController: _mapController,
             options: const MapOptions(
               initialCenter: _srbijaCentar,
-              initialZoom: 6,
+              initialZoom: 6.5,
             ),
             children: [
               AppMapTiles.buildTileLayer(),
@@ -120,3 +346,4 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
     );
   }
 }
+

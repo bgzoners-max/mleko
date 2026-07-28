@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../models/product_model.dart';
 import '../services/services.dart';
+import 'app_network_image.dart';
 
 class SellerProductCard extends StatelessWidget {
   final ProductModel product;
@@ -25,17 +25,11 @@ class SellerProductCard extends StatelessWidget {
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: product.imageUrls.isNotEmpty
-              ? CachedNetworkImage(
+              ? AppNetworkImage.thumbnail(
                   imageUrl: product.imageUrls.first,
                   width: 56,
                   height: 56,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    width: 56,
-                    height: 56,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.image, color: Colors.grey),
-                  ),
                 )
               : Container(
                   width: 56,

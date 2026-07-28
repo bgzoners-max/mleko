@@ -113,7 +113,7 @@ ThemeData _buildBaseTheme({required bool compact}) {
         minimumSize: touch,
         padding: EdgeInsets.symmetric(
             horizontal: buttonPaddingH, vertical: buttonPaddingV),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         elevation: 2,
         textStyle: const TextStyle(
           fontWeight: FontWeight.w600,

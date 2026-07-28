@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 /// Kartica mape â€“ kompaktno, tap otvara punu mapu
@@ -19,16 +19,13 @@ class MapCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
                       Theme.of(context).colorScheme.primary,
-                      Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.8),
+                      const Color(0xFF2E7D32),
                     ],
                   ),
                   boxShadow: [
@@ -36,9 +33,9 @@ class MapCard extends StatelessWidget {
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                          .withValues(alpha: 0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),

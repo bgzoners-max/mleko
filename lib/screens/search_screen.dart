@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../core/responsive.dart';
@@ -12,13 +14,13 @@ import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
 import '../widgets/app_empty_state.dart';
-import '../widgets/app_error_retry.dart';
 import '../widgets/product_card.dart';
-import '../widgets/app_shimmer.dart';
 
 import '../widgets/search/search_category_pill.dart';
 import '../widgets/search/search_filter_chip.dart';
 import '../widgets/search/search_history_panel.dart';
+import '../widgets/search/search_results_grid.dart';
+import '../widgets/search/search_tips_banner.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key, this.initialCategory});
@@ -31,6 +33,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   final _scrollController = ScrollController();
   final _searchHistoryService = SearchHistoryService();
   ProductsService? _productsService;
@@ -259,6 +262,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _debounceTimer?.cancel();
     _filterDebounceTimer?.cancel();
     _scrollController.dispose();
+    _searchFocusNode.dispose();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -536,34 +540,99 @@ class _SearchScreenState extends State<SearchScreen> {
     );
     final wideGridColumns = Breakpoints.isDesktop(context) ? 4 : 3;
     final wideGridExtent = Breakpoints.isDesktop(context) ? 380.0 : 356.0;
+    final isDesktopOrWeb = kIsWeb ||
+        Theme.of(context).platform == TargetPlatform.windows ||
+        Theme.of(context).platform == TargetPlatform.macOS ||
+        Theme.of(context).platform == TargetPlatform.linux;
 
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('Pretraga'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Traži po nazivu proizvoda…',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () {
+          _searchFocusNode.requestFocus();
+        },
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () {
+          _searchFocusNode.requestFocus();
+        },
+        const SingleActivator(LogicalKeyboardKey.slash): () {
+          if (!_searchFocusNode.hasFocus) {
+            _searchFocusNode.requestFocus();
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          if (_searchController.text.isNotEmpty) {
+            _searchController.clear();
+            _applySearchImmediate('');
+          } else {
+            _searchFocusNode.unfocus();
+          }
+        },
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          title: const Text('Pretraga'),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(56),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Traži po nazivu proizvoda…',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            _applySearchImmediate('');
+                          },
+                        )
+                      : (isDesktopOrWeb
+                          ? Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Center(
+                                widthFactor: 1,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Ctrl+K',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          fontSize: 10,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : null),
+                  isDense: true,
+                ),
+                onSubmitted: (q) async {
+                  await _searchHistoryService.addToHistory(q);
+                  if (!mounted) return;
+                  setState(() {
+                    _historyFuture = _searchHistoryService.getHistory();
+                  });
+                  _applySearchImmediate(q);
+                },
               ),
-              onSubmitted: (q) async {
-                await _searchHistoryService.addToHistory(q);
-                if (!mounted) return;
-                setState(() {
-                  _historyFuture = _searchHistoryService.getHistory();
-                });
-                _applySearchImmediate(q);
-              },
             ),
           ),
         ),
-      ),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
@@ -703,103 +772,30 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                               ),
                             ),
-                          Padding(
-                            padding: EdgeInsets.symmetric(
+                          SearchTipsBanner(
+                            margin: EdgeInsets.symmetric(
                               horizontal: contentPadding,
                               vertical: 4,
                             ),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                    .withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withValues(alpha: 0.18),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.tips_and_updates_outlined,
-                                    size: 18,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Koristi filtere za region, kategoriju i dostupnost. „Dostupno sada“ prikazuje samo proizvode koji su trenutno dostupni.',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(height: 1.4),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ),
                           Expanded(
-                            child: _loading
-                                ? GridView.builder(
-                                    padding: EdgeInsets.all(contentPadding),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: wideGridColumns,
-                                      crossAxisSpacing: stackedGridSpacing,
-                                      mainAxisSpacing: stackedGridSpacing,
-                                      mainAxisExtent: wideGridExtent,
-                                    ),
-                                    itemCount: 8,
-                                    itemBuilder: (_, __) =>
-                                        const ProductCardSkeleton(),
-                                  )
-                                : _searchError != null
-                                    ? AppErrorRetry(
-                                        message:
-                                            'Greška pri učitavanju proizvoda.',
-                                        detail: _searchError,
-                                        onRetry: _loadFirstPage,
-                                      )
-                                    : _products.isEmpty
-                                        ? _buildEmptyState()
-                                        : RefreshIndicator(
-                                            onRefresh: _onRefresh,
-                                            child: GridView.builder(
-                                              controller: _scrollController,
-                                              padding: EdgeInsets.all(
-                                                contentPadding,
-                                              ),
-                                              gridDelegate:
-                                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount: wideGridColumns,
-                                                crossAxisSpacing:
-                                                    stackedGridSpacing,
-                                                mainAxisSpacing:
-                                                    stackedGridSpacing,
-                                                mainAxisExtent: wideGridExtent,
-                                              ),
-                                              itemCount: _products.length +
-                                                  (_loadingMore ? 4 : 0),
-                                              itemBuilder: (_, i) {
-                                                if (i >= _products.length) {
-                                                  return const Center(
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                              strokeWidth: 2));
-                                                }
-                                                return _buildProductCard(
-                                                    context, i, user);
-                                              },
-                                            ),
-                                          ),
+                            child: SearchResultsGrid(
+                              products: _products,
+                              loading: _loading,
+                              loadingMore: _loadingMore,
+                              searchError: _searchError,
+                              scrollController: _scrollController,
+                              onRefresh: _onRefresh,
+                              onRetry: _loadFirstPage,
+                              itemBuilder: (ctx, i) =>
+                                  _buildProductCard(ctx, i, user),
+                              emptyStateWidget: _buildEmptyState(),
+                              crossAxisCount: wideGridColumns,
+                              mainAxisExtent: wideGridExtent,
+                              spacing: stackedGridSpacing,
+                              contentPadding: contentPadding,
+                              asGrid: true,
+                            ),
                           ),
                         ],
                       ),
@@ -851,147 +847,38 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                         ),
                       ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
+                    SearchTipsBanner(
+                      margin: EdgeInsets.symmetric(
                         horizontal: contentPadding,
                         vertical: 4,
                       ),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
-                              .withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.tips_and_updates_outlined,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Koristi filtere za region, kategoriju i dostupnost. „Dostupno sada“ prikazuje samo proizvode koji su trenutno dostupni.',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(height: 1.4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                     Expanded(
-                      child: _loading
-                          ? GridView.builder(
-                              padding: EdgeInsets.all(contentPadding),
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: mobileResultsAsGrid
-                                    ? stackedResultColumns
-                                    : 2,
-                                crossAxisSpacing: stackedGridSpacing,
-                                mainAxisSpacing: stackedGridSpacing,
-                                mainAxisExtent: mobileResultsAsGrid
-                                    ? stackedGridExtent
-                                    : 255,
-                              ),
-                              itemCount: 8,
-                              itemBuilder: (_, __) =>
-                                  const ProductCardSkeleton(),
-                            )
-                          : _searchError != null
-                              ? AppErrorRetry(
-                                  message: 'Greška pri učitavanju proizvoda.',
-                                  detail: _searchError,
-                                  onRetry: _loadFirstPage,
-                                )
-                              : _products.isEmpty
-                                  ? _buildEmptyState()
-                                  : RefreshIndicator(
-                                      onRefresh: _onRefresh,
-                                      child: mobileResultsAsGrid
-                                          ? GridView.builder(
-                                              controller: _scrollController,
-                                              padding: EdgeInsets.all(
-                                                contentPadding,
-                                              ),
-                                              gridDelegate:
-                                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount:
-                                                    stackedResultColumns,
-                                                crossAxisSpacing:
-                                                    stackedGridSpacing,
-                                                mainAxisSpacing:
-                                                    stackedGridSpacing,
-                                                mainAxisExtent:
-                                                    stackedGridExtent,
-                                              ),
-                                              itemCount: _products.length +
-                                                  (_loadingMore ? 2 : 0),
-                                              itemBuilder: (_, i) {
-                                                if (i >= _products.length) {
-                                                  return const Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
-                                                  );
-                                                }
-                                                return _buildProductCard(
-                                                    context, i, user);
-                                              },
-                                            )
-                                          : ListView.builder(
-                                              controller: _scrollController,
-                                              padding: EdgeInsets.all(
-                                                contentPadding,
-                                              ),
-                                              itemCount: _products.length +
-                                                  (_loadingMore ? 1 : 0),
-                                              itemBuilder: (_, i) {
-                                                if (i == _products.length) {
-                                                  return const Padding(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                            vertical: 16),
-                                                    child: Center(
-                                                        child: SizedBox(
-                                                      width: 24,
-                                                      height: 24,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                              strokeWidth: 2),
-                                                    )),
-                                                  );
-                                                }
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          bottom: 16),
-                                                  child: _buildProductCard(
-                                                      context, i, user),
-                                                );
-                                              },
-                                            ),
-                                    ),
+                      child: SearchResultsGrid(
+                        products: _products,
+                        loading: _loading,
+                        loadingMore: _loadingMore,
+                        searchError: _searchError,
+                        scrollController: _scrollController,
+                        onRefresh: _onRefresh,
+                        onRetry: _loadFirstPage,
+                        itemBuilder: (ctx, i) =>
+                            _buildProductCard(ctx, i, user),
+                        emptyStateWidget: _buildEmptyState(),
+                        crossAxisCount:
+                            mobileResultsAsGrid ? stackedResultColumns : 2,
+                        mainAxisExtent:
+                            mobileResultsAsGrid ? stackedGridExtent : 255,
+                        spacing: stackedGridSpacing,
+                        contentPadding: contentPadding,
+                        asGrid: mobileResultsAsGrid,
+                      ),
                     ),
                   ],
                 ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

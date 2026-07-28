@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
+import 'app_network_image.dart';
 
 /// Kompaktna kartica za prikaz u gridu (npr. Mini prodavnica na profilu prodavca).
 class ProductGridTile extends StatelessWidget {
@@ -57,14 +57,9 @@ class ProductGridTile extends StatelessWidget {
                               color: Colors.grey.shade200,
                               child: const Icon(Icons.image_not_supported),
                             )
-                          : CachedNetworkImage(
+                          : AppNetworkImage.thumbnail(
                               imageUrl: product.imageUrls.first,
                               fit: BoxFit.cover,
-                              memCacheWidth: 400,
-                              memCacheHeight: 250,
-                              fadeInDuration: Duration.zero,
-                              errorWidget: (_, __, ___) =>
-                                  const Icon(Icons.broken_image),
                             ),
                       if (!product.isAvailable)
                         Positioned(
