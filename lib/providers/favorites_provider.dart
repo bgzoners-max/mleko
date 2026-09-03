@@ -5,6 +5,7 @@ class FavoritesProvider extends ChangeNotifier {
   final FavoritesService _service = FavoritesService();
   List<String> _ids = [];
   bool _loaded = false;
+  String? _loadedUserId;
 
   List<String> get ids => List.unmodifiable(_ids);
   bool get isLoaded => _loaded;
@@ -13,11 +14,14 @@ class FavoritesProvider extends ChangeNotifier {
     if (userId == null) {
       _ids = [];
       _loaded = true;
+      _loadedUserId = null;
       notifyListeners();
       return;
     }
+    if (_loaded && _loadedUserId == userId) return;
     try {
       _ids = await _service.getFavoriteProductIds(userId);
+      _loadedUserId = userId;
     } catch (e, st) {
       LoggerService.error('Failed to load favorites', e, stackTrace: st);
       _ids = [];
@@ -25,6 +29,13 @@ class FavoritesProvider extends ChangeNotifier {
       _loaded = true;
       notifyListeners();
     }
+  }
+
+  void clear() {
+    _ids = [];
+    _loaded = false;
+    _loadedUserId = null;
+    notifyListeners();
   }
 
   final Set<String> _togglingIds = {};

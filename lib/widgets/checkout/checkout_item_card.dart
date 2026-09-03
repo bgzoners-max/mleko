@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/product_model.dart';
+import '../../utils/quantity_engine.dart';
 
 class CheckoutItemCard extends StatelessWidget {
   final ({ProductModel product, double quantity}) item;
@@ -63,7 +64,12 @@ class CheckoutItemCard extends StatelessWidget {
                       icon: const Icon(Icons.remove_circle_outline),
                       onPressed: isRemoving || item.quantity <= p.minOrderKg
                           ? null
-                          : () => onQuantityChanged?.call(item.quantity - step),
+                          : () => onQuantityChanged?.call(
+                              QuantityEngine.normalizeQuantity(
+                                quantity: item.quantity - step,
+                                minQuantity: p.minOrderKg,
+                                step: step,
+                              )),
                       style: IconButton.styleFrom(
                         minimumSize: const Size(40, 40),
                         padding: EdgeInsets.zero,
@@ -82,7 +88,12 @@ class CheckoutItemCard extends StatelessWidget {
                       icon: const Icon(Icons.add_circle_outline),
                       onPressed: isRemoving
                           ? null
-                          : () => onQuantityChanged?.call(item.quantity + step),
+                          : () => onQuantityChanged?.call(
+                              QuantityEngine.normalizeQuantity(
+                                quantity: item.quantity + step,
+                                minQuantity: p.minOrderKg,
+                                step: step,
+                              )),
                       style: IconButton.styleFrom(
                         minimumSize: const Size(40, 40),
                         padding: EdgeInsets.zero,

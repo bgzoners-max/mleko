@@ -15,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
         PostgresChangeFilterType,
         RealtimeChannel;
 import '../models/notification_model.dart';
+import '../core/notification_types.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
@@ -436,6 +437,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                             onTap: () async {
                               if (!n.isRead) await _service.markAsRead(n.id);
                               if (!context.mounted) return;
+                              final uid = context.read<AppState>().user?.id;
                               if (n.type == 'support_ticket_created') {
                                 context.go('/admin/tickets');
                               } else if (n.type == 'admin_reply') {
@@ -444,7 +446,17 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                 } else {
                                   context.go('/support');
                                 }
-                              } else if (n.orderId != null) {
+                              } else if (n.type == 'new_message') {
+                                if (n.conversationId != null) {
+                                  context.push('/chat/${n.conversationId}');
+                                } else {
+                                  context.go('/conversations');
+                                }
+                              } else if (n.type == 'new_review' && uid != null) {
+                                context.go('/seller/$uid/reviews');
+                              } else if (n.type == 'new_buyer_review' && uid != null) {
+                                context.go('/buyer/$uid/reviews');
+                              } else if (n.orderId != null || notificationTypeIsOrderRelated(n.type)) {
                                 context.go('/orders');
                               }
                             },

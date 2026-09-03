@@ -20,10 +20,12 @@ import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/location_provider.dart';
+import 'providers/classifieds_provider.dart';
 import 'services/auth/auth_services.dart';
 import 'services/catalog/catalog_services.dart';
 import 'services/orders/order_services.dart';
 import 'services/social/social_services.dart';
+import 'services/classifieds/classifieds_service.dart';
 import 'widgets/global_keyboard_scroll.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
@@ -193,7 +195,19 @@ void main() async {
   final categoriesProvider = CategoriesProvider();
   final favoritesProvider = FavoritesProvider();
   final locationProvider = LocationProvider();
+  final classifiedsService = ClassifiedsService();
+  final classifiedsProvider = ClassifiedsProvider();
   final router = createRouter(appState);
+
+  // Sinhronizacija omiljenih sa statusom prijave
+  appState.addListener(() {
+    final user = appState.user;
+    if (user != null && !user.isGuest) {
+      favoritesProvider.load(user.id);
+    } else {
+      favoritesProvider.clear();
+    }
+  });
 
   // Notification handling
   NotificationHandlerService(router: router, appState: appState).initialize();
@@ -206,11 +220,13 @@ void main() async {
       categoriesProvider: categoriesProvider,
       favoritesProvider: favoritesProvider,
       locationProvider: locationProvider,
+      classifiedsProvider: classifiedsProvider,
       ordersService: ordersService,
       productsService: productsService,
       chatService: chatService,
       reviewsService: reviewsService,
       usersService: usersService,
+      classifiedsService: classifiedsService,
       child: OfflineIndicator(
         child: p_provider.Consumer<AppSettingsProvider>(
           builder: (_, settings, __) => MaterialApp.router(

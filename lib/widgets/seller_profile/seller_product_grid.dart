@@ -12,6 +12,7 @@ import 'package:mleko/services/services.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/product_grid_tile.dart';
 import '../../widgets/skeleton.dart';
+import '../../utils/quantity_engine.dart';
 
 class SellerProductGrid extends StatefulWidget {
   final String sellerId;
@@ -218,9 +219,14 @@ class _SellerAddToOrderSheetState extends State<SellerAddToOrderSheet> {
                     ? null
                     : () => setState(() {
                           final next = _quantity - step;
-                          _quantity = next < p.minOrderKg
+                          final raw = next < p.minOrderKg
                               ? p.minOrderKg
                               : next.clamp(p.minOrderKg, max);
+                          _quantity = QuantityEngine.normalizeQuantity(
+                            quantity: raw,
+                            minQuantity: p.minOrderKg,
+                            step: step,
+                          );
                         }),
                 icon: const Icon(Icons.remove),
               ),
@@ -234,7 +240,11 @@ class _SellerAddToOrderSheetState extends State<SellerAddToOrderSheet> {
                 onPressed: _quantity >= max
                     ? null
                     : () => setState(() => _quantity =
-                        (_quantity + step).clamp(p.minOrderKg, max)),
+                        QuantityEngine.normalizeQuantity(
+                          quantity: (_quantity + step).clamp(p.minOrderKg, max),
+                          minQuantity: p.minOrderKg,
+                          step: step,
+                        )),
                 icon: const Icon(Icons.add),
               ),
             ],

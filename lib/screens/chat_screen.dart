@@ -83,6 +83,13 @@ class _ChatScreenState extends State<ChatScreen> {
   SellerResponseStats? _sellerStats;
 
   int _lastMarkedReadCount = 0;
+  String? _currentUserId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _currentUserId = context.read<AppState>().user?.id;
+  }
 
   @override
   void initState() {
@@ -105,7 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.removeListener(_onTypingChanged);
     _typingTimer?.cancel();
-    final userId = context.read<AppState>().user?.id;
+    final userId = _currentUserId;
     if (userId != null && _isTyping) {
       _chatService.setTyping(
           conversationId: widget.conversationId,

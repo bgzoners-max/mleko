@@ -45,10 +45,7 @@ mixin ProductManagementMixin {
 
   Future<String> addProduct(ProductModel product) async {
     try {
-      final data = Map<String, dynamic>.from(product.toJson());
-      if ((data['id'] as String?)?.trim().isEmpty ?? true) {
-        data.remove('id');
-      }
+      final data = product.toDbMap(includeId: false);
       data['delivery_mode'] = ProductDeliveryMode.none.dbValue;
       final res =
           await client.from('products').insert(data).select('id').single();
@@ -66,7 +63,7 @@ mixin ProductManagementMixin {
 
   Future<void> updateProduct(ProductModel product) async {
     try {
-      final data = Map<String, dynamic>.from(product.toJson())
+      final data = product.toDbMap(includeId: false)
         ..remove('delivery_mode');
       await client.from('products').update(data).eq('id', product.id);
       await setProductDeliveryScope(

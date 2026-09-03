@@ -245,6 +245,31 @@ class ProductModel {
     return v / 1000; // grami u kilograme
   }
 
+  /// Mapa za perzistenciju u tabelu `products`.
+  /// Isključuje izvedena polja iz SQL view-a (seller_is_verified, avg_rating, review_count)
+  /// i relacione kolekcije (selected_delivery_point_ids) koje ne postoje kao kolone u tabeli `products`.
+  Map<String, dynamic> toDbMap({bool includeId = true}) {
+    return {
+      if (includeId && id.isNotEmpty) 'id': id,
+      'seller_id': sellerId,
+      'category': category,
+      'name': name,
+      'price_per_kg': pricePerKg,
+      'min_order_kg': minOrderKg,
+      if (orderStep != null) 'order_step': orderStep,
+      'available_kg': availableKg,
+      'unit_type': unitType,
+      'description': description,
+      'image_urls': imageUrls,
+      'pickup_options': pickupOptions,
+      'location': location,
+      'is_domestic': isDomestic,
+      'available_now': availableNow,
+      'delivery_mode': deliveryMode.dbValue,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

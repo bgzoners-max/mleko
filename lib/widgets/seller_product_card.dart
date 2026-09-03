@@ -53,8 +53,18 @@ class SellerProductCard extends StatelessWidget {
                 Switch(
                   value: product.availableNow,
                   onChanged: (v) async {
-                    await productsService.updateAvailableNow(product.id, v);
-                    onRefresh();
+                    try {
+                      await productsService.updateAvailableNow(product.id, v);
+                      onRefresh();
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Greška pri promeni dostupnosti proizvoda.'),
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
               ],

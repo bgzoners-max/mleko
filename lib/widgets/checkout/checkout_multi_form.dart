@@ -356,6 +356,18 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
 
   String _friendlyError(Object e) {
     final s = e.toString();
+    if (s.contains('seller cannot buy own products')) {
+      return 'Nije moguće poručiti sopstvene proizvode.';
+    }
+    if (s.contains('must follow order step')) {
+      return 'Količina mora biti usklađena sa korakom porudžbine za izabrani proizvod.';
+    }
+    if (s.contains('exceeds available stock')) {
+      return 'Izabrana količina prevazilazi trenutno dostupnu zalihu.';
+    }
+    if (s.contains('honey products must use kg unit')) {
+      return 'Med se može poručiti samo u kilogramima.';
+    }
     if (s.contains('invalid delivery_method')) {
       return 'Izabrani način dostave privremeno nije dostupan. Pokušaj ponovo.';
     }

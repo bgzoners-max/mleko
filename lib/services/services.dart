@@ -5,3 +5,4 @@ export 'core/core_services.dart';
 export 'media/media_services.dart';
 export 'orders/order_services.dart';
 export 'social/social_services.dart';
+export 'classifieds/classifieds_service.dart';

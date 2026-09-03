@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../providers/categories_provider.dart';
 import '../screens/splash_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -40,6 +41,10 @@ import '../screens/child_categories_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_screen.dart';
 import '../screens/about_screen.dart';
+import '../screens/classifieds/classifieds_feed_screen.dart';
+import '../screens/classifieds/classified_ad_detail_screen.dart';
+import '../screens/classifieds/add_edit_classified_ad_screen.dart';
+import '../screens/classifieds/my_classified_ads_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
 
@@ -474,12 +479,17 @@ GoRouter createRouter(AppState appState) {
       GoRoute(
         path: '/categories/:parentId',
         pageBuilder: (context, state) {
+          final parentId = state.pathParameters['parentId'];
           final extra = state.extra;
-          final parent = extra is Category
+          var parent = extra is Category
               ? extra
               : extra is Map<String, dynamic>
                   ? Category.fromJson(extra)
                   : null;
+          if (parent == null && parentId != null) {
+            final categories = context.read<CategoriesProvider>().categories;
+            parent = categories?.where((c) => c.id == parentId).firstOrNull;
+          }
           if (parent == null) {
             return buildPageTransition(
               state: state,
@@ -504,6 +514,44 @@ GoRouter createRouter(AppState appState) {
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
           child: ChatScreen(conversationId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/classifieds',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const ClassifiedsFeedScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/classifieds/ad/:id',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: ClassifiedAdDetailScreen(adId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/classifieds/new',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const AddEditClassifiedAdScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/classifieds/edit/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: AddEditClassifiedAdScreen(adId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/classifieds/my',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const MyClassifiedAdsScreen(),
         ),
       ),
       StatefulShellRoute.indexedStack(

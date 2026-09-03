@@ -33,6 +33,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _minOrderController = TextEditingController(text: '1');
+  final _orderStepController = TextEditingController();
   final _availableController = TextEditingController();
   final _descriptionController = TextEditingController();
   String? _category;
@@ -110,6 +111,17 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    _minOrderController.dispose();
+    _orderStepController.dispose();
+    _availableController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     context.read<CategoriesProvider>().load();
@@ -126,6 +138,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               ? '${(p.minOrderKg * 1000).round()}'
               : p.minOrderKg.toString())
           : p.minOrderKg.toString();
+      if (p.orderStep != null && p.orderStep! > 0) {
+        _orderStepController.text = p.isVolumeUnit
+            ? (p.orderStep! < 1
+                ? '${(p.orderStep! * 1000).round()}'
+                : p.orderStep!.toString())
+            : p.orderStep!.toString();
+      } else {
+        _orderStepController.text = '';
+      }
       _availableController.text = p.isVolumeUnit
           ? (p.availableKg < 1
               ? '${(p.availableKg * 1000).round()}'
@@ -267,19 +288,47 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final price = double.tryParse(_priceController.text.replaceAll(',', '.'));
     final minOrder = _unitType == ProductModel.unitL
         ? ProductModel.parseQuantityL(_minOrderController.text)
-        : _unitType == ProductModel.unitG
-            ? ProductModel.parseQuantityG(_minOrderController.text)
-            : (double.tryParse(_minOrderController.text.replaceAll(',', '.')) ??
-                1);
+        : (double.tryParse(_minOrderController.text.replaceAll(',', '.')) ?? 1);
     final available = _unitType == ProductModel.unitL
         ? ProductModel.parseQuantityL(_availableController.text)
-        : _unitType == ProductModel.unitG
-            ? ProductModel.parseQuantityG(_availableController.text)
-            : (double.tryParse(
-                    _availableController.text.replaceAll(',', '.')) ??
-                0);
+        : (double.tryParse(
+                _availableController.text.replaceAll(',', '.')) ??
+            0);
+    final parsedOrderStep = _orderStepController.text.trim().isNotEmpty
+        ? (_unitType == ProductModel.unitL
+            ? ProductModel.parseQuantityL(_orderStepController.text)
+            : double.tryParse(_orderStepController.text.replaceAll(',', '.')))
+        : null;
+
+    final resolvedStep = (parsedOrderStep != null && parsedOrderStep > 0)
+        ? parsedOrderStep
+        : _resolveOrderStep(
+            category: effectiveCategory ?? '',
+            name: _nameController.text.trim(),
+            unitType: _unitType,
+            minOrderKg: minOrder,
+          );
+
     if (price == null || price <= 0) {
       const msg = 'Unesite validnu cenu.';
+      setState(() => _error = msg);
+      _showErrorDialog(msg);
+      return;
+    }
+    if (minOrder <= 0) {
+      const msg = 'Minimalna porudžbina mora biti veća od 0.';
+      setState(() => _error = msg);
+      _showErrorDialog(msg);
+      return;
+    }
+    if (resolvedStep > minOrder) {
+      const msg = 'Korak porudžbine ne može biti veći od minimalne porudžbine.';
+      setState(() => _error = msg);
+      _showErrorDialog(msg);
+      return;
+    }
+    if (resolvedStep <= 0) {
+      const msg = 'Korak porudžbine mora biti veći od 0.';
       setState(() => _error = msg);
       _showErrorDialog(msg);
       return;
@@ -318,12 +367,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       name: _nameController.text.trim(),
       pricePerKg: price,
       minOrderKg: minOrder,
-      orderStep: _resolveOrderStep(
-        category: effectiveCategory,
-        name: _nameController.text.trim(),
-        unitType: _unitType,
-        minOrderKg: minOrder,
-      ),
+      orderStep: resolvedStep,
       availableKg: available,
       unitType: _unitType,
       description: desc,
@@ -456,9 +500,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             value: ProductModel.unitL,
                             child: Text('Litri / ml')),
                         DropdownMenuItem(
-                            value: ProductModel.unitG,
-                            child: Text('Grami (g)')),
-                        DropdownMenuItem(
                             value: ProductModel.unitPiece,
                             child: Text('Komadi (kom)')),
                       ],
@@ -490,12 +531,25 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: _unitType == ProductModel.unitL
-                            ? 'Minimalna porudžbina (L ili ml, npr. 0.75 ili 750)'
-                            : _unitType == ProductModel.unitG
-                                ? 'Minimalna porudžbina (g, npr. 100)'
-                                : _unitType == ProductModel.unitPiece
-                                    ? 'Minimalna porudžbina (komada, npr. 10)'
-                                    : 'Minimalna porudžbina (kg)',
+                            ? 'Minimalna porudžbina (L ili ml, npr. 0.75 ili 750) *'
+                            : _unitType == ProductModel.unitPiece
+                                ? 'Minimalna porudžbina (komada, npr. 10) *'
+                                : 'Minimalna porudžbina (kg) *',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _orderStepController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: _unitType == ProductModel.unitL
+                            ? 'Korak porudžbine (L ili ml, npr. 0.5 ili 500) - opciono'
+                            : _unitType == ProductModel.unitPiece
+                                ? 'Korak porudžbine (komada, npr. 1 ili 5) - opciono'
+                                : 'Korak porudžbine (kg, npr. 0.1 ili 0.5) - opciono',
+                        helperText:
+                            'Količina za koju se porudžbina menja (mora biti ≤ minimalnoj količini)',
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -506,11 +560,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       decoration: InputDecoration(
                         labelText: _unitType == ProductModel.unitL
                             ? 'Dostupna količina (L ili ml)'
-                            : _unitType == ProductModel.unitG
-                                ? 'Dostupna količina (g)'
-                                : _unitType == ProductModel.unitPiece
-                                    ? 'Dostupna količina (komada)'
-                                    : 'Dostupna količina (kg)',
+                            : _unitType == ProductModel.unitPiece
+                                ? 'Dostupna količina (komada)'
+                                : 'Dostupna količina (kg)',
                       ),
                     ),
                     const SizedBox(height: 16),

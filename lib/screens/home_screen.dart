@@ -20,6 +20,8 @@ import '../widgets/home/home_wide_layout.dart';
 import '../widgets/home/home_narrow_top_section.dart';
 import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
+import '../widgets/home/market_mode_switcher.dart';
+import 'classifieds/classifieds_feed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +31,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  MarketMode _marketMode = MarketMode.classifieds;
   final _refreshController = StreamController<void>.broadcast();
   ProductsService? _productsService;
   OrdersService? _ordersService;
@@ -191,14 +194,20 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            MarketModeSwitcher(
+              currentMode: _marketMode,
+              onModeChanged: (m) => setState(() => _marketMode = m),
+            ),
             Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isTwoPaneLayout
-                        ? Breakpoints.dataContentWidth(context)
-                        : Breakpoints.maxContentWidth(context),
-                  ),
+              child: _marketMode == MarketMode.classifieds
+                  ? const ClassifiedsFeedScreen()
+                  : Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isTwoPaneLayout
+                              ? Breakpoints.dataContentWidth(context)
+                              : Breakpoints.maxContentWidth(context),
+                        ),
                   child: RefreshIndicator(
                     onRefresh: _onRefresh,
                     child: CustomScrollView(

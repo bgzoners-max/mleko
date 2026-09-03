@@ -33,15 +33,25 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
         .not('lng', 'is', null);
   }
 
+  static double? _parseDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is num) return val.toDouble();
+    return double.tryParse(val.toString());
+  }
+
   void _fitBounds(List<Map<String, dynamic>> sellers) {
     if (sellers.isEmpty) return;
     final points = sellers
-        .map((e) => LatLng(
-              (e['lat'] as num).toDouble(),
-              (e['lng'] as num).toDouble(),
-            ))
+        .map((e) {
+          final lat = _parseDouble(e['lat']);
+          final lng = _parseDouble(e['lng']);
+          if (lat == null || lng == null) return null;
+          return LatLng(lat, lng);
+        })
+        .whereType<LatLng>()
         .toList();
 
+    if (points.isEmpty) return;
     if (points.length == 1) {
       _mapController.move(points.first, 12);
       return;
@@ -282,9 +292,15 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
             );
           }
 
-          final markers = list.map((e) {
-            final lat = (e['lat'] as num).toDouble();
-            final lng = (e['lng'] as num).toDouble();
+          final validSellers = list.where((e) {
+            final lat = _parseDouble(e['lat']);
+            final lng = _parseDouble(e['lng']);
+            return lat != null && lng != null;
+          }).toList();
+
+          final markers = validSellers.map((e) {
+            final lat = _parseDouble(e['lat'])!;
+            final lng = _parseDouble(e['lng'])!;
             final farmName =
                 (e['farm_name'] ?? e['location'] ?? '') as String;
 

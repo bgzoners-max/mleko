@@ -13,6 +13,9 @@ import '../services/orders/order_services.dart';
 import '../services/social/social_services.dart';
 import '../services/auth/auth_services.dart';
 
+import '../providers/classifieds_provider.dart';
+import '../services/classifieds/classifieds_service.dart';
+
 class AppProviders extends StatelessWidget {
   final Widget child;
   final AppState appState;
@@ -21,11 +24,13 @@ class AppProviders extends StatelessWidget {
   final CategoriesProvider categoriesProvider;
   final FavoritesProvider favoritesProvider;
   final LocationProvider locationProvider;
+  final ClassifiedsProvider classifiedsProvider;
   final OrdersService ordersService;
   final ProductsService productsService;
   final ChatService chatService;
   final ReviewsService reviewsService;
   final UsersService usersService;
+  final ClassifiedsService classifiedsService;
 
   const AppProviders({
     super.key,
@@ -36,11 +41,13 @@ class AppProviders extends StatelessWidget {
     required this.categoriesProvider,
     required this.favoritesProvider,
     required this.locationProvider,
+    required this.classifiedsProvider,
     required this.ordersService,
     required this.productsService,
     required this.chatService,
     required this.reviewsService,
     required this.usersService,
+    required this.classifiedsService,
   });
 
   @override
@@ -53,11 +60,13 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProvider<CategoriesProvider>.value(value: categoriesProvider),
         ChangeNotifierProvider<FavoritesProvider>.value(value: favoritesProvider),
         ChangeNotifierProvider<LocationProvider>.value(value: locationProvider),
+        ChangeNotifierProvider<ClassifiedsProvider>.value(value: classifiedsProvider),
         Provider<OrdersService>.value(value: ordersService),
         Provider<ProductsService>.value(value: productsService),
         Provider<ChatService>.value(value: chatService),
         Provider<ReviewsService>.value(value: reviewsService),
         Provider<UsersService>.value(value: usersService),
+        Provider<ClassifiedsService>.value(value: classifiedsService),
       ],
       child: child,
     );

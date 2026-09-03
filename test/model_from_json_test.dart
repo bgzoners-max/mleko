@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/order_model.dart';
 import 'package:mleko/models/product_model.dart';
 import 'package:mleko/models/seller_delivery_models.dart';
+import 'package:mleko/models/notification_model.dart';
+import 'package:mleko/utils/product_helpers.dart';
 
 void main() {
   group('ProductModel.fromJson', () {
@@ -171,6 +173,100 @@ void main() {
 
       expect(order.status, OrderStatus.archived);
       expect(order.isArchived, true);
+    });
+  });
+
+  group('ProductModel.toDbMap', () {
+    test('omits view-only and collection fields to prevent PostgREST column errors', () {
+      final product = ProductModel(
+        id: 'prod-123',
+        sellerId: 'seller-456',
+        category: 'Sir',
+        name: 'Zlatiborski sir',
+        pricePerKg: 1200,
+        minOrderKg: 0.5,
+        orderStep: 0.5,
+        availableKg: 20,
+        unitType: 'kg',
+        description: 'Odličan sir',
+        imageUrls: ['https://example.com/pic.jpg'],
+        pickupOptions: ['Lično preuzimanje'],
+        location: 'Zlatibor',
+        isDomestic: true,
+        availableNow: true,
+        deliveryMode: ProductDeliveryMode.selectedPoints,
+        selectedDeliveryPointIds: ['point-1', 'point-2'],
+        sellerIsVerified: true,
+        avgRating: 4.8,
+        reviewCount: 25,
+        createdAt: DateTime.parse('2025-01-01T00:00:00Z'),
+      );
+
+      final dbMap = product.toDbMap();
+
+      expect(dbMap['id'], 'prod-123');
+      expect(dbMap['seller_id'], 'seller-456');
+      expect(dbMap['category'], 'Sir');
+      expect(dbMap['name'], 'Zlatiborski sir');
+      expect(dbMap['order_step'], 0.5);
+      expect(dbMap.containsKey('seller_is_verified'), isFalse);
+      expect(dbMap.containsKey('avg_rating'), isFalse);
+      expect(dbMap.containsKey('review_count'), isFalse);
+      expect(dbMap.containsKey('selected_delivery_point_ids'), isFalse);
+    });
+
+    test('omits id when includeId is false', () {
+      final product = ProductModel(
+        id: 'prod-new',
+        sellerId: 'seller-1',
+        category: 'Mleko',
+        name: 'Kozje mleko',
+        pricePerKg: 250,
+        minOrderKg: 1,
+        availableKg: 10,
+        description: 'Sveže kozje mleko',
+        imageUrls: const [],
+        pickupOptions: const ['Lično'],
+        location: 'Beograd',
+        createdAt: DateTime.now(),
+      );
+
+      final dbMap = product.toDbMap(includeId: false);
+      expect(dbMap.containsKey('id'), isFalse);
+    });
+  });
+
+  group('NotificationModel.fromJson', () {
+    test('parses conversation_id correctly', () {
+      final json = {
+        'id': 'notif-1',
+        'user_id': 'user-1',
+        'type': 'new_message',
+        'title': 'Nova poruka',
+        'body': 'Zdravo, kada stiže isporuka?',
+        'conversation_id': 'conv-123-abc',
+        'created_at': '2025-01-01T00:00:00Z',
+      };
+
+      final notif = NotificationModel.fromJson(json);
+      expect(notif.conversationId, 'conv-123-abc');
+      expect(notif.type, 'new_message');
+    });
+  });
+
+  group('isVolumeCategory & REPO_BIBLE rules', () {
+    test('strictly enforces kg for honey and preserves liquids for volume', () {
+      expect(isVolumeCategory('Med'), isFalse);
+      expect(isVolumeCategory('Livadski med'), isFalse);
+      expect(isVolumeCategory('Džem od šljiva'), isFalse);
+      expect(isVolumeCategory('Zimnica i tegle'), isFalse);
+
+      expect(isVolumeCategory('Kravlje mleko'), isTrue);
+      expect(isVolumeCategory('Prirodni sok'), isTrue);
+      expect(isVolumeCategory('Domaći sirup'), isTrue);
+      expect(isVolumeCategory('Hladno ceđeno ulje'), isTrue);
+      expect(isVolumeCategory('Jabukovo sirće'), isTrue);
+      expect(isVolumeCategory('Domaća rakija'), isTrue);
     });
   });
 }

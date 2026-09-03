@@ -273,6 +273,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Moje recenzije'),
         onTap: () => push('/buyer/${user.id}/reviews'),
       ),
+      const ProfileSectionHeader(title: 'OGLASNIK'),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.campaign_outlined),
+        title: const Text('Moji oglasi',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Pregled, izmena i status vaših oglasa'),
+        onTap: () => push('/classifieds/my'),
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.add_circle_outline),
+        title: const Text('Postavi novi oglas'),
+        subtitle: const Text('Besplatna objava oglasa'),
+        onTap: () => push('/classifieds/new'),
+      ),
       if (!user.isGuest && !user.isSeller)
         ListTile(
           visualDensity: VisualDensity.compact,
