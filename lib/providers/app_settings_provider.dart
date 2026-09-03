@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/core/logger_service.dart';
+import '../widgets/home/market_mode_switcher.dart';
 
 const _keyThemeMode = 'mleko_theme_mode'; // 0=system, 1=light, 2=dark
 const _keyAnimationsEnabled = 'mleko_animations_enabled';
 const _keyFontScale = 'mleko_font_scale';
 const _keyCompactMode = 'mleko_compact_mode';
+const _keyMarketMode = 'mleko_market_mode'; // 0=classifieds, 1=foodMarket
 
 /// Jednom se postavi na `true` nakon što su početne vrednosti (prva instalacija
 /// ili migracija sa starije verzije) upisane u SharedPreferences. Posle toga se
@@ -23,12 +25,14 @@ class AppSettingsProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   bool _animationsEnabled = true;
   double _fontScale = 1.0;
-  bool _compactMode = true; // kompaktan prikaz je podrazumevano uključen
+  bool _compactMode = true;
+  MarketMode _marketMode = MarketMode.classifieds;
 
   ThemeMode get themeMode => _themeMode;
   bool get animationsEnabled => _animationsEnabled;
   double get fontScale => _fontScale.clamp(fontScaleMin, fontScaleMax);
   bool get compactMode => _compactMode;
+  MarketMode get marketMode => _marketMode;
 
   bool get isDarkTheme {
     switch (_themeMode) {
@@ -74,6 +78,7 @@ class AppSettingsProvider extends ChangeNotifier {
     await prefs.setDouble(_keyFontScale, fontScale);
     await prefs.setBool(_keyAnimationsEnabled, _animationsEnabled);
     await prefs.setBool(_keyCompactMode, _compactMode);
+    await prefs.setInt(_keyMarketMode, _marketModeToInt(_marketMode));
   }
 
   Future<void> _load() async {
@@ -113,6 +118,7 @@ class AppSettingsProvider extends ChangeNotifier {
     _fontScale = prefs.getDouble(_keyFontScale) ?? defaultFont;
     _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
     _compactMode = prefs.getBool(_keyCompactMode) ?? defaultCompact;
+    _marketMode = _marketModeFromInt(prefs.getInt(_keyMarketMode) ?? 0);
   }
 
   static ThemeMode _themeModeFromInt(int v) {
@@ -189,4 +195,23 @@ class AppSettingsProvider extends ChangeNotifier {
           extra: {'error': e.toString()});
     }
   }
+
+  Future<void> setMarketMode(MarketMode value) async {
+    if (_marketMode == value) return;
+    _marketMode = value;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_keyMarketMode, _marketModeToInt(value));
+    } catch (e) {
+      LoggerService.warning('Failed to save market mode',
+          extra: {'error': e.toString()});
+    }
+  }
+
+  static MarketMode _marketModeFromInt(int v) =>
+      v == 1 ? MarketMode.foodMarket : MarketMode.classifieds;
+
+  static int _marketModeToInt(MarketMode m) =>
+      m == MarketMode.foodMarket ? 1 : 0;
 }

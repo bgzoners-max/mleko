@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/responsive.dart';
@@ -27,12 +28,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   final _pageController = PageController();
   int _currentImageIndex = 0;
 
+  bool _viewIncremented = false;
+
   @override
   void initState() {
     super.initState();
     _service = context.read<ClassifiedsService>();
     _load();
-    _service.incrementViews(widget.adId);
+    // incrementViews se sada poziva unutar _load() uz provjeru vlasnika
   }
 
   @override
@@ -41,10 +44,28 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     super.dispose();
   }
 
-  void _load() {
-    setState(() {
-      _adFuture = _service.getAd(widget.adId);
-    });
+  Future<void> _load() async {
+    // Ucitaj oglas i azuriraj future za FutureBuilder
+    final future = _service.getAd(widget.adId);
+    setState(() => _adFuture = future);
+
+    // Nakon sto se oglas ucita, provjeri je li vlasnik i inkrementiraj
+    if (!_viewIncremented) {
+      final ad = await future;
+      if (ad != null && mounted) {
+        final userId = context.read<AppState>().user?.id;
+        if (userId == null || userId != ad.userId) {
+          _service.incrementViews(widget.adId);
+        }
+        _viewIncremented = true;
+      }
+    }
+  }
+
+  Future<void> _shareAd(ClassifiedAdModel ad) async {
+    final url = 'https://domaci-market.vercel.app/classifieds/ad/${ad.id}';
+    final text = '${ad.title} — ${ad.priceFormatted}\n$url';
+    await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));
   }
 
   Future<void> _makePhoneCall(String phone) async {
@@ -135,6 +156,11 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
           appBar: AppBar(
             title: Text(ad.title, maxLines: 1, overflow: TextOverflow.ellipsis),
             actions: [
+              IconButton(
+                tooltip: 'Podeli oglas',
+                icon: const Icon(Icons.share_outlined),
+                onPressed: () => _shareAd(ad),
+              ),
               if (isOwner)
                 IconButton(
                   tooltip: 'Izmeni oglas',

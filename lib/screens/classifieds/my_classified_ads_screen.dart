@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -165,80 +166,127 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(12),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            // Status bedž
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: ad.isSold
-                                    ? Colors.grey.shade600
-                                    : Colors.green.shade700,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                ad.isSold ? 'PRODATO' : 'AKTIVAN',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                        // Thumbnail prve slike
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: ad.images.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: ad.images.first,
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                  placeholder: (c, url) => Container(
+                                    width: 72,
+                                    height: 72,
+                                    color: colorScheme.surfaceContainerHighest,
+                                  ),
+                                  errorWidget: (c, url, err) => Container(
+                                    width: 72,
+                                    height: 72,
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: const Icon(Icons.broken_image, size: 32),
+                                  ),
+                                )
+                              : Container(
+                                  width: 72,
+                                  height: 72,
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    Icons.campaign_outlined,
+                                    size: 32,
+                                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              ad.priceFormatted,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.primary,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(width: 12),
 
-                        // Naslov
-                        Text(
-                          ad.title,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 4),
-
-                        // Lokacija i pregledi
-                        Text(
-                          '${ad.city} · ${ad.viewsCount} pregleda · ${ad.timeAgo}',
-                          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
-                        ),
-                        const Divider(height: 20),
-
-                        // Radnje
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (!ad.isSold)
-                              TextButton.icon(
-                                onPressed: () => _markAsSold(ad.id),
-                                icon: const Icon(Icons.check, size: 16),
-                                label: const Text('Prodato', style: TextStyle(fontSize: 12)),
+                        // Desna strana — status, naslov, meta, akcije
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  // Status bedž
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: ad.isSold
+                                          ? Colors.grey.shade600
+                                          : Colors.green.shade700,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      ad.isSold ? 'PRODATO' : 'AKTIVAN',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    ad.priceFormatted,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.primary,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            IconButton(
-                              tooltip: 'Izmeni',
-                              icon: const Icon(Icons.edit_outlined, size: 20),
-                              onPressed: () async {
-                                await context.push('/classifieds/edit/${ad.id}');
-                                _load();
-                              },
-                            ),
-                            IconButton(
-                              tooltip: 'Obriši',
-                              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                              onPressed: () => _deleteAd(ad.id),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              // Naslov
+                              Text(
+                                ad.title,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              const SizedBox(height: 4),
+                              // Lokacija i pregledi
+                              Text(
+                                '${ad.city} · ${ad.viewsCount} pregleda · ${ad.timeAgo}',
+                                style: TextStyle(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontSize: 12),
+                              ),
+                              const Divider(height: 20),
+                              // Radnje
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (!ad.isSold)
+                                    TextButton.icon(
+                                      onPressed: () => _markAsSold(ad.id),
+                                      icon: const Icon(Icons.check, size: 16),
+                                      label: const Text('Prodato',
+                                          style: TextStyle(fontSize: 12)),
+                                    ),
+                                  IconButton(
+                                    tooltip: 'Izmeni',
+                                    icon: const Icon(Icons.edit_outlined,
+                                        size: 20),
+                                    onPressed: () async {
+                                      await context
+                                          .push('/classifieds/edit/${ad.id}');
+                                      _load();
+                                    },
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Obriši',
+                                    icon: const Icon(Icons.delete_outline,
+                                        color: Colors.red, size: 20),
+                                    onPressed: () => _deleteAd(ad.id),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),

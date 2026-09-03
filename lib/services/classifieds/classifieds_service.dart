@@ -101,7 +101,9 @@ class ClassifiedsService {
       }
 
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
-        query = query.ilike('title', '%${searchQuery.trim()}%');
+        final q = searchQuery.trim();
+        // Pretrazuje i po naslovu i po opisu (GIN trigram indeks pokriva oba)
+        query = query.or('title.ilike.%$q%,description.ilike.%$q%');
       }
 
       PostgrestTransformBuilder<PostgrestList> transformQuery;

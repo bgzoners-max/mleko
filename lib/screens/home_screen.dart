@@ -9,6 +9,7 @@ import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/home_products_data.dart';
+import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/cart_provider.dart';
@@ -31,7 +32,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  MarketMode _marketMode = MarketMode.classifieds;
+  // MarketMode se vise ne cuva lokalno — citamo ga iz AppSettingsProvider
   final _refreshController = StreamController<void>.broadcast();
   ProductsService? _productsService;
   OrdersService? _ordersService;
@@ -195,11 +196,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             MarketModeSwitcher(
-              currentMode: _marketMode,
-              onModeChanged: (m) => setState(() => _marketMode = m),
+              currentMode: context.select<AppSettingsProvider, MarketMode>(
+                  (s) => s.marketMode),
+              onModeChanged: (m) =>
+                  context.read<AppSettingsProvider>().setMarketMode(m),
             ),
             Expanded(
-              child: _marketMode == MarketMode.classifieds
+              child: context.select<AppSettingsProvider, MarketMode>(
+                          (s) => s.marketMode) ==
+                      MarketMode.classifieds
                   ? const ClassifiedsFeedScreen(isEmbedded: true)
                   : Center(
                       child: ConstrainedBox(
