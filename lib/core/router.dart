@@ -148,7 +148,10 @@ GoRouter createRouter(AppState appState) {
             loc.startsWith('/notifications') ||
             loc.startsWith('/conversations') ||
             loc.startsWith('/chat/') ||
-            loc.startsWith('/buyer/')) {
+            loc.startsWith('/buyer/') ||
+            loc.startsWith('/classifieds/new') ||
+            loc.startsWith('/classifieds/edit') ||
+            loc.startsWith('/classifieds/my')) {
           return '/login';
         }
       }

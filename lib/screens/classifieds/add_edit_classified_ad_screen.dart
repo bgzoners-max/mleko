@@ -33,12 +33,13 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   String _priceType = 'fixed';
   String _condition = 'used';
   bool _phonePublic = true;
+  String? _selectedCategoryName;
 
   final List<String> _existingImages = [];
   final List<Uint8List> _newImageBytes = [];
   final _imagePicker = ImagePicker();
   final _storageService = StorageService();
-  final _service = ClassifiedsService();
+  late ClassifiedsService _service;
 
   bool _loading = false;
   bool _initializing = false;
@@ -48,6 +49,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   @override
   void initState() {
     super.initState();
+    _service = context.read<ClassifiedsService>();
     if (isEdit) {
       _loadExisting();
     } else {
@@ -81,6 +83,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _cityController.text = ad.city;
         _phoneController.text = ad.phone ?? '';
         _selectedCategoryId = ad.categoryId;
+        _selectedCategoryName = ad.categoryName;
         _currency = ad.currency;
         _priceType = ad.priceType;
         _condition = ad.condition;
@@ -159,7 +162,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                           leading: Icon(cat.iconData),
                           title: Text(cat.name),
                           onTap: () {
-                            setState(() => _selectedCategoryId = cat.id);
+                            setState(() {
+                              _selectedCategoryId = cat.id;
+                              _selectedCategoryName = cat.name;
+                            });
                             Navigator.pop(ctx);
                           },
                         );
@@ -173,7 +179,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                             contentPadding: const EdgeInsets.only(left: 56, right: 16),
                             title: Text('Sve u „${cat.name}”'),
                             onTap: () {
-                              setState(() => _selectedCategoryId = cat.id);
+                              setState(() {
+                                _selectedCategoryId = cat.id;
+                                _selectedCategoryName = cat.name;
+                              });
                               Navigator.pop(ctx);
                             },
                           ),
@@ -182,7 +191,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               contentPadding: const EdgeInsets.only(left: 56, right: 16),
                               title: Text(sub.name),
                               onTap: () {
-                                setState(() => _selectedCategoryId = sub.id);
+                                setState(() {
+                                  _selectedCategoryId = sub.id;
+                                  _selectedCategoryName = sub.name;
+                                });
                                 Navigator.pop(ctx);
                               },
                             ),
@@ -438,7 +450,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     title: const Text('Kategorija *'),
                     subtitle: Text(
                       _selectedCategoryId != null
-                          ? 'Izabrana: $_selectedCategoryId'
+                          ? (_selectedCategoryName ?? _selectedCategoryId!)
                           : 'Kliknite da izaberete kategoriju',
                       style: TextStyle(
                         color: _selectedCategoryId != null

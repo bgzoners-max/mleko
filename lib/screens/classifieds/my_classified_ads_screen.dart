@@ -16,12 +16,13 @@ class MyClassifiedAdsScreen extends StatefulWidget {
 }
 
 class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
-  final _service = ClassifiedsService();
+  late ClassifiedsService _service;
   late Future<List<ClassifiedAdModel>> _adsFuture;
 
   @override
   void initState() {
     super.initState();
+    _service = context.read<ClassifiedsService>();
     _load();
   }
 

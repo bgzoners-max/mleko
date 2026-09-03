@@ -22,7 +22,7 @@ class ClassifiedAdDetailScreen extends StatefulWidget {
 }
 
 class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
-  final _service = ClassifiedsService();
+  late ClassifiedsService _service;
   late Future<ClassifiedAdModel?> _adFuture;
   final _pageController = PageController();
   int _currentImageIndex = 0;
@@ -30,6 +30,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _service = context.read<ClassifiedsService>();
     _load();
     _service.incrementViews(widget.adId);
   }

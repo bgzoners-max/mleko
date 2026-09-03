@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Expanded(
               child: _marketMode == MarketMode.classifieds
-                  ? const ClassifiedsFeedScreen()
+                  ? const ClassifiedsFeedScreen(isEmbedded: true)
                   : Center(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
