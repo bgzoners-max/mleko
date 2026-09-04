@@ -36,5 +36,5 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MLEKO }}'
           expires: 7d
-          projectId: mleko-projekat # Zameni sa tvojim stvarnim Firebase ID-em
+          projectId: mleko-686eb
           channelId: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'live' }}

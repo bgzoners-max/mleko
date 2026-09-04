@@ -8,6 +8,9 @@
 --   - `phone`  vidí vlasnik, admin, ili bilo ko ako je `phone_public = true`
 -- ============================================================================
 
+-- Osiguraj da kolona postal_code postoji na profiles tabeli
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS postal_code TEXT;
+
 CREATE OR REPLACE VIEW public.public_profiles
 WITH (security_invoker = on)
 AS

@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"mleko-686eb","appId":"1:863024576523:android:fa19dcb85e138a34c7af0e","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"mleko-686eb","configurations":{"android":"1:863024576523:android:fa19dcb85e138a34c7af0e","ios":"1:863024576523:ios:534f46ae8765705dc7af0e","macos":"1:863024576523:ios:534f46ae8765705dc7af0e","web":"1:863024576523:web:0a2e97e2b0b7328ac7af0e","windows":"1:863024576523:web:0a2e97e2b0b7328ac7af0e"}}}}}}
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mleko-686eb",
+          "appId": "1:863024576523:android:fa19dcb85e138a34c7af0e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mleko-686eb",
+          "configurations": {
+            "android": "1:863024576523:android:fa19dcb85e138a34c7af0e",
+            "ios": "1:863024576523:ios:534f46ae8765705dc7af0e",
+            "macos": "1:863024576523:ios:534f46ae8765705dc7af0e",
+            "web": "1:863024576523:web:0a2e97e2b0b7328ac7af0e",
+            "windows": "1:863024576523:web:0a2e97e2b0b7328ac7af0e"
+          }
+        }
+      }
+    }
+  }
+}
