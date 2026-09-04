@@ -5,7 +5,7 @@ Future<Map<String, String>> fetchProfileDisplayNames(Iterable<String> userIds) a
   final ids = userIds.toSet().where((id) => id.isNotEmpty).toList();
   if (ids.isEmpty) return {};
   final res = await Supabase.instance.client
-      .from('profiles')
+      .from('public_profiles')
       .select('id, farm_name, display_name')
       .inFilter('id', ids);
   final map = <String, String>{};

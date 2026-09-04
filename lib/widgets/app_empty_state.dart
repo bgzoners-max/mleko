@@ -33,86 +33,93 @@ class AppEmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final content = Center(
+      child: FadeInSlide(
+        duration: const Duration(milliseconds: 600),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Premium Icon Container
+            Container(
+              padding: const EdgeInsets.all(AppDesign.spaceL),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 64,
+                color: colorScheme.primary.withValues(alpha: 0.4),
+              ),
+            ),
+            const SizedBox(height: AppDesign.spaceL),
+            
+            // Title
+            Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            // Subtitle
+            if (subtitle != null && subtitle!.isNotEmpty) ...[
+              const SizedBox(height: AppDesign.spaceS),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280),
+                child: Text(
+                  subtitle!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+            
+            // Call to Action
+            if (cta != null) ...[
+              const SizedBox(height: AppDesign.spaceXL),
+              cta!,
+            ] else if (ctaLabel != null && onCtaPressed != null) ...[
+              const SizedBox(height: AppDesign.spaceXL),
+              SizedBox(
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: onCtaPressed,
+                  icon: Icon(ctaIcon ?? Icons.search, size: 20),
+                  label: Text(
+                    ctaLabel!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final minHeight =
-            constraints.hasBoundedHeight ? constraints.maxHeight : 0.0;
+        if (!constraints.hasBoundedHeight) {
+          return Padding(
+            padding: const EdgeInsets.all(AppDesign.spaceXL),
+            child: content,
+          );
+        }
 
+        final targetHeight = (constraints.maxHeight - AppDesign.spaceXL * 2).clamp(0.0, double.infinity);
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppDesign.spaceXL),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight - AppDesign.spaceXL * 2),
-            child: Center(
-              child: FadeInSlide(
-                duration: const Duration(milliseconds: 600),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Premium Icon Container
-                    Container(
-                      padding: const EdgeInsets.all(AppDesign.spaceL),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 64,
-                        color: colorScheme.primary.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    const SizedBox(height: AppDesign.spaceL),
-                    
-                    // Title
-                    Text(
-                      title,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onSurface,
-                        letterSpacing: -0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    
-                    // Subtitle
-                    if (subtitle != null && subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: AppDesign.spaceS),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 280),
-                        child: Text(
-                          subtitle!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                    
-                    // Call to Action
-                    if (cta != null) ...[
-                      const SizedBox(height: AppDesign.spaceXL),
-                      cta!,
-                    ] else if (ctaLabel != null && onCtaPressed != null) ...[
-                      const SizedBox(height: AppDesign.spaceXL),
-                      SizedBox(
-                        height: 48,
-                        child: FilledButton.icon(
-                          onPressed: onCtaPressed,
-                          icon: Icon(ctaIcon ?? Icons.search, size: 20),
-                          label: Text(
-                            ctaLabel!,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            constraints: BoxConstraints(minHeight: targetHeight),
+            child: content,
           ),
         );
       },

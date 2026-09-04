@@ -70,7 +70,7 @@ mixin ProductStatsMixin {
           .toList();
       if (sellerIds.isEmpty) return [];
       final profiles = await client
-          .from('profiles')
+          .from('public_profiles')
           .select()
           .inFilter('id', sellerIds)
           .eq('role', 'seller');

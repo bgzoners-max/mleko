@@ -15,7 +15,7 @@ class UsersService {
   }) async {
     try {
       final list = await _client
-          .from('profiles')
+          .from('public_profiles')
           .select()
           .eq('role', 'seller')
           .order('created_at', ascending: false)
@@ -32,7 +32,7 @@ class UsersService {
   Future<UserModel?> getUser(String userId) async {
     try {
       final res = await _client
-          .from('profiles')
+          .from('public_profiles')
           .select()
           .eq('id', userId)
           .maybeSingle();
@@ -47,7 +47,7 @@ class UsersService {
     if (ids.isEmpty) return [];
     try {
       final list = await _client
-          .from('profiles')
+          .from('public_profiles')
           .select()
           .inFilter('id', ids);
       return (list as List)

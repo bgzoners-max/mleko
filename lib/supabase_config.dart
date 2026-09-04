@@ -33,7 +33,16 @@ class SupabaseConfig {
             type: ErrorType.configuration,
           ));
 
-  static bool get isConfigured => url.isNotEmpty && anonKey.isNotEmpty;
+  /// Provera da li je konfiguracija prisutna — bez barijanja greške.
+  static bool get isConfigured {
+    final u = _urlFromDefine.isNotEmpty
+        ? _urlFromDefine
+        : dotenv.env['SUPABASE_URL'];
+    final k = _anonKeyFromDefine.isNotEmpty
+        ? _anonKeyFromDefine
+        : dotenv.env['SUPABASE_ANON_KEY'];
+    return u != null && u.isNotEmpty && k != null && k.isNotEmpty;
+  }
 
   /// Base URL za share links (deep links, web). Default trenutni origin.
   static String get shareBaseUrl => _shareBaseUrlFromDefine.isNotEmpty

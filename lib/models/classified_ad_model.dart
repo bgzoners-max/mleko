@@ -144,7 +144,6 @@ class ClassifiedAdModel {
       if (phone != null) 'phone': phone,
       'phone_public': phonePublic,
       'status': status,
-      'views_count': viewsCount,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

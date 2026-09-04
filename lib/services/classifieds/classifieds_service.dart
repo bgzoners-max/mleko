@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/app_error.dart';
 import '../../models/classified_ad_model.dart';
 import '../../models/classified_category_model.dart';
+import '../../utils/search_utils.dart';
 
 enum ClassifiedSort {
   newest,
@@ -44,10 +45,16 @@ class ClassifiedsService {
         }
       }
 
-      return roots.map((parent) {
-        final subs = childrenByParent[parent.id] ?? [];
-        return parent.copyWith(subcategories: subs);
-      }).toList();
+      ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
+        final rawChildren = childrenByParent[node.id] ?? [];
+        final nestedChildren = rawChildren.map(buildSubtree).toList();
+        nestedChildren.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+        return node.copyWith(subcategories: nestedChildren);
+      }
+
+      final list = roots.map(buildSubtree).toList();
+      list.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+      return list;
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -101,9 +108,13 @@ class ClassifiedsService {
       }
 
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
-        final q = searchQuery.trim();
-        // Pretrazuje i po naslovu i po opisu (GIN trigram indeks pokriva oba)
-        query = query.or('title.ilike.%$q%,description.ilike.%$q%');
+        // Sanitizacija uklanja karaktere koji mogu da probijaju
+        // PostgREST `or` sintaksu i ILIKE wildcard-e (*, %, _).
+        // Koristimo isti sanitizer kao i za proizvode (search_utils.dart).
+        final q = sanitizeProductSearchInput(searchQuery);
+        if (q != null && q.isNotEmpty) {
+          query = query.or('title.ilike.%$q%,description.ilike.%$q%');
+        }
       }
 
       PostgrestTransformBuilder<PostgrestList> transformQuery;

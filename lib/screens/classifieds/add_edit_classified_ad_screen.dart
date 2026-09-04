@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
+import '../../core/utils/error_messages.dart';
 import '../../models/classified_ad_model.dart';
+import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
@@ -123,88 +125,272 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   void _openCategoryPicker(BuildContext context) {
     final categories = context.read<ClassifiedsProvider>().categories;
 
+    ClassifiedCategoryModel? modalRoot;
+    ClassifiedCategoryModel? modalSec;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.4,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (_, scrollCtl) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.4,
+              maxChildSize: 0.92,
+              expand: false,
+              builder: (_, scrollCtl) {
+                Widget headerWidget;
+                Widget contentWidget;
+
+                if (modalSec != null && modalSec!.subcategories.isNotEmpty) {
+                  // Nivo 3: Tercijarne podkategorije u 2 kolone
+                  headerWidget = Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => setModalState(() => modalSec = null),
+                        ),
+                        Expanded(
+                          child: Text(
+                            modalSec!.name,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  contentWidget = ListView(
+                    controller: scrollCtl,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     children: [
-                      const Text(
-                        'Izaberi kategoriju',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      OutlinedButton.icon(
+                        icon: Icon(modalSec!.iconData, size: 18),
+                        label: Text(
+                            'Izaberi celu podkategoriju: ${modalSec!.name}'),
+                        style: OutlinedButton.styleFrom(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _selectedCategoryId = modalSec!.id;
+                            _selectedCategoryName =
+                                '${modalRoot!.name} > ${modalSec!.name}';
+                          });
+                          Navigator.pop(ctx);
+                        },
                       ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(ctx),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Ili izaberite užu podkategoriju:',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisExtent: 54,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: modalSec!.subcategories.length,
+                        itemBuilder: (c, i) {
+                          final tert = modalSec!.subcategories[i];
+                          return _CategoryCardPicker(
+                            category: tert,
+                            onTap: () {
+                              setState(() {
+                                _selectedCategoryId = tert.id;
+                                _selectedCategoryName =
+                                    '${modalRoot!.name} > ${modalSec!.name} > ${tert.name}';
+                              });
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        },
                       ),
                     ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
+                  );
+                } else if (modalRoot != null &&
+                    modalRoot!.subcategories.isNotEmpty) {
+                  // Nivo 2: Sekundarne podkategorije u 2 kolone
+                  headerWidget = Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => setModalState(() => modalRoot = null),
+                        ),
+                        Expanded(
+                          child: Text(
+                            modalRoot!.name,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  contentWidget = ListView(
+                    controller: scrollCtl,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    children: [
+                      OutlinedButton.icon(
+                        icon: Icon(modalRoot!.iconData, size: 18),
+                        label: Text(
+                            'Izaberi celu kategoriju: ${modalRoot!.name}'),
+                        style: OutlinedButton.styleFrom(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _selectedCategoryId = modalRoot!.id;
+                            _selectedCategoryName = modalRoot!.name;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Izaberite podkategoriju:',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisExtent: 54,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: modalRoot!.subcategories.length,
+                        itemBuilder: (c, i) {
+                          final sub = modalRoot!.subcategories[i];
+                          return _CategoryCardPicker(
+                            category: sub,
+                            hasChildren: sub.subcategories.isNotEmpty,
+                            onTap: () {
+                              if (sub.subcategories.isNotEmpty) {
+                                setModalState(() => modalSec = sub);
+                              } else {
+                                setState(() {
+                                  _selectedCategoryId = sub.id;
+                                  _selectedCategoryName =
+                                      '${modalRoot!.name} > ${sub.name}';
+                                });
+                                Navigator.pop(ctx);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                } else {
+                  // Nivo 1: Glavne kategorije
+                  headerWidget = Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Izaberi kategoriju',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  contentWidget = ListView.builder(
                     controller: scrollCtl,
                     itemCount: categories.length,
                     itemBuilder: (c, i) {
                       final cat = categories[i];
-                      if (cat.subcategories.isEmpty) {
-                        return ListTile(
-                          leading: Icon(cat.iconData),
-                          title: Text(cat.name),
-                          onTap: () {
+                      return ListTile(
+                        leading: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(cat.iconData, size: 20),
+                        ),
+                        title: Text(cat.name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
+                        trailing: cat.subcategories.isNotEmpty
+                            ? const Icon(Icons.chevron_right, size: 20)
+                            : null,
+                        onTap: () {
+                          if (cat.subcategories.isNotEmpty) {
+                            setModalState(() => modalRoot = cat);
+                          } else {
                             setState(() {
                               _selectedCategoryId = cat.id;
                               _selectedCategoryName = cat.name;
                             });
                             Navigator.pop(ctx);
-                          },
-                        );
-                      }
-
-                      return ExpansionTile(
-                        leading: Icon(cat.iconData),
-                        title: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.only(left: 56, right: 16),
-                            title: Text('Sve u „${cat.name}”'),
-                            onTap: () {
-                              setState(() {
-                                _selectedCategoryId = cat.id;
-                                _selectedCategoryName = cat.name;
-                              });
-                              Navigator.pop(ctx);
-                            },
-                          ),
-                          ...cat.subcategories.map(
-                            (sub) => ListTile(
-                              contentPadding: const EdgeInsets.only(left: 56, right: 16),
-                              title: Text(sub.name),
-                              onTap: () {
-                                setState(() {
-                                  _selectedCategoryId = sub.id;
-                                  _selectedCategoryName = sub.name;
-                                });
-                                Navigator.pop(ctx);
-                              },
-                            ),
-                          ),
-                        ],
+                          }
+                        },
                       );
                     },
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Column(
+                  children: [
+                    headerWidget,
+                    Expanded(child: contentWidget),
+                  ],
+                );
+              },
             );
           },
         );
@@ -232,6 +418,8 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
     setState(() => _loading = true);
 
+    final newlyUploadedUrls = <String>[];
+
     try {
       final uploadedUrls = List<String>.from(_existingImages);
 
@@ -242,6 +430,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
           _newImageBytes[i],
           uploadedUrls.length + i,
         );
+        newlyUploadedUrls.add(url);
         uploadedUrls.add(url);
       }
 
@@ -284,9 +473,19 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
+      // Ako oglas nije sačuvan, obriši sve tek upload-ovane slike
+      // da ne ostaju „orphan“ fajlovi u bucketu (best-effort).
+      for (final url in newlyUploadedUrls) {
+        try {
+          await _storageService.deleteFileByPublicUrl(url);
+        } catch (_) {/* cleanup je best-effort */}
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška: $e')),
+          SnackBar(
+            content: Text(friendlyError(e)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -599,6 +798,73 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 2-kolonska kartica za izbor podkategorije u formi za oglas
+class _CategoryCardPicker extends StatelessWidget {
+  final ClassifiedCategoryModel category;
+  final bool hasChildren;
+  final VoidCallback onTap;
+
+  const _CategoryCardPicker({
+    required this.category,
+    this.hasChildren = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            width: 1.0,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE5E7EB),
+                ),
+              ),
+              child: Icon(category.iconData,
+                  size: 18, color: colorScheme.primary),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                category.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.15),
+              ),
+            ),
+            if (hasChildren)
+              const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+          ],
         ),
       ),
     );

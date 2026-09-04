@@ -216,8 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: RefreshIndicator(
                     onRefresh: _onRefresh,
                     child: CustomScrollView(
+                      cacheExtent: 600.0,
                       physics: const AlwaysScrollableScrollPhysics(),
-                      cacheExtent: 600,
                       slivers: [
                         if (!isWide) _buildStickySearch(context),
                         if (selectedRegion != null)

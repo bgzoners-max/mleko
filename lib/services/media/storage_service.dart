@@ -41,6 +41,20 @@ class StorageService {
     return client.storage.from(_bucketProducts).getPublicUrl(path);
   }
 
+  /// Briše fajl iz `product-images` na osnovu public URL-a.
+  /// Koristi se za rollback kada oglas/proizvod nije sačuvan, da ne ostaju
+  /// „orphan“ fajlovi u bucketu.
+  Future<void> deleteFileByPublicUrl(String url) async {
+    final client = Supabase.instance.client;
+    final marker = '/$_bucketProducts/';
+    final idx = url.indexOf(marker);
+    if (idx < 0) return;
+    var path = url.substring(idx + marker.length);
+    final qIdx = path.indexOf('?');
+    if (qIdx >= 0) path = path.substring(0, qIdx);
+    await client.storage.from(_bucketProducts).remove([path]);
+  }
+
   Future<String> uploadFarmGalleryImage(String sellerId, List<int> bytes, int index) async {
     final client = Supabase.instance.client;
     final name = '${_uuid.v4()}.jpg';

@@ -109,7 +109,7 @@ mixin OrderQueryMixin {
     final ids =
         orders.map((o) => loadSeller ? o.sellerId : o.buyerId).toSet().toList();
     final profiles = await client
-        .from('profiles')
+        .from('public_profiles')
         .select('id, farm_name, display_name')
         .inFilter('id', ids);
     final fallback = loadSeller ? 'Prodavac' : 'Kupac';

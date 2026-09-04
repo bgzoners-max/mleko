@@ -76,14 +76,15 @@ class _OrderStatusAuditLogSectionState
         final dateFormat = DateFormat('dd.MM.yyyy. HH:mm', 'sr');
         final isWide = Breakpoints.isTabletOrLarger(context);
 
-        final card = Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerLowest,
+        final card = Material(
+          color: Theme.of(context).colorScheme.surfaceContainerLowest,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
+            side: BorderSide(
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
           ),
+          clipBehavior: Clip.antiAlias,
           child: ExpansionTile(
             tilePadding: const EdgeInsets.symmetric(horizontal: 12),
             childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
