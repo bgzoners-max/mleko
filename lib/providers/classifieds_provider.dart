@@ -45,6 +45,17 @@ class ClassifiedsProvider extends ChangeNotifier {
   Future<void> loadCategories() async {
     // Kategorije se učitavaju jednom po sesiji; osvežavaju se preko refresh().
     if (_categoriesLoaded) return;
+
+    // 1. Instant start iz lokalnog keša (offline spremnost i brzina)
+    try {
+      final cached = await _service.getCachedCategories();
+      if (cached.isNotEmpty) {
+        _categories = cached;
+        notifyListeners();
+      }
+    } catch (_) {}
+
+    // 2. Učitavanje i sinhronizacija sa bazom
     try {
       final items = await _service.getCategories();
       if (items.isNotEmpty) {

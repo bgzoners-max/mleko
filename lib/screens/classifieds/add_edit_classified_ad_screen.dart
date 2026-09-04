@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../constants/serbian_cities.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 import '../../models/classified_ad_model.dart';
@@ -449,7 +450,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         categoryId: _selectedCategoryId!,
         condition: _condition,
         images: uploadedUrls,
-        city: _cityController.text.trim(),
+        city: SerbianCities.normalize(_cityController.text),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         phonePublic: _phonePublic,
         status: 'active',
@@ -731,16 +732,45 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Grad / Lokacija
-                  TextFormField(
-                    controller: _cityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Grad ili mesto *',
-                      hintText: 'npr. Čačak, Kragujevac, Zlatibor...',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Unesite grad ili mesto.';
-                      return null;
+                  // Grad / Lokacija sa automatskim predlozima
+                  Autocomplete<String>(
+                    initialValue: TextEditingValue(text: _cityController.text),
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.trim().isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      return SerbianCities.suggestions(textEditingValue.text);
+                    },
+                    onSelected: (String selection) {
+                      _cityController.text = selection;
+                    },
+                    fieldViewBuilder: (
+                      BuildContext context,
+                      TextEditingController fieldTextEditingController,
+                      FocusNode fieldFocusNode,
+                      VoidCallback onFieldSubmitted,
+                    ) {
+                      // Sinhronizacija vrednosti
+                      if (_cityController.text.isNotEmpty && fieldTextEditingController.text.isEmpty) {
+                        fieldTextEditingController.text = _cityController.text;
+                      }
+                      fieldTextEditingController.addListener(() {
+                        _cityController.text = fieldTextEditingController.text;
+                      });
+
+                      return TextFormField(
+                        controller: fieldTextEditingController,
+                        focusNode: fieldFocusNode,
+                        decoration: const InputDecoration(
+                          labelText: 'Grad ili mesto *',
+                          hintText: 'npr. Beograd, Čačak, Zlatibor...',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Unesite grad ili mesto.';
+                          return null;
+                        },
+                      );
                     },
                   ),
                   const SizedBox(height: 16),

@@ -195,6 +195,17 @@ void main() {
       provider.changeSort(ClassifiedSort.priceAsc);
       expect(provider.sort, ClassifiedSort.priceAsc);
     });
+
+    test('loadCategories populates categories from service', () async {
+      final fake = FakeClassifiedsService();
+      final provider = ClassifiedsProvider(service: fake);
+
+      expect(provider.categoriesLoaded, isFalse);
+      await provider.loadCategories();
+      expect(provider.categoriesLoaded, isTrue);
+      expect(provider.categories.length, 1);
+      expect(provider.categories.first.id, 'poljoprivreda');
+    });
   });
 }
 
@@ -202,7 +213,16 @@ class FakeClassifiedsService extends ClassifiedsService {
   FakeClassifiedsService() : super.test();
 
   @override
-  Future<List<ClassifiedCategoryModel>> getCategories() async => [];
+  Future<List<ClassifiedCategoryModel>> getCachedCategories() async => [];
+
+  @override
+  Future<List<ClassifiedCategoryModel>> getCategories() async => [
+        const ClassifiedCategoryModel(
+          id: 'poljoprivreda',
+          name: 'Poljoprivreda',
+          iconName: 'agriculture',
+        ),
+      ];
 
   @override
   Future<List<ClassifiedAdModel>> getAds({

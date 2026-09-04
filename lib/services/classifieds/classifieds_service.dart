@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/app_error.dart';
@@ -24,7 +27,36 @@ class ClassifiedsService {
   final SupabaseClient? _customClient;
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
-  /// Učitava sve kategorije i grupiše podkategorije u roditelje
+  static const String _categoriesCacheKey = 'cached_classified_categories_raw_json';
+
+  static List<ClassifiedCategoryModel> _buildCategoryTree(List<dynamic> rawList) {
+    final all = rawList
+        .map((e) => ClassifiedCategoryModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    final roots = all.where((c) => c.isRoot).toList();
+    final childrenByParent = <String, List<ClassifiedCategoryModel>>{};
+
+    for (final c in all.where((c) => !c.isRoot)) {
+      if (c.parentId != null) {
+        childrenByParent.putIfAbsent(c.parentId!, () => []).add(c);
+      }
+    }
+
+    ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
+      final rawChildren = childrenByParent[node.id] ?? [];
+      final nestedChildren = rawChildren.map(buildSubtree).toList();
+      nestedChildren.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+      return node.copyWith(subcategories: nestedChildren);
+    }
+
+    final list = roots.map(buildSubtree).toList();
+    list.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+    return list;
+  }
+
+  /// Učitava sve kategorije i grupiše podkategorije u roditelje.
+  /// Rezultat se kešira u SharedPreferences za offline i instant start.
   Future<List<ClassifiedCategoryModel>> getCategories() async {
     try {
       final res = await _client
@@ -32,32 +64,37 @@ class ClassifiedsService {
           .select()
           .order('sort_order', ascending: true);
 
-      final all = (res as List)
-          .map((e) => ClassifiedCategoryModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-
-      final roots = all.where((c) => c.isRoot).toList();
-      final childrenByParent = <String, List<ClassifiedCategoryModel>>{};
-
-      for (final c in all.where((c) => !c.isRoot)) {
-        if (c.parentId != null) {
-          childrenByParent.putIfAbsent(c.parentId!, () => []).add(c);
-        }
+      final rawList = res as List;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_categoriesCacheKey, jsonEncode(rawList));
+      } catch (cacheErr) {
+        debugPrint('[ClassifiedsService] Categories cache write failed: $cacheErr');
       }
 
-      ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
-        final rawChildren = childrenByParent[node.id] ?? [];
-        final nestedChildren = rawChildren.map(buildSubtree).toList();
-        nestedChildren.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
-        return node.copyWith(subcategories: nestedChildren);
-      }
-
-      final list = roots.map(buildSubtree).toList();
-      list.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
-      return list;
+      return _buildCategoryTree(rawList);
     } catch (e, st) {
+      final cached = await getCachedCategories();
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       throw AppError.from(e, stackTrace: st);
     }
+  }
+
+  /// Vraća kategorije iz lokalnog keša (SharedPreferences).
+  Future<List<ClassifiedCategoryModel>> getCachedCategories() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawJson = prefs.getString(_categoriesCacheKey);
+      if (rawJson != null && rawJson.isNotEmpty) {
+        final decoded = jsonDecode(rawJson) as List;
+        return _buildCategoryTree(decoded);
+      }
+    } catch (e) {
+      debugPrint('[ClassifiedsService] getCachedCategories error: $e');
+    }
+    return const [];
   }
 
   /// Paginirani upit za oglase sa dinamičkim filterima
@@ -88,7 +125,7 @@ class ClassifiedsService {
       }
 
       if (city != null && city.isNotEmpty) {
-        query = query.eq('city', city);
+        query = query.ilike('city', city);
       }
 
       if (condition != null && condition.isNotEmpty) {

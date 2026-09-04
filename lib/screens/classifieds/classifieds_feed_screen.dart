@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/serbian_cities.dart';
 import '../../core/responsive.dart';
 import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
@@ -30,39 +31,6 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   Timer? _debounceTimer;
-
-  static const _serbianCities = [
-    'Svi gradovi',
-    'Beograd',
-    'Novi Sad',
-    'Niš',
-    'Kragujevac',
-    'Subotica',
-    'Zrenjanin',
-    'Pančevo',
-    'Čačak',
-    'Kruševac',
-    'Kraljevo',
-    'Smederevo',
-    'Leskovac',
-    'Užice',
-    'Valjevo',
-    'Vranje',
-    'Šabac',
-    'Sombor',
-    'Požarevac',
-    'Pirot',
-    'Zaječar',
-    'Kikinda',
-    'Sremska Mitrovica',
-    'Jagodina',
-    'Vršac',
-    'Bor',
-    'Prokuplje',
-    'Loznica',
-    'Gornji Milanovac',
-    'Zlatibor',
-  ];
 
   @override
   void initState() {
@@ -101,59 +69,92 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
   void _openCityPicker(BuildContext context) {
     final provider = context.read<ClassifiedsProvider>();
+    String searchQuery = '';
+
     showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.4,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (_, scrollCtl) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Izaberi grad ili lokaciju',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollCtl,
-                    itemCount: _serbianCities.length,
-                    itemBuilder: (c, i) {
-                      final city = _serbianCities[i];
-                      final isAll = i == 0;
-                      final isSelected = isAll
-                          ? provider.selectedCity == null
-                          : provider.selectedCity == city;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredCities = searchQuery.trim().isEmpty
+                ? SerbianCities.all
+                : SerbianCities.suggestions(searchQuery);
 
-                      return ListTile(
-                        title: Text(city),
-                        trailing: isSelected
-                            ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
-                            : null,
-                        onTap: () {
-                          provider.selectCity(isAll ? null : city);
-                          Navigator.pop(ctx);
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (_, scrollCtl) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Izaberi grad ili lokaciju',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Pretraži grad...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          isDense: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onChanged: (val) {
+                          setModalState(() => searchQuery = val);
                         },
-                      );
-                    },
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView(
+                        controller: scrollCtl,
+                        children: [
+                          if (searchQuery.trim().isEmpty)
+                            ListTile(
+                              title: const Text('Svi gradovi', style: TextStyle(fontWeight: FontWeight.bold)),
+                              trailing: provider.selectedCity == null
+                                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                                  : null,
+                              onTap: () {
+                                provider.selectCity(null);
+                                Navigator.pop(ctx);
+                              },
+                            ),
+                          ...filteredCities.map((city) {
+                            final isSelected = provider.selectedCity == city;
+                            return ListTile(
+                              title: Text(city),
+                              trailing: isSelected
+                                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                                  : null,
+                              onTap: () {
+                                provider.selectCity(city);
+                                Navigator.pop(ctx);
+                              },
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
