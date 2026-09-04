@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(grep -n \"new X\\(\\)\\\\|= [A-Z][a-zA-Z]*\\(\\\\\\)\" /c/dev/mleko/lib/services/**/*.dart)"
-    ]
-  }
-}

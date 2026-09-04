@@ -49,7 +49,7 @@ U istom job-u se lokalno regenerišu Supabase TypeScript tipovi i CI pada ako ch
 3. **Projekat**
 
    ```bash
-   cd d:\mleko
+   cd c:\dev\mleko
    flutter pub get
    ```
 
