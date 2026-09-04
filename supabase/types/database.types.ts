@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       buyer_reviews: {
@@ -1622,6 +1597,10 @@ export type Database = {
         Args: { p_reply: string; p_review_id: string }
         Returns: undefined
       }
+      admin_moderate_classified_ad: {
+        Args: { p_ad_id: string; p_new_status: string }
+        Returns: undefined
+      }
       admin_set_seller_verified: {
         Args: { p_seller_id: string; p_verified: boolean }
         Returns: undefined
@@ -1872,6 +1851,7 @@ export type Database = {
         Args: { ad_id: string }
         Returns: undefined
       }
+      is_admin: { Args: never; Returns: boolean }
       is_seller_verified: { Args: { p_seller_id: string }; Returns: boolean }
       normalize_listing_key: { Args: { input_value: string }; Returns: string }
       push_health_summary: {
@@ -2113,9 +2093,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       notification_type: [
