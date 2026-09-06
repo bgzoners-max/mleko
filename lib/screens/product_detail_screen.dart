@@ -159,37 +159,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _reviewsFuture = _loadReviewsFuture();
       });
 
-  String _buildProductMetaDescription(ProductModel product) {
-    final raw = [
-      product.name,
-      'Cena: ${product.priceFormatted}',
-      if (product.location.trim().isNotEmpty) 'Lokacija: ${product.location}',
-      if (product.description.trim().isNotEmpty) product.description.trim(),
-    ].join('. ');
-    final normalized = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (normalized.length <= 180) return normalized;
-    return '${normalized.substring(0, 177).trimRight()}...';
-  }
 
   void _setProductMetadata(ProductModel? product) {
     if (product == null) {
       setPageMetadata(
-        title: 'Proizvod | Domaći market',
+        title: 'Proizvod | Domaći Market',
         description:
-            'Pogledajte detalje proizvoda i lokalnu ponudu na Domaćem marketu.',
+            'Pogledajte detalje proizvoda i ponudu poljoprivrednih gazdinstava na Domaćem marketu.',
         path: '/product/${widget.productId}',
         type: 'product',
       );
       return;
     }
 
-    setPageMetadata(
-      title: '${product.name} | Domaći market',
-      description: _buildProductMetaDescription(product),
-      path: '/product/${product.id}',
-      imageUrl: product.imageUrls.isNotEmpty ? product.imageUrls.first : null,
-      type: 'product',
-    );
+    setProductSeo(product);
   }
 
   Widget _buildDesktopLayout(ProductModel product) {

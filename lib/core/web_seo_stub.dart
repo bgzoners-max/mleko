@@ -4,4 +4,7 @@ void setPageMetadata({
   String? path,
   String? imageUrl,
   String? type,
+  String? keywords,
+  String? robots,
+  Map<String, dynamic>? jsonLd,
 }) {}

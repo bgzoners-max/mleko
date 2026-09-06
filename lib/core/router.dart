@@ -47,14 +47,16 @@ import '../screens/classifieds/add_edit_classified_ad_screen.dart';
 import '../screens/classifieds/my_classified_ads_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
+import 'web_seo.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Pomoćna funkcija za premium tranzicije između ekrana.
+/// Pomoćna funkcija za premium tranzicije između ekrana i ažuriranje SEO metapodataka.
 Page<T> buildPageTransition<T>({
   required GoRouterState state,
   required Widget child,
 }) {
+  applyRouteSeo(state.uri.path);
   return CustomTransitionPage<T>(
     key: state.pageKey,
     child: child,

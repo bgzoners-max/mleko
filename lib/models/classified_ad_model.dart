@@ -65,14 +65,226 @@ class ClassifiedAdModel {
     return '$formattedNum $currency';
   }
 
+  /// Kategorije za koje stanje ("Novo" / "Polovno") nema smisla:
+  /// - Životinje (mačići, mačke, psi, stoka, živina, ptice, pčele...)
+  /// - Voće, povrće, sadnice, semena, stočna hrana, rasad
+  /// - Usluge i poslovi
+  /// - Nekretnine i zemljišta
+  static const Set<String> _inapplicableCategoryIds = {
+    // 1. Životinje
+    'ljubimci',
+    'psi',
+    'lovacki_psi',
+    'cuvari_ovcari',
+    'mali_kucni_psi',
+    'terijeri_gonici',
+    'udomljavanje_pasa',
+    'macke',
+    'rasne_macke',
+    'domace_macke',
+    'domace_zivotinje',
+    'stocarstvo_zivotinje',
+    'krave_telad',
+    'ovce_jagnjad',
+    'koze_jarici',
+    'svinje_prasad',
+    'konji_magarci',
+    'zivina_ptice',
+    'kokoske_pilici',
+    'curke',
+    'patke_guske',
+    'papagaji_ptice',
+    'golubovi',
+    'pcelarstvo',
+    'pcelinja_drustva_matice',
+    'hrana_psi_macke',
+    'koncentrati_premiksi',
+
+    // 2. Voće, povrće, rasad, semena, stočna hrana
+    'sadnice_semena',
+    'sadnice_voca',
+    'sadnice_vinove_loze',
+    'semenska_roba',
+    'semenski_krompir_luk',
+    'rasad_povrca',
+    'stocna_hrana',
+    'balirano_seno_lucerka',
+    'balirana_slama',
+    'kukuruz_stocni',
+    'zitarice_stocne',
+    'silaza_senaza',
+    'mekinje_sacme',
+
+    // 3. Usluge
+    'usluge',
+    'poljoprivredne_usluge',
+    'majstori_zanatlije',
+    'gradjevinske_usluge',
+    'prevoz_selidbe',
+    'servis_mehanike',
+    'poslovi_zaposlenje',
+
+    // 4. Nekretnine
+    'nekretnine',
+    'stanovi',
+    'kuce_domacinstva',
+    'vikendice',
+    'poljoprivredno_zemljiste',
+    'gradjevinski_placevi',
+    'poslovni_prostori',
+    'garaze_parking',
+  };
+
+  static const List<String> _equipmentKeywords = [
+    'oprem',
+    'masin',
+    'alat',
+    'delov',
+    'pribor',
+    'kavez',
+    'boks',
+    'kucic',
+    'mlin',
+    'seck',
+    'pres',
+    'kazan',
+    'burad',
+    'flas',
+    'pump',
+    'trake',
+    'sistem',
+    'ogrlice',
+    'povoc',
+    'povodac',
+    'hranilic',
+    'pojilic',
+    'muzilic',
+    'kosnic',
+    'ramov',
+    'centrifug',
+    'odelo',
+    'traktor',
+    'kombajn',
+    'prikljuc',
+  ];
+
+  static const Set<String> _inapplicableExactWords = {
+    // Životinje
+    'pas', 'psi', 'kucka', 'kuce', 'kucici', 'ker', 'kerovi',
+    'bik', 'bikovi', 'tele', 'telad', 'krava', 'krave', 'junad', 'junica',
+    'ovan', 'ovnovi', 'ovca', 'ovce', 'jagnje', 'jagnjad',
+    'koza', 'koze', 'jarac', 'jarci', 'jaric', 'jarici',
+    'svinja', 'svinje', 'prase', 'prasad', 'krmaca', 'krmace', 'nerast',
+    'konj', 'konji', 'kobila', 'kobile', 'zdrebe', 'zdrebad', 'magarac', 'magarci',
+    'pile', 'pilici', 'kokoska', 'kokoske', 'petao', 'petlovi',
+    'curka', 'curke', 'curic', 'curici', 'patka', 'patke', 'guska', 'guske',
+    'morka', 'morke', 'golub', 'golubovi', 'papagaj', 'papagaji', 'kanarinac',
+    'ptica', 'ptice', 'pcela', 'pcele', 'roj', 'rojevi', 'matica', 'matice',
+    'zivotinja', 'zivotinje', 'stoka', 'zivina',
+
+    // Hrana, usevi, sirovine
+    'seno', 'slama', 'sir', 'kajmak', 'mleko', 'med', 'orasi', 'ovas',
+  };
+
+  static const List<String> _inapplicableWordPrefixes = [
+    // Životinje (mačići, mačke, štenci...)
+    'macic', 'mack', 'stenc', 'stenad', 'stene', 'kucic',
+
+    // Voće i povrće, sadnice, semena, plodovi
+    'voce', 'povrc', 'jabuk', 'krusk', 'sljiv', 'malin', 'kupin', 'jagod',
+    'tresnj', 'visnj', 'grozd', 'kajsij', 'breskv', 'dunj', 'lesnik', 'orah',
+    'krompir', 'paradajz', 'paprik', 'kupus', 'pasulj', 'luk',
+    'sargarep', 'cvekl', 'krastav', 'tikvic', 'grasak', 'grask', 'spanac',
+    'zelje', 'kelerab', 'rotkvic', 'sadnic', 'rasad', 'semen', 'arpadzik',
+    'psenic', 'kukuruz', 'jecam', 'jecm', 'lucerk', 'detelin', 'silaz',
+    'senaz', 'mekinj', 'sacm', 'dzem', 'pekmez', 'ajvar',
+
+    // Usluge
+    'uslug', 'majstor', 'zanat', 'prevoz', 'selidb',
+
+    // Nekretnine
+    'nekretnin', 'plac', 'zemljist',
+  ];
+
+  static String _normalizeSerbian(String text) {
+    var s = text.toLowerCase();
+    const cyrToLat = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ђ': 'dj', 'е': 'e',
+      'ж': 'z', 'з': 'z', 'и': 'i', 'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj',
+      'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's',
+      'т': 't', 'ћ': 'c', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'c',
+      'џ': 'dz', 'ш': 's',
+    };
+    cyrToLat.forEach((cyr, lat) {
+      s = s.replaceAll(cyr, lat);
+    });
+    return s
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('š', 's')
+        .replaceAll('ž', 'z')
+        .replaceAll('đ', 'dj');
+  }
+
+  /// Proverava da li kategorija ili oglas podržava stanje ("Novo" / "Polovno").
+  /// Životinje uopšte (mačići, psi, stoka...), voće, povrće, sadnice, hrana,
+  /// usluge i nekretnine nemaju stanje "Novo/Polovno".
+  static bool isConditionApplicableForCategory({
+    String? categoryId,
+    String? categoryName,
+    String? title,
+  }) {
+    if (categoryId != null &&
+        _inapplicableCategoryIds.contains(categoryId.trim().toLowerCase())) {
+      return false;
+    }
+
+    final combinedText = '${categoryName ?? ''} ${title ?? ''}'.trim();
+    if (combinedText.isEmpty) return true;
+
+    final norm = _normalizeSerbian(combinedText);
+
+    // Ako tekst eksplicitno sadrži reč za opremu, mašinu ili alat, stanje JESTE primenjivo
+    // (npr. "kavez za mačiće", "mlin za voće", "oprema za pčelarstvo")
+    for (final eq in _equipmentKeywords) {
+      if (norm.contains(eq)) return true;
+    }
+
+    final words = norm.split(RegExp(r'[^a-z0-9]+')).where((w) => w.isNotEmpty);
+    for (final word in words) {
+      if (_inapplicableExactWords.contains(word)) return false;
+      for (final prefix in _inapplicableWordPrefixes) {
+        if (word.startsWith(prefix)) return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// Da li je stanje primenjivo za ovaj oglas
+  bool get isConditionApplicable => isConditionApplicableForCategory(
+        categoryId: categoryId,
+        categoryName: categoryName,
+        title: title,
+      );
+
+  /// Da li treba prikazati bedž stanja ("Novo" / "Polovno")
+  bool get showConditionBadge =>
+      isConditionApplicable &&
+      condition != 'not_applicable' &&
+      (condition == 'new' || condition == 'used');
+
   String get conditionLabel {
+    if (!isConditionApplicable || condition == 'not_applicable') {
+      return '';
+    }
     switch (condition) {
       case 'new':
         return 'Novo';
       case 'used':
         return 'Polovno';
       default:
-        return 'Standardno';
+        return '';
     }
   }
 

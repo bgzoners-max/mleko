@@ -1,57 +1,218 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html lang="sr" dir="ltr">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
+  <!-- Osnovno kodiranje i odzivnost -->
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-  <!-- Web preview (Open Graph, Twitter) – za deljenje na WhatsApp, Facebook, itd. -->
+  <!-- Primarni SEO Meta Tagovi (Google preporuke) -->
+  <title>Domaći Market | Kupujte domaće proizvode direktno od proizvođača</title>
+  <meta name="title" content="Domaći Market | Kupujte domaće proizvode direktno od proizvođača">
+  <meta name="description" content="Domaći market povezuje kupce sa proverenim domaćim poljoprivrednim gazdinstvima i proizvođačima. Kupujte sveže domaće mleko, sir, meso, med, voće, povrće i male oglase širom Srbije.">
+  <meta name="keywords" content="domaći proizvodi, domaća hrana, seoska domaćinstva, organska hrana, domaći sir, domaće mleko, med, suhomesnato, sveže voće, domaće povrće, mali oglasi, poljoprivreda, srbija">
+  <meta name="author" content="Domaći Market">
+  
+  <!-- Direktive za pretraživače (Googlebot, Bingbot) -->
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+
+  <!-- Kanonski i višejezični linkovi -->
+  <link rel="canonical" href="https://domacimarket.rs/">
+  <link rel="alternate" hreflang="sr" href="https://domacimarket.rs/">
+  <link rel="alternate" hreflang="sr-RS" href="https://domacimarket.rs/">
+  <link rel="alternate" hreflang="x-default" href="https://domacimarket.rs/">
+
+  <!-- Open Graph / Facebook / Viber / WhatsApp -->
+  <meta property="og:site_name" content="Domaći Market">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Domaće, baš kako treba! | domaćimarket.rs">
-  <meta property="og:description" content="Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.">
-  <meta property="og:image" content="icons/Icon-512.png">
+  <meta property="og:url" content="https://domacimarket.rs/">
+  <meta property="og:title" content="Domaći Market | Kupujte domaće proizvode direktno od proizvođača">
+  <meta property="og:description" content="Povežite se sa proverenim seoskim gazdinstvima. Sveža domaća hrana, mlečni i suhomesnati proizvodi, med, voće, povrće i oglasnik širom Srbije.">
+  <meta property="og:image" content="https://domacimarket.rs/icons/Icon-512.png">
+  <meta property="og:image:secure_url" content="https://domacimarket.rs/icons/Icon-512.png">
+  <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
-  <meta property="og:site_name" content="Domaći market">
-  <meta property="og:url" content="https://domacimarket.rs/">
+  <meta property="og:image:alt" content="Domaći Market — Domaća hrana i proizvodi direktno sa sela">
   <meta property="og:locale" content="sr_RS">
+
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Domaće, baš kako treba! | domaćimarket.rs">
-  <meta name="twitter:description" content="Domaće, baš kako treba! Povežite se sa proverenim proizvođačima i otkrijte lokalnu ponudu na domaćimarket.rs.">
-  <meta name="twitter:image" content="icons/Icon-512.png">
-  <link rel="canonical" href="https://domacimarket.rs/">
+  <meta name="twitter:url" content="https://domacimarket.rs/">
+  <meta name="twitter:title" content="Domaći Market | Kupujte domaće proizvode direktno od proizvođača">
+  <meta name="twitter:description" content="Povežite se sa proverenim seoskim gazdinstvima. Sveža domaća hrana, mlečni i suhomesnati proizvodi, med, voće, povrće i oglasnik širom Srbije.">
+  <meta name="twitter:image" content="https://domacimarket.rs/icons/Icon-512.png">
+  <meta name="twitter:image:alt" content="Domaći Market">
 
-  <!-- iOS meta tags & icons -->
+  <!-- PWA & Mobile Web App podrška -->
+  <meta name="theme-color" content="#1B5E20">
+  <meta name="msapplication-TileColor" content="#1B5E20">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Domaći market">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Domaći Market">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Ikone i Manifest -->
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>Domaće, baš kako treba! | domaćimarket.rs</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Strukturirani podaci (Schema.org JSON-LD po Google Search smernicama) -->
+  <!-- 1. Organizacija -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://domacimarket.rs/#organization",
+    "name": "Domaći Market",
+    "url": "https://domacimarket.rs/",
+    "logo": "https://domacimarket.rs/icons/Icon-512.png",
+    "description": "Nacionalna platforma za povezivanje kupaca i proverenih domaćih proizvođača hrane, gazdinstava i malih oglasnika u Srbiji.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "RS"
+    },
+    "sameAs": []
+  }
+  </script>
+
+  <!-- 2. WebSite sa Sitelinks Searchbox (Google SERP pretraga) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://domacimarket.rs/#website",
+    "url": "https://domacimarket.rs/",
+    "name": "Domaći Market",
+    "publisher": {
+      "@id": "https://domacimarket.rs/#organization"
+    },
+    "inLanguage": "sr-RS",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://domacimarket.rs/search?category={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- 3. Breadcrumb navigacija za Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Početna",
+        "item": "https://domacimarket.rs/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Mali Oglasi",
+        "item": "https://domacimarket.rs/classifieds"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Kategorije",
+        "item": "https://domacimarket.rs/categories"
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    /* Stilovi za crawler fallback sadržaj koji je vidljiv pre nego što se Flutter učita */
+    #seo-crawler-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1A1C1E;
+      background-color: #FFFFFF;
+      z-index: 0;
+    }
+    #seo-crawler-content h1 {
+      color: #1B5E20;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    #seo-crawler-content nav ul {
+      list-style-type: none;
+      padding-left: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    #seo-crawler-content nav a {
+      color: #1B5E20;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
+  <!-- Semantički SEO HTML Fallback za Googlebot, pretraživače i pristupačnost -->
+  <div id="seo-crawler-content" aria-label="Informacije o sajtu">
+    <header>
+      <h1>Domaći Market — Domaći proizvodi i sveža hrana direktno od proizvođača</h1>
+      <p>Dobrodošli na Domaći Market! Naša platforma omogućava direktno povezivanje kupaca i seoskih poljoprivrednih gazdinstava širom Srbije bez posrednika.</p>
+    </header>
+
+    <nav aria-label="Glavna navigacija">
+      <ul>
+        <li><a href="https://domacimarket.rs/">Početna</a></li>
+        <li><a href="https://domacimarket.rs/classifieds">Mali Oglasi</a></li>
+        <li><a href="https://domacimarket.rs/categories">Kategorije proizvoda</a></li>
+        <li><a href="https://domacimarket.rs/search">Pretraga ponude</a></li>
+        <li><a href="https://domacimarket.rs/sellers-map">Mapa gazdinstava</a></li>
+        <li><a href="https://domacimarket.rs/about">O nama</a></li>
+        <li><a href="https://domacimarket.rs/uslovi-koriscenja">Uslovi korišćenja</a></li>
+        <li><a href="https://domacimarket.rs/politika-privatnosti">Politika privatnosti</a></li>
+      </ul>
+    </nav>
+
+    <main>
+      <section>
+        <h2>Šta možete pronaći na Domaćem marketu?</h2>
+        <p>Pretražite bogatu ponudu domaćeg sira, kajmaka, mleka, meda, pršute, kobasica, organskog voća, sezonskog povrća, domaće zimnice, sokova i rakije.</p>
+      </section>
+
+      <section>
+        <h2>Mali Oglasi i Poljoprivredna mehanizacija</h2>
+        <p>Pregledajte ponudu u oglasniku: traktori, poljoprivredne mašine, sadnice, semena, stočna hrana, oprema za gazdinstvo, alati i terenske usluge.</p>
+      </section>
+    </main>
+  </div>
+
+  <noscript>
+    <div style="padding: 20px; font-family: sans-serif; text-align: center;">
+      <p>Za puno iskustvo korišćenja Domaćeg Marketa, molimo omogućite JavaScript u vašem veb pregledaču.</p>
+      <p><a href="https://domacimarket.rs/categories">Pogledajte kategorije proizvoda</a> | <a href="https://domacimarket.rs/classifieds">Mali Oglasi</a></p>
+    </div>
+  </noscript>
+
   <script>
     window.addEventListener('load', async function () {
+      // Kada se aplikacija uspešno učita, crawler fallback se uredno skriva
+      const crawlerDiv = document.getElementById('seo-crawler-content');
+      if (crawlerDiv) {
+        crawlerDiv.style.display = 'none';
+      }
+
       if (!('serviceWorker' in navigator) || !('caches' in window)) {
         return;
       }

@@ -53,6 +53,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   void initState() {
     super.initState();
     _service = context.read<ClassifiedsService>();
+    _titleController.addListener(_onTitleChanged);
     if (isEdit) {
       _loadExisting();
     } else {
@@ -66,12 +67,47 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
   @override
   void dispose() {
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _descController.dispose();
     _priceController.dispose();
     _cityController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  bool get _isConditionApplicable =>
+      ClassifiedAdModel.isConditionApplicableForCategory(
+        categoryId: _selectedCategoryId,
+        categoryName: _selectedCategoryName,
+        title: _titleController.text,
+      );
+
+  void _onTitleChanged() {
+    if (!mounted) return;
+    final isApplicable = _isConditionApplicable;
+    if (!isApplicable && _condition != 'not_applicable') {
+      setState(() => _condition = 'not_applicable');
+    } else if (isApplicable && _condition == 'not_applicable') {
+      setState(() => _condition = 'used');
+    }
+  }
+
+  void _selectCategory(String id, String name) {
+    setState(() {
+      _selectedCategoryId = id;
+      _selectedCategoryName = name;
+      final isApplicable = ClassifiedAdModel.isConditionApplicableForCategory(
+        categoryId: id,
+        categoryName: name,
+        title: _titleController.text,
+      );
+      if (!isApplicable) {
+        _condition = 'not_applicable';
+      } else if (_condition == 'not_applicable') {
+        _condition = 'used';
+      }
+    });
   }
 
   Future<void> _loadExisting() async {
@@ -89,7 +125,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _selectedCategoryName = ad.categoryName;
         _currency = ad.currency;
         _priceType = ad.priceType;
-        _condition = ad.condition;
+        final isApplicable = ClassifiedAdModel.isConditionApplicableForCategory(
+          categoryId: ad.categoryId,
+          categoryName: ad.categoryName,
+          title: ad.title,
+        );
+        _condition = isApplicable ? ad.condition : 'not_applicable';
         _phonePublic = ad.phonePublic;
         _existingImages.addAll(ad.images);
       }
@@ -187,11 +228,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () {
-                          setState(() {
-                            _selectedCategoryId = modalSec!.id;
-                            _selectedCategoryName =
-                                '${modalRoot!.name} > ${modalSec!.name}';
-                          });
+                          _selectCategory(
+                            modalSec!.id,
+                            '${modalRoot!.name} > ${modalSec!.name}',
+                          );
                           Navigator.pop(ctx);
                         },
                       ),
@@ -220,11 +260,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                           return _CategoryCardPicker(
                             category: tert,
                             onTap: () {
-                              setState(() {
-                                _selectedCategoryId = tert.id;
-                                _selectedCategoryName =
-                                    '${modalRoot!.name} > ${modalSec!.name} > ${tert.name}';
-                              });
+                              _selectCategory(
+                                tert.id,
+                                '${modalRoot!.name} > ${modalSec!.name} > ${tert.name}',
+                              );
                               Navigator.pop(ctx);
                             },
                           );
@@ -276,10 +315,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () {
-                          setState(() {
-                            _selectedCategoryId = modalRoot!.id;
-                            _selectedCategoryName = modalRoot!.name;
-                          });
+                          _selectCategory(
+                            modalRoot!.id,
+                            modalRoot!.name,
+                          );
                           Navigator.pop(ctx);
                         },
                       ),
@@ -312,11 +351,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               if (sub.subcategories.isNotEmpty) {
                                 setModalState(() => modalSec = sub);
                               } else {
-                                setState(() {
-                                  _selectedCategoryId = sub.id;
-                                  _selectedCategoryName =
-                                      '${modalRoot!.name} > ${sub.name}';
-                                });
+                                _selectCategory(
+                                  sub.id,
+                                  '${modalRoot!.name} > ${sub.name}',
+                                );
                                 Navigator.pop(ctx);
                               }
                             },
@@ -373,10 +411,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                           if (cat.subcategories.isNotEmpty) {
                             setModalState(() => modalRoot = cat);
                           } else {
-                            setState(() {
-                              _selectedCategoryId = cat.id;
-                              _selectedCategoryName = cat.name;
-                            });
+                            _selectCategory(
+                              cat.id,
+                              cat.name,
+                            );
                             Navigator.pop(ctx);
                           }
                         },
@@ -448,7 +486,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         currency: _currency,
         priceType: _priceType,
         categoryId: _selectedCategoryId!,
-        condition: _condition,
+        condition: _isConditionApplicable ? _condition : 'not_applicable',
         images: uploadedUrls,
         city: SerbianCities.normalize(_cityController.text),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
@@ -719,18 +757,24 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     ),
                   const SizedBox(height: 16),
 
-                  // Stanje predmeta
-                  DropdownButtonFormField<String>(
-                    initialValue: _condition,
-                    decoration: const InputDecoration(labelText: 'Stanje predmeta'),
-                    items: const [
-                      DropdownMenuItem(value: 'used', child: Text('Polovno')),
-                      DropdownMenuItem(value: 'new', child: Text('Novo / Nekorišćeno')),
-                      DropdownMenuItem(value: 'not_applicable', child: Text('Nije primenjivo / Usluga')),
-                    ],
-                    onChanged: (v) => setState(() => _condition = v ?? 'used'),
-                  ),
-                  const SizedBox(height: 16),
+                  // Stanje predmeta (samo za tehniku, vozila, alate, nameštaj itd.; sakriveno za životinje, voće, povrće, usluge...)
+                  if (_isConditionApplicable) ...[
+                    DropdownButtonFormField<String>(
+                      value: (_condition == 'new' || _condition == 'used')
+                          ? _condition
+                          : 'used',
+                      decoration:
+                          const InputDecoration(labelText: 'Stanje predmeta'),
+                      items: const [
+                        DropdownMenuItem(value: 'used', child: Text('Polovno')),
+                        DropdownMenuItem(
+                            value: 'new', child: Text('Novo / Nekorišćeno')),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _condition = v ?? 'used'),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Grad / Lokacija sa automatskim predlozima
                   Autocomplete<String>(

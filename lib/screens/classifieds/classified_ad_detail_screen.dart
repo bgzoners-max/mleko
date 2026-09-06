@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/responsive.dart';
+import '../../core/web_seo.dart';
 import '../../models/classified_ad_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/classifieds/classifieds_service.dart';
@@ -63,7 +64,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   }
 
   Future<void> _shareAd(ClassifiedAdModel ad) async {
-    final url = 'https://domaci-market.vercel.app/classifieds/ad/${ad.id}';
+    final url = 'https://domacimarket.rs/classifieds/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}\n$url';
     await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));
   }
@@ -147,6 +148,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         }
 
         final ad = snapshot.data!;
+        setClassifiedAdSeo(ad);
         final isOwner = currentUser?.id == ad.userId;
         final hasPhone = ad.phone != null &&
             ad.phone!.trim().isNotEmpty &&
@@ -369,27 +371,29 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                                   color: colorScheme.primary,
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: ad.condition == 'new'
-                                      ? Colors.green.shade700
-                                      : colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  ad.conditionLabel,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                              if (ad.showConditionBadge) ...[
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
                                     color: ad.condition == 'new'
-                                        ? Colors.white
-                                        : colorScheme.onSurfaceVariant,
+                                        ? Colors.green.shade700
+                                        : colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    ad.conditionLabel,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: ad.condition == 'new'
+                                          ? Colors.white
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 12),

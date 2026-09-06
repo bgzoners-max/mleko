@@ -149,6 +149,183 @@ void main() {
       expect(adSold.isActive, isFalse);
     });
 
+    test('condition is NOT applicable for kittens and animals in general', () {
+      final adKitten = ClassifiedAdModel(
+        id: 'ad-kitten-1',
+        userId: 'user-1',
+        title: 'Persijski mačići na prodaju',
+        price: 150,
+        currency: 'EUR',
+        categoryId: 'macke',
+        condition: 'used',
+        city: 'Beograd',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adKitten.isConditionApplicable, isFalse);
+      expect(adKitten.showConditionBadge, isFalse);
+      expect(adKitten.conditionLabel, isEmpty);
+
+      final adCyrillicKitten = ClassifiedAdModel(
+        id: 'ad-kitten-2',
+        userId: 'user-1',
+        title: 'Британски мачићи',
+        price: 200,
+        currency: 'EUR',
+        categoryId: 'ljubimci',
+        condition: 'new',
+        city: 'Novi Sad',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adCyrillicKitten.isConditionApplicable, isFalse);
+      expect(adCyrillicKitten.showConditionBadge, isFalse);
+      expect(adCyrillicKitten.conditionLabel, isEmpty);
+
+      final adPuppy = ClassifiedAdModel(
+        id: 'ad-puppy',
+        userId: 'user-1',
+        title: 'Štenci labradora',
+        price: 180,
+        currency: 'EUR',
+        categoryId: 'psi',
+        condition: 'used',
+        city: 'Kragujevac',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adPuppy.isConditionApplicable, isFalse);
+      expect(adPuppy.showConditionBadge, isFalse);
+
+      final adCalf = ClassifiedAdModel(
+        id: 'ad-calf',
+        userId: 'user-1',
+        title: 'Muško tele simentalac',
+        price: 650,
+        currency: 'EUR',
+        categoryId: 'domace_zivotinje',
+        condition: 'new',
+        city: 'Kraljevo',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adCalf.isConditionApplicable, isFalse);
+      expect(adCalf.showConditionBadge, isFalse);
+    });
+
+    test('condition is NOT applicable for fruits, vegetables, seeds, and fodder', () {
+      final adApples = ClassifiedAdModel(
+        id: 'ad-apples',
+        userId: 'user-1',
+        title: 'Domaće jabuke ajdared',
+        price: 90,
+        currency: 'RSD',
+        categoryId: 'poljoprivreda',
+        condition: 'used',
+        city: 'Čačak',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adApples.isConditionApplicable, isFalse);
+      expect(adApples.showConditionBadge, isFalse);
+      expect(adApples.conditionLabel, isEmpty);
+
+      final adCyrillicFruit = ClassifiedAdModel(
+        id: 'ad-fruit-cyr',
+        userId: 'user-1',
+        title: 'Свеже шљиве за ракију',
+        price: 50,
+        currency: 'RSD',
+        categoryId: 'poljoprivreda',
+        condition: 'new',
+        city: 'Valjevo',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adCyrillicFruit.isConditionApplicable, isFalse);
+      expect(adCyrillicFruit.showConditionBadge, isFalse);
+
+      final adSeedlings = ClassifiedAdModel(
+        id: 'ad-seedlings',
+        userId: 'user-1',
+        title: 'Kontejnerski rasad paprike i paradajza',
+        price: 45,
+        currency: 'RSD',
+        categoryId: 'sadnice_semena',
+        condition: 'new',
+        city: 'Leskovac',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adSeedlings.isConditionApplicable, isFalse);
+      expect(adSeedlings.showConditionBadge, isFalse);
+
+      final adHay = ClassifiedAdModel(
+        id: 'ad-hay',
+        userId: 'user-1',
+        title: 'Balirano detelinsko seno',
+        price: 300,
+        currency: 'RSD',
+        categoryId: 'stocna_hrana',
+        condition: 'used',
+        city: 'Sombor',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adHay.isConditionApplicable, isFalse);
+      expect(adHay.showConditionBadge, isFalse);
+    });
+
+    test('condition IS applicable for equipment, tools, vehicles, and machinery', () {
+      final adCage = ClassifiedAdModel(
+        id: 'ad-cage',
+        userId: 'user-1',
+        title: 'Veliki boks i kavez za pse ili mačke',
+        price: 4500,
+        currency: 'RSD',
+        categoryId: 'oprema_za_zivotinje',
+        condition: 'used',
+        city: 'Beograd',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adCage.isConditionApplicable, isTrue);
+      expect(adCage.showConditionBadge, isTrue);
+      expect(adCage.conditionLabel, 'Polovno');
+
+      final adFruitMill = ClassifiedAdModel(
+        id: 'ad-mill',
+        userId: 'user-1',
+        title: 'Mlin i sečka za voće',
+        price: 180,
+        currency: 'EUR',
+        categoryId: 'prerada_voca_oprema',
+        condition: 'new',
+        city: 'Gornji Milanovac',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adFruitMill.isConditionApplicable, isTrue);
+      expect(adFruitMill.showConditionBadge, isTrue);
+      expect(adFruitMill.conditionLabel, 'Novo');
+
+      final adCar = ClassifiedAdModel(
+        id: 'ad-car',
+        userId: 'user-1',
+        title: 'VW Passat B6 2.0 TDI',
+        price: 4200,
+        currency: 'EUR',
+        categoryId: 'automobili',
+        condition: 'used',
+        city: 'Novi Sad',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      expect(adCar.isConditionApplicable, isTrue);
+      expect(adCar.showConditionBadge, isTrue);
+      expect(adCar.conditionLabel, 'Polovno');
+    });
+
     test('toJson with and without id for insert/update', () {
       final ad = ClassifiedAdModel(
         id: 'ad-uuid-123',

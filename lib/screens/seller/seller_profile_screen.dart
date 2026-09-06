@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mleko/services/services.dart';
 
+import '../../core/web_seo.dart';
 import '../../models/user_model.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/seller_profile/seller_profile_content.dart';
@@ -81,6 +82,13 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             body: const Center(child: Text('Prodavac nije pronađen.')),
           );
         }
+        setSellerSeo(
+          id: seller.id,
+          name: seller.farmName ?? seller.displayName ?? 'Domaći Proizvođač',
+          city: seller.city,
+          avatarUrl: seller.profileImageUrl,
+          bio: seller.sellerStory,
+        );
         return SellerProfileContent(seller: seller);
       },
     );

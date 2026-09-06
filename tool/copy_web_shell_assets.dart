@@ -20,6 +20,8 @@ Future<void> main() async {
   final filesToCopy = <String>[
     'favicon.png',
     'manifest.json',
+    'robots.txt',
+    'sitemap.xml',
   ];
 
   for (final relativePath in filesToCopy) {

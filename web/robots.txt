@@ -1,0 +1,51 @@
+# ============================================================================
+# Robots.txt za Domaći market (domacimarket.rs)
+# Konfigurisano po Google Search Central principima i RFC 9309 standardu
+# ============================================================================
+
+User-agent: *
+Allow: /
+Allow: /classifieds
+Allow: /classifieds/ad/*
+Allow: /categories
+Allow: /categories/*
+Allow: /product/*
+Allow: /seller/*
+Allow: /search
+Allow: /sellers-map
+Allow: /about
+Allow: /uslovi-koriscenja
+Allow: /politika-privatnosti
+
+# Privatne, transakcione i korisnički zaštićene rute (ne treba indeksirati)
+Disallow: /cart
+Disallow: /checkout/
+Disallow: /checkout/*
+Disallow: /checkout-seller/
+Disallow: /checkout-seller/*
+Disallow: /orders
+Disallow: /profile
+Disallow: /buyer/
+Disallow: /buyer/*
+Disallow: /settings
+Disallow: /seller-settings
+Disallow: /becoming-seller
+Disallow: /add-product
+Disallow: /product/edit/
+Disallow: /product/edit/*
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /chat/
+Disallow: /chat/*
+Disallow: /conversations
+Disallow: /support/ticket/
+Disallow: /support/ticket/*
+Disallow: /classifieds/new
+Disallow: /classifieds/edit/
+Disallow: /classifieds/edit/*
+Disallow: /classifieds/my
+Disallow: /verify-email
+Disallow: /auth/confirmed
+
+# Mapa sajta (XML Sitemap)
+Sitemap: https://domacimarket.rs/sitemap.xml

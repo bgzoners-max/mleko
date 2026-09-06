@@ -95,30 +95,31 @@ class ClassifiedAdCard extends StatelessWidget {
                       ),
                     ),
 
-                  // Bedž stanja (Novo / Polovno)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: ad.condition == 'new'
-                            ? Colors.green.shade700.withValues(alpha: 0.9)
-                            : Colors.black.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        ad.conditionLabel.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
+                  // Bedž stanja (Novo / Polovno) — prikazuje se samo gde ima smisla (tehnika, vozila, alati...)
+                  if (ad.showConditionBadge)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: ad.condition == 'new'
+                              ? Colors.green.shade700.withValues(alpha: 0.9)
+                              : Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          ad.conditionLabel.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
                   // Broj slika ako ih ima više od 1
                   if (ad.images.length > 1)

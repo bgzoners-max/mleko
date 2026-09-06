@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
+import '../core/web_seo.dart';
 import '../models/category.dart';
 import '../models/product_model.dart';
 import 'package:mleko/services/services.dart';
@@ -72,6 +73,12 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
   @override
   void initState() {
     super.initState();
+    setCategorySeo(
+      name: widget.parentCategory.name,
+      path: '/categories/${widget.parentCategory.id}',
+      description:
+          'Pregledajte ponudu domaćih proizvoda u kategoriji ${widget.parentCategory.name}. Prirodno, domaće i sveže od proizvođača iz Srbije.',
+    );
     _scrollController.addListener(_onScroll);
     _loadCategories();
   }
