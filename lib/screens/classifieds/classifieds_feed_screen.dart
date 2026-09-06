@@ -1068,7 +1068,7 @@ class _SubcategoryTile extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: iconBgColor,
+                color: category.brandLogoAsset != null ? Colors.white : iconBgColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
@@ -1077,11 +1077,25 @@ class _SubcategoryTile extends StatelessWidget {
                   width: 1,
                 ),
               ),
-              child: Icon(
-                category.iconData,
-                size: 20,
-                color: iconColor,
-              ),
+              child: category.brandLogoAsset != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Image.asset(
+                        category.brandLogoAsset!,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.medium,
+                        errorBuilder: (_, __, ___) => Icon(
+                          category.iconData,
+                          size: 20,
+                          color: iconColor,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      category.iconData,
+                      size: 20,
+                      color: iconColor,
+                    ),
             ),
             const SizedBox(width: 8),
             Expanded(

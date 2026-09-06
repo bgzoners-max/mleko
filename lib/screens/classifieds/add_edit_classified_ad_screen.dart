@@ -969,7 +969,9 @@ class _CategoryCardPicker extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                color: category.brandLogoAsset != null
+                    ? Colors.white
+                    : (isDark ? const Color(0xFF0F172A) : Colors.white),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isDark
@@ -977,8 +979,19 @@ class _CategoryCardPicker extends StatelessWidget {
                       : const Color(0xFFE5E7EB),
                 ),
               ),
-              child: Icon(category.iconData,
-                  size: 18, color: colorScheme.primary),
+              child: category.brandLogoAsset != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Image.asset(
+                        category.brandLogoAsset!,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.medium,
+                        errorBuilder: (_, __, ___) => Icon(category.iconData,
+                            size: 18, color: colorScheme.primary),
+                      ),
+                    )
+                  : Icon(category.iconData,
+                      size: 18, color: colorScheme.primary),
             ),
             const SizedBox(width: 8),
             Expanded(

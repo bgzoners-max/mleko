@@ -56,6 +56,65 @@ class ClassifiedCategoryModel {
     );
   }
 
+  static const Set<String> _carBrandIds = {
+    'auto_volkswagen',
+    'auto_bmw',
+    'auto_mercedes_benz',
+    'auto_audi',
+    'auto_porsche',
+    'auto_opel',
+    'auto_toyota',
+    'auto_honda',
+    'auto_nissan',
+    'auto_mazda',
+    'auto_subaru',
+    'auto_suzuki',
+    'auto_mitsubishi',
+    'auto_lexus',
+    'auto_hyundai',
+    'auto_kia',
+    'auto_ford',
+    'auto_chevrolet',
+    'auto_tesla',
+    'auto_jeep',
+    'auto_cadillac',
+    'auto_rivian',
+    'auto_fiat',
+    'auto_alfa_romeo',
+    'auto_ferrari',
+    'auto_maserati',
+    'auto_lamborghini',
+    'auto_renault',
+    'auto_peugeot',
+    'auto_citroen',
+    'auto_bugatti',
+    'auto_jaguar',
+    'auto_land_rover',
+    'auto_aston_martin',
+    'auto_bentley',
+    'auto_rolls_royce',
+    'auto_byd',
+    'auto_nio',
+    'auto_xpeng',
+    'auto_zeekr',
+    'auto_mg',
+    'auto_volvo',
+    'auto_polestar',
+    'auto_skoda',
+    'auto_seat',
+    'auto_cupra',
+    'auto_dacia',
+    'auto_lada',
+  };
+
+  /// Vraća putanju do zvaničnog logotipa marke automobila ako je dostupna.
+  String? get brandLogoAsset {
+    if (_carBrandIds.contains(id)) {
+      return 'assets/images/car_brands/$id.png';
+    }
+    return null;
+  }
+
   IconData get iconData {
     switch (iconName) {
       case 'agriculture':

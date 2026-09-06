@@ -37,6 +37,32 @@ void main() {
       expect(cat.parentId, 'poljoprivreda');
       expect(cat.isRoot, isFalse);
     });
+
+    test('brandLogoAsset returns correct path for car brands and null for non-car brands', () {
+      final audi = ClassifiedCategoryModel(
+        id: 'auto_audi',
+        name: 'Audi',
+        iconName: 'directions_car',
+        parentId: 'auto_nemacka',
+      );
+      expect(audi.brandLogoAsset, 'assets/images/car_brands/auto_audi.png');
+
+      final bmw = ClassifiedCategoryModel(
+        id: 'auto_bmw',
+        name: 'BMW',
+        iconName: 'directions_car',
+        parentId: 'auto_nemacka',
+      );
+      expect(bmw.brandLogoAsset, 'assets/images/car_brands/auto_bmw.png');
+
+      final traktori = ClassifiedCategoryModel(
+        id: 'traktori',
+        name: 'Traktori',
+        iconName: 'agriculture',
+        parentId: 'poljoprivreda',
+      );
+      expect(traktori.brandLogoAsset, isNull);
+    });
   });
 
   group('ClassifiedAdModel formatting and serialization', () {

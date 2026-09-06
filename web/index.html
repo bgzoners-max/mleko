@@ -229,8 +229,8 @@
           });
         }
         // Ako je postojao stari instalirani Service Worker u browseru, jednom automatski osveži stranicu
-        if (hadSw && !sessionStorage.getItem('dm_sw_purged_v5')) {
-          sessionStorage.setItem('dm_sw_purged_v5', '1');
+        if (hadSw && !sessionStorage.getItem('dm_sw_purged_v6')) {
+          sessionStorage.setItem('dm_sw_purged_v6', '1');
           window.location.reload();
         }
       });
