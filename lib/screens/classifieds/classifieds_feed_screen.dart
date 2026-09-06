@@ -162,6 +162,248 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           },
         );
       },
+  Widget _buildCityButton(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+    ColorScheme colorScheme,
+  ) {
+    final hasSelectedCity = classifieds.selectedCity != null;
+    return SizedBox(
+      height: 40,
+      child: OutlinedButton.icon(
+        onPressed: () => _openCityPicker(context),
+        icon: Icon(
+          Icons.location_on_outlined,
+          size: 16,
+          color: hasSelectedCity ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        ),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                classifieds.selectedCity ?? 'Svi gradovi',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: hasSelectedCity ? FontWeight.bold : FontWeight.w500,
+                  color: hasSelectedCity ? colorScheme.primary : colorScheme.onSurface,
+                ),
+              ),
+            ),
+            if (hasSelectedCity) ...[
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: () => classifieds.filterByCity(null),
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(Icons.close, size: 14, color: colorScheme.primary),
+                ),
+              ),
+            ],
+          ],
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: BorderSide(
+            color: hasSelectedCity
+                ? colorScheme.primary
+                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          backgroundColor: hasSelectedCity
+              ? colorScheme.primaryContainer.withValues(alpha: 0.25)
+              : colorScheme.surfaceContainerLowest,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortDropdown(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<ClassifiedSort>(
+          value: classifieds.sort,
+          icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+          borderRadius: BorderRadius.circular(12),
+          items: const [
+            DropdownMenuItem(
+              value: ClassifiedSort.newest,
+              child: Text('Najnovije', style: TextStyle(fontSize: 12)),
+            ),
+            DropdownMenuItem(
+              value: ClassifiedSort.priceAsc,
+              child: Text('Cena: najniža', style: TextStyle(fontSize: 12)),
+            ),
+            DropdownMenuItem(
+              value: ClassifiedSort.priceDesc,
+              child: Text('Cena: najviša', style: TextStyle(fontSize: 12)),
+            ),
+            DropdownMenuItem(
+              value: ClassifiedSort.popular,
+              child: Text('Najpopularnije', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+          onChanged: (s) {
+            if (s != null) classifieds.changeSort(s);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChipsRow(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+    ColorScheme colorScheme, {
+    required bool isDesktop,
+  }) {
+    return SizedBox(
+      height: 40,
+      child: Row(
+        children: [
+          if (isDesktop)
+            IconButton(
+              icon: const Icon(Icons.chevron_left, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              tooltip: 'Prethodne kategorije',
+              onPressed: () {
+                if (_categoryChipsScrollController.hasClients) {
+                  final target = (_categoryChipsScrollController.offset - 260)
+                      .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
+                  _categoryChipsScrollController.animateTo(
+                    target,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              },
+            ),
+          Expanded(
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: Listener(
+                onPointerSignal: (pointerSignal) {
+                  if (pointerSignal is PointerScrollEvent &&
+                      _categoryChipsScrollController.hasClients) {
+                    final delta = pointerSignal.scrollDelta.dx != 0
+                        ? pointerSignal.scrollDelta.dx
+                        : pointerSignal.scrollDelta.dy;
+                    final target = (_categoryChipsScrollController.offset + delta)
+                        .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
+                    _categoryChipsScrollController.jumpTo(target);
+                  }
+                },
+                child: ListView.builder(
+                  controller: _categoryChipsScrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 4 : 12),
+                  itemCount: classifieds.categories.length + 1,
+                  itemBuilder: (ctx, idx) {
+                    if (idx == 0) {
+                      final isAll = classifieds.selectedCategoryId == null;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          selected: isAll,
+                          label: const Text('Sve', style: TextStyle(fontSize: 12)),
+                          backgroundColor: colorScheme.surfaceContainerLow,
+                          selectedColor: colorScheme.primary,
+                          checkmarkColor: colorScheme.onPrimary,
+                          showCheckmark: false,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          onSelected: (_) => classifieds.selectCategory(null),
+                        ),
+                      );
+                    }
+                    final cat = classifieds.categories[idx - 1];
+                    final activeRoot = classifieds.activeRootCategory;
+                    final isSelected = activeRoot?.id == cat.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: isSelected,
+                        avatar: Icon(cat.iconData,
+                            size: 14,
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurfaceVariant),
+                        label: Text(cat.name,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight:
+                                  isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: isSelected
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onSurface,
+                            )),
+                        backgroundColor: colorScheme.surfaceContainerLow,
+                        selectedColor: colorScheme.primary,
+                        checkmarkColor: colorScheme.onPrimary,
+                        showCheckmark: false,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        onSelected: (sel) =>
+                            classifieds.selectCategory(sel ? cat.id : null),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          if (isDesktop)
+            IconButton(
+              icon: const Icon(Icons.chevron_right, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              tooltip: 'Sledeće kategorije',
+              onPressed: () {
+                if (_categoryChipsScrollController.hasClients) {
+                  final target = (_categoryChipsScrollController.offset + 260)
+                      .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
+                  _categoryChipsScrollController.animateTo(
+                    target,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+              },
+            ),
+        ],
+      ),
     );
   }
 
@@ -226,7 +468,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           // Search bar + filteri
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 12, 8, isDesktop ? 24 : 12, 4),
               child: Column(
                 children: [
                   // Search bar
@@ -258,58 +500,42 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     ),
                   ),
 
-                  // Filteri grad + sort (samo kada je filter aktivan ili uvek vidljiv)
+                  // Filteri grad + kategorije + sort (jedan red na desktopu, dva reda na mobilnom)
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _openCityPicker(context),
-                          icon: const Icon(Icons.location_on_outlined, size: 16),
-                          label: Text(
-                            classifieds.selectedCity ?? 'Svi gradovi',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                  if (isDesktop) ...[
+                    // JEDAN RED NA DESKTOPU: [ SVI GRADOVI ] [ <- KATEGORIJE ... -> ] [ NAJNOVIJE v ]
+                    Row(
+                      children: [
+                        _buildCityButton(context, classifieds, colorScheme),
+                        const SizedBox(width: 8),
+                        if (classifieds.categories.isNotEmpty)
+                          Expanded(
+                            child: _buildCategoryChipsRow(
+                              context,
+                              classifieds,
+                              colorScheme,
+                              isDesktop: true,
                             ),
-                          ),
+                          )
+                        else
+                          const Spacer(),
+                        const SizedBox(width: 8),
+                        _buildSortDropdown(context, classifieds, colorScheme),
+                      ],
+                    ),
+                  ] else ...[
+                    // DVA REDA NA MOBILNOM / TABLETU:
+                    // Red 1: Grad + Sort
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCityButton(context, classifieds, colorScheme),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      DropdownButtonHideUnderline(
-                        child: DropdownButton<ClassifiedSort>(
-                          value: classifieds.sort,
-                          borderRadius: BorderRadius.circular(12),
-                          items: const [
-                            DropdownMenuItem(
-                              value: ClassifiedSort.newest,
-                              child: Text('Najnovije', style: TextStyle(fontSize: 12)),
-                            ),
-                            DropdownMenuItem(
-                              value: ClassifiedSort.priceAsc,
-                              child: Text('Cena: najniža', style: TextStyle(fontSize: 12)),
-                            ),
-                            DropdownMenuItem(
-                              value: ClassifiedSort.priceDesc,
-                              child: Text('Cena: najviša', style: TextStyle(fontSize: 12)),
-                            ),
-                            DropdownMenuItem(
-                              value: ClassifiedSort.popular,
-                              child: Text('Najpopularnije', style: TextStyle(fontSize: 12)),
-                            ),
-                          ],
-                          onChanged: (s) {
-                            if (s != null) classifieds.changeSort(s);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 8),
+                        _buildSortDropdown(context, classifieds, colorScheme),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -385,137 +611,22 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             ),
           ],
 
-          // ── FILTER MODE: Glavne kategorije + 2-kolonski raspored podkategorija ──
+          // ── FILTER MODE: Glavne kategorije (mobilni/tablet) + 2-kolonski raspored podkategorija ──
           if (isFiltered && classifieds.categories.isNotEmpty) ...[
-            // 1. Red: Horizontalni pregled glavnih kategorija za brzi prelaz (bez ružnog skrolbara, sa glatkim skrolovanjem na točkić i strelice)
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 44,
-                child: Row(
-                  children: [
-                    if (isDesktop)
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        tooltip: 'Prethodne kategorije',
-                        onPressed: () {
-                          if (_categoryChipsScrollController.hasClients) {
-                            final target = (_categoryChipsScrollController.offset - 260)
-                                .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
-                            _categoryChipsScrollController.animateTo(
-                              target,
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeOutCubic,
-                            );
-                          }
-                        },
-                      ),
-                    Expanded(
-                      child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                        child: Listener(
-                          onPointerSignal: (pointerSignal) {
-                            if (pointerSignal is PointerScrollEvent &&
-                                _categoryChipsScrollController.hasClients) {
-                              final delta = pointerSignal.scrollDelta.dx != 0
-                                  ? pointerSignal.scrollDelta.dx
-                                  : pointerSignal.scrollDelta.dy;
-                              final target = (_categoryChipsScrollController.offset + delta)
-                                  .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
-                              _categoryChipsScrollController.jumpTo(target);
-                            }
-                          },
-                          child: ListView.builder(
-                            controller: _categoryChipsScrollController,
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 4 : 12),
-                            itemCount: classifieds.categories.length + 1,
-                            itemBuilder: (ctx, idx) {
-                              if (idx == 0) {
-                                final isAll = classifieds.selectedCategoryId == null;
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: FilterChip(
-                                    selected: isAll,
-                                    label: const Text('Sve', style: TextStyle(fontSize: 12)),
-                                    backgroundColor: colorScheme.surfaceContainerLow,
-                                    selectedColor: colorScheme.primary,
-                                    checkmarkColor: colorScheme.onPrimary,
-                                    showCheckmark: false,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    onSelected: (_) => classifieds.selectCategory(null),
-                                  ),
-                                );
-                              }
-                              final cat = classifieds.categories[idx - 1];
-                              final activeRoot = classifieds.activeRootCategory;
-                              final isSelected = activeRoot?.id == cat.id;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: FilterChip(
-                                  selected: isSelected,
-                                  avatar: Icon(cat.iconData,
-                                      size: 14,
-                                      color: isSelected
-                                          ? colorScheme.onPrimary
-                                          : colorScheme.onSurfaceVariant),
-                                  label: Text(cat.name,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight:
-                                            isSelected ? FontWeight.bold : FontWeight.w500,
-                                        color: isSelected
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.onSurface,
-                                      )),
-                                  backgroundColor: colorScheme.surfaceContainerLow,
-                                  selectedColor: colorScheme.primary,
-                                  checkmarkColor: colorScheme.onPrimary,
-                                  showCheckmark: false,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? colorScheme.primary
-                                          : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                  onSelected: (sel) =>
-                                      classifieds.selectCategory(sel ? cat.id : null),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (isDesktop)
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        tooltip: 'Sledeće kategorije',
-                        onPressed: () {
-                          if (_categoryChipsScrollController.hasClients) {
-                            final target = (_categoryChipsScrollController.offset + 260)
-                                .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
-                            _categoryChipsScrollController.animateTo(
-                              target,
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeOutCubic,
-                            );
-                          }
-                        },
-                      ),
-                  ],
+            // Na mobilnom / tabletu: horizontalne kategorije kao 2. red (na desktopu je već u 1. redu sa gradom i sortiranjem)
+            if (!isDesktop)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: _buildCategoryChipsRow(
+                    context,
+                    classifieds,
+                    colorScheme,
+                    isDesktop: false,
+                  ),
                 ),
               ),
-            ),
-
+            
             // Header podkategorija sa navigacijom (breadcrumbs) i dugmetom 'Sve u...'
             if (classifieds.activeRootCategory != null)
               SliverToBoxAdapter(
