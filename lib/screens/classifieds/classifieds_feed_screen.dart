@@ -616,8 +616,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     // Proveravamo da li je u putanji aktivna kategorija sa grupisanim sekcijama (npr. Automobili sa državama)
     ClassifiedCategoryModel? groupedParent;
-    for (final node in crumbs) {
-      if (node.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) {
+    for (final node in crumbs.reversed) {
+      if (!node.isRoot &&
+          node.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) {
         groupedParent = node;
         break;
       }
@@ -753,8 +754,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     // Proveravamo da li je u putanji aktivna kategorija sa grupisanim sekcijama (npr. Automobili sa državama)
     ClassifiedCategoryModel? groupedParent;
-    for (final node in crumbs) {
-      if (node.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) {
+    for (final node in crumbs.reversed) {
+      if (!node.isRoot &&
+          node.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) {
         groupedParent = node;
         break;
       }

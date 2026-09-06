@@ -242,7 +242,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                       ),
                       if (current.subcategories.isNotEmpty) ...[
                         const SizedBox(height: 14),
-                        if (current.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) ...[
+                        if (!current.isRoot && current.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) ...[
                           // Grupisan prikaz po sekcijama (npr. Automobili -> • NEMAČKA -> marke, • ITALIJA -> marke)
                           for (final group in current.subcategories.where((s) => s.subcategories.isNotEmpty)) ...[
                             Padding(
