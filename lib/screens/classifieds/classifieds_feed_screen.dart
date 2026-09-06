@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +31,7 @@ class ClassifiedsFeedScreen extends StatefulWidget {
 class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  final _categoryChipsScrollController = ScrollController();
   Timer? _debounceTimer;
 
   @override
@@ -48,6 +50,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     _debounceTimer?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
+    _categoryChipsScrollController.dispose();
     super.dispose();
   }
 
@@ -384,71 +387,131 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
           // ── FILTER MODE: Glavne kategorije + 2-kolonski raspored podkategorija ──
           if (isFiltered && classifieds.categories.isNotEmpty) ...[
-            // 1. Red: Horizontalni pregled glavnih kategorija za brzi prelaz
+            // 1. Red: Horizontalni pregled glavnih kategorija za brzi prelaz (bez ružnog skrolbara, sa glatkim skrolovanjem na točkić i strelice)
             SliverToBoxAdapter(
               child: SizedBox(
                 height: 44,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: classifieds.categories.length + 1,
-                  itemBuilder: (ctx, idx) {
-                    if (idx == 0) {
-                      final isAll = classifieds.selectedCategoryId == null;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          selected: isAll,
-                          label: const Text('Sve', style: TextStyle(fontSize: 12)),
-                          backgroundColor: colorScheme.surfaceContainerLow,
-                          selectedColor: colorScheme.primary,
-                          checkmarkColor: colorScheme.onPrimary,
-                          showCheckmark: false,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          onSelected: (_) => classifieds.selectCategory(null),
-                        ),
-                      );
-                    }
-                    final cat = classifieds.categories[idx - 1];
-                    final activeRoot = classifieds.activeRootCategory;
-                    final isSelected = activeRoot?.id == cat.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        selected: isSelected,
-                        avatar: Icon(cat.iconData,
-                            size: 14,
-                            color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurfaceVariant),
-                        label: Text(cat.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight:
-                                  isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected
-                                  ? colorScheme.onPrimary
-                                  : colorScheme.onSurface,
-                            )),
-                        backgroundColor: colorScheme.surfaceContainerLow,
-                        selectedColor: colorScheme.primary,
-                        checkmarkColor: colorScheme.onPrimary,
-                        showCheckmark: false,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(
-                            color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        onSelected: (sel) =>
-                            classifieds.selectCategory(sel ? cat.id : null),
+                child: Row(
+                  children: [
+                    if (isDesktop)
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        tooltip: 'Prethodne kategorije',
+                        onPressed: () {
+                          if (_categoryChipsScrollController.hasClients) {
+                            final target = (_categoryChipsScrollController.offset - 260)
+                                .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
+                            _categoryChipsScrollController.animateTo(
+                              target,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOutCubic,
+                            );
+                          }
+                        },
                       ),
-                    );
-                  },
+                    Expanded(
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                        child: Listener(
+                          onPointerSignal: (pointerSignal) {
+                            if (pointerSignal is PointerScrollEvent &&
+                                _categoryChipsScrollController.hasClients) {
+                              final delta = pointerSignal.scrollDelta.dx != 0
+                                  ? pointerSignal.scrollDelta.dx
+                                  : pointerSignal.scrollDelta.dy;
+                              final target = (_categoryChipsScrollController.offset + delta)
+                                  .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
+                              _categoryChipsScrollController.jumpTo(target);
+                            }
+                          },
+                          child: ListView.builder(
+                            controller: _categoryChipsScrollController,
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 4 : 12),
+                            itemCount: classifieds.categories.length + 1,
+                            itemBuilder: (ctx, idx) {
+                              if (idx == 0) {
+                                final isAll = classifieds.selectedCategoryId == null;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    selected: isAll,
+                                    label: const Text('Sve', style: TextStyle(fontSize: 12)),
+                                    backgroundColor: colorScheme.surfaceContainerLow,
+                                    selectedColor: colorScheme.primary,
+                                    checkmarkColor: colorScheme.onPrimary,
+                                    showCheckmark: false,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    onSelected: (_) => classifieds.selectCategory(null),
+                                  ),
+                                );
+                              }
+                              final cat = classifieds.categories[idx - 1];
+                              final activeRoot = classifieds.activeRootCategory;
+                              final isSelected = activeRoot?.id == cat.id;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
+                                  selected: isSelected,
+                                  avatar: Icon(cat.iconData,
+                                      size: 14,
+                                      color: isSelected
+                                          ? colorScheme.onPrimary
+                                          : colorScheme.onSurfaceVariant),
+                                  label: Text(cat.name,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight:
+                                            isSelected ? FontWeight.bold : FontWeight.w500,
+                                        color: isSelected
+                                            ? colorScheme.onPrimary
+                                            : colorScheme.onSurface,
+                                      )),
+                                  backgroundColor: colorScheme.surfaceContainerLow,
+                                  selectedColor: colorScheme.primary,
+                                  checkmarkColor: colorScheme.onPrimary,
+                                  showCheckmark: false,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? colorScheme.primary
+                                          : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  onSelected: (sel) =>
+                                      classifieds.selectCategory(sel ? cat.id : null),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (isDesktop)
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        tooltip: 'Sledeće kategorije',
+                        onPressed: () {
+                          if (_categoryChipsScrollController.hasClients) {
+                            final target = (_categoryChipsScrollController.offset + 260)
+                                .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
+                            _categoryChipsScrollController.animateTo(
+                              target,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOutCubic,
+                            );
+                          }
+                        },
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -640,9 +703,11 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (crumbs.length > 1) ...[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+            ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                 children: [
                   if (parentCategory != null) ...[
                     InkWell(
@@ -710,7 +775,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 6),
+          ),
+          const SizedBox(height: 6),
           ] else ...[
             Text(
               'Podkategorije: ${crumbs.first.name}',

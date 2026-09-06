@@ -34,7 +34,11 @@ class GlobalScrollBehavior extends MaterialScrollBehavior {
   @override
   Widget buildScrollbar(
       BuildContext context, Widget child, ScrollableDetails details) {
-    // Na desktopu i webu uvek želimo vidljiv scrollbar
+    // Na horizontalnim listama (kategorije, filteri, tabovi) nikada ne prikazujemo scrollbar
+    if (details.direction == Axis.horizontal) {
+      return child;
+    }
+    // Na vertikalnim listama na desktopu/webu zadržavamo suptilan scrollbar
     return Scrollbar(
       controller: details.controller,
       thumbVisibility: true,
