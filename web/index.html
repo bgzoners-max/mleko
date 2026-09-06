@@ -192,8 +192,8 @@
       </section>
 
       <section>
-        <h2>Mali Oglasi i Poljoprivredna mehanizacija</h2>
-        <p>Pregledajte ponudu u oglasniku: traktori, poljoprivredne mašine, sadnice, semena, stočna hrana, oprema za gazdinstvo, alati i terenske usluge.</p>
+        <h2>Mali Oglasi</h2>
+        <p>Kupujte i prodajte sve i svašta: mobilni telefoni, računari, tehnika, bela tehnika, automobili, nekretnine, alati, nameštaj, odeća i oprema.</p>
       </section>
     </main>
   </div>
@@ -206,27 +206,29 @@
   </noscript>
 
   <script>
-    window.addEventListener('load', async function () {
-      // Kada se aplikacija uspešno učita, crawler fallback se uredno skriva
+    // Sakrij crawler fallback kada se Flutter učita
+    window.addEventListener('load', function () {
       const crawlerDiv = document.getElementById('seo-crawler-content');
       if (crawlerDiv) {
         crawlerDiv.style.display = 'none';
       }
-
-      if (!('serviceWorker' in navigator) || !('caches' in window)) {
-        return;
-      }
-
-      try {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
-
-        const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-      } catch (error) {
-        console.warn('Web cache cleanup failed', error);
-      }
     });
+
+    // Momentalno čišćenje zastarelog Service Worker-a i lokalnog keša
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function (keys) {
+        for (var i = 0; i < keys.length; i++) {
+          caches.delete(keys[i]);
+        }
+      });
+    }
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
