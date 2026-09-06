@@ -46,7 +46,12 @@ class ClassifiedsService {
     ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
       final rawChildren = childrenByParent[node.id] ?? [];
       final nestedChildren = rawChildren.map(buildSubtree).toList();
-      nestedChildren.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+      nestedChildren.sort((a, b) {
+        if (a.sortOrder != b.sortOrder) {
+          return a.sortOrder.compareTo(b.sortOrder);
+        }
+        return ClassifiedCategoryModel.compareSerbian(a.name, b.name);
+      });
       return node.copyWith(subcategories: nestedChildren);
     }
 

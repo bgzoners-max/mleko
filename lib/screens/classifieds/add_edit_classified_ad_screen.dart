@@ -242,50 +242,178 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                       ),
                       if (current.subcategories.isNotEmpty) ...[
                         const SizedBox(height: 14),
-                        Text(
-                          modalPath.length == 1
-                              ? 'Izaberite podkategoriju:'
-                              : 'Ili izaberite užu podkategoriju:',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey),
-                        ),
-                        const SizedBox(height: 8),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisExtent: 54,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemCount: current.subcategories.length,
-                          itemBuilder: (c, i) {
-                            final sub = current.subcategories[i];
-                            return _CategoryCardPicker(
-                              category: sub,
-                              hasChildren: sub.subcategories.isNotEmpty,
-                              onTap: () {
-                                if (sub.subcategories.isNotEmpty) {
-                                  setModalState(() => modalPath.add(sub));
-                                } else {
-                                  final fullPath = [
-                                    ...modalPath.map((e) => e.name),
-                                    sub.name
-                                  ].join(' > ');
-                                  _selectCategory(
-                                    sub.id,
-                                    fullPath,
-                                  );
-                                  Navigator.pop(ctx);
-                                }
+                        if (current.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) ...[
+                          // Grupisan prikaz po sekcijama (npr. Automobili -> • NEMAČKA -> marke, • ITALIJA -> marke)
+                          for (final group in current.subcategories.where((s) => s.subcategories.isNotEmpty)) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: 14, bottom: 6),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    group.name.toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                                    ),
+                                    onPressed: () {
+                                      _selectCategory(
+                                        group.id,
+                                        [...modalPath.map((e) => e.name), group.name].join(' > '),
+                                      );
+                                      Navigator.pop(ctx);
+                                    },
+                                    child: Text(
+                                      'Izaberi: ${group.name}',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisExtent: 54,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
+                              itemCount: group.subcategories.length,
+                              itemBuilder: (c, i) {
+                                final brand = group.subcategories[i];
+                                return _CategoryCardPicker(
+                                  category: brand,
+                                  hasChildren: false,
+                                  onTap: () {
+                                    final fullPath = [
+                                      ...modalPath.map((e) => e.name),
+                                      group.name,
+                                      brand.name,
+                                    ].join(' > ');
+                                    _selectCategory(brand.id, fullPath);
+                                    Navigator.pop(ctx);
+                                  },
+                                );
                               },
-                            );
-                          },
-                        ),
+                            ),
+                          ],
+                          // Samostalne podkategorije (Džipovi, Havarisana, Ostalo)
+                          if (current.subcategories.any((s) => s.subcategories.isEmpty)) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16, bottom: 6),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'OSTALO / DODATNE KATEGORIJE',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.6,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisExtent: 54,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
+                              itemCount: current.subcategories.where((s) => s.subcategories.isEmpty).length,
+                              itemBuilder: (c, i) {
+                                final sub = current.subcategories.where((s) => s.subcategories.isEmpty).toList()[i];
+                                return _CategoryCardPicker(
+                                  category: sub,
+                                  hasChildren: false,
+                                  onTap: () {
+                                    final fullPath = [
+                                      ...modalPath.map((e) => e.name),
+                                      sub.name,
+                                    ].join(' > ');
+                                    _selectCategory(sub.id, fullPath);
+                                    Navigator.pop(ctx);
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ] else ...[
+                          Text(
+                            modalPath.length == 1
+                                ? 'Izaberite podkategoriju:'
+                                : 'Ili izaberite užu podkategoriju:',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisExtent: 54,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: current.subcategories.length,
+                            itemBuilder: (c, i) {
+                              final sub = current.subcategories[i];
+                              return _CategoryCardPicker(
+                                category: sub,
+                                hasChildren: sub.subcategories.isNotEmpty,
+                                onTap: () {
+                                  if (sub.subcategories.isNotEmpty) {
+                                    setModalState(() => modalPath.add(sub));
+                                  } else {
+                                    final fullPath = [
+                                      ...modalPath.map((e) => e.name),
+                                      sub.name
+                                    ].join(' > ');
+                                    _selectCategory(
+                                      sub.id,
+                                      fullPath,
+                                    );
+                                    Navigator.pop(ctx);
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     ],
                   );

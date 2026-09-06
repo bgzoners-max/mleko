@@ -459,9 +459,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 child: _buildSubcategoryHeader(context, classifieds, theme, colorScheme),
               ),
 
-            // 2. Podkategorije organizovane u 2 kolone (prema skici korisnika)
+            // 2. Podkategorije (grupisane sekcije po državama ili standardna mreža)
             if (classifieds.activeRootCategory != null)
-              _buildSubcategoriesGrid(context, classifieds, theme, colorScheme),
+              ..._buildSubcategoriesSlivers(context, classifieds, theme, colorScheme),
 
             // Separator i naslov sekcije oglasa sa dugmetom za poništavanje
             SliverToBoxAdapter(
@@ -614,9 +614,19 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     final crumbs = classifieds.categoryBreadcrumbs;
     if (crumbs.isEmpty) return const SizedBox.shrink();
 
-    final ClassifiedCategoryModel activeParent = crumbs.last.subcategories.isNotEmpty
-        ? crumbs.last
-        : (crumbs.length >= 2 ? crumbs[crumbs.length - 2] : crumbs.last);
+    // Proveravamo da li je u putanji aktivna kategorija sa grupisanim sekcijama (npr. Automobili sa državama)
+    ClassifiedCategoryModel? groupedParent;
+    for (final node in crumbs) {
+      if (node.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) {
+        groupedParent = node;
+        break;
+      }
+    }
+
+    final ClassifiedCategoryModel activeParent = groupedParent ??
+        (crumbs.last.subcategories.isNotEmpty
+            ? crumbs.last
+            : (crumbs.length >= 2 ? crumbs[crumbs.length - 2] : crumbs.last));
 
     if (activeParent.subcategories.isEmpty) return const SizedBox.shrink();
 
@@ -732,56 +742,260 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     );
   }
 
-  Widget _buildSubcategoriesGrid(
+  List<Widget> _buildSubcategoriesSlivers(
     BuildContext context,
     ClassifiedsProvider classifieds,
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
     final crumbs = classifieds.categoryBreadcrumbs;
-    if (crumbs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (crumbs.isEmpty) return const [];
 
+    // Proveravamo da li je u putanji aktivna kategorija sa grupisanim sekcijama (npr. Automobili sa državama)
+    ClassifiedCategoryModel? groupedParent;
+    for (final node in crumbs) {
+      if (node.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) {
+        groupedParent = node;
+        break;
+      }
+    }
+
+    final isDesktop = Breakpoints.isDesktop(context);
+    final gridCrossAxisCount = isDesktop
+        ? 4
+        : (Breakpoints.isLargeTablet(context) ? 3 : 2);
+
+    if (groupedParent != null) {
+      // ── GRUPISANI PRIKAZ PO DRŽAVAMA (prema crtežu korisnika: • NEMAČKA, • ITALIJA, • FRANCUSKA...) ──
+      final slivers = <Widget>[];
+      final groupsWithChildren = groupedParent.subcategories
+          .where((sub) => sub.subcategories.isNotEmpty)
+          .toList();
+      final standaloneItems = groupedParent.subcategories
+          .where((sub) => sub.subcategories.isEmpty)
+          .toList();
+
+      for (final group in groupsWithChildren) {
+        final isGroupSelected = classifieds.selectedCategoryId == group.id;
+
+        // 1. Naslov sekcije sa tačkom: • NEMAČKA, • ITALIJA, itd.
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 18, isDesktop ? 24 : 14, 8),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: () {
+                      if (isGroupSelected) {
+                        classifieds.selectCategory(groupedParent!.id);
+                      } else {
+                        classifieds.selectCategory(group.id);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: isGroupSelected ? colorScheme.primary : colorScheme.primary.withValues(alpha: 0.75),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            group.name.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: isGroupSelected ? colorScheme.primary : colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: () {
+                      if (isGroupSelected) {
+                        classifieds.selectCategory(groupedParent!.id);
+                      } else {
+                        classifieds.selectCategory(group.id);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Text(
+                        isGroupSelected ? 'Poništi filter' : 'Svi (${group.name})',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: isGroupSelected ? FontWeight.bold : FontWeight.w600,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // 2. Mreža marki automobila za datu državu
+        slivers.add(
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 2),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridCrossAxisCount,
+                mainAxisExtent: 52,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (ctx, idx) {
+                  final brand = group.subcategories[idx];
+                  final isSelected = classifieds.selectedCategoryId == brand.id;
+
+                  return _SubcategoryTile(
+                    category: brand,
+                    isSelected: isSelected,
+                    hasChildren: false,
+                    onTap: () {
+                      if (isSelected) {
+                        classifieds.selectCategory(groupedParent!.id);
+                      } else {
+                        classifieds.selectCategory(brand.id);
+                      }
+                    },
+                  );
+                },
+                childCount: group.subcategories.length,
+              ),
+            ),
+          ),
+        );
+      }
+
+      // 3. Dodatne kategorije (Džipovi, Oldtajmeri, Ostale marke)
+      if (standaloneItems.isNotEmpty) {
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 22, isDesktop ? 24 : 14, 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.75),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'OSTALO / DODATNE KATEGORIJE',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        slivers.add(
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 2),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridCrossAxisCount,
+                mainAxisExtent: 52,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (ctx, idx) {
+                  final item = standaloneItems[idx];
+                  final isSelected = classifieds.selectedCategoryId == item.id;
+
+                  return _SubcategoryTile(
+                    category: item,
+                    isSelected: isSelected,
+                    hasChildren: false,
+                    onTap: () {
+                      if (isSelected) {
+                        classifieds.selectCategory(groupedParent!.id);
+                      } else {
+                        classifieds.selectCategory(item.id);
+                      }
+                    },
+                  );
+                },
+                childCount: standaloneItems.length,
+              ),
+            ),
+          ),
+        );
+      }
+
+      return slivers;
+    }
+
+    // ── STANDARDNI PRIKAZ (obična podkategorija sa jednom ravnom mrežom) ──
     final ClassifiedCategoryModel activeParent = crumbs.last.subcategories.isNotEmpty
         ? crumbs.last
         : (crumbs.length >= 2 ? crumbs[crumbs.length - 2] : crumbs.last);
 
-    final List<ClassifiedCategoryModel> items = activeParent.subcategories;
-    if (items.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    final items = activeParent.subcategories;
+    if (items.isEmpty) return const [];
 
-    final isDesktop = Breakpoints.isDesktop(context);
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 4),
-      sliver: SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isDesktop
-              ? 4
-              : (Breakpoints.isLargeTablet(context) ? 3 : 2),
-          mainAxisExtent: 52,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (ctx, idx) {
-            final item = items[idx];
-            final isSelected = classifieds.selectedCategoryId == item.id;
+    return [
+      SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 4),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: gridCrossAxisCount,
+            mainAxisExtent: 52,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (ctx, idx) {
+              final item = items[idx];
+              final isSelected = classifieds.selectedCategoryId == item.id;
 
-            return _SubcategoryTile(
-              category: item,
-              isSelected: isSelected,
-              hasChildren: item.subcategories.isNotEmpty,
-              onTap: () {
-                if (isSelected) {
-                  classifieds.selectCategory(activeParent.id);
-                } else {
-                  classifieds.selectCategory(item.id);
-                }
-              },
-            );
-          },
-          childCount: items.length,
+              return _SubcategoryTile(
+                category: item,
+                isSelected: isSelected,
+                hasChildren: item.subcategories.isNotEmpty,
+                onTap: () {
+                  if (isSelected) {
+                    classifieds.selectCategory(activeParent.id);
+                  } else {
+                    classifieds.selectCategory(item.id);
+                  }
+                },
+              );
+            },
+            childCount: items.length,
+          ),
         ),
       ),
-    );
+    ];
   }
 }
 
