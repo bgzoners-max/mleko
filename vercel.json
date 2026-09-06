@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/(index.html|flutter_bootstrap.js|main.dart.js|flutter_service_worker.js|version.json)",
+      "source": "/([^/]+\\.js|index\\.html|version\\.json)",
       "headers": [
         {
           "key": "Cache-Control",

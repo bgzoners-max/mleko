@@ -217,19 +217,33 @@
     // Momentalno čišćenje zastarelog Service Worker-a i lokalnog keša
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        var hadSw = registrations && registrations.length > 0;
         for (var i = 0; i < registrations.length; i++) {
           registrations[i].unregister();
         }
-      });
-    }
-    if ('caches' in window) {
-      caches.keys().then(function (keys) {
-        for (var i = 0; i < keys.length; i++) {
-          caches.delete(keys[i]);
+        if ('caches' in window) {
+          caches.keys().then(function (keys) {
+            for (var j = 0; j < keys.length; j++) {
+              caches.delete(keys[j]);
+            }
+          });
+        }
+        // Ako je postojao stari instalirani Service Worker u browseru, jednom automatski osveži stranicu
+        if (hadSw && !sessionStorage.getItem('dm_sw_purged_v3')) {
+          sessionStorage.setItem('dm_sw_purged_v3', '1');
+          window.location.reload();
         }
       });
     }
+
+    // Dinamičko učitavanje flutter_bootstrap.js sa cache-busting parametrom
+    // garantuje da Cloudflare edge serveri ne mogu servirati zastareli js fajl
+    (function () {
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js?v=' + Date.now();
+      s.async = true;
+      document.body.appendChild(s);
+    })();
   </script>
-  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
