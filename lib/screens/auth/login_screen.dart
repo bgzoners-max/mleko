@@ -5,8 +5,28 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/web_seo.dart';
 import '../../models/app_error.dart';
+import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/error_dialog.dart';
+import '../../widgets/home/market_mode_switcher.dart';
+
+Future<void> _enterAsGuestWithMode(
+    BuildContext context, MarketMode mode) async {
+  final appState = context.read<AppState>();
+  context.read<AppSettingsProvider>().setMarketMode(mode);
+  if (appState.user != null) {
+    context.go('/');
+    return;
+  }
+  try {
+    await appState.authService
+        .signInAsGuest()
+        .timeout(const Duration(seconds: 8));
+    if (context.mounted) context.go('/');
+  } catch (_) {
+    if (context.mounted) context.go('/');
+  }
+}
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -18,9 +38,9 @@ class LoginScreen extends StatelessWidget {
     final isDesktop = width >= 850;
 
     setPageMetadata(
-      title: 'Prijava | Domaći market',
+      title: 'Prijava | Pijaca hrane & Mali oglasi | Domaći Market',
       description:
-          'Prijavite se na Domaći market i povežite se sa lokalnim proizvođačima.',
+          'Prijavite se na Domaći Market – berzu domaće hrane sa gazdinstava i oglasnik za sve i svašta (tehnika, vozila, nekretnine, alati).',
       path: '/login',
     );
 
@@ -28,15 +48,15 @@ class LoginScreen extends StatelessWidget {
       return Scaffold(
         body: Row(
           children: [
-            // Left Side: Marketing Content
+            // Levi panel: Prezentacija dve celine (Pijaca hrane + Mali oglasi)
             Expanded(
               flex: 5,
               child: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF083313), // Deep forest green
-                      Color(0xFF0F5A22), // Warm nature green
+                      Color(0xFF06230C), // Duboka tamnozelena
+                      Color(0xFF0F5A22), // Topla šumska zelena
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -50,7 +70,7 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Right Side: Login Form
+            // Desni panel: Forma za prijavu
             Expanded(
               flex: 5,
               child: Container(
@@ -59,7 +79,8 @@ class LoginScreen extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 420),
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 32, vertical: 24),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,7 +115,7 @@ class LoginScreen extends StatelessWidget {
       );
     }
 
-    // Mobile/Tablet Layout
+    // Mobilni i tablet prikaz
     return Scaffold(
       backgroundColor: const Color(0xFFF9F6F0),
       body: SingleChildScrollView(
@@ -102,7 +123,7 @@ class LoginScreen extends StatelessWidget {
           children: [
             const _MobileHeroSection(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: _LoginForm(),
@@ -128,6 +149,7 @@ class MarketingContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Zaglavlje brenda
         Row(
           children: [
             Image.asset(
@@ -136,142 +158,276 @@ class MarketingContent extends StatelessWidget {
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 12),
-            Text(
-              'Domaći market',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Domaći market',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Text(
+                  'Pijaca domaće hrane & Mali oglasi',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Colors.white.withAlpha(204),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        const SizedBox(height: 64),
+        const SizedBox(height: 36),
+
+        // Glavni naslov
         Text(
-          'Domaće, baš kako treba!',
-          style: theme.textTheme.displayMedium?.copyWith(
+          'Dve celine na\njednom mestu',
+          style: theme.textTheme.displaySmall?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w900,
-            height: 1.1,
+            height: 1.15,
+            letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 14),
         Text(
-          'Povežite se sa proverenim proizvođačima, otkrijte lokalnu ponudu i kupujte direktno od ljudi koji stoje iza svojih proizvoda.',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            color: Colors.white.withAlpha(230), // 0.9 * 255
+          'Kupujte autentičnu domaću hranu direktno sa gazdinstava ili pretražujte i oglašavajte sve i svašta — od tehnike, telefona i automobila, do nekretnina i alata.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: Colors.white.withAlpha(225),
+            height: 1.45,
             fontWeight: FontWeight.w400,
-            height: 1.4,
           ),
         ),
-        const SizedBox(height: 48),
-        const AnimatedBenefit(
-          delay: 200,
-          child: BenefitItem(
-            icon: Icons.verified_user_outlined,
-            title: 'Provereni proizvođači',
-            subtitle: 'Direktna saradnja sa lokalnim domaćinstvima.',
-          ),
+        const SizedBox(height: 32),
+
+        // Celina 1: Pijaca domaće hrane
+        _PillarCard(
+          icon: Icons.cottage_rounded,
+          badgeText: '100% DOMAĆE',
+          badgeColor: const Color(0xFF2E7D32),
+          title: 'Pijaca domaće hrane',
+          subtitle: 'Sveže sa seoskih poljoprivrednih gazdinstava',
+          bullets: const [
+            'Domaći sir, kajmak, mleko, med i suhomesnato',
+            'Sezonsko voće, povrće, zimnica i prirodni sokovi',
+            'Direktna kupovina od seljaka bez posrednika',
+          ],
+          actionLabel: 'Istraži Pijacu hrane →',
+          onAction: () => _enterAsGuestWithMode(context, MarketMode.foodMarket),
         ),
-        const SizedBox(height: 24),
-        const AnimatedBenefit(
-          delay: 400,
-          child: BenefitItem(
-            icon: Icons.local_shipping_outlined,
-            title: 'Direktna dostava',
-            subtitle: 'Sveže namirnice direktno do vaših vrata.',
-          ),
+        const SizedBox(height: 20),
+
+        // Celina 2: Mali oglasi
+        _PillarCard(
+          icon: Icons.campaign_rounded,
+          badgeText: 'SVE NA JEDNOM MESTU',
+          badgeColor: const Color(0xFFE65100),
+          title: 'Mali oglasi',
+          subtitle: 'Kupujte i prodajte sve i svašta',
+          bullets: const [
+            'Mobilni telefoni, računari, tehnika i bela tehnika',
+            'Automobili, motori, auto-delovi i oprema',
+            'Nekretnine, nameštaj, mašine, alati, odeća i usluge',
+          ],
+          actionLabel: 'Pregledaj Male oglase →',
+          onAction: () => _enterAsGuestWithMode(context, MarketMode.classifieds),
         ),
-        const SizedBox(height: 24),
-        const AnimatedBenefit(
-          delay: 600,
-          child: BenefitItem(
-            icon: Icons.favorite_border,
-            title: 'Podrška lokalu',
-            subtitle: 'Kupovinom podržavate razvoj malih proizvođača.',
-          ),
+        const SizedBox(height: 28),
+
+        // Bedževi poverenja na dnu
+        const Row(
+          children: [
+            _MiniTrustChip(
+                icon: Icons.verified_outlined, label: 'Bez posrednika'),
+            SizedBox(width: 14),
+            _MiniTrustChip(
+                icon: Icons.add_circle_outline, label: 'Besplatni oglasi'),
+            SizedBox(width: 14),
+            _MiniTrustChip(
+                icon: Icons.handshake_outlined, label: 'Direktan kontakt'),
+          ],
         ),
       ],
     );
   }
 }
 
-class AnimatedBenefit extends StatelessWidget {
-  final int delay;
-  final Widget child;
+class _PillarCard extends StatelessWidget {
+  final IconData icon;
+  final String badgeText;
+  final Color badgeColor;
+  final String title;
+  final String subtitle;
+  final List<String> bullets;
+  final String actionLabel;
+  final VoidCallback onAction;
 
-  const AnimatedBenefit({super.key, required this.delay, required this.child});
+  const _PillarCard({
+    required this.icon,
+    required this.badgeText,
+    required this.badgeColor,
+    required this.title,
+    required this.subtitle,
+    required this.bullets,
+    required this.actionLabel,
+    required this.onAction,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
-            child: child,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(22), // 0.08 * 255
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withAlpha(46), // 0.18 * 255
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(36),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withAlpha(190),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withAlpha(80),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(60),
+                    width: 0.8,
+                  ),
+                ),
+                child: Text(
+                  badgeText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
-      child: Padding(
-        padding:
-            EdgeInsets.only(top: delay / 1000 * 20), // Fake delay via offset
-        child: child,
+          const SizedBox(height: 14),
+          ...bullets.map(
+            (b) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF81C784),
+                      size: 15,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      b,
+                      style: TextStyle(
+                        color: Colors.white.withAlpha(220),
+                        fontSize: 13,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.white.withAlpha(30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(
+                actionLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class BenefitItem extends StatelessWidget {
+class _MiniTrustChip extends StatelessWidget {
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final String label;
 
-  const BenefitItem({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+  const _MiniTrustChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(26), // 0.1 * 255
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: Colors.white, size: 28),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withAlpha(179), // 0.7 * 255
-                ),
-              ),
-            ],
+        Icon(icon, color: Colors.white.withAlpha(200), size: 16),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withAlpha(210),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -287,32 +443,159 @@ class _MobileHeroSection extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      color: const Color(0xFF0E521E),
-      padding: const EdgeInsets.fromLTRB(24, 64, 24, 48),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF06230C),
+            Color(0xFF0E521E),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 52, 20, 28),
       child: Column(
         children: [
-          Image.asset(
-            'assets/images/logo.png',
-            height: 120,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/header_logo.png',
+                height: 40,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Domaći market',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 18),
           Text(
-            'Domaće, baš kako treba!',
+            'Pijaca domaće hrane &\nMali oglasi',
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineSmall?.copyWith(
               color: Colors.white,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
-            'Otkrijte lokalne ukuse i povežite se sa proizvođačima.',
+            'Domaća hrana sa gazdinstava i oglasnik za sve i svašta.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withAlpha(204), // 0.8 * 255
+              color: Colors.white.withAlpha(204),
             ),
           ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickMobilePill(
+                  icon: Icons.cottage_rounded,
+                  title: 'Pijaca hrane',
+                  subtitle: 'Sa sela',
+                  badgeColor: const Color(0xFF2E7D32),
+                  onTap: () =>
+                      _enterAsGuestWithMode(context, MarketMode.foodMarket),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _QuickMobilePill(
+                  icon: Icons.campaign_rounded,
+                  title: 'Mali oglasi',
+                  subtitle: 'Sve i svašta',
+                  badgeColor: const Color(0xFFE65100),
+                  onTap: () =>
+                      _enterAsGuestWithMode(context, MarketMode.classifieds),
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickMobilePill extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color badgeColor;
+  final VoidCallback onTap;
+
+  const _QuickMobilePill({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.badgeColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(28),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.white.withAlpha(48),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: badgeColor.withAlpha(90),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(180),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white70, size: 12),
+          ],
+        ),
       ),
     );
   }
@@ -324,21 +607,89 @@ class _TrustSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           const Divider(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Text(
-            'Domaći market okuplja:',
+            'Domaći market okuplja dve celine',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
           ),
           const SizedBox(height: 16),
-          const _CheckItem('Proverene proizvođače'),
-          const _CheckItem('Direktnu kupovinu bez preprodavaca'),
-          const _CheckItem('Autentične domaće proizvode'),
+          // Blok 1: Pijaca hrane
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.cottage_rounded,
+                        color: Color(0xFF1B5E20), size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Pijaca domaće hrane',
+                      style: TextStyle(
+                        color: Colors.green.shade900,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const _CheckItem(
+                    'Direktna saradnja sa lokalnim seoskim domaćinstvima'),
+                const _CheckItem(
+                    'Sir, kajmak, med, suvo meso, voće, povrće i zimnica'),
+                const _CheckItem('100% domaći ukusi bez trgovačkih marži'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Blok 2: Mali oglasi
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.campaign_rounded,
+                        color: Color(0xFFE65100), size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Mali oglasi za sve i svašta',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const _CheckItem(
+                    'Mobilni telefoni, računari, tehnika i bela tehnika'),
+                const _CheckItem(
+                    'Automobili, motori, nekretnine, alati i nameštaj'),
+                const _CheckItem('Besplatno i jednostavno postavljanje oglasa'),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -356,9 +707,11 @@ class _CheckItem extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 20),
+          const Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 18),
           const SizedBox(width: 8),
-          Text(text, style: const TextStyle(fontSize: 14)),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 13)),
+          ),
         ],
       ),
     );
@@ -399,6 +752,11 @@ class _LoginFormState extends State<_LoginForm> {
     } finally {
       if (mounted) context.read<AppState>().setLoading(false);
     }
+  }
+
+  Future<void> _guestWithMode(MarketMode mode) async {
+    context.read<AppSettingsProvider>().setMarketMode(mode);
+    await _guest();
   }
 
   Future<void> _guest() async {
@@ -546,19 +904,20 @@ class _LoginFormState extends State<_LoginForm> {
             const Expanded(child: Divider()),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('ili',
+              child: Text('ili istraži bez prijave',
                   style: TextStyle(
+                      fontSize: 13,
                       color:
-                          theme.colorScheme.onSurfaceVariant.withAlpha(128))),
+                          theme.colorScheme.onSurfaceVariant.withAlpha(150))),
             ),
             const Expanded(child: Divider()),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         OutlinedButton(
           onPressed: _guestLoading ? null : _guest,
           style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 15),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -569,7 +928,37 @@ class _LoginFormState extends State<_LoginForm> {
                   child: CircularProgressIndicator(strokeWidth: 2))
               : const Text('Nastavi kao gost'),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextButton.icon(
+                onPressed: _guestLoading
+                    ? null
+                    : () => _guestWithMode(MarketMode.foodMarket),
+                icon: const Icon(Icons.cottage_outlined, size: 16),
+                label: const Text(
+                  'Pijaca hrane',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: _guestLoading
+                    ? null
+                    : () => _guestWithMode(MarketMode.classifieds),
+                icon: const Icon(Icons.campaign_outlined, size: 16),
+                label: const Text(
+                  'Mali oglasi',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -583,31 +972,41 @@ class _LoginFormState extends State<_LoginForm> {
           ],
         ),
         const SizedBox(height: 16),
-        RichText(
-          textAlign: TextAlign.left,
-          text: TextSpan(
-            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-            children: [
-              const TextSpan(text: 'Nastavkom prijave prihvatate naše '),
-              TextSpan(
-                text: 'Uslove korišćenja',
-                style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () => context.push('/uslovi-koriscenja'),
+        Center(
+          child: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withAlpha(179),
+                fontSize: 11,
               ),
-              const TextSpan(text: ' i '),
-              TextSpan(
-                text: 'Politiku privatnosti',
-                style: TextStyle(
+              children: [
+                const TextSpan(
+                    text: 'Nastavkom prijave prihvatate naše '),
+                TextSpan(
+                  text: 'Uslove korišćenja',
+                  style: TextStyle(
                     color: theme.colorScheme.primary,
-                    decoration: TextDecoration.underline),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () => context.push('/politika-privatnosti'),
-              ),
-              const TextSpan(text: '.'),
-            ],
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => context.push('/uslovi-koriscenja'),
+                ),
+                const TextSpan(text: ' i '),
+                TextSpan(
+                  text: 'Politiku privatnosti',
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => context.push('/politika-privatnosti'),
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
           ),
         ),
       ],

@@ -92,7 +92,7 @@ class MarketModeSwitcher extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Svi Oglasi',
+                                  'Mali Oglasi',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: isClassifieds
