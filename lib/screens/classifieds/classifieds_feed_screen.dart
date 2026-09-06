@@ -1038,7 +1038,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridCrossAxisCount,
-                mainAxisExtent: 52,
+                mainAxisExtent: 56,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
               ),
@@ -1105,7 +1105,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridCrossAxisCount,
-                mainAxisExtent: 52,
+                mainAxisExtent: 56,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
               ),
@@ -1151,7 +1151,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: gridCrossAxisCount,
-            mainAxisExtent: 52,
+            mainAxisExtent: 56,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
@@ -1283,10 +1283,10 @@ class _SubcategoryTile extends StatelessWidget {
                 category.name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 11.5,
-                  height: 1.15,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  fontSize: 13.5,
+                  height: 1.2,
                   color: textColor,
                 ),
               ),
