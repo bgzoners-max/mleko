@@ -166,9 +166,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
   void _openCategoryPicker(BuildContext context) {
     final categories = context.read<ClassifiedsProvider>().categories;
-
-    ClassifiedCategoryModel? modalRoot;
-    ClassifiedCategoryModel? modalSec;
+    final modalPath = <ClassifiedCategoryModel>[];
 
     showModalBottomSheet<void>(
       context: context,
@@ -185,19 +183,23 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                 Widget headerWidget;
                 Widget contentWidget;
 
-                if (modalSec != null && modalSec!.subcategories.isNotEmpty) {
-                  // Nivo 3: Tercijarne podkategorije u 2 kolone
+                if (modalPath.isNotEmpty) {
+                  final current = modalPath.last;
+                  final currentBreadcrumb =
+                      modalPath.map((e) => e.name).join(' > ');
+
                   headerWidget = Padding(
                     padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
                     child: Row(
                       children: [
                         IconButton(
                           icon: const Icon(Icons.arrow_back),
-                          onPressed: () => setModalState(() => modalSec = null),
+                          onPressed: () =>
+                              setModalState(() => modalPath.removeLast()),
                         ),
                         Expanded(
                           child: Text(
-                            modalSec!.name,
+                            current.name,
                             style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold),
                             overflow: TextOverflow.ellipsis,
@@ -217,9 +219,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     children: [
                       OutlinedButton.icon(
-                        icon: Icon(modalSec!.iconData, size: 18),
+                        icon: Icon(current.iconData, size: 18),
                         label: Text(
-                            'Izaberi celu podkategoriju: ${modalSec!.name}'),
+                          modalPath.length == 1
+                              ? 'Izaberi celu kategoriju: ${current.name}'
+                              : 'Izaberi celu podkategoriju: ${current.name}',
+                        ),
                         style: OutlinedButton.styleFrom(
                           alignment: Alignment.centerLeft,
                           padding: const EdgeInsets.symmetric(
@@ -229,138 +234,59 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                         ),
                         onPressed: () {
                           _selectCategory(
-                            modalSec!.id,
-                            '${modalRoot!.name} > ${modalSec!.name}',
+                            current.id,
+                            currentBreadcrumb,
                           );
                           Navigator.pop(ctx);
                         },
                       ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Ili izaberite užu podkategoriju:',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisExtent: 54,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
+                      if (current.subcategories.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Text(
+                          modalPath.length == 1
+                              ? 'Izaberite podkategoriju:'
+                              : 'Ili izaberite užu podkategoriju:',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey),
                         ),
-                        itemCount: modalSec!.subcategories.length,
-                        itemBuilder: (c, i) {
-                          final tert = modalSec!.subcategories[i];
-                          return _CategoryCardPicker(
-                            category: tert,
-                            onTap: () {
-                              _selectCategory(
-                                tert.id,
-                                '${modalRoot!.name} > ${modalSec!.name} > ${tert.name}',
-                              );
-                              Navigator.pop(ctx);
-                            },
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                } else if (modalRoot != null &&
-                    modalRoot!.subcategories.isNotEmpty) {
-                  // Nivo 2: Sekundarne podkategorije u 2 kolone
-                  headerWidget = Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => setModalState(() => modalRoot = null),
-                        ),
-                        Expanded(
-                          child: Text(
-                            modalRoot!.name,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 8),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisExtent: 54,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
+                          itemCount: current.subcategories.length,
+                          itemBuilder: (c, i) {
+                            final sub = current.subcategories[i];
+                            return _CategoryCardPicker(
+                              category: sub,
+                              hasChildren: sub.subcategories.isNotEmpty,
+                              onTap: () {
+                                if (sub.subcategories.isNotEmpty) {
+                                  setModalState(() => modalPath.add(sub));
+                                } else {
+                                  final fullPath = [
+                                    ...modalPath.map((e) => e.name),
+                                    sub.name
+                                  ].join(' > ');
+                                  _selectCategory(
+                                    sub.id,
+                                    fullPath,
+                                  );
+                                  Navigator.pop(ctx);
+                                }
+                              },
+                            );
+                          },
                         ),
                       ],
-                    ),
-                  );
-
-                  contentWidget = ListView(
-                    controller: scrollCtl,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    children: [
-                      OutlinedButton.icon(
-                        icon: Icon(modalRoot!.iconData, size: 18),
-                        label: Text(
-                            'Izaberi celu kategoriju: ${modalRoot!.name}'),
-                        style: OutlinedButton.styleFrom(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () {
-                          _selectCategory(
-                            modalRoot!.id,
-                            modalRoot!.name,
-                          );
-                          Navigator.pop(ctx);
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Izaberite podkategoriju:',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisExtent: 54,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemCount: modalRoot!.subcategories.length,
-                        itemBuilder: (c, i) {
-                          final sub = modalRoot!.subcategories[i];
-                          return _CategoryCardPicker(
-                            category: sub,
-                            hasChildren: sub.subcategories.isNotEmpty,
-                            onTap: () {
-                              if (sub.subcategories.isNotEmpty) {
-                                setModalState(() => modalSec = sub);
-                              } else {
-                                _selectCategory(
-                                  sub.id,
-                                  '${modalRoot!.name} > ${sub.name}',
-                                );
-                                Navigator.pop(ctx);
-                              }
-                            },
-                          );
-                        },
-                      ),
                     ],
                   );
                 } else {
@@ -409,7 +335,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                             : null,
                         onTap: () {
                           if (cat.subcategories.isNotEmpty) {
-                            setModalState(() => modalRoot = cat);
+                            setModalState(() => modalPath.add(cat));
                           } else {
                             _selectCategory(
                               cat.id,

@@ -383,7 +383,105 @@ void main() {
       expect(provider.categories.length, 1);
       expect(provider.categories.first.id, 'poljoprivreda');
     });
+
+    test('multi-level breadcrumb navigation works for nested country car brands', () async {
+      final fake = FakeCarClassifiedsService();
+      final provider = ClassifiedsProvider(service: fake);
+      await provider.loadCategories();
+
+      // 1. Select country level (Nemačka)
+      provider.selectCategory('auto_nemacka');
+      final countryCrumbs = provider.categoryBreadcrumbs;
+      expect(countryCrumbs.length, 3);
+      expect(countryCrumbs[0].id, 'vozila');
+      expect(countryCrumbs[1].id, 'automobili');
+      expect(countryCrumbs[2].id, 'auto_nemacka');
+
+      // 2. Select brand level (Volkswagen)
+      provider.selectCategory('auto_volkswagen');
+      final brandCrumbs = provider.categoryBreadcrumbs;
+      expect(brandCrumbs.length, 4);
+      expect(brandCrumbs[0].id, 'vozila');
+      expect(brandCrumbs[1].id, 'automobili');
+      expect(brandCrumbs[2].id, 'auto_nemacka');
+      expect(brandCrumbs[3].id, 'auto_volkswagen');
+    });
   });
+}
+
+class FakeCarClassifiedsService extends ClassifiedsService {
+  FakeCarClassifiedsService() : super.test();
+
+  @override
+  Future<List<ClassifiedCategoryModel>> getCachedCategories() async => [];
+
+  @override
+  Future<List<ClassifiedCategoryModel>> getCategories() async => [
+        const ClassifiedCategoryModel(
+          id: 'vozila',
+          name: 'Vozila',
+          iconName: 'directions_car',
+          subcategories: [
+            ClassifiedCategoryModel(
+              id: 'automobili',
+              name: 'Automobili',
+              iconName: 'directions_car',
+              parentId: 'vozila',
+              subcategories: [
+                ClassifiedCategoryModel(
+                  id: 'auto_nemacka',
+                  name: 'Nemačka',
+                  iconName: 'directions_car',
+                  parentId: 'automobili',
+                  subcategories: [
+                    ClassifiedCategoryModel(
+                      id: 'auto_volkswagen',
+                      name: 'Volkswagen',
+                      iconName: 'directions_car',
+                      parentId: 'auto_nemacka',
+                    ),
+                    ClassifiedCategoryModel(
+                      id: 'auto_bmw',
+                      name: 'BMW',
+                      iconName: 'directions_car',
+                      parentId: 'auto_nemacka',
+                    ),
+                  ],
+                ),
+                ClassifiedCategoryModel(
+                  id: 'auto_japan',
+                  name: 'Japan',
+                  iconName: 'directions_car',
+                  parentId: 'automobili',
+                  subcategories: [
+                    ClassifiedCategoryModel(
+                      id: 'auto_toyota',
+                      name: 'Toyota',
+                      iconName: 'directions_car',
+                      parentId: 'auto_japan',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ];
+
+  @override
+  Future<List<ClassifiedAdModel>> getAds({
+    String? categoryId,
+    List<String>? categoryIds,
+    String? city,
+    String? condition,
+    double? minPrice,
+    double? maxPrice,
+    String? currency,
+    String? searchQuery,
+    ClassifiedSort sort = ClassifiedSort.newest,
+    int limit = 24,
+    int offset = 0,
+  }) async => [];
 }
 
 class FakeClassifiedsService extends ClassifiedsService {

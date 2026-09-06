@@ -611,121 +611,125 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    final root = classifieds.activeRootCategory!;
-    final sec = classifieds.activeSecondaryCategory;
-    final isTertiaryMode = sec != null && sec.subcategories.isNotEmpty;
+    final crumbs = classifieds.categoryBreadcrumbs;
+    if (crumbs.isEmpty) return const SizedBox.shrink();
 
-    if (isTertiaryMode) {
-      final isAllInSec = classifieds.selectedCategoryId == sec.id;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                InkWell(
-                  onTap: () => classifieds.selectCategory(root.id),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.arrow_back_ios_new, size: 13, color: colorScheme.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          root.name,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.primary,
+    final ClassifiedCategoryModel activeParent = crumbs.last.subcategories.isNotEmpty
+        ? crumbs.last
+        : (crumbs.length >= 2 ? crumbs[crumbs.length - 2] : crumbs.last);
+
+    if (activeParent.subcategories.isEmpty) return const SizedBox.shrink();
+
+    final isAllInActiveParent = classifieds.selectedCategoryId == activeParent.id;
+    final parentCategory = crumbs.length >= 2 ? crumbs[crumbs.length - 2] : null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (crumbs.length > 1) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  if (parentCategory != null) ...[
+                    InkWell(
+                      onTap: () => classifieds.selectCategory(parentCategory.id),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.arrow_back_ios_new, size: 12, color: colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Nazad',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: 14,
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ],
+                  for (int i = 0; i < crumbs.length; i++) ...[
+                    if (i > 0)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(Icons.chevron_right,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
+                      ),
+                    if (i == crumbs.length - 1)
+                      Text(
+                        crumbs[i].name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    else
+                      InkWell(
+                        onTap: () => classifieds.selectCategory(crumbs[i].id),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: Text(
+                            crumbs[i].name,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.primary,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Icon(Icons.chevron_right,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-                ),
-                Expanded(
-                  child: Text(
-                    sec.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: double.infinity,
-              height: 38,
-              child: ChoiceChip(
-                selected: isAllInSec,
-                avatar: Icon(sec.iconData, size: 15),
-                label: Text(
-                  'Svi oglasi u „${sec.name}”',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isAllInSec ? FontWeight.bold : FontWeight.w500,
-                  ),
-                ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                onSelected: (_) => classifieds.selectCategory(sec.id),
+                      ),
+                  ],
+                ],
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    // Secondary mode: Root category is active
-    if (root.subcategories.isNotEmpty) {
-      final isAllInRoot = classifieds.selectedCategoryId == root.id;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+            const SizedBox(height: 6),
+          ] else ...[
             Text(
-              'Podkategorije: ${root.name}',
+              'Podkategorije: ${crumbs.first.name}',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 6),
-            SizedBox(
-              width: double.infinity,
-              height: 38,
-              child: ChoiceChip(
-                selected: isAllInRoot,
-                avatar: Icon(root.iconData, size: 15),
-                label: Text(
-                  'Svi oglasi u „${root.name}”',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isAllInRoot ? FontWeight.bold : FontWeight.w500,
-                  ),
-                ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                onSelected: (_) => classifieds.selectCategory(root.id),
-              ),
-            ),
           ],
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: ChoiceChip(
+              selected: isAllInActiveParent,
+              avatar: Icon(activeParent.iconData, size: 15),
+              label: Text(
+                'Svi oglasi u „${activeParent.name}”',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isAllInActiveParent ? FontWeight.bold : FontWeight.w500,
+                ),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              onSelected: (_) => classifieds.selectCategory(activeParent.id),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSubcategoriesGrid(
@@ -734,13 +738,14 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    final root = classifieds.activeRootCategory!;
-    final sec = classifieds.activeSecondaryCategory;
-    final isTertiaryMode = sec != null && sec.subcategories.isNotEmpty;
+    final crumbs = classifieds.categoryBreadcrumbs;
+    if (crumbs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
-    final List<ClassifiedCategoryModel> items =
-        isTertiaryMode ? sec.subcategories : root.subcategories;
+    final ClassifiedCategoryModel activeParent = crumbs.last.subcategories.isNotEmpty
+        ? crumbs.last
+        : (crumbs.length >= 2 ? crumbs[crumbs.length - 2] : crumbs.last);
 
+    final List<ClassifiedCategoryModel> items = activeParent.subcategories;
     if (items.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
     final isDesktop = Breakpoints.isDesktop(context);
@@ -758,18 +763,15 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         delegate: SliverChildBuilderDelegate(
           (ctx, idx) {
             final item = items[idx];
-            final isSelected = isTertiaryMode
-                ? classifieds.selectedCategoryId == item.id
-                : (classifieds.activeSecondaryCategory?.id == item.id ||
-                    classifieds.selectedCategoryId == item.id);
+            final isSelected = classifieds.selectedCategoryId == item.id;
 
             return _SubcategoryTile(
               category: item,
               isSelected: isSelected,
               hasChildren: item.subcategories.isNotEmpty,
               onTap: () {
-                if (isTertiaryMode) {
-                  classifieds.selectCategory(isSelected ? sec.id : item.id);
+                if (isSelected) {
+                  classifieds.selectCategory(activeParent.id);
                 } else {
                   classifieds.selectCategory(item.id);
                 }

@@ -154,6 +154,8 @@ class ClassifiedCategoryModel {
         return Icons.fireplace;
       case 'fitness_center':
         return Icons.fitness_center;
+      case 'flag':
+        return Icons.flag;
       case 'forest':
         return Icons.forest;
       case 'format_paint':
@@ -276,6 +278,8 @@ class ClassifiedCategoryModel {
         return Icons.print;
       case 'propane_tank':
         return Icons.propane_tank;
+      case 'public':
+        return Icons.public;
       case 'radiator':
         return Icons.hvac;
       case 'reorder':
