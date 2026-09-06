@@ -318,7 +318,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             if (classifieds.categories.isNotEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 16, 12, isDesktop ? 24 : 16, 8),
                   child: Text(
                     'Kategorije',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -328,16 +328,20 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 ),
               ),
 
-            // Grid kategorija
+            // Grid kategorija organizovan kao na strani malih proizvođača
             if (classifieds.categories.isNotEmpty)
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    childAspectRatio: 0.73,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isDesktop
+                        ? 4
+                        : (Breakpoints.isLargeTablet(context)
+                            ? 4
+                            : (Breakpoints.isSmallTablet(context) ? 3 : 2)),
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
+                    mainAxisExtent: 56,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) => _CategoryGridTile(
@@ -572,11 +576,20 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       ),
     );
 
+    final content = Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: Breakpoints.maxContentWidth(context),
+        ),
+        child: scrollBody,
+      ),
+    );
+
     if (widget.isEmbedded) {
       return Stack(
         fit: StackFit.expand,
         children: [
-          scrollBody,
+          content,
           Positioned(
             bottom: 16,
             right: 16,
@@ -588,7 +601,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     return Scaffold(
       floatingActionButton: fab,
-      body: scrollBody,
+      body: content,
     );
   }
 
@@ -730,11 +743,14 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     if (items.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
+    final isDesktop = Breakpoints.isDesktop(context);
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 4),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: isDesktop
+              ? 4
+              : (Breakpoints.isLargeTablet(context) ? 3 : 2),
           mainAxisExtent: 52,
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
@@ -881,7 +897,54 @@ class _SubcategoryTile extends StatelessWidget {
   }
 }
 
-/// Grid tile za kategoriju na discovery ekranu
+Color _getClassifiedCategoryColor(String name) {
+  final lower = name.toLowerCase();
+  if (lower.contains('vozil') || lower.contains('auto') || lower.contains('motor')) {
+    return const Color(0xFF0288D1); // Vozila - Plava
+  }
+  if (lower.contains('nekretnin') || lower.contains('stan') || lower.contains('kuć')) {
+    return const Color(0xFF1B5E20); // Nekretnine - Šumska zelena
+  }
+  if (lower.contains('poljoprivred') || lower.contains('traktor')) {
+    return const Color(0xFF2E7D32); // Poljoprivreda - Sveža poljoprivredna zelena
+  }
+  if (lower.contains('mašin') || lower.contains('alat') || lower.contains('zanat')) {
+    return const Color(0xFFE65100); // Mašine i alati - Zlatno narandžasta
+  }
+  if (lower.contains('telefon') || lower.contains('mobiln')) {
+    return const Color(0xFF00897B); // Telefoni - Teal
+  }
+  if (lower.contains('tehnik') ||
+      lower.contains('računar') ||
+      lower.contains('laptop') ||
+      lower.contains('tv')) {
+    return const Color(0xFF5C6BC0); // Tehnika - Indigo
+  }
+  if (lower.contains('ljubim') ||
+      lower.contains('životinj') ||
+      lower.contains('pas') ||
+      lower.contains('mačk')) {
+    return const Color(0xFF8D6E63); // Ljubimci - Topla braon
+  }
+  if (lower.contains('dom') || lower.contains('bašt') || lower.contains('nameštaj')) {
+    return const Color(0xFF0097A7); // Dom i bašta - Cijan
+  }
+  if (lower.contains('odeć') || lower.contains('obuć') || lower.contains('garderob')) {
+    return const Color(0xFFAD1457); // Odeća i obuća - Bordo / rubin
+  }
+  if (lower.contains('sport') || lower.contains('hobi')) {
+    return const Color(0xFFD84315); // Sport i hobi - Terakota
+  }
+  if (lower.contains('građevinarstv') || lower.contains('materijal')) {
+    return const Color(0xFF546E7A); // Građevinarstvo - Čelik siva
+  }
+  if (lower.contains('uslug')) {
+    return const Color(0xFF6A1B9A); // Usluge - Ljubičasta
+  }
+  return const Color(0xFF1B5E20);
+}
+
+/// Grid tile za kategoriju na discovery ekranu - organizovan identično kao na strani malih proizvođača
 class _CategoryGridTile extends StatelessWidget {
   final ClassifiedCategoryModel category;
   final VoidCallback onTap;
@@ -893,83 +956,58 @@ class _CategoryGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final catColor = _getClassifiedCategoryColor(category.name);
 
-    // Sivkasta boja pozadine kartice (bez zelene nijanse)
-    final cardBgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F3F5);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-
-    // Crno-bela upečatljiva paleta za krug i ikonicu
-    final circleBgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final iconColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final textColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardBgColor,
+    return Semantics(
+      button: true,
+      label: 'Kategorija ${category.name}',
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor,
-            width: 1.0,
+          side: BorderSide(
+            color: catColor.withValues(alpha: 0.25),
+            width: 1.2,
           ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 4,
-                offset: const Offset(0, 1),
-              ),
-          ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: circleBgColor,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB),
-                  width: 1,
+        color: catColor.withValues(alpha: 0.05),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: catColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    category.iconData,
+                    size: 22,
+                    color: catColor,
+                  ),
                 ),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                ],
-              ),
-              child: Icon(
-                category.iconData,
-                size: 34, // Povećana ikonica sa 28 na 34
-                color: iconColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Text(
-                category.name,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12, // Povećan font za 1 (sa 11 na 12)
-                  height: 1.15,
-                  color: textColor,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    category.name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13.5,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
