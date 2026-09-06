@@ -162,6 +162,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           },
         );
       },
+    );
+  }
+
   Widget _buildCityButton(
     BuildContext context,
     ClassifiedsProvider classifieds,
@@ -196,7 +199,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             if (hasSelectedCity) ...[
               const SizedBox(width: 4),
               InkWell(
-                onTap: () => classifieds.filterByCity(null),
+                onTap: () => classifieds.selectCity(null),
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.all(2),
