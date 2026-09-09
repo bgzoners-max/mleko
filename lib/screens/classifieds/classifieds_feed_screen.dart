@@ -273,6 +273,172 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     );
   }
 
+  Widget _buildConditionChips(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+    ColorScheme colorScheme,
+  ) {
+    final selected = classifieds.selectedCondition;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget buildChip({
+      required String? value,
+      required String label,
+      IconData? icon,
+      Color? activeColor,
+    }) {
+      final isSelected = selected == value;
+      final effectiveColor = activeColor ?? colorScheme.primary;
+
+      return InkWell(
+        onTap: () => classifieds.selectCondition(value),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? effectiveColor.withValues(alpha: isDark ? 0.25 : 0.12)
+                : colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? effectiveColor
+                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 13,
+                  color: isSelected ? effectiveColor : colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? effectiveColor : colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        buildChip(value: null, label: 'Sve'),
+        const SizedBox(width: 6),
+        buildChip(
+          value: 'new',
+          label: 'Novo',
+          icon: Icons.check_circle_outline,
+          activeColor: const Color(0xFF059669),
+        ),
+        const SizedBox(width: 6),
+        buildChip(
+          value: 'used',
+          label: 'Polovno',
+          icon: Icons.inventory_2_outlined,
+          activeColor: const Color(0xFF475569),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveFilterChips(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+    ColorScheme colorScheme,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.filter_alt_outlined, size: 14, color: colorScheme.primary),
+              const SizedBox(width: 4),
+              Text(
+                'Filteri:',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          if (classifieds.selectedCity != null)
+            InputChip(
+              avatar: const Icon(Icons.location_on, size: 14),
+              label: Text(classifieds.selectedCity!, style: const TextStyle(fontSize: 11)),
+              onDeleted: () => classifieds.selectCity(null),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          if (classifieds.selectedCondition != null)
+            InputChip(
+              avatar: Icon(
+                classifieds.selectedCondition == 'new'
+                    ? Icons.check_circle_outline
+                    : Icons.inventory_2_outlined,
+                size: 14,
+              ),
+              label: Text(
+                classifieds.selectedCondition == 'new' ? 'Novo' : 'Polovno',
+                style: const TextStyle(fontSize: 11),
+              ),
+              onDeleted: () => classifieds.selectCondition(null),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          if (classifieds.searchQuery != null && classifieds.searchQuery!.isNotEmpty)
+            InputChip(
+              avatar: const Icon(Icons.search, size: 14),
+              label: Text('„${classifieds.searchQuery}”', style: const TextStyle(fontSize: 11)),
+              onDeleted: () {
+                _searchController.clear();
+                classifieds.search(null);
+              },
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          TextButton.icon(
+            onPressed: () {
+              _searchController.clear();
+              classifieds.selectCategory(null);
+              classifieds.selectCity(null);
+              classifieds.selectCondition(null);
+              classifieds.search(null);
+            },
+            icon: const Icon(Icons.close, size: 12),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            label: const Text('Poništi sve', style: TextStyle(fontSize: 11)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryChipsRow(
     BuildContext context,
     ClassifiedsProvider classifieds,
@@ -423,6 +589,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     final isFiltered = classifieds.selectedCategoryId != null ||
         classifieds.selectedCity != null ||
+        classifieds.selectedCondition != null ||
         (classifieds.searchQuery != null && classifieds.searchQuery!.isNotEmpty);
 
     // FAB
@@ -473,17 +640,27 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             child: Padding(
               padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 12, 8, isDesktop ? 24 : 12, 4),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Search bar
                   TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (val) {
+                      final q = val.trim().isEmpty ? null : val.trim();
+                      classifieds.search(q);
+                    },
                     decoration: InputDecoration(
-                      hintText: 'Pretraži oglase...',
-                      prefixIcon: const Icon(Icons.search),
+                      hintText: 'Pretraži oglase, traktore, mehanizaciju, alate, tehniku...',
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                      prefixIcon: Icon(Icons.search, color: colorScheme.primary, size: 22),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(Icons.clear, size: 18),
                               onPressed: () {
                                 _searchController.clear();
                                 _onSearchChanged('');
@@ -506,10 +683,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   // Filteri grad + kategorije + sort (jedan red na desktopu, dva reda na mobilnom)
                   const SizedBox(height: 8),
                   if (isDesktop) ...[
-                    // JEDAN RED NA DESKTOPU: [ SVI GRADOVI ] [ <- KATEGORIJE ... -> ] [ NAJNOVIJE v ]
+                    // JEDAN RED NA DESKTOPU: [ SVI GRADOVI ] [ STANJE ] [ <- KATEGORIJE ... -> ] [ NAJNOVIJE v ]
                     Row(
                       children: [
                         _buildCityButton(context, classifieds, colorScheme),
+                        const SizedBox(width: 8),
+                        _buildConditionChips(context, classifieds, colorScheme),
                         const SizedBox(width: 8),
                         if (classifieds.categories.isNotEmpty)
                           Expanded(
@@ -538,7 +717,16 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         _buildSortDropdown(context, classifieds, colorScheme),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    // Red 2: Stanje (Sve / Novo / Polovno)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _buildConditionChips(context, classifieds, colorScheme),
+                    ),
                   ],
+
+                  if (isFiltered)
+                    _buildActiveFilterChips(context, classifieds, colorScheme),
                 ],
               ),
             ),
@@ -658,6 +846,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         _searchController.clear();
                         classifieds.selectCategory(null);
                         classifieds.selectCity(null);
+                        classifieds.selectCondition(null);
                         classifieds.search(null);
                       },
                       icon: const Icon(Icons.close, size: 14),
@@ -711,6 +900,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                       _searchController.clear();
                       classifieds.selectCategory(null);
                       classifieds.selectCity(null);
+                      classifieds.selectCondition(null);
                       classifieds.search(null);
                     } else {
                       context.push('/classifieds/new');

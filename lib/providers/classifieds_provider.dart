@@ -24,6 +24,7 @@ class ClassifiedsProvider extends ChangeNotifier {
 
   String? _selectedCategoryId;
   String? _selectedCity;
+  String? _selectedCondition;
   String? _searchQuery;
   ClassifiedSort _sort = ClassifiedSort.newest;
   static const int _pageSize = 24;
@@ -39,6 +40,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   String? get error => _error;
   String? get selectedCategoryId => _selectedCategoryId;
   String? get selectedCity => _selectedCity;
+  String? get selectedCondition => _selectedCondition;
   String? get searchQuery => _searchQuery;
   ClassifiedSort get sort => _sort;
 
@@ -174,6 +176,7 @@ class ClassifiedsProvider extends ChangeNotifier {
       final items = await _service.getAds(
         categoryIds: catIds,
         city: _selectedCity,
+        condition: _selectedCondition,
         searchQuery: _searchQuery,
         sort: _sort,
         limit: _pageSize,
@@ -207,6 +210,7 @@ class ClassifiedsProvider extends ChangeNotifier {
       final nextItems = await _service.getAds(
         categoryIds: catIds,
         city: _selectedCity,
+        condition: _selectedCondition,
         searchQuery: _searchQuery,
         sort: _sort,
         limit: _pageSize,
@@ -235,6 +239,12 @@ class ClassifiedsProvider extends ChangeNotifier {
   void selectCity(String? city) {
     if (_selectedCity == city) return;
     _selectedCity = city;
+    loadInitialAds();
+  }
+
+  void selectCondition(String? condition) {
+    if (_selectedCondition == condition) return;
+    _selectedCondition = condition;
     loadInitialAds();
   }
 

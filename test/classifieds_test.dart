@@ -538,6 +538,7 @@ void main() {
       expect(provider.ads, isEmpty);
       expect(provider.selectedCategoryId, isNull);
       expect(provider.selectedCity, isNull);
+      expect(provider.selectedCondition, isNull);
       expect(provider.sort, ClassifiedSort.newest);
 
       provider.selectCategory('traktori');
@@ -545,6 +546,9 @@ void main() {
 
       provider.selectCity('Kragujevac');
       expect(provider.selectedCity, 'Kragujevac');
+
+      provider.selectCondition('new');
+      expect(provider.selectedCondition, 'new');
 
       provider.changeSort(ClassifiedSort.priceAsc);
       expect(provider.sort, ClassifiedSort.priceAsc);
