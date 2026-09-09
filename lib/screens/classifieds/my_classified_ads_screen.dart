@@ -158,14 +158,17 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                 final ad = list[i];
                 return Card(
                   elevation: 1,
+                  clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
                       color: colorScheme.outlineVariant.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
+                  child: InkWell(
+                    onTap: () => context.push('/classifieds/ad/${ad.id}'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -268,6 +271,11 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                                           style: TextStyle(fontSize: 12)),
                                     ),
                                   IconButton(
+                                    tooltip: 'Pogledaj oglas',
+                                    icon: const Icon(Icons.visibility_outlined, size: 20),
+                                    onPressed: () => context.push('/classifieds/ad/${ad.id}'),
+                                  ),
+                                  IconButton(
                                     tooltip: 'Izmeni',
                                     icon: const Icon(Icons.edit_outlined,
                                         size: 20),
@@ -291,7 +299,8 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                       ],
                     ),
                   ),
-                );
+                ),
+              );
               },
             ),
           );
