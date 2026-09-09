@@ -5,42 +5,41 @@ import 'design_system.dart';
 const double _minTouchTarget = 48.0;
 const double _minTouchTargetCompact = 40.0;
 
-/// Source Sans 3 – čitljiv, moderan font za body tekst.
-/// Nunito – zaobljen, prijatan za naslove (display).
+/// Roboto – klasičan, prepoznatljiv i visoko čitljiv font za ceo sistem.
 TextTheme _buildTextTheme(TextTheme base, Brightness brightness) {
-  final sourceSans = GoogleFonts.sourceSans3TextTheme(base);
-  return sourceSans.copyWith(
-    // Display / Headline — Nunito za naslove
-    displayLarge: GoogleFonts.nunito(textStyle: sourceSans.displayLarge)
+  final roboto = GoogleFonts.robotoTextTheme(base);
+  return roboto.copyWith(
+    // Display / Headline — Roboto
+    displayLarge: GoogleFonts.roboto(textStyle: roboto.displayLarge)
         .copyWith(fontSize: 26, fontWeight: FontWeight.w700, height: 1.25),
-    displayMedium: GoogleFonts.nunito(textStyle: sourceSans.displayMedium)
+    displayMedium: GoogleFonts.roboto(textStyle: roboto.displayMedium)
         .copyWith(fontSize: 22, fontWeight: FontWeight.w700, height: 1.25),
-    displaySmall: GoogleFonts.nunito(textStyle: sourceSans.displaySmall)
+    displaySmall: GoogleFonts.roboto(textStyle: roboto.displaySmall)
         .copyWith(fontSize: 20, fontWeight: FontWeight.w600, height: 1.25),
-    headlineLarge: GoogleFonts.nunito(textStyle: sourceSans.headlineLarge)
+    headlineLarge: GoogleFonts.roboto(textStyle: roboto.headlineLarge)
         .copyWith(fontSize: 18, fontWeight: FontWeight.w600, height: 1.25),
-    headlineMedium: GoogleFonts.nunito(textStyle: sourceSans.headlineMedium)
+    headlineMedium: GoogleFonts.roboto(textStyle: roboto.headlineMedium)
         .copyWith(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25),
-    headlineSmall: GoogleFonts.nunito(textStyle: sourceSans.headlineSmall)
+    headlineSmall: GoogleFonts.roboto(textStyle: roboto.headlineSmall)
         .copyWith(fontSize: 15, fontWeight: FontWeight.w600, height: 1.25),
-    // Title — Source Sans 3
-    titleLarge: sourceSans.titleLarge?.copyWith(
+    // Title — Roboto
+    titleLarge: roboto.titleLarge?.copyWith(
       fontSize: 18, fontWeight: FontWeight.w700, height: 1.25,
     ),
-    titleMedium: sourceSans.titleMedium?.copyWith(
+    titleMedium: roboto.titleMedium?.copyWith(
       fontSize: 15, fontWeight: FontWeight.w600, height: 1.25,
     ),
-    titleSmall: sourceSans.titleSmall?.copyWith(
+    titleSmall: roboto.titleSmall?.copyWith(
       fontSize: 13, fontWeight: FontWeight.w600, height: 1.25,
     ),
-    // Body
-    bodyLarge: sourceSans.bodyLarge?.copyWith(fontSize: 15, height: 1.4),
-    bodyMedium: sourceSans.bodyMedium?.copyWith(fontSize: 13, height: 1.4),
-    bodySmall: sourceSans.bodySmall?.copyWith(fontSize: 11, height: 1.3),
-    // Label
-    labelLarge: sourceSans.labelLarge?.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
-    labelMedium: sourceSans.labelMedium?.copyWith(fontSize: 11),
-    labelSmall: sourceSans.labelSmall?.copyWith(fontSize: 10, height: 1.2),
+    // Body — Roboto
+    bodyLarge: roboto.bodyLarge?.copyWith(fontSize: 15, height: 1.4),
+    bodyMedium: roboto.bodyMedium?.copyWith(fontSize: 13, height: 1.4),
+    bodySmall: roboto.bodySmall?.copyWith(fontSize: 11, height: 1.3),
+    // Label — Roboto
+    labelLarge: roboto.labelLarge?.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
+    labelMedium: roboto.labelMedium?.copyWith(fontSize: 11),
+    labelSmall: roboto.labelSmall?.copyWith(fontSize: 10, height: 1.2),
   );
 }
 
@@ -305,17 +304,16 @@ ThemeData buildAppTheme({bool compact = false}) {
   return base.copyWith(
     scaffoldBackgroundColor: const Color(0xFFF5F5F5),
     canvasColor: Colors.white,
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
-      backgroundColor: Color(0xFF1B5E20),
+      backgroundColor: const Color(0xFF1B5E20),
       foregroundColor: Colors.white,
-      titleTextStyle: TextStyle(
+      titleTextStyle: GoogleFonts.roboto(
         fontSize: 17,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.1,
         color: Colors.white,
-        fontFamily: 'SourceSans3',
       ),
     ),
     textTheme: _buildTextTheme(
