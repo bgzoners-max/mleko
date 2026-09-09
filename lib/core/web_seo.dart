@@ -24,6 +24,9 @@ void setPageMetadata({
   );
 }
 
+/// Dinamički origin / javni base URL za konzistentnost sa Vercel Edge funkcijama
+String get publicBaseUrl => impl.resolveBaseUrl();
+
 /// SEO za pojedinačni proizvod (Google Schema.org Product Rich Snippet)
 void setProductSeo(ProductModel product) {
   final cleanDesc = product.description.trim().isNotEmpty
@@ -44,7 +47,7 @@ void setProductSeo(ProductModel product) {
     'description': cleanDesc,
     'image': product.imageUrls.isNotEmpty
         ? product.imageUrls
-        : ['https://domacimarket.rs/icons/Icon-512.png'],
+        : ['$publicBaseUrl/icons/Icon-512.png'],
     'category': product.category,
     'offers': {
       '@type': 'Offer',
@@ -53,7 +56,7 @@ void setProductSeo(ProductModel product) {
       'availability': product.availableNow
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
-      'url': 'https://domacimarket.rs/product/${product.id}',
+      'url': '$publicBaseUrl/product/${product.id}',
       'priceValidUntil': '${DateTime.now().year + 1}-12-31',
     },
     if (product.avgRating != null && product.reviewCount > 0)
@@ -103,7 +106,7 @@ void setClassifiedAdSeo(ClassifiedAdModel ad) {
       'availability': ad.isActive
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
-      'url': 'https://domacimarket.rs/classifieds/ad/${ad.id}',
+      'url': '$publicBaseUrl/classifieds/ad/${ad.id}',
     },
   };
 
@@ -143,7 +146,7 @@ void setSellerSeo({
     'name': name,
     'description': cleanBio,
     if (avatarUrl != null && avatarUrl.isNotEmpty) 'image': avatarUrl,
-    'url': 'https://domacimarket.rs/seller/$id',
+    'url': '$publicBaseUrl/seller/$id',
     if (city != null && city.isNotEmpty)
       'address': {
         '@type': 'PostalAddress',
@@ -186,7 +189,7 @@ void setCategorySeo({
     '@type': 'CollectionPage',
     'name': name,
     'description': desc,
-    'url': 'https://domacimarket.rs${path ?? '/categories'}',
+    'url': '$publicBaseUrl${path ?? '/categories'}',
   };
 
   setPageMetadata(

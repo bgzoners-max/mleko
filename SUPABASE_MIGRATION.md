@@ -2,9 +2,9 @@
 
 Aplikacija sada koristi samo Supabase. Firebase je uklonjen.
 
-## 1. Pokreni SQL schema
+## 1. Pokreni SQL migracije
 
-U Supabase Dashboard → **SQL Editor** → New query. Kopiraj sadržaj iz `supabase_schema.sql` i izvrši.
+Primeniti migracije iz `supabase/migrations/` preko `supabase db push` ili po redosledu u Supabase Dashboard SQL Editoru. (Fajl `supabase_schema.sql` u root-u je legacy arhivski primer).
 
 ## 2. Kreiraj Storage bucket-e
 

@@ -234,6 +234,27 @@ void main() {
       final dbMap = product.toDbMap(includeId: false);
       expect(dbMap.containsKey('id'), isFalse);
     });
+
+    test('omits created_at when includeCreatedAt is false', () {
+      final product = ProductModel(
+        id: 'prod-new',
+        sellerId: 'seller-1',
+        category: 'Mleko',
+        name: 'Kozje mleko',
+        pricePerKg: 250,
+        minOrderKg: 1,
+        availableKg: 10,
+        description: 'Sveže kozje mleko',
+        imageUrls: const [],
+        pickupOptions: const ['Lično'],
+        location: 'Beograd',
+        createdAt: DateTime.now(),
+      );
+
+      final dbMap = product.toDbMap(includeCreatedAt: false);
+      expect(dbMap.containsKey('created_at'), isFalse);
+      expect(product.toDbMap().containsKey('created_at'), isTrue);
+    });
   });
 
   group('NotificationModel.fromJson', () {

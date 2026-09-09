@@ -24,6 +24,9 @@ void main() {
     'get_product_ratings',
     'get_seller_stats',
     'get_seller_loyalty_stats',
+    'get_product_order_count',
+    'is_seller_verified',
+    'search_products_fts',
   };
 
   final files = dir

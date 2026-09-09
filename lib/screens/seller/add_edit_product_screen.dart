@@ -55,6 +55,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   List<SellerDeliveryPointModel> _sellerDeliveryPoints = const [];
   ProductDeliveryMode _deliveryMode = ProductDeliveryMode.none;
   final Set<String> _selectedDeliveryPointIds = <String>{};
+  DateTime? _existingCreatedAt;
 
   bool get isEdit => widget.productId != null && widget.productId!.isNotEmpty;
 
@@ -165,6 +166,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         ..addAll(p.selectedDeliveryPointIds);
       _imageUrls =
           List<String>.from(p.imageUrls.take(AppConstants.maxProductImages));
+      _existingCreatedAt = p.createdAt;
       setState(() {});
     }
   }
@@ -381,7 +383,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           _deliveryMode == ProductDeliveryMode.selectedPoints
               ? _selectedDeliveryPointIds.toList(growable: false)
               : const [],
-      createdAt: DateTime.now(),
+      createdAt: _existingCreatedAt ?? DateTime.now(),
     );
 
     // 🚀 NOVI SISTEM: Automatsko logovanje, praćenje performansi i bezbedno hvatanje grešaka

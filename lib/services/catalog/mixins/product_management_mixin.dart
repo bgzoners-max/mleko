@@ -63,7 +63,7 @@ mixin ProductManagementMixin {
 
   Future<void> updateProduct(ProductModel product) async {
     try {
-      final data = product.toDbMap(includeId: false)
+      final data = product.toDbMap(includeId: false, includeCreatedAt: false)
         ..remove('delivery_mode');
       await client.from('products').update(data).eq('id', product.id);
       await setProductDeliveryScope(

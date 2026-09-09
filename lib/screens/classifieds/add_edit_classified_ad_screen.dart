@@ -37,6 +37,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   String _condition = 'used';
   bool _phonePublic = true;
   String? _selectedCategoryName;
+  bool? _selectedCategoryConditionApplicable;
 
   final List<String> _existingImages = [];
   final List<Uint8List> _newImageBytes = [];
@@ -46,6 +47,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
   bool _loading = false;
   bool _initializing = false;
+  DateTime? _existingCreatedAt;
 
   bool get isEdit => widget.adId != null;
 
@@ -77,10 +79,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   }
 
   bool get _isConditionApplicable =>
+      _selectedCategoryConditionApplicable ??
       ClassifiedAdModel.isConditionApplicableForCategory(
         categoryId: _selectedCategoryId,
         categoryName: _selectedCategoryName,
         title: _titleController.text,
+        categoryConditionApplicable: _selectedCategoryConditionApplicable,
       );
 
   void _onTitleChanged() {
@@ -93,15 +97,16 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     }
   }
 
-  void _selectCategory(String id, String name) {
+  void _selectCategory(
+    String id,
+    String name, {
+    bool? isConditionApplicable,
+  }) {
     setState(() {
       _selectedCategoryId = id;
       _selectedCategoryName = name;
-      final isApplicable = ClassifiedAdModel.isConditionApplicableForCategory(
-        categoryId: id,
-        categoryName: name,
-        title: _titleController.text,
-      );
+      _selectedCategoryConditionApplicable = isConditionApplicable;
+      final isApplicable = _isConditionApplicable;
       if (!isApplicable) {
         _condition = 'not_applicable';
       } else if (_condition == 'not_applicable') {
@@ -125,14 +130,15 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _selectedCategoryName = ad.categoryName;
         _currency = ad.currency;
         _priceType = ad.priceType;
-        final isApplicable = ClassifiedAdModel.isConditionApplicableForCategory(
-          categoryId: ad.categoryId,
-          categoryName: ad.categoryName,
-          title: ad.title,
-        );
+        final catModel =
+            context.read<ClassifiedsProvider>().findCategory(ad.categoryId);
+        _selectedCategoryConditionApplicable =
+            catModel?.isConditionApplicable ?? ad.categoryConditionApplicable;
+        final isApplicable = _isConditionApplicable;
         _condition = isApplicable ? ad.condition : 'not_applicable';
         _phonePublic = ad.phonePublic;
         _existingImages.addAll(ad.images);
+        _existingCreatedAt = ad.createdAt;
       }
     } catch (_) {
       if (mounted) {
@@ -406,6 +412,8 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                                     _selectCategory(
                                       sub.id,
                                       fullPath,
+                                      isConditionApplicable:
+                                          sub.isConditionApplicable,
                                     );
                                     Navigator.pop(ctx);
                                   }
@@ -468,6 +476,8 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                             _selectCategory(
                               cat.id,
                               cat.name,
+                              isConditionApplicable:
+                                  cat.isConditionApplicable,
                             );
                             Navigator.pop(ctx);
                           }
@@ -546,7 +556,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         phonePublic: _phonePublic,
         status: 'active',
-        createdAt: DateTime.now(),
+        createdAt: _existingCreatedAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
@@ -814,7 +824,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                   // Stanje predmeta (samo za tehniku, vozila, alate, nameštaj itd.; sakriveno za životinje, voće, povrće, usluge...)
                   if (_isConditionApplicable) ...[
                     DropdownButtonFormField<String>(
-                      value: (_condition == 'new' || _condition == 'used')
+                      initialValue: (_condition == 'new' || _condition == 'used')
                           ? _condition
                           : 'used',
                       decoration:

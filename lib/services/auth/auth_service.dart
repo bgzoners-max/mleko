@@ -98,12 +98,10 @@ class AuthService {
   Future<bool> checkPhoneExists(String phone) async {
     try {
       final trimmed = phone.trim();
+      if (trimmed.isEmpty) return false;
       final res = await Supabase.instance.client
-          .from('profiles')
-          .select('id')
-          .eq('phone', trimmed)
-          .maybeSingle();
-      return res != null;
+          .rpc('check_phone_exists', params: {'p_phone': trimmed});
+      return res == true;
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

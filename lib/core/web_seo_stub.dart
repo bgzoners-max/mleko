@@ -8,3 +8,5 @@ void setPageMetadata({
   String? robots,
   Map<String, dynamic>? jsonLd,
 }) {}
+
+String resolveBaseUrl([String? origin]) => origin ?? 'https://domacimarket.rs';

@@ -248,7 +248,10 @@ class ProductModel {
   /// Mapa za perzistenciju u tabelu `products`.
   /// Isključuje izvedena polja iz SQL view-a (seller_is_verified, avg_rating, review_count)
   /// i relacione kolekcije (selected_delivery_point_ids) koje ne postoje kao kolone u tabeli `products`.
-  Map<String, dynamic> toDbMap({bool includeId = true}) {
+  Map<String, dynamic> toDbMap({
+    bool includeId = true,
+    bool includeCreatedAt = true,
+  }) {
     return {
       if (includeId && id.isNotEmpty) 'id': id,
       'seller_id': sellerId,
@@ -266,7 +269,7 @@ class ProductModel {
       'is_domestic': isDomestic,
       'available_now': availableNow,
       'delivery_mode': deliveryMode.dbValue,
-      'created_at': createdAt.toIso8601String(),
+      if (includeCreatedAt) 'created_at': createdAt.toIso8601String(),
     };
   }
 

@@ -19,6 +19,7 @@ class ClassifiedAdModel {
   final DateTime updatedAt;
   final String? sellerName;
   final String? sellerAvatar;
+  final bool? categoryConditionApplicable;
 
   const ClassifiedAdModel({
     required this.id,
@@ -41,6 +42,7 @@ class ClassifiedAdModel {
     required this.updatedAt,
     this.sellerName,
     this.sellerAvatar,
+    this.categoryConditionApplicable,
   });
 
   bool get isActive => status == 'active';
@@ -227,13 +229,18 @@ class ClassifiedAdModel {
   }
 
   /// Proverava da li kategorija ili oglas podržava stanje ("Novo" / "Polovno").
-  /// Životinje uopšte (mačići, psi, stoka...), voće, povrće, sadnice, hrana,
-  /// usluge i nekretnine nemaju stanje "Novo/Polovno".
+  /// Ako je poznata vrednost sa servera (categoryConditionApplicable), ona je primarni izvor istine.
+  /// U suprotnom, koristi se lokalna fallback heuristika.
   static bool isConditionApplicableForCategory({
     String? categoryId,
     String? categoryName,
     String? title,
+    bool? categoryConditionApplicable,
   }) {
+    if (categoryConditionApplicable != null) {
+      return categoryConditionApplicable;
+    }
+
     if (categoryId != null &&
         _inapplicableCategoryIds.contains(categoryId.trim().toLowerCase())) {
       return false;
@@ -266,6 +273,7 @@ class ClassifiedAdModel {
         categoryId: categoryId,
         categoryName: categoryName,
         title: title,
+        categoryConditionApplicable: categoryConditionApplicable,
       );
 
   /// Da li treba prikazati bedž stanja ("Novo" / "Polovno")
@@ -337,10 +345,15 @@ class ClassifiedAdModel {
       sellerName: profile?['farm_name'] as String? ??
           profile?['display_name'] as String?,
       sellerAvatar: profile?['profile_image_url'] as String?,
+      categoryConditionApplicable:
+          cat?['is_condition_applicable'] as bool?,
     );
   }
 
-  Map<String, dynamic> toJson({bool includeId = true}) {
+  Map<String, dynamic> toJson({
+    bool includeId = true,
+    bool includeCreatedAt = true,
+  }) {
     return {
       if (includeId && id.isNotEmpty) 'id': id,
       'user_id': userId,
@@ -356,8 +369,55 @@ class ClassifiedAdModel {
       if (phone != null) 'phone': phone,
       'phone_public': phonePublic,
       'status': status,
-      'created_at': createdAt.toIso8601String(),
+      if (includeCreatedAt) 'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
+  }
+
+  ClassifiedAdModel copyWith({
+    String? id,
+    String? userId,
+    String? title,
+    String? description,
+    double? price,
+    String? currency,
+    String? priceType,
+    String? categoryId,
+    String? categoryName,
+    String? condition,
+    List<String>? images,
+    String? city,
+    String? phone,
+    bool clearPhone = false,
+    bool? phonePublic,
+    String? status,
+    int? viewsCount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? sellerName,
+    String? sellerAvatar,
+  }) {
+    return ClassifiedAdModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      currency: currency ?? this.currency,
+      priceType: priceType ?? this.priceType,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      condition: condition ?? this.condition,
+      images: images ?? this.images,
+      city: city ?? this.city,
+      phone: clearPhone ? null : (phone ?? this.phone),
+      phonePublic: phonePublic ?? this.phonePublic,
+      status: status ?? this.status,
+      viewsCount: viewsCount ?? this.viewsCount,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      sellerName: sellerName ?? this.sellerName,
+      sellerAvatar: sellerAvatar ?? this.sellerAvatar,
+    );
   }
 }

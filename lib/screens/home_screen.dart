@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -216,7 +217,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: RefreshIndicator(
                     onRefresh: _onRefresh,
                     child: CustomScrollView(
-                      cacheExtent: 600.0,
+                      scrollCacheExtent:
+                          const ScrollCacheExtent.pixels(600.0),
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
                         if (!isWide) _buildStickySearch(context),

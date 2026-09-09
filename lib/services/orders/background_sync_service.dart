@@ -84,7 +84,7 @@ class BackgroundSyncService {
 
     await Supabase.initialize(
       url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
+      publishableKey: SupabaseConfig.publishableKey,
     );
   }
 }

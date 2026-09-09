@@ -35,7 +35,7 @@ class GlobalScrollBehavior extends MaterialScrollBehavior {
   Widget buildScrollbar(
       BuildContext context, Widget child, ScrollableDetails details) {
     // Na horizontalnim listama (kategorije, filteri, tabovi) nikada ne prikazujemo scrollbar
-    if (details.direction == Axis.horizontal) {
+    if (axisDirectionToAxis(details.direction) == Axis.horizontal) {
       return child;
     }
     // Na vertikalnim listama na desktopu/webu zadržavamo suptilan scrollbar
@@ -174,7 +174,7 @@ void main() async {
   await SupabaseConfig.load();
   await Supabase.initialize(
     url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
+    publishableKey: SupabaseConfig.publishableKey,
   );
 
   try {

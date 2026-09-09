@@ -189,6 +189,7 @@ export type Database = {
           created_at: string
           icon_name: string
           id: string
+          is_condition_applicable: boolean
           name: string
           parent_id: string | null
           sort_order: number
@@ -197,6 +198,7 @@ export type Database = {
           created_at?: string
           icon_name: string
           id: string
+          is_condition_applicable?: boolean
           name: string
           parent_id?: string | null
           sort_order?: number
@@ -205,6 +207,7 @@ export type Database = {
           created_at?: string
           icon_name?: string
           id?: string
+          is_condition_applicable?: boolean
           name?: string
           parent_id?: string | null
           sort_order?: number
@@ -1479,6 +1482,88 @@ export type Database = {
         }
         Relationships: []
       }
+      public_classified_ads: {
+        Row: {
+          category_id: string | null
+          city: string | null
+          condition: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          id: string | null
+          images: string[] | null
+          phone: string | null
+          phone_public: boolean | null
+          price: number | null
+          price_type: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          views_count: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          city?: string | null
+          condition?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string | null
+          images?: string[] | null
+          phone?: never
+          phone_public?: boolean | null
+          price?: number | null
+          price_type?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          city?: string | null
+          condition?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string | null
+          images?: string[] | null
+          phone?: never
+          phone_public?: boolean | null
+          price?: number | null
+          price_type?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classified_ads_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "classified_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classified_ads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classified_ads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           city: string | null
@@ -1637,6 +1722,7 @@ export type Database = {
         Returns: boolean
       }
       check_email_exists: { Args: { p_email: string }; Returns: boolean }
+      check_phone_exists: { Args: { p_phone: string }; Returns: boolean }
       cleanup_push_tokens: {
         Args: { p_keep_per_user?: number; p_max_age?: string }
         Returns: number
@@ -1676,6 +1762,7 @@ export type Database = {
             Returns: string
           }
       get_buyer_stats_dashboard: { Args: { p_buyer_id: string }; Returns: Json }
+      get_classified_ad_phone: { Args: { p_ad_id: string }; Returns: string }
       get_conversation_info_with_profile: {
         Args: { p_conversation_id: string }
         Returns: {

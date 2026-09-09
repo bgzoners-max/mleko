@@ -60,7 +60,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
     final Map<String, String> sellerNames = {};
     if (sellerIds.isNotEmpty) {
       final profiles = await Supabase.instance.client
-          .from('profiles')
+          .from('public_profiles')
           .select('id, farm_name, display_name')
           .inFilter('id', sellerIds);
       for (final p in profiles as List) {

@@ -3,6 +3,13 @@
 import 'dart:convert';
 import 'dart:html' as html;
 
+String resolveBaseUrl([String? origin]) {
+  if (origin != null && origin.isNotEmpty) return origin;
+  final windowOrigin = html.window.location.origin;
+  if (windowOrigin.isNotEmpty) return windowOrigin;
+  return 'https://domacimarket.rs';
+}
+
 void setPageMetadata({
   required String title,
   String? description,
@@ -13,9 +20,7 @@ void setPageMetadata({
   String? robots,
   Map<String, dynamic>? jsonLd,
 }) {
-  final origin = html.window.location.origin.isNotEmpty
-      ? html.window.location.origin
-      : 'https://domacimarket.rs';
+  final origin = resolveBaseUrl();
 
   // 1. Title
   html.document.title = title;

@@ -33,6 +33,9 @@ class SupabaseConfig {
             type: ErrorType.configuration,
           ));
 
+  /// Alias za publishableKey u skladu sa novijim Supabase SDK-om
+  static String get publishableKey => anonKey;
+
   /// Provera da li je konfiguracija prisutna — bez barijanja greške.
   static bool get isConfigured {
     final u = _urlFromDefine.isNotEmpty

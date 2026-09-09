@@ -6,6 +6,7 @@ class ClassifiedCategoryModel {
   final String iconName;
   final String? parentId;
   final int sortOrder;
+  final bool isConditionApplicable;
   final List<ClassifiedCategoryModel> subcategories;
 
   const ClassifiedCategoryModel({
@@ -14,6 +15,7 @@ class ClassifiedCategoryModel {
     required this.iconName,
     this.parentId,
     this.sortOrder = 0,
+    this.isConditionApplicable = true,
     this.subcategories = const [],
   });
 
@@ -29,6 +31,8 @@ class ClassifiedCategoryModel {
       iconName: json['icon_name'] as String? ?? 'category',
       parentId: json['parent_id'] as String?,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      isConditionApplicable:
+          (json['is_condition_applicable'] as bool?) ?? true,
       subcategories: subcategories,
     );
   }
@@ -40,10 +44,12 @@ class ClassifiedCategoryModel {
       'icon_name': iconName,
       'parent_id': parentId,
       'sort_order': sortOrder,
+      'is_condition_applicable': isConditionApplicable,
     };
   }
 
   ClassifiedCategoryModel copyWith({
+    bool? isConditionApplicable,
     List<ClassifiedCategoryModel>? subcategories,
   }) {
     return ClassifiedCategoryModel(
@@ -52,6 +58,8 @@ class ClassifiedCategoryModel {
       iconName: iconName,
       parentId: parentId,
       sortOrder: sortOrder,
+      isConditionApplicable:
+          isConditionApplicable ?? this.isConditionApplicable,
       subcategories: subcategories ?? this.subcategories,
     );
   }
@@ -449,7 +457,9 @@ class ClassifiedCategoryModel {
       case 'water_damage':
         return Icons.water_damage;
       case 'water_heater':
-        return Icons.water_drop;
+        // U Flutter Icons klasi ne postoji 'water_heater' (to je noviji Google Material Symbol, a Flutter koristi MaterialIcons font).
+        // Za kategoriju Bojleri kao najbliži semantički pandan koristi se heat_pump.
+        return Icons.heat_pump;
       case 'wb_shade':
         return Icons.wb_shade;
       case 'wine_bar':
@@ -480,21 +490,31 @@ class ClassifiedCategoryModel {
     return normalize(a).compareTo(normalize(b));
   }
 
+  /// Primarno sortiranje po definisanom redosledu iz baze (sortOrder),
+  /// a sekundarno po srpskoj abecedi za kategorije sa istim prioritetom.
+  static int compareCategories(ClassifiedCategoryModel a, ClassifiedCategoryModel b) {
+    if (a.sortOrder != b.sortOrder) {
+      return a.sortOrder.compareTo(b.sortOrder);
+    }
+    return compareSerbian(a.name, b.name);
+  }
+
   /// Minimalni offline fallback za slučaj prvog pokretanja bez interneta i keša.
+  /// Usklađeno sa redosledom stubova iz baze (migracija 20260903120000).
   /// Pun set i sve hijerarhije podkategorija se dinamički učitavaju iz Supabase baze (Single Source of Truth)
   /// i automatski keširaju u SharedPreferences.
   static const List<ClassifiedCategoryModel> fallbackCategories = [
-    ClassifiedCategoryModel(id: 'dom_basta', name: 'Dom i bašta', iconName: 'chair', sortOrder: 10),
-    ClassifiedCategoryModel(id: 'gradjevinarstvo', name: 'Građevinarstvo', iconName: 'foundation', sortOrder: 20),
-    ClassifiedCategoryModel(id: 'ljubimci', name: 'Ljubimci', iconName: 'pets', sortOrder: 30),
-    ClassifiedCategoryModel(id: 'masine_alati', name: 'Mašine i alati', iconName: 'handyman', sortOrder: 40),
-    ClassifiedCategoryModel(id: 'nekretnine', name: 'Nekretnine', iconName: 'home_work', sortOrder: 50),
-    ClassifiedCategoryModel(id: 'odeca_obuca', name: 'Odeća i obuća', iconName: 'checkroom', sortOrder: 60),
-    ClassifiedCategoryModel(id: 'poljoprivreda', name: 'Poljoprivreda', iconName: 'agriculture', sortOrder: 70),
-    ClassifiedCategoryModel(id: 'sport_hobi', name: 'Sport i hobi', iconName: 'sports_soccer', sortOrder: 80),
-    ClassifiedCategoryModel(id: 'tehnika', name: 'Tehnika', iconName: 'laptop', sortOrder: 90),
-    ClassifiedCategoryModel(id: 'telefoni', name: 'Telefoni', iconName: 'smartphone', sortOrder: 100),
-    ClassifiedCategoryModel(id: 'usluge', name: 'Usluge', iconName: 'work', sortOrder: 110),
-    ClassifiedCategoryModel(id: 'vozila', name: 'Vozila', iconName: 'directions_car', sortOrder: 120),
+    ClassifiedCategoryModel(id: 'poljoprivreda', name: 'Poljoprivreda', iconName: 'agriculture', sortOrder: 10),
+    ClassifiedCategoryModel(id: 'vozila', name: 'Vozila', iconName: 'directions_car', sortOrder: 20),
+    ClassifiedCategoryModel(id: 'masine_alati', name: 'Mašine i alati', iconName: 'handyman', sortOrder: 30),
+    ClassifiedCategoryModel(id: 'dom_basta', name: 'Dom i bašta', iconName: 'chair', sortOrder: 40),
+    ClassifiedCategoryModel(id: 'telefoni', name: 'Telefoni', iconName: 'smartphone', sortOrder: 50),
+    ClassifiedCategoryModel(id: 'tehnika', name: 'Tehnika', iconName: 'laptop', sortOrder: 60),
+    ClassifiedCategoryModel(id: 'nekretnine', name: 'Nekretnine', iconName: 'home_work', sortOrder: 70, isConditionApplicable: false),
+    ClassifiedCategoryModel(id: 'gradjevinarstvo', name: 'Građevinarstvo', iconName: 'foundation', sortOrder: 80),
+    ClassifiedCategoryModel(id: 'odeca_obuca', name: 'Odeća i obuća', iconName: 'checkroom', sortOrder: 90),
+    ClassifiedCategoryModel(id: 'sport_hobi', name: 'Sport i hobi', iconName: 'sports_soccer', sortOrder: 100),
+    ClassifiedCategoryModel(id: 'ljubimci', name: 'Ljubimci', iconName: 'pets', sortOrder: 110, isConditionApplicable: false),
+    ClassifiedCategoryModel(id: 'usluge', name: 'Usluge', iconName: 'work', sortOrder: 120, isConditionApplicable: false),
   ];
 }

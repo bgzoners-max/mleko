@@ -74,7 +74,7 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
 
   Future<String> _fetchSellerName() async {
     final prof = await Supabase.instance.client
-        .from('profiles')
+        .from('public_profiles')
         .select('farm_name, display_name')
         .eq('id', widget.sellerId)
         .maybeSingle();

@@ -12,7 +12,7 @@ class ClassifiedsProvider extends ChangeNotifier {
 
   List<ClassifiedCategoryModel> _categories =
       List.from(ClassifiedCategoryModel.fallbackCategories)
-        ..sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+        ..sort(ClassifiedCategoryModel.compareCategories);
   List<ClassifiedAdModel> _ads = [];
   bool _categoriesLoaded = false;
   bool _loading = false;
@@ -59,7 +59,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     try {
       final items = await _service.getCategories();
       if (items.isNotEmpty) {
-        items.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+        items.sort(ClassifiedCategoryModel.compareCategories);
         _categories = items;
         _categoriesLoaded = true;
         notifyListeners();
@@ -69,7 +69,7 @@ class ClassifiedsProvider extends ChangeNotifier {
       if (_categories.isEmpty) {
         final fallback = List<ClassifiedCategoryModel>.from(
             ClassifiedCategoryModel.fallbackCategories)
-          ..sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+          ..sort(ClassifiedCategoryModel.compareCategories);
         _categories = fallback;
         notifyListeners();
       }
@@ -98,6 +98,11 @@ class ClassifiedsProvider extends ChangeNotifier {
       currentPath.removeLast();
     }
     return false;
+  }
+
+  /// Rekurzivno pronalazi kategoriju po ID-u u stablu kategorija.
+  ClassifiedCategoryModel? findCategory(String targetId) {
+    return _findCategoryNode(targetId, _categories);
   }
 
   /// Returns the root category corresponding to the selected category (if any).

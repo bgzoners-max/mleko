@@ -26,7 +26,7 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
   void initState() {
     super.initState();
     _sellersFuture = Supabase.instance.client
-        .from('profiles')
+        .from('public_profiles')
         .select('id, farm_name, location, city, lat, lng, profile_image_url')
         .eq('role', 'seller')
         .not('lat', 'is', null)

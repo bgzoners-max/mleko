@@ -16,12 +16,7 @@ enum ClassifiedSort {
 }
 
 class ClassifiedsService {
-  static final ClassifiedsService _instance = ClassifiedsService._();
-  factory ClassifiedsService({SupabaseClient? client}) {
-    if (client != null) return ClassifiedsService._(client: client);
-    return _instance;
-  }
-  ClassifiedsService._({SupabaseClient? client}) : _customClient = client;
+  ClassifiedsService({SupabaseClient? client}) : _customClient = client;
   ClassifiedsService.test() : _customClient = null;
 
   final SupabaseClient? _customClient;
@@ -46,17 +41,12 @@ class ClassifiedsService {
     ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
       final rawChildren = childrenByParent[node.id] ?? [];
       final nestedChildren = rawChildren.map(buildSubtree).toList();
-      nestedChildren.sort((a, b) {
-        if (a.sortOrder != b.sortOrder) {
-          return a.sortOrder.compareTo(b.sortOrder);
-        }
-        return ClassifiedCategoryModel.compareSerbian(a.name, b.name);
-      });
+      nestedChildren.sort(ClassifiedCategoryModel.compareCategories);
       return node.copyWith(subcategories: nestedChildren);
     }
 
     final list = roots.map(buildSubtree).toList();
-    list.sort((a, b) => ClassifiedCategoryModel.compareSerbian(a.name, b.name));
+    list.sort(ClassifiedCategoryModel.compareCategories);
     return list;
   }
 
@@ -102,7 +92,29 @@ class ClassifiedsService {
     return const [];
   }
 
-  /// Paginirani upit za oglase sa dinamičkim filterima
+  /// Kolone oglasa bez kolone 'phone' (zaštita privatnosti na nivou baze / API-ja).
+  /// Telefon se ovlašćenim licima dobavlja kontrolisano preko RPC funkcije [getAdPhone].
+  static const String _kAdColumns = '''
+    id,
+    user_id,
+    title,
+    description,
+    price,
+    currency,
+    price_type,
+    category_id,
+    condition,
+    images,
+    city,
+    phone_public,
+    status,
+    views_count,
+    created_at,
+    updated_at
+  ''';
+
+  /// Preuzima listu aktivnih oglasa uz opciono filtriranje i sortiranje.
+  /// Napomena: iz bezbednosnih razloga, ova metoda nikada ne preuzima brojeve telefona.
   Future<List<ClassifiedAdModel>> getAds({
     String? categoryId,
     List<String>? categoryIds,
@@ -118,9 +130,9 @@ class ClassifiedsService {
   }) async {
     try {
       var query = _client.from('classified_ads').select('''
-        *,
+        $_kAdColumns,
         profiles:user_id(display_name, farm_name, profile_image_url),
-        classified_categories:category_id(name)
+        classified_categories:category_id(name, is_condition_applicable)
       ''').eq('status', 'active');
 
       if (categoryIds != null && categoryIds.isNotEmpty) {
@@ -184,17 +196,36 @@ class ClassifiedsService {
     }
   }
 
-  /// Učitava detalje pojedinačnog oglasa
+  /// Bezbedno dobavlja broj telefona za dati oglas preko SECURITY DEFINER funkcije.
+  /// Vraća broj ako je oglas aktivan i `phone_public = true`, ili ako je trenutni korisnik vlasnik/admin.
+  Future<String?> getAdPhone(String adId) async {
+    try {
+      final phoneRes = await _client.rpc(
+        'get_classified_ad_phone',
+        params: {'p_ad_id': adId},
+      );
+      return phoneRes as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Učitava detalje pojedinačnog oglasa (uključujući bezbedno preuzimanje telefona za ovlašćena lica)
   Future<ClassifiedAdModel?> getAd(String id) async {
     try {
       final res = await _client.from('classified_ads').select('''
-        *,
+        $_kAdColumns,
         profiles:user_id(display_name, farm_name, profile_image_url),
-        classified_categories:category_id(name)
+        classified_categories:category_id(name, is_condition_applicable)
       ''').eq('id', id).maybeSingle();
 
       if (res == null) return null;
-      return ClassifiedAdModel.fromJson(res);
+
+      final phone = await getAdPhone(id);
+      final adData = Map<String, dynamic>.from(res);
+      adData['phone'] = phone;
+
+      return ClassifiedAdModel.fromJson(adData);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -206,8 +237,8 @@ class ClassifiedsService {
       final res = await _client
           .from('classified_ads')
           .select('''
-            *,
-            classified_categories:category_id(name)
+            $_kAdColumns,
+            classified_categories:category_id(name, is_condition_applicable)
           ''')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
@@ -224,9 +255,14 @@ class ClassifiedsService {
   Future<ClassifiedAdModel> createAd(ClassifiedAdModel ad) async {
     try {
       final data = ad.toJson(includeId: false);
-      final res =
-          await _client.from('classified_ads').insert(data).select().single();
-      return ClassifiedAdModel.fromJson(res);
+      final res = await _client
+          .from('classified_ads')
+          .insert(data)
+          .select(_kAdColumns)
+          .single();
+      final createdData = Map<String, dynamic>.from(res);
+      createdData['phone'] = ad.phone;
+      return ClassifiedAdModel.fromJson(createdData);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -235,7 +271,7 @@ class ClassifiedsService {
   /// Ažurira postojeći oglas
   Future<void> updateAd(ClassifiedAdModel ad) async {
     try {
-      final data = ad.toJson(includeId: false);
+      final data = ad.toJson(includeId: false, includeCreatedAt: false);
       data['updated_at'] = DateTime.now().toIso8601String();
       await _client.from('classified_ads').update(data).eq('id', ad.id);
     } catch (e, st) {
@@ -264,8 +300,12 @@ class ClassifiedsService {
     }
   }
 
-  /// Povećava brojač pregleda oglasa
+  final Set<String> _viewedAdIdsInSession = {};
+
+  /// Povećava brojač pregleda oglasa uz zaštitu od višestrukog pozivanja u istoj sesiji
   Future<void> incrementViews(String id) async {
+    if (_viewedAdIdsInSession.contains(id)) return;
+    _viewedAdIdsInSession.add(id);
     try {
       await _client.rpc('increment_classified_ad_views', params: {'ad_id': id});
     } catch (_) {

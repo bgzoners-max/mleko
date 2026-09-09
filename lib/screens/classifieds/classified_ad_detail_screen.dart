@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../../models/classified_ad_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../services/communication/chat_service.dart';
+import '../../supabase_config.dart';
 import '../../widgets/app_error_retry.dart';
 
 class ClassifiedAdDetailScreen extends StatefulWidget {
@@ -64,7 +66,11 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   }
 
   Future<void> _shareAd(ClassifiedAdModel ad) async {
-    final url = 'https://domacimarket.rs/classifieds/ad/${ad.id}';
+    final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
+        ? SupabaseConfig.shareBaseUrl
+        : (kIsWeb ? Uri.base.origin : 'https://domacimarket.rs');
+    final base = rawBase.replaceAll(RegExp(r'/+$'), '');
+    final url = '$base/classifieds/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}\n$url';
     await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));
   }

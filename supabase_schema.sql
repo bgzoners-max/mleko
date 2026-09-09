@@ -1,4 +1,12 @@
--- Pokreni u Supabase SQL Editor (Dashboard → SQL Editor → New query)
+-- ============================================================================
+-- [LEGACY / REFERENCE ONLY - NIJE ZA PRODUKCIJSKO POKRETANJE]
+-- UPOZORENJE: Ovaj fajl sadrži samo inicijalnu bazičnu šemu iz rane faze projekta.
+-- ZVANIČNI I JEDINI IZVOR ISTINE SU MIGRACIJE U: supabase/migrations/
+-- Za novu ili postojeću bazu koristite:
+--   supabase db push
+-- ili primenite migracije sekvencijalno iz foldera supabase/migrations/
+-- Pokretanje ovog fajla u celosti može pregaziti novije RLS politike, kolone i tabele!
+-- ============================================================================
 
 -- 1. Profili korisnika (povezani sa auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (

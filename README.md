@@ -44,7 +44,7 @@ U istom job-u se lokalno regenerišu Supabase TypeScript tipovi i CI pada ako ch
 
 2. **Supabase**
 
-   Aplikacija koristi Supabase za auth, bazu i storage. Vidi **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** – posebno važno je pokrenuti `supabase_schema.sql` u SQL Editor-u u Supabase Dashboard-u.
+   Aplikacija koristi Supabase za auth, bazu i storage. Zvanični izvor istine za šemu baze su migracije u **`supabase/migrations/`** (primeniti preko `supabase db push` ili CI/CD). Vidi **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** za detalje.
 
 3. **Projekat**
 

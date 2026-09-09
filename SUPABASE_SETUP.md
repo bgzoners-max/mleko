@@ -9,18 +9,22 @@ Aplikacija koristi **Supabase** za bazu podataka, storage i autentifikaciju.
 2. **New Project** → unesi ime (npr. `mleko`), lozinku za DB, region (npr. `Frankfurt`)
 3. Sačekaj da se projekat kreira (~2 min)
 
-## 2. Pokreni SQL shemu (OBAVEZNO)
+## 2. Pokreni SQL migracije (OBAVEZNO)
 
-Bez ovoga aplikacija neće raditi – greška „Could not find the table 'public.profiles'".
+Bez ovoga aplikacija neće raditi – šema zahteva tabele `profiles`, `products`, `orders`, `classified_ads`, `notifications`, itd.
 
-1. U Supabase Dashboard: **SQL Editor** → **New query**
-2. Otvori fajl `supabase_schema.sql` iz root-a projekta
-3. **Kopiraj ceo sadržaj** i nalepi u SQL Editor
-4. Klikni **Run** (ili Ctrl+Enter)
+Zvanični i jedini izvor istine za bazu su migracije u folderu **`supabase/migrations/`**.
 
-To kreira tabele: `profiles`, `products`, `orders` i trigger za auto-kreiranje profila pri registraciji.
+**Preporučeni način (Supabase CLI):**
+```bash
+supabase db push
+# ili
+supabase migration up
+```
 
-**Ako si već pokretao stari SQL:** ponovo pokreni ceo `supabase_schema.sql` – ažurirani trigger popravlja RLS grešku.
+**Ručni način (preko Supabase Dashboard SQL Editora):**
+Ukoliko postavljate novu bazu bez CLI alata, primenite migracije redom po timestamp prefiksu iz foldera `supabase/migrations/`.
+*(Fajl `supabase_schema.sql` u root-u je označen kao legacy i služi samo kao istorijska referenca početne šeme).*
 
 ## 3. Auth podešavanja
 

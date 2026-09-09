@@ -39,7 +39,7 @@ void main() {
     });
 
     test('brandLogoAsset returns correct path for car brands and null for non-car brands', () {
-      final audi = ClassifiedCategoryModel(
+      final audi = const ClassifiedCategoryModel(
         id: 'auto_audi',
         name: 'Audi',
         iconName: 'directions_car',
@@ -47,7 +47,7 @@ void main() {
       );
       expect(audi.brandLogoAsset, 'assets/images/car_brands/auto_audi.png');
 
-      final bmw = ClassifiedCategoryModel(
+      final bmw = const ClassifiedCategoryModel(
         id: 'auto_bmw',
         name: 'BMW',
         iconName: 'directions_car',
@@ -55,13 +55,41 @@ void main() {
       );
       expect(bmw.brandLogoAsset, 'assets/images/car_brands/auto_bmw.png');
 
-      final traktori = ClassifiedCategoryModel(
+      final traktori = const ClassifiedCategoryModel(
         id: 'traktori',
         name: 'Traktori',
         iconName: 'agriculture',
         parentId: 'poljoprivreda',
       );
       expect(traktori.brandLogoAsset, isNull);
+    });
+
+    test('compareCategories respects sortOrder first and Serbian alphabetical second', () {
+      const poljoprivreda = ClassifiedCategoryModel(
+        id: 'poljoprivreda',
+        name: 'Poljoprivreda',
+        iconName: 'agriculture',
+        sortOrder: 10,
+      );
+      const domBasta = ClassifiedCategoryModel(
+        id: 'dom_basta',
+        name: 'Dom i bašta',
+        iconName: 'chair',
+        sortOrder: 40,
+      );
+      const gradjevinarstvo = ClassifiedCategoryModel(
+        id: 'gradjevinarstvo',
+        name: 'Građevinarstvo',
+        iconName: 'foundation',
+        sortOrder: 40,
+      );
+
+      // poljoprivreda (10) comes before domBasta (40) despite 'D' < 'P'
+      expect(ClassifiedCategoryModel.compareCategories(poljoprivreda, domBasta), isNegative);
+      expect(ClassifiedCategoryModel.compareCategories(domBasta, poljoprivreda), isPositive);
+
+      // Same sortOrder: domBasta ('D') comes before gradjevinarstvo ('G')
+      expect(ClassifiedCategoryModel.compareCategories(domBasta, gradjevinarstvo), isNegative);
     });
   });
 
@@ -352,6 +380,74 @@ void main() {
       expect(adCar.conditionLabel, 'Polovno');
     });
 
+    test('server-driven categoryConditionApplicable is the single source of truth', () {
+      // 1. Server flag false overrides client keyword heuristics
+      final adWithMachineInTitle = ClassifiedAdModel(
+        id: 'ad-srv-1',
+        userId: 'user-1',
+        title: 'Traktor i mašina za obradu',
+        price: 5000,
+        currency: 'EUR',
+        categoryId: 'usluge',
+        condition: 'used',
+        city: 'Čačak',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        categoryConditionApplicable: false,
+      );
+      expect(adWithMachineInTitle.isConditionApplicable, isFalse);
+
+      // 2. Server flag true overrides animal or non-equipment title/category
+      final adCustomCategory = ClassifiedAdModel(
+        id: 'ad-srv-2',
+        userId: 'user-1',
+        title: 'Nova posebna kategorija',
+        price: 100,
+        currency: 'EUR',
+        categoryId: 'nova_kategorija_zivotinje',
+        condition: 'new',
+        city: 'Beograd',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        categoryConditionApplicable: true,
+      );
+      expect(adCustomCategory.isConditionApplicable, isTrue);
+
+      // 3. ClassifiedAdModel.fromJson parses is_condition_applicable from joined category
+      final jsonWithCategory = {
+        'id': 'ad-json-1',
+        'user_id': 'user-1',
+        'title': 'Naslov oglasa',
+        'price': 1000,
+        'category_id': 'kat-1',
+        'city': 'Niš',
+        'classified_categories': {
+          'name': 'Podkategorija',
+          'is_condition_applicable': false,
+        },
+      };
+      final parsedAd = ClassifiedAdModel.fromJson(jsonWithCategory);
+      expect(parsedAd.categoryConditionApplicable, isFalse);
+      expect(parsedAd.isConditionApplicable, isFalse);
+    });
+
+    test('classified ad share URL uses dynamic origin / base url without trailing slash', () {
+      const adId = 'ad-uuid-123';
+      String resolveShareUrl(String rawBase) {
+        final base = rawBase.replaceAll(RegExp(r'/+$'), '');
+        return '$base/classifieds/ad/$adId';
+      }
+
+      expect(
+        resolveShareUrl('https://staging.domacimarket.rs/'),
+        'https://staging.domacimarket.rs/classifieds/ad/ad-uuid-123',
+      );
+      expect(
+        resolveShareUrl('http://localhost:5000'),
+        'http://localhost:5000/classifieds/ad/ad-uuid-123',
+      );
+    });
+
     test('toJson with and without id for insert/update', () {
       final ad = ClassifiedAdModel(
         id: 'ad-uuid-123',
@@ -376,6 +472,61 @@ void main() {
       final withoutId = ad.toJson(includeId: false);
       expect(withoutId.containsKey('id'), isFalse);
       expect(withoutId['title'], 'Balirka Claas');
+
+      final withoutCreatedAt = ad.toJson(includeCreatedAt: false);
+      expect(withoutCreatedAt.containsKey('created_at'), isFalse);
+      expect(withId.containsKey('created_at'), isTrue);
+    });
+
+    test('ClassifiedAdModel copyWith updates fields correctly', () {
+      final ad = ClassifiedAdModel(
+        id: 'ad-100',
+        userId: 'user-100',
+        title: 'Orginal naslov',
+        price: 100,
+        categoryId: 'traktori',
+        city: 'Čačak',
+        phone: '061111111',
+        phonePublic: true,
+        createdAt: DateTime.parse('2025-01-01T00:00:00Z'),
+        updatedAt: DateTime.parse('2025-01-01T00:00:00Z'),
+      );
+
+      final updated = ad.copyWith(
+        title: 'Novi naslov',
+        clearPhone: true,
+        phonePublic: false,
+      );
+
+      expect(updated.id, 'ad-100');
+      expect(updated.title, 'Novi naslov');
+      expect(updated.phone, isNull);
+      expect(updated.phonePublic, isFalse);
+      expect(updated.city, 'Čačak');
+
+      final withNewPhone = ad.copyWith(phone: '062222222');
+      expect(withNewPhone.phone, '062222222');
+    });
+
+    test('ClassifiedAdModel.fromJson handles null phone when phone is protected', () {
+      final json = {
+        'id': 'ad-secret-phone',
+        'user_id': 'user-secret',
+        'title': 'Pčelarska oprema',
+        'price': 250,
+        'category_id': 'oprema_za_zivotinje',
+        'city': 'Valjevo',
+        'phone': null,
+        'phone_public': false,
+        'status': 'active',
+        'created_at': '2025-06-01T10:00:00Z',
+        'updated_at': '2025-06-01T10:00:00Z',
+      };
+
+      final ad = ClassifiedAdModel.fromJson(json);
+      expect(ad.id, 'ad-secret-phone');
+      expect(ad.phone, isNull);
+      expect(ad.phonePublic, isFalse);
     });
   });
 
