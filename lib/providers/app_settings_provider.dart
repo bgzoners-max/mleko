@@ -9,6 +9,7 @@ const _keyAnimationsEnabled = 'mleko_animations_enabled';
 const _keyFontScale = 'mleko_font_scale';
 const _keyCompactMode = 'mleko_compact_mode';
 const _keyMarketMode = 'mleko_market_mode'; // 0=classifieds, 1=foodMarket
+const _keyBetaNoticeDismissed = 'mleko_beta_notice_dismissed_v1';
 
 /// Jednom se postavi na `true` nakon što su početne vrednosti (prva instalacija
 /// ili migracija sa starije verzije) upisane u SharedPreferences. Posle toga se
@@ -27,12 +28,14 @@ class AppSettingsProvider extends ChangeNotifier {
   double _fontScale = 1.0;
   bool _compactMode = true;
   MarketMode _marketMode = MarketMode.classifieds;
+  bool _betaNoticeDismissed = false;
 
   ThemeMode get themeMode => _themeMode;
   bool get animationsEnabled => _animationsEnabled;
   double get fontScale => _fontScale.clamp(fontScaleMin, fontScaleMax);
   bool get compactMode => _compactMode;
   MarketMode get marketMode => _marketMode;
+  bool get betaNoticeDismissed => _betaNoticeDismissed;
 
   bool get isDarkTheme {
     switch (_themeMode) {
@@ -119,6 +122,7 @@ class AppSettingsProvider extends ChangeNotifier {
     _animationsEnabled = prefs.getBool(_keyAnimationsEnabled) ?? true;
     _compactMode = prefs.getBool(_keyCompactMode) ?? defaultCompact;
     _marketMode = _marketModeFromInt(prefs.getInt(_keyMarketMode) ?? 0);
+    _betaNoticeDismissed = prefs.getBool(_keyBetaNoticeDismissed) ?? false;
   }
 
   static ThemeMode _themeModeFromInt(int v) {
@@ -214,4 +218,30 @@ class AppSettingsProvider extends ChangeNotifier {
 
   static int _marketModeToInt(MarketMode m) =>
       m == MarketMode.foodMarket ? 1 : 0;
+
+  Future<void> dismissBetaNotice() async {
+    if (_betaNoticeDismissed) return;
+    _betaNoticeDismissed = true;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyBetaNoticeDismissed, true);
+    } catch (e) {
+      LoggerService.warning('Failed to save beta notice dismissed state',
+          extra: {'error': e.toString()});
+    }
+  }
+
+  Future<void> resetBetaNotice() async {
+    if (!_betaNoticeDismissed) return;
+    _betaNoticeDismissed = false;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_keyBetaNoticeDismissed);
+    } catch (e) {
+      LoggerService.warning('Failed to reset beta notice state',
+          extra: {'error': e.toString()});
+    }
+  }
 }

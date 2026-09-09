@@ -9,6 +9,7 @@ import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/error_dialog.dart';
 import '../../widgets/home/market_mode_switcher.dart';
+import '../../widgets/beta_announcement_banner.dart';
 
 Future<void> _enterAsGuestWithMode(
     BuildContext context, MarketMode mode) async {
@@ -85,6 +86,9 @@ class LoginScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const BetaAnnouncementBanner(
+                            margin: EdgeInsets.only(bottom: 24),
+                          ),
                           Text(
                             'Dobrodošli nazad',
                             style: theme.textTheme.headlineMedium?.copyWith(
@@ -121,6 +125,7 @@ class LoginScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            const BetaAnnouncementBanner(),
             const _MobileHeroSection(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),

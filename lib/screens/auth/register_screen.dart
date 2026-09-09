@@ -6,6 +6,7 @@ import '../../core/responsive.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
 import '../../widgets/error_dialog.dart';
+import '../../widgets/beta_announcement_banner.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatelessWidget {
@@ -57,6 +58,9 @@ class RegisterScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const BetaAnnouncementBanner(
+                            margin: EdgeInsets.only(bottom: 24),
+                          ),
                           Text(
                             'Kreirajte nalog',
                             style: theme.textTheme.headlineMedium?.copyWith(
@@ -89,10 +93,14 @@ class RegisterScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Registracija')),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
+      body: Column(
+        children: [
+          const BetaAnnouncementBanner(),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
             maxWidth: Breakpoints.authContentWidth(
               context,
               tabletWidth: 520,
@@ -120,6 +128,9 @@ class RegisterScreen extends StatelessWidget {
           ),
         ),
       ),
+    ),
+  ],
+),
     );
   }
 }

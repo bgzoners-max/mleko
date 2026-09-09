@@ -23,6 +23,7 @@ import '../widgets/home/home_narrow_top_section.dart';
 import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
 import '../widgets/home/market_mode_switcher.dart';
+import '../widgets/beta_announcement_banner.dart';
 import 'classifieds/classifieds_feed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -166,6 +167,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     letterSpacing: -0.5,
                   ),
             ),
+            const SizedBox(width: 8),
+            const BetaBadge(),
           ],
         ),
         actions: [
@@ -196,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            const BetaAnnouncementBanner(),
             MarketModeSwitcher(
               currentMode: context.select<AppSettingsProvider, MarketMode>(
                   (s) => s.marketMode),

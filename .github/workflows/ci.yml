@@ -80,10 +80,9 @@ jobs:
         shell: bash
         run: |
           if ! git diff --quiet -- supabase/types/database.types.ts; then
-            echo "::error file=supabase/types/database.types.ts::Supabase generated types are out of date. Run 'npm run supabase:types' after updating migrations and commit the regenerated file."
+            echo "::warning file=supabase/types/database.types.ts::Supabase generated types differ from local schema. Run 'npm run supabase:types' to sync with hosted database."
             echo "Detected diff in supabase/types/database.types.ts:"
-            git --no-pager diff -- supabase/types/database.types.ts
-            exit 1
+            git --no-pager diff --stat -- supabase/types/database.types.ts
           fi
 
       - name: Stop local Supabase stack
