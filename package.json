@@ -1,4 +1,5 @@
 {
+  "scripts": {
     "deploy:all": "flutter build web --release && npm run vercel:deploy",
     "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart && node -e \"const fs=require('fs'); if(fs.existsSync('web/.well-known/assetlinks.json')){ fs.mkdirSync('build/vercel-deploy/public/.well-known', {recursive:true}); fs.copyFileSync('web/.well-known/assetlinks.json', 'build/vercel-deploy/public/.well-known/assetlinks.json'); }\"",
     "vercel:deploy": "npm run vercel:prepare && node -e \"const fs=require('fs'),path=require('path'),os=require('os'),{execSync}=require('child_process'); const tmp=path.join(os.tmpdir(),'mleko-vercel-deploy'); fs.rmSync(tmp,{recursive:true,force:true}); fs.cpSync('build/vercel-deploy',tmp,{recursive:true}); execSync('npx vercel link --cwd \\\"' + tmp + '\\\" --yes --scope vrvladas-projects --project mleko', {stdio:'inherit'}); execSync('npx vercel deploy --cwd \\\"' + tmp + '\\\" --prod --yes --scope vrvladas-projects', {stdio:'inherit'});\"",
