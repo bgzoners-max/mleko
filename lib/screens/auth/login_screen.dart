@@ -338,7 +338,7 @@ class MarketingContent extends StatelessWidget {
 
         // Naslov i opis
         Text(
-          'Sve što ti treba –\nod domaće trpeze do svega za život',
+          'Od domaće trpeze do svega za život',
           style: theme.textTheme.titleLarge?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w900,
