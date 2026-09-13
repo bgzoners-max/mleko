@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "headers": [
     {
       "source": "/(index\\.html|flutter_bootstrap\\.js|main\\.dart\\.js|version\\.json|$)",
