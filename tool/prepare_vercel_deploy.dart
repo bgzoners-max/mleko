@@ -154,20 +154,35 @@ void main() {
 }
 
 String _getBuildHash(Directory buildWebDir) {
-  final buildIdFile = File('${buildWebDir.path}/.last_build_id');
-  if (buildIdFile.existsSync()) {
-    final text = buildIdFile.readAsStringSync().trim();
-    if (text.isNotEmpty) {
-      return text.length > 12 ? text.substring(0, 12) : text;
-    }
+  // 1. Proveri GITHUB_SHA (iz CI okruženja) ili git commit
+  String? commitSha;
+  final envSha = Platform.environment['GITHUB_SHA'];
+  if (envSha != null && envSha.trim().isNotEmpty) {
+    final s = envSha.trim();
+    commitSha = s.length > 8 ? s.substring(0, 8) : s;
+  } else {
+    try {
+      final res = Process.runSync('git', ['rev-parse', '--short', 'HEAD']);
+      if (res.exitCode == 0) {
+        final s = res.stdout.toString().trim();
+        if (s.isNotEmpty) commitSha = s;
+      }
+    } catch (_) {}
   }
+
+  final timestamp = DateTime.now().millisecondsSinceEpoch.toRadixString(36);
+  if (commitSha != null) {
+    return '${commitSha}_$timestamp';
+  }
+
   final mainJsFile = File('${buildWebDir.path}/main.dart.js');
   if (mainJsFile.existsSync()) {
-    final mod = mainJsFile.lastModifiedSync().millisecondsSinceEpoch.toRadixString(36);
+    final mod =
+        mainJsFile.lastModifiedSync().millisecondsSinceEpoch.toRadixString(36);
     final len = mainJsFile.lengthSync().toRadixString(36);
-    return '${mod}_$len';
+    return '${mod}_${len}_$timestamp';
   }
-  return DateTime.now().millisecondsSinceEpoch.toString();
+  return timestamp;
 }
 
 int _calculateDirectorySize(Directory dir) {
