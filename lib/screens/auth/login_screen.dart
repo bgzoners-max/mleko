@@ -1051,7 +1051,7 @@ class _MobileShowcaseSection extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Dve celine na jednom mestu – bez posrednika i provizije',
+                'Brzo, jednostavno i 100% bez provizije',
                 style: TextStyle(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 12,
