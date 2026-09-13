@@ -29,18 +29,55 @@ class CartProvider extends ChangeNotifier {
   Map<String, double> getSellerDraft(String sellerId) =>
       Map<String, double>.from(_sellerItems[sellerId] ?? const {});
 
+  String? _currentUserId;
+  String? get currentUserId => _currentUserId;
+
+  bool _hasMigratedFromGuest = false;
+  bool get hasMigratedFromGuest => _hasMigratedFromGuest;
+
+  Future<void> claimGuestCart(String userId) async {
+    if (_currentUserId == userId) return;
+    _currentUserId = userId;
+    if (count > 0) {
+      _hasMigratedFromGuest = true;
+    }
+    await _save();
+    notifyListeners();
+  }
+
+  void dismissGuestCartBanner() {
+    if (_hasMigratedFromGuest) {
+      _hasMigratedFromGuest = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> clearForLogout() async {
+    _currentUserId = null;
+    _hasMigratedFromGuest = false;
+    await _save();
+    notifyListeners();
+  }
+
+  late final Future<void> _initFuture;
+  Future<void> get loadFuture => _initFuture;
+
   CartProvider({required ProductsService productsService})
       : _productsService = productsService {
-    _load();
+    _initFuture = _load();
   }
 
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final savedUserId = prefs.getString('mleko_cart_user_id');
+      if (savedUserId != null && savedUserId.isNotEmpty) {
+        _currentUserId ??= savedUserId;
+      }
       final stored = prefs.getString(_storageKey);
       if (stored != null && stored.isNotEmpty) {
-        _sellerItems.clear();
         final decoded = jsonDecode(stored) as Map<String, dynamic>;
+        final loaded = <String, Map<String, double>>{};
         for (final sellerEntry in decoded.entries) {
           final products = sellerEntry.value as Map<String, dynamic>;
           final parsed = <String, double>{};
@@ -48,8 +85,19 @@ class CartProvider extends ChangeNotifier {
             final qty = (productEntry.value as num?)?.toDouble();
             if (qty != null && qty > 0) parsed[productEntry.key] = qty;
           }
-          if (parsed.isNotEmpty) _sellerItems[sellerEntry.key] = parsed;
+          if (parsed.isNotEmpty) loaded[sellerEntry.key] = parsed;
         }
+
+        // Spoji sa eventualnim stavkama koje su već unete u memoriju
+        for (final entry in _sellerItems.entries) {
+          final sellerMap = loaded.putIfAbsent(entry.key, () => {});
+          for (final pEntry in entry.value.entries) {
+            sellerMap[pEntry.key] = pEntry.value;
+          }
+        }
+        _sellerItems.clear();
+        _sellerItems.addAll(loaded);
+
         _invalidateCache();
         notifyListeners();
         return;
@@ -96,17 +144,33 @@ class CartProvider extends ChangeNotifier {
       sellerDraft[p.id] = entry.value;
     }
 
-    await _save();
+    await _saveDirect(prefs);
     await prefs.remove(_legacyStorageKey);
     await prefs.remove('mleko_cart_ids');
     _invalidateCache();
     notifyListeners();
   }
 
+  Future<void> _saveDirect(SharedPreferences prefs) async {
+    try {
+      await prefs.setString(_storageKey, jsonEncode(_sellerItems));
+      if (_currentUserId != null) {
+        await prefs.setString('mleko_cart_user_id', _currentUserId!);
+      } else {
+        await prefs.remove('mleko_cart_user_id');
+      }
+    } catch (e) {
+      LoggerService.warning('Failed to save cart to storage',
+          extra: {'error': e.toString()});
+      // Continue anyway, this is non-critical
+    }
+  }
+
   Future<void> _save() async {
+    await _initFuture;
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_storageKey, jsonEncode(_sellerItems));
+      await _saveDirect(prefs);
     } catch (e) {
       LoggerService.warning('Failed to save cart to storage',
           extra: {'error': e.toString()});
@@ -129,6 +193,7 @@ class CartProvider extends ChangeNotifier {
     double quantity = 1,
   }) async {
     if (quantity <= 0) return;
+    await _initFuture;
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     sellerDraft[productId] = (sellerDraft[productId] ?? 0) + quantity;
@@ -142,6 +207,7 @@ class CartProvider extends ChangeNotifier {
     required String productId,
     required double quantity,
   }) async {
+    await _initFuture;
     if (quantity <= 0) {
       await removeFromSeller(sellerId: sellerId, productId: productId);
       return;
@@ -158,6 +224,7 @@ class CartProvider extends ChangeNotifier {
     required String sellerId,
     required String productId,
   }) async {
+    await _initFuture;
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null) return;
     sellerDraft.remove(productId);
@@ -168,6 +235,7 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> clearSeller(String sellerId) async {
+    await _initFuture;
     _sellerItems.remove(sellerId);
     await _save();
     _invalidateCache(sellerId);
@@ -178,6 +246,7 @@ class CartProvider extends ChangeNotifier {
   /// Zamenjuje postojeće stavke tog prodavca.
   Future<void> setOrderItemsForSeller(
       String sellerId, List<OrderItemModel> items) async {
+    await _initFuture;
     if (items.isEmpty) {
       await clearSeller(sellerId);
       return;
@@ -196,6 +265,7 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> clear() async {
+    await _initFuture;
     _sellerItems.clear();
     await _save();
     _invalidateCache();
@@ -239,6 +309,7 @@ class CartProvider extends ChangeNotifier {
 
   Future<List<({ProductModel product, double quantity})>> getProductsBySeller(
       String sellerId) async {
+    await _initFuture;
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null || sellerDraft.isEmpty) return [];
     return _bySellerCache.putIfAbsent(sellerId, () async {
@@ -256,6 +327,7 @@ class CartProvider extends ChangeNotifier {
 
   Future<Map<String, List<({ProductModel product, double quantity})>>>
       getProductsGroupedBySeller() async {
+    await _initFuture;
     return _groupedCache ??= () async {
       final grouped =
           <String, List<({ProductModel product, double quantity})>>{};

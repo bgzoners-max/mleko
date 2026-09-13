@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../core/haptic.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
@@ -10,13 +11,12 @@ import '../models/user_model.dart';
 import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
+import '../utils/number_input_utils.dart';
 import '../utils/quantity_engine.dart';
-
 import '../widgets/app_empty_state.dart';
-import '../widgets/app_network_image.dart';
 import '../widgets/app_error_retry.dart';
-import '../widgets/offline_indicator.dart';
-import '../widgets/purchase_guidance_card.dart';
+import '../widgets/checkout/checkout_product_summary_card.dart';
+import '../widgets/checkout/checkout_single_buyer_form.dart';
 import '../widgets/skeleton.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -154,7 +154,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       setState(() => _error = 'Proizvod je trenutno nedostupan.');
       return;
     }
-    final qty = double.tryParse(_quantityController.text.replaceAll(',', '.'));
+    final qty = NumberInputUtils.parseDecimal(_quantityController.text);
     if (qty == null || qty < widget.product.minOrderKg) {
       setState(() =>
           _error = 'Minimalna porudžbina: ${widget.product.minOrderFormatted}');
@@ -262,7 +262,6 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Upit je poslat prodavcu.')));
       } else {
-        // Offline mode: Queue order for later sync
         final pendingOrder = PendingOrder(
           id: 'pending_${DateTime.now().millisecondsSinceEpoch}',
           buyerId: user.id,
@@ -337,81 +336,10 @@ class _CheckoutFormState extends State<_CheckoutForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  PurchaseGuidanceCard(
-                    icon: Icons.info_outline,
-                    title: 'Šta će se desiti sledeće?',
-                    body:
-                        'Nakon što pošalješ upit, prodavac će ga dobiti u obaveštenjima i moći će da odluči da li prihvata porudžbinu.',
-                    accentColor: Theme.of(context).colorScheme.primary,
+                  CheckoutProductSummaryCard(
+                    product: widget.product,
+                    isOffline: isOffline,
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outlineVariant
-                            .withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        if (widget.product.imageUrls.isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: AppNetworkImage.thumbnail(
-                              imageUrl: widget.product.imageUrls.first,
-                              width: 64,
-                              height: 64,
-                            ),
-                          )
-                        else
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.shopping_basket_outlined),
-                          ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.product.name,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.product.priceFormatted,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isOffline) ...[
-                    const SizedBox(height: 8),
-                    const OfflineReadOnlyBadge(),
-                  ],
                   const SizedBox(height: 24),
                   TextField(
                     controller: _quantityController,
@@ -465,141 +393,20 @@ class _CheckoutFormState extends State<_CheckoutForm> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text('Način dostave',
-                      style: Theme.of(context).textTheme.titleSmall),
-                  RadioGroup<DeliveryMethod>(
-                    groupValue: _deliveryMethod,
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() => _deliveryMethod = v);
-                      }
-                    },
-                    child: const Column(
-                      children: [
-                        RadioListTile<DeliveryMethod>(
-                          value: DeliveryMethod.courier,
-                          title: Text('Kurirska služba'),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                        RadioListTile<DeliveryMethod>(
-                          value: DeliveryMethod.pickup,
-                          title: Text('Lično preuzimanje'),
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                        ),
-                      ],
-                    ),
+                  CheckoutSingleBuyerForm(
+                    deliveryMethod: _deliveryMethod,
+                    onDeliveryMethodChanged: (m) =>
+                        setState(() => _deliveryMethod = m),
+                    addressController: _addressController,
+                    cityController: _cityController,
+                    postalCodeController: _postalCodeController,
+                    phoneController: _phoneController,
+                    noteController: _noteController,
+                    showSavePhone: user != null,
+                    savePhoneToProfile: _savePhoneToProfile,
+                    onSavePhoneChanged: (val) =>
+                        setState(() => _savePhoneToProfile = val),
                   ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primaryContainer
-                          .withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.18),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Kad pošalješ upit, prodavac će ga primiti i nastaviti razgovor sa tobom o količini, mestu i načinu isporuke.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(height: 1.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_deliveryMethod == DeliveryMethod.courier) ...[
-                    TextField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(
-                          labelText: 'Adresa (ulica i broj)'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _cityController,
-                      decoration: const InputDecoration(labelText: 'Grad'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _postalCodeController,
-                      decoration:
-                          const InputDecoration(labelText: 'Poštanski broj'),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
-                    const SizedBox(height: 12),
-                  ] else ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline,
-                              color: Colors.blue.shade700, size: 18),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Dogovori se sa prodavcem o mestu i vremenu preuzimanja.',
-                              style: TextStyle(fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration:
-                        const InputDecoration(labelText: 'Kontakt telefon *'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _noteController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                        labelText: 'Napomena (npr. Treba za subotu)'),
-                  ),
-                  const SizedBox(height: 4),
-                  if (user != null)
-                    CheckboxListTile(
-                      value: _savePhoneToProfile,
-                      onChanged: (v) =>
-                          setState(() => _savePhoneToProfile = v ?? false),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      title: const Text(
-                        'Sačuvaj ovaj broj u profilu',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    ),
                   const SizedBox(height: 8),
                   if (_error != null) ...[
                     const SizedBox(height: 12),

@@ -5,10 +5,14 @@ import '../../models/app_error.dart';
 
 class UsersService {
   static final UsersService _instance = UsersService._();
-  factory UsersService() => _instance;
-  UsersService._();
+  factory UsersService({SupabaseClient? client}) {
+    if (client != null) return UsersService._(client: client);
+    return _instance;
+  }
+  UsersService._({SupabaseClient? client}) : _customClient = client;
 
-  final _client = Supabase.instance.client;
+  final SupabaseClient? _customClient;
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   Future<List<UserModel>> getRecentlyRegisteredSellers({
     int limit = 3,

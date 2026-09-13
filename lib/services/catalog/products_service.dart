@@ -19,11 +19,16 @@ class ProductsService
         ProductStatsMixin,
         ProductManagementMixin {
   static final ProductsService _instance = ProductsService._();
-  factory ProductsService() => _instance;
-  ProductsService._();
+  factory ProductsService({SupabaseClient? client}) {
+    if (client != null) return ProductsService._(client: client);
+    return _instance;
+  }
+  ProductsService._({SupabaseClient? client}) : _customClient = client;
+
+  final SupabaseClient? _customClient;
 
   @override
-  final client = Supabase.instance.client;
+  SupabaseClient get client => _customClient ?? Supabase.instance.client;
 
   Future<Map<String, List<String>>> getSelectedDeliveryPointIdsForProducts(
     List<String> productIds,
@@ -65,27 +70,12 @@ class ProductsService
 
       return products
           .map(
-            (product) => ProductModel(
-              id: product.id,
-              sellerId: product.sellerId,
-              category: product.category,
-              name: product.name,
-              pricePerKg: product.pricePerKg,
-              minOrderKg: product.minOrderKg,
-              orderStep: product.orderStep,
-              availableKg: product.availableKg,
-              unitType: product.unitType,
-              description: product.description,
-              imageUrls: product.imageUrls,
-              pickupOptions: product.pickupOptions,
-              location: product.location,
-              isDomestic: product.isDomestic,
-              availableNow: product.availableNow,
-              deliveryMode: product.deliveryMode,
-              selectedDeliveryPointIds:
-                  idsByProduct[product.id] ?? product.selectedDeliveryPointIds,
-              createdAt: product.createdAt,
-            ),
+            (product) {
+              final ids = idsByProduct[product.id];
+              return ids != null
+                  ? product.copyWith(selectedDeliveryPointIds: ids)
+                  : product;
+            },
           )
           .toList(growable: false);
     } catch (e, st) {

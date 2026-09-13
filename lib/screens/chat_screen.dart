@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
 import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../models/message_model.dart';
@@ -13,20 +11,17 @@ import '../models/message_reaction_model.dart';
 import '../models/order_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
-
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
-import '../widgets/emoji_text.dart';
-import '../widgets/skeleton.dart';
-
-import '../widgets/chat/chat_order_context_card.dart';
-import '../widgets/chat/chat_seller_stats_card.dart';
 import '../widgets/chat/chat_date_separator.dart';
-import '../widgets/chat/chat_typing_indicator.dart';
-import '../widgets/chat/chat_message_bubble.dart';
 import '../widgets/chat/chat_input_area.dart';
-
-const _kReactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡'];
+import '../widgets/chat/chat_message_bubble.dart';
+import '../widgets/chat/chat_message_menu.dart';
+import '../widgets/chat/chat_order_context_card.dart';
+import '../widgets/chat/chat_screen_app_bar.dart';
+import '../widgets/chat/chat_seller_stats_card.dart';
+import '../widgets/chat/chat_typing_indicator.dart';
+import '../widgets/skeleton.dart';
 
 /// Brzi odgovori – različiti za kupca i prodavca
 const _quickRepliesBuyer = [
@@ -149,20 +144,31 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _loadOlderMessages(List<MessageModel> current) async {
     if (_loadingOlder || !_hasOlderMessages) return;
-    final oldest = _olderMessages.isNotEmpty
-        ? _olderMessages.first.createdAt
+    final oldestMsg = _olderMessages.isNotEmpty
+        ? _olderMessages.first
         : current.isNotEmpty
-            ? current.first.createdAt
-            : DateTime.now();
+            ? current.first
+            : null;
+    if (oldestMsg == null) return;
+    final oldest = oldestMsg.createdAt;
+    final oldestId = oldestMsg.id;
+
     setState(() => _loadingOlder = true);
     try {
       final older = await _chatService.getOlderMessages(
         widget.conversationId,
         before: oldest,
+        beforeId: oldestId,
       );
       if (mounted) {
         setState(() {
-          _olderMessages.insertAll(0, older);
+          final existingIds = <String>{
+            ..._olderMessages.map((m) => m.id),
+            ...current.map((m) => m.id),
+          };
+          final newItems =
+              older.where((m) => !existingIds.contains(m.id)).toList();
+          _olderMessages.insertAll(0, newItems);
           if (older.length < 50) _hasOlderMessages = false;
         });
       }
@@ -318,152 +324,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  bool get _isDesktop =>
-      kIsWeb ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux ||
-      defaultTargetPlatform == TargetPlatform.macOS;
-
-  void _showMessageMenu(BuildContext context, MessageModel m, bool isMe,
-      {Offset? tapPosition}) {
-    if (_isDesktop && tapPosition != null) {
-      _showDesktopContextMenu(context, m, isMe, tapPosition);
-    } else {
-      _showMobileBottomSheet(context, m, isMe);
-    }
-  }
-
-  Future<void> _showDesktopContextMenu(
-      BuildContext context, MessageModel m, bool isMe, Offset position) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final rel = RelativeRect.fromRect(
-      Rect.fromLTWH(position.dx, position.dy, 1, 1),
-      Offset.zero & overlay.size,
-    );
-
-    final result = await showMenu<String>(
-      context: context,
-      position: rel,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: [
-        PopupMenuItem<String>(
-          enabled: false,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _kReactionEmojis.map((emoji) {
-              return InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  Navigator.pop(context, 'reaction:$emoji');
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: EmojiText(
-                    emoji,
-                    style: const TextStyle(fontSize: 22),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
-        const PopupMenuItem<String>(
-          value: 'copy',
-          child: Row(
-            children: [
-              Icon(Icons.copy_outlined, size: 18),
-              SizedBox(width: 10),
-              Text('Kopiraj poruku'),
-            ],
-          ),
-        ),
-        if (isMe)
-          const PopupMenuItem<String>(
-            value: 'delete',
-            child: Row(
-              children: [
-                Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                SizedBox(width: 10),
-                Text('Obriši poruku', style: TextStyle(color: Colors.red)),
-              ],
-            ),
-          ),
-      ],
-    );
-
-    if (result == null || !mounted) return;
-    if (result.startsWith('reaction:')) {
-      _toggleReaction(m, result.substring(9));
-    } else if (result == 'copy') {
-      await Clipboard.setData(ClipboardData(text: m.body));
-      if (mounted) {
-        messenger
-            .showSnackBar(const SnackBar(content: Text('Poruka kopirana')));
-      }
-    } else if (result == 'delete') {
-      _deleteMessage(m);
-    }
-  }
-
-  void _showMobileBottomSheet(BuildContext context, MessageModel m, bool isMe) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: _kReactionEmojis.map((emoji) {
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _toggleReaction(m, emoji);
-                    },
-                    child: EmojiText(
-                      emoji,
-                      style: const TextStyle(fontSize: 28),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.copy_outlined),
-              title: const Text('Kopiraj poruku'),
-              onTap: () {
-                Navigator.pop(context);
-                Clipboard.setData(ClipboardData(text: m.body));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Poruka kopirana')),
-                );
-              },
-            ),
-            if (isMe)
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Obriši poruku',
-                    style: TextStyle(color: Colors.red)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteMessage(m);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _send([String? textOverride]) async {
     final text = (textOverride ?? _messageController.text).trim();
     if (text.isEmpty && textOverride == null) return;
@@ -514,18 +374,10 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_otherPartyName ?? 'Razgovor'),
-        actions: [
-          if (_otherPartyId != null)
-            IconButton(
-              tooltip: _isBuyer ? 'Profil prodavca' : 'Profil kupca',
-              icon: const Icon(Icons.account_circle_outlined),
-              onPressed: () => context.push(
-                _isBuyer ? '/seller/$_otherPartyId' : '/buyer/$_otherPartyId',
-              ),
-            ),
-        ],
+      appBar: ChatScreenAppBar(
+        otherPartyName: _otherPartyName,
+        otherPartyId: _otherPartyId,
+        isBuyer: _isBuyer,
       ),
       body: Align(
         alignment: Alignment.topCenter,
@@ -655,9 +507,16 @@ class _ChatScreenState extends State<ChatScreen> {
                               message: m,
                               isMe: isMe,
                               reactions: msgReactions,
-                              onShowMenu: (tapPosition) => _showMessageMenu(
-                                  context, m, isMe,
-                                  tapPosition: tapPosition),
+                              onShowMenu: (tapPosition) =>
+                                  showChatMessageActions(
+                                context: context,
+                                message: m,
+                                isMe: isMe,
+                                tapPosition: tapPosition,
+                                onReaction: (emoji) =>
+                                    _toggleReaction(m, emoji),
+                                onDelete: () => _deleteMessage(m),
+                              ),
                               onToggleReaction: (emoji) =>
                                   _toggleReaction(m, emoji),
                             );

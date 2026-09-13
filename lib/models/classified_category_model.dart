@@ -8,6 +8,7 @@ class ClassifiedCategoryModel {
   final int sortOrder;
   final bool isConditionApplicable;
   final List<ClassifiedCategoryModel> subcategories;
+  final int adCount;
 
   const ClassifiedCategoryModel({
     required this.id,
@@ -17,6 +18,7 @@ class ClassifiedCategoryModel {
     this.sortOrder = 0,
     this.isConditionApplicable = true,
     this.subcategories = const [],
+    this.adCount = 0,
   });
 
   bool get isRoot => parentId == null;
@@ -34,6 +36,7 @@ class ClassifiedCategoryModel {
       isConditionApplicable:
           (json['is_condition_applicable'] as bool?) ?? true,
       subcategories: subcategories,
+      adCount: (json['ad_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -45,12 +48,14 @@ class ClassifiedCategoryModel {
       'parent_id': parentId,
       'sort_order': sortOrder,
       'is_condition_applicable': isConditionApplicable,
+      'ad_count': adCount,
     };
   }
 
   ClassifiedCategoryModel copyWith({
     bool? isConditionApplicable,
     List<ClassifiedCategoryModel>? subcategories,
+    int? adCount,
   }) {
     return ClassifiedCategoryModel(
       id: id,
@@ -61,6 +66,7 @@ class ClassifiedCategoryModel {
       isConditionApplicable:
           isConditionApplicable ?? this.isConditionApplicable,
       subcategories: subcategories ?? this.subcategories,
+      adCount: adCount ?? this.adCount,
     );
   }
 
@@ -113,12 +119,61 @@ class ClassifiedCategoryModel {
     'auto_cupra',
     'auto_dacia',
     'auto_lada',
+    'auto_zastava',
+    'auto_smart',
+    'auto_mini',
+    'auto_lancia',
+    'auto_saab',
+    'auto_chrysler',
+    'auto_dodge',
+    'auto_daewoo',
+    'auto_geely',
+    'auto_chery',
+    'auto_infiniti',
+    'auto_isuzu',
+    'auto_ds',
+    'auto_ssangyong',
+    'auto_rover',
+    'auto_genesis',
   };
 
-  /// Vraća putanju do zvaničnog logotipa marke automobila ako je dostupna.
+  static const Set<String> _phoneBrandIds = {
+    'apple',
+    'samsung',
+    'xiaomi',
+    'redmi',
+    'poco',
+    'honor',
+    'motorola',
+    'realme',
+    'vivo',
+    'google',
+    'huawei',
+    'sony',
+    'nothing',
+    'asus',
+    'zte',
+    'nokia_hmd',
+    'cat',
+  };
+
+  static const Set<String> _tractorBrandIds = {
+    'traktori_imt_imr',
+    'traktori_belarus',
+    'traktori_zetor_ursus',
+    'traktori_zapadni',
+  };
+
+  /// Vraća putanju do zvaničnog logotipa brenda (automobili, telefoni, traktori) ako je dostupna.
   String? get brandLogoAsset {
     if (_carBrandIds.contains(id)) {
       return 'assets/images/car_brands/$id.png';
+    }
+    if (_phoneBrandIds.contains(id)) {
+      return 'assets/images/phone_brands/$id.png';
+    }
+    if (_tractorBrandIds.contains(id)) {
+      return 'assets/images/tractor_brands/$id.png';
     }
     return null;
   }

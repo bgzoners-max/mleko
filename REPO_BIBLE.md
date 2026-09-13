@@ -168,3 +168,17 @@ Preporuka: jedinstveni quantity engine (30-40 linija) koji pokriva:
 - validaciju i normalizaciju količine
 
 Taj engine treba koristiti svuda (checkout, cart, seller preview, backend validacija), uz `order_step` iz baze.
+
+## 11. Inventory & Availability Philosophy (Upit vs. Magacin)
+
+Marketplace „Naše Selo” povezuje kupce sa malim lokalnim proizvođačima hrane.
+
+Zato važi kanonsko pravilo:
+
+- **Porudžbina je direktan upit/zahtev (`status = 'sent'`), a ne automatska magacinska rezervacija.**
+- Poljoprivrednici robu često pripremaju po prijemu porudžbine (muža mleka, branje plodova, sveže pripremanje, pravljenje sira).
+- Glavni i autoritativni prekidač dostupnosti je `products.available_now` (boolean):
+  - Ako je `available_now = false`, backend funkcija `create_order_with_items` strogo odbija kreiranje porudžbine (`product % is currently unavailable`).
+- Polje `available_kg` u modelu proizvoda ima **informativni karakter** za gazdinstvo i kupca. Backend svesno **ne** vrši blokadu porudžbine poređenjem `quantity <= available_kg` niti automatski dekrementira zalihu, jer bi to blokiralo legitimne narudžbine kod proizvođača koji proizvode po zahtevu ili ne ažuriraju brojno stanje u realnom vremenu.
+- Konačnu potvrdu količine, termina i isporuke prodavac vrši prihvatanjem porudžbine (`accepted`) ili dogovorom sa kupcem kroz chat/poziv.
+

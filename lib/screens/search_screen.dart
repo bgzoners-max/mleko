@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
@@ -13,12 +13,14 @@ import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
+import '../utils/image_precache_utils.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
-
-import '../widgets/search/search_category_pill.dart';
-import '../widgets/search/search_filter_chip.dart';
+import '../widgets/search/search_filter_bar.dart';
+import '../widgets/search/search_filter_sidebar.dart';
 import '../widgets/search/search_history_panel.dart';
+import '../widgets/search/search_input_app_bar.dart';
+import '../widgets/search/search_mobile_categories.dart';
 import '../widgets/search/search_results_grid.dart';
 import '../widgets/search/search_tips_banner.dart';
 
@@ -59,28 +61,14 @@ class _SearchScreenState extends State<SearchScreen> {
   final Set<String> _preloadedImages = <String>{};
 
   void _warmupProductImages(List<ProductModel> products) {
-    final List<String> urls = [];
-    for (var i = 0; i < products.length; i++) {
-      final p = products[i];
-      if (p.imageUrls.isNotEmpty) {
-        urls.add(p.imageUrls.first);
-        // Za top 4 proizvoda preload-uj i drugu sliku (carousel detalji)
-        if (i < 4 && p.imageUrls.length > 1) {
-          urls.add(p.imageUrls[1]);
-        }
-      }
-      if (urls.length >= 12) break; // Limitiramo ukupan broj preloada
-    }
-    if (urls.isEmpty) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      for (final url in urls) {
-        if (!mounted) return;
-        if (_preloadedImages.add(url)) {
-          await precacheImage(CachedNetworkImageProvider(url), context);
-        }
-      }
-    });
+    warmupProductImages(
+      context: context,
+      products: products,
+      preloadedUrls: _preloadedImages,
+      isMounted: () => mounted,
+      topCountWithSecondary: 4,
+      maxTotalUrls: 12,
+    );
   }
 
   @override
@@ -114,13 +102,10 @@ class _SearchScreenState extends State<SearchScreen> {
     if (user != null && !user.isGuest && !favorites.isLoaded) {
       favorites.load(user.id);
     }
-    // Više ne isključujemo proizvode prodavca iz pretrage kako bi mogli
-    // da vide svoje proizvode (a kupovina sopstvenih proizvoda je već onemogućena)
     _currentSellerIdToExclude = null;
 
     if (!_isInitialized || serviceChanged) {
       _isInitialized = true;
-      // Sinhronizacija regiona sa glavne strane (ako nije već postavljen)
       final loc = context.read<LocationProvider>();
       _region ??= loc.selectedRegion;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -152,7 +137,6 @@ class _SearchScreenState extends State<SearchScreen> {
       _hasMore = true;
     });
 
-    // Brzi prikaz iz keša za FTS pretrage
     if (currentQuery.isNotEmpty &&
         _category == null &&
         _region == null &&
@@ -270,8 +254,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onSearchChanged() {
     final value = _searchController.text;
-
-    // Uvek osveži sugestije (istoriju) dok kuca, bez debouncing-a za samu listu sugestija
     setState(() {
       _historyFuture = _searchHistoryService.getSuggestions(value);
     });
@@ -354,111 +336,6 @@ class _SearchScreenState extends State<SearchScreen> {
       if (!mounted) return;
       unawaited(_loadCategoryCounts(categories, requestKey: requestKey));
     });
-  }
-
-  Widget _buildCategoryItem(BuildContext context, dynamic cat,
-      {bool fullWidth = false}) {
-    final selected = _category == cat.name;
-    return SearchCategoryPill(
-      label: cat.name,
-      count: _categoryCounts[cat.name],
-      icon: cat.icon,
-      selected: selected,
-      fullWidth: fullWidth,
-      onTap: () {
-        setState(() => _category = selected ? null : cat.name);
-        _onFilterChanged();
-      },
-    );
-  }
-
-  Widget _buildMobileCategories(
-      BuildContext context, List<dynamic> categories) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (var index = 0; index < categories.length; index++) ...[
-            _buildCategoryItem(context, categories[index]),
-            if (index != categories.length - 1) const SizedBox(width: 8),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHistoryChips() {
-    return SearchHistoryPanel(
-      historyFuture: _historyFuture,
-      isSearchEmpty: _searchController.text.isEmpty,
-      onClearAll: () async {
-        await _searchHistoryService.clearHistory();
-        if (mounted) {
-          setState(() {
-            _historyFuture = _searchHistoryService.getHistory();
-          });
-        }
-      },
-      onSelectHistory: (h) {
-        _searchController.text = h;
-        _applySearchImmediate(h);
-      },
-      onRemoveHistory: (h) async {
-        await _searchHistoryService.removeFromHistory(h);
-        if (mounted) {
-          setState(() {
-            _historyFuture = _searchHistoryService.getHistory();
-          });
-        }
-      },
-    );
-  }
-
-  Widget _buildFilterChips(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          SearchFilterChip(
-            label: 'Sortiraj',
-            value: _sort.label,
-            options: ProductSort.values.map((s) => s.label).toList(),
-            onSelected: (v) {
-              final idx = ProductSort.values.indexWhere((s) => s.label == v);
-              if (idx >= 0) {
-                setState(() {
-                  _sort = ProductSort.values[idx];
-                  _onFilterChanged();
-                });
-              }
-            },
-          ),
-          const SizedBox(width: 8),
-          SearchFilterChip(
-            label: 'Region',
-            value: _region,
-            options: AppConstants.regions,
-            onSelected: (v) {
-              setState(() => _region = v);
-              _onFilterChanged();
-            },
-          ),
-          const SizedBox(width: 8),
-          ActionChip(
-            label: const Text('Dostupno sada'),
-            onPressed: () {
-              setState(
-                  () => _availableNow = _availableNow == true ? null : true);
-              _onFilterChanged();
-            },
-            backgroundColor: _availableNow == true
-                ? Theme.of(context).colorScheme.primaryContainer
-                : null,
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildProductCard(BuildContext context, int i, dynamic user) {
@@ -569,316 +446,275 @@ class _SearchScreenState extends State<SearchScreen> {
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          title: const Text('Pretraga'),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(56),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                decoration: InputDecoration(
-                  hintText: 'Traži po nazivu proizvoda…',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            _applySearchImmediate('');
+        appBar: SearchInputAppBar(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          isDesktopOrWeb: isDesktopOrWeb,
+          onClear: () {
+            _searchController.clear();
+            _applySearchImmediate('');
+          },
+          onSubmitted: (q) async {
+            await _searchHistoryService.addToHistory(q);
+            if (!mounted) return;
+            setState(() {
+              _historyFuture = _searchHistoryService.getHistory();
+            });
+            _applySearchImmediate(q);
+          },
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isTwoPaneLayout
+                  ? Breakpoints.dataContentWidth(context)
+                  : Breakpoints.maxContentWidth(context),
+            ),
+            child: isTwoPaneLayout
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 20,
+                        child: SearchFilterSidebar(
+                          sort: _sort,
+                          onSortChanged: (s) {
+                            setState(() => _sort = s);
+                            _onFilterChanged();
                           },
-                        )
-                      : (isDesktopOrWeb
-                          ? Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Center(
-                                widthFactor: 1,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    'Ctrl+K',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          fontSize: 10,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outline,
-                                        ),
+                          region: _region,
+                          onRegionChanged: (r) {
+                            setState(() => _region = r);
+                            _onFilterChanged();
+                          },
+                          availableNow: _availableNow,
+                          onAvailableNowChanged: (a) {
+                            setState(() => _availableNow = a);
+                            _onFilterChanged();
+                          },
+                          categories: topCategories,
+                          selectedCategory: _category,
+                          categoryCounts: _categoryCounts,
+                          onCategorySelected: (cat) {
+                            setState(() => _category = cat);
+                            _onFilterChanged();
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        flex: 80,
+                        child: Column(
+                          children: [
+                            if (_debounceTimer?.isActive == true ||
+                                _filterDebounceTimer?.isActive == true)
+                              const LinearProgressIndicator(minHeight: 2),
+                            SearchHistoryPanel(
+                              historyFuture: _historyFuture,
+                              isSearchEmpty: _searchController.text.isEmpty,
+                              onClearAll: () async {
+                                await _searchHistoryService.clearHistory();
+                                if (mounted) {
+                                  setState(() {
+                                    _historyFuture =
+                                        _searchHistoryService.getHistory();
+                                  });
+                                }
+                              },
+                              onSelectHistory: (h) {
+                                _searchController.text = h;
+                                _applySearchImmediate(h);
+                              },
+                              onRemoveHistory: (h) async {
+                                await _searchHistoryService.removeFromHistory(h);
+                                if (mounted) {
+                                  setState(() {
+                                    _historyFuture =
+                                        _searchHistoryService.getHistory();
+                                  });
+                                }
+                              },
+                            ),
+                            if (hasActiveFilters)
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: contentPadding,
+                                  vertical: 4,
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _category = null;
+                                        _region = null;
+                                        _availableNow = null;
+                                      });
+                                      _onFilterChanged();
+                                    },
+                                    icon: const Icon(Icons.clear_all_rounded,
+                                        size: 18),
+                                    label: const Text('Očisti filtere'),
                                   ),
                                 ),
                               ),
-                            )
-                          : null),
-                  isDense: true,
-                ),
-                onSubmitted: (q) async {
-                  await _searchHistoryService.addToHistory(q);
-                  if (!mounted) return;
-                  setState(() {
-                    _historyFuture = _searchHistoryService.getHistory();
-                  });
-                  _applySearchImmediate(q);
-                },
-              ),
-            ),
-          ),
-        ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isTwoPaneLayout
-                ? Breakpoints.dataContentWidth(context)
-                : Breakpoints.maxContentWidth(context),
-          ),
-          child: isTwoPaneLayout
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Leva kolona: filteri i kategorije (20%)
-                    Expanded(
-                      flex: 20,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: Divider.createBorderSide(context),
-                          ),
-                        ),
-                        child: ListView(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Text('Filteri',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.bold)),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  SearchFilterChip(
-                                    label: 'Sortiraj',
-                                    value: _sort.label,
-                                    options: ProductSort.values
-                                        .map((s) => s.label)
-                                        .toList(),
-                                    onSelected: (v) {
-                                      final idx = ProductSort.values
-                                          .indexWhere((s) => s.label == v);
-                                      if (idx >= 0) {
-                                        setState(() {
-                                          _sort = ProductSort.values[idx];
-                                          _onFilterChanged();
-                                        });
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(height: 8),
-                                  SearchFilterChip(
-                                    label: 'Region',
-                                    value: _region,
-                                    options: AppConstants.regions,
-                                    onSelected: (v) {
-                                      setState(() => _region = v);
-                                      _onFilterChanged();
-                                    },
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ActionChip(
-                                    label: const Text('Dostupno sada'),
-                                    onPressed: () {
-                                      setState(() => _availableNow =
-                                          _availableNow == true ? null : true);
-                                      _onFilterChanged();
-                                    },
-                                    backgroundColor: _availableNow == true
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .primaryContainer
-                                        : null,
-                                  ),
-                                ],
+                            SearchTipsBanner(
+                              margin: EdgeInsets.symmetric(
+                                horizontal: contentPadding,
+                                vertical: 4,
                               ),
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Divider(height: 1),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text('Kategorije',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.bold)),
-                            ),
-                            ...topCategories.map(
-                              (cat) => Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                                child: _buildCategoryItem(context, cat,
-                                    fullWidth: true),
+                            Expanded(
+                              child: SearchResultsGrid(
+                                products: _products,
+                                loading: _loading,
+                                loadingMore: _loadingMore,
+                                searchError: _searchError,
+                                scrollController: _scrollController,
+                                onRefresh: _onRefresh,
+                                onRetry: _loadFirstPage,
+                                itemBuilder: (ctx, i) =>
+                                    _buildProductCard(ctx, i, user),
+                                emptyStateWidget: _buildEmptyState(),
+                                crossAxisCount: wideGridColumns,
+                                mainAxisExtent: wideGridExtent,
+                                spacing: stackedGridSpacing,
+                                contentPadding: contentPadding,
+                                asGrid: true,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    // Desna kolona: rezultati (80%)
-                    Expanded(
-                      flex: 80,
-                      child: Column(
-                        children: [
-                          if (_debounceTimer?.isActive == true ||
-                              _filterDebounceTimer?.isActive == true)
-                            const LinearProgressIndicator(minHeight: 2),
-                          _buildHistoryChips(),
-                          if (hasActiveFilters)
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: contentPadding,
-                                vertical: 4,
-                              ),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      _category = null;
-                                      _region = null;
-                                      _availableNow = null;
-                                    });
-                                    _onFilterChanged();
-                                  },
-                                  icon: const Icon(Icons.clear_all_rounded,
-                                      size: 18),
-                                  label: const Text('Očisti filtere'),
-                                ),
-                              ),
-                            ),
-                          SearchTipsBanner(
-                            margin: EdgeInsets.symmetric(
-                              horizontal: contentPadding,
-                              vertical: 4,
-                            ),
-                          ),
-                          Expanded(
-                            child: SearchResultsGrid(
-                              products: _products,
-                              loading: _loading,
-                              loadingMore: _loadingMore,
-                              searchError: _searchError,
-                              scrollController: _scrollController,
-                              onRefresh: _onRefresh,
-                              onRetry: _loadFirstPage,
-                              itemBuilder: (ctx, i) =>
-                                  _buildProductCard(ctx, i, user),
-                              emptyStateWidget: _buildEmptyState(),
-                              crossAxisCount: wideGridColumns,
-                              mainAxisExtent: wideGridExtent,
-                              spacing: stackedGridSpacing,
-                              contentPadding: contentPadding,
-                              asGrid: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: [
-                    if (_debounceTimer?.isActive == true ||
-                        _filterDebounceTimer?.isActive == true)
-                      const LinearProgressIndicator(minHeight: 2),
-                    // Kategorije grid (mobile)
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: contentPadding,
-                        vertical: 12,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Kategorije',
+                    ],
+                  )
+                : Column(
+                    children: [
+                      if (_debounceTimer?.isActive == true ||
+                          _filterDebounceTimer?.isActive == true)
+                        const LinearProgressIndicator(minHeight: 2),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: contentPadding,
+                          vertical: 12,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kategorije',
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          _buildMobileCategories(context, topCategories),
-                        ],
-                      ),
-                    ),
-                    _buildHistoryChips(),
-                    _buildFilterChips(context),
-                    if (hasActiveFilters)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _category = null;
-                                _region = null;
-                                _availableNow = null;
-                              });
-                              _onFilterChanged();
-                            },
-                            icon: const Icon(Icons.clear_all_rounded, size: 18),
-                            label: const Text('Očisti filtere'),
-                          ),
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            SearchMobileCategories(
+                              categories: topCategories,
+                              selectedCategory: _category,
+                              categoryCounts: _categoryCounts,
+                              onCategorySelected: (cat) {
+                                setState(() => _category = cat);
+                                _onFilterChanged();
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                    SearchTipsBanner(
-                      margin: EdgeInsets.symmetric(
-                        horizontal: contentPadding,
-                        vertical: 4,
+                      SearchHistoryPanel(
+                        historyFuture: _historyFuture,
+                        isSearchEmpty: _searchController.text.isEmpty,
+                        onClearAll: () async {
+                          await _searchHistoryService.clearHistory();
+                          if (mounted) {
+                            setState(() {
+                              _historyFuture =
+                                  _searchHistoryService.getHistory();
+                            });
+                          }
+                        },
+                        onSelectHistory: (h) {
+                          _searchController.text = h;
+                          _applySearchImmediate(h);
+                        },
+                        onRemoveHistory: (h) async {
+                          await _searchHistoryService.removeFromHistory(h);
+                          if (mounted) {
+                            setState(() {
+                              _historyFuture =
+                                  _searchHistoryService.getHistory();
+                            });
+                          }
+                        },
                       ),
-                    ),
-                    Expanded(
-                      child: SearchResultsGrid(
-                        products: _products,
-                        loading: _loading,
-                        loadingMore: _loadingMore,
-                        searchError: _searchError,
-                        scrollController: _scrollController,
-                        onRefresh: _onRefresh,
-                        onRetry: _loadFirstPage,
-                        itemBuilder: (ctx, i) =>
-                            _buildProductCard(ctx, i, user),
-                        emptyStateWidget: _buildEmptyState(),
-                        crossAxisCount:
-                            mobileResultsAsGrid ? stackedResultColumns : 2,
-                        mainAxisExtent:
-                            mobileResultsAsGrid ? stackedGridExtent : 255,
-                        spacing: stackedGridSpacing,
-                        contentPadding: contentPadding,
-                        asGrid: mobileResultsAsGrid,
+                      SearchFilterBar(
+                        sort: _sort,
+                        onSortChanged: (s) {
+                          setState(() => _sort = s);
+                          _onFilterChanged();
+                        },
+                        region: _region,
+                        onRegionChanged: (r) {
+                          setState(() => _region = r);
+                          _onFilterChanged();
+                        },
+                        availableNow: _availableNow,
+                        onAvailableNowChanged: (a) {
+                          setState(() => _availableNow = a);
+                          _onFilterChanged();
+                        },
                       ),
-                    ),
-                  ],
-                ),
+                      if (hasActiveFilters)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _category = null;
+                                  _region = null;
+                                  _availableNow = null;
+                                });
+                                _onFilterChanged();
+                              },
+                              icon: const Icon(Icons.clear_all_rounded,
+                                  size: 18),
+                              label: const Text('Očisti filtere'),
+                            ),
+                          ),
+                        ),
+                      SearchTipsBanner(
+                        margin: EdgeInsets.symmetric(
+                          horizontal: contentPadding,
+                          vertical: 4,
+                        ),
+                      ),
+                      Expanded(
+                        child: SearchResultsGrid(
+                          products: _products,
+                          loading: _loading,
+                          loadingMore: _loadingMore,
+                          searchError: _searchError,
+                          scrollController: _scrollController,
+                          onRefresh: _onRefresh,
+                          onRetry: _loadFirstPage,
+                          itemBuilder: (ctx, i) =>
+                              _buildProductCard(ctx, i, user),
+                          emptyStateWidget: _buildEmptyState(),
+                          crossAxisCount:
+                              mobileResultsAsGrid ? stackedResultColumns : 2,
+                          mainAxisExtent:
+                              mobileResultsAsGrid ? stackedGridExtent : 255,
+                          spacing: stackedGridSpacing,
+                          contentPadding: contentPadding,
+                          asGrid: mobileResultsAsGrid,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

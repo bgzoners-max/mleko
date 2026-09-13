@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../models/product_model.dart';
 import '../providers/app_state.dart';
 import '../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
+import '../utils/image_precache_utils.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_empty_state.dart';
@@ -35,22 +35,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   final Set<String> _preloadedImages = <String>{};
 
   void _warmupProductImages(List<ProductModel> products) {
-    final urls = products
-        .map((p) => p.imageUrls.isNotEmpty ? p.imageUrls.first : null)
-        .whereType<String>()
-        .where((u) => u.isNotEmpty)
-        .take(12)
-        .toList();
-    if (urls.isEmpty) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      for (final url in urls) {
-        if (!mounted) return;
-        if (_preloadedImages.add(url)) {
-          await precacheImage(CachedNetworkImageProvider(url), context);
-        }
-      }
-    });
+    warmupProductImages(
+      context: context,
+      products: products,
+      preloadedUrls: _preloadedImages,
+      isMounted: () => mounted,
+    );
   }
 
   void _initStream(String userId) {

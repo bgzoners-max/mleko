@@ -13,7 +13,7 @@ class OrderSyncService {
   final OrderQueueService _queueService;
   final OrdersService _ordersService;
   final SyncAnalyticsService _analyticsService;
-  final _client = Supabase.instance.client;
+  SupabaseClient get _client => Supabase.instance.client;
   static const _duplicateLookback = Duration(days: 2);
 
   OrderSyncService({

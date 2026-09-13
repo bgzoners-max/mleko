@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/responsive.dart';
 import '../../models/home_products_data.dart';
 import '../skeleton.dart';
 import '../app_empty_state.dart';
+import '../app_network_image.dart';
 import 'favorite_farms_list.dart';
 
 class HomeSidePanel extends StatefulWidget {
@@ -161,9 +161,9 @@ class TopProductsList extends StatelessWidget {
             !snapshot.hasData) {
           return const ProductListSkeleton();
         }
-        if (snapshot.hasError) {
+        if (snapshot.hasError && !snapshot.hasData) {
           return Center(
-              child: Text('GreÅ¡ka pri uÄitavanju proizvoda.',
+              child: Text('Greška pri učitavanju proizvoda.',
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -204,14 +204,10 @@ class TopProductsList extends StatelessWidget {
               leading: p.imageUrls.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
+                      child: AppNetworkImage.icon(
                         imageUrl: p.imageUrls.first,
                         width: 40,
                         height: 40,
-                        fit: BoxFit.cover,
-                        memCacheWidth: 80,
-                        memCacheHeight: 80,
-                        fadeInDuration: Duration.zero,
                       ),
                     )
                   : const Icon(Icons.shopping_basket),

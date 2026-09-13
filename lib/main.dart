@@ -14,8 +14,10 @@ import 'firebase_options.dart';
 import 'providers/app_settings_provider.dart';
 import 'providers/app_state.dart';
 import 'services/communication/communication_services.dart';
+import 'services/core/crash_reporting_service.dart';
 import 'services/core/logger_service.dart';
 import 'services/core/notification_handler_service.dart';
+import 'widgets/common/app_error_widget.dart';
 import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
 import 'providers/favorites_provider.dart';
@@ -26,6 +28,7 @@ import 'services/catalog/catalog_services.dart';
 import 'services/orders/order_services.dart';
 import 'services/social/social_services.dart';
 import 'services/classifieds/classifieds_service.dart';
+import 'services/classifieds/classified_reports_service.dart';
 import 'widgets/global_keyboard_scroll.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
@@ -138,8 +141,15 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Graceful fallback za sve greške u renderovanju widgeta
+  ErrorWidget.builder = (details) {
+    CrashReportingService.recordFlutterError(details);
+    return AppErrorWidget(details: details);
+  };
+
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
+    CrashReportingService.recordFlutterError(details);
     LoggerService.error(
       'FlutterError: ${details.exceptionAsString()}',
       'FlutterError: ${details.exceptionAsString()}: ${details.exception}',
@@ -147,6 +157,7 @@ void main() async {
     );
   };
   PlatformDispatcher.instance.onError = (error, stack) {
+    CrashReportingService.recordError(error, stack, fatal: true);
     LoggerService.error(
       'Uncaught async error',
       error,
@@ -161,12 +172,15 @@ void main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       await PushService.initialize();
+      await CrashReportingService.initialize();
     } catch (e) {
       LoggerService.warning(
-        'Firebase initialization failed - push notifications disabled',
+        'Firebase initialization failed - push notifications and crash reporting disabled',
         extra: {'error': e.toString()},
       );
     }
+  } else {
+    await CrashReportingService.initialize();
   }
 
   await initializeDateFormatting('sr', null);
@@ -200,16 +214,25 @@ void main() async {
   final favoritesProvider = FavoritesProvider();
   final locationProvider = LocationProvider();
   final classifiedsService = ClassifiedsService();
+  final classifiedReportsService = ClassifiedReportsService();
   final classifiedsProvider = ClassifiedsProvider();
   final router = createRouter(appState);
 
-  // Sinhronizacija omiljenih sa statusom prijave
+  // Sinhronizacija omiljenih, korpe, praćenja oglasa i korisničkog ID-a za monitoring sa statusom prijave
   appState.addListener(() {
     final user = appState.user;
     if (user != null && !user.isGuest) {
       favoritesProvider.load(user.id);
+      classifiedsProvider.loadSubscriptions();
+      CrashReportingService.setUserIdentifier(user.id);
+      if (cartProvider.count > 0) {
+        cartProvider.claimGuestCart(user.id);
+      }
     } else {
       favoritesProvider.clear();
+      classifiedsProvider.clearSubscriptions();
+      CrashReportingService.setUserIdentifier(null);
+      cartProvider.clearForLogout();
     }
   });
 
@@ -231,6 +254,7 @@ void main() async {
       reviewsService: reviewsService,
       usersService: usersService,
       classifiedsService: classifiedsService,
+      classifiedReportsService: classifiedReportsService,
       child: OfflineIndicator(
         child: p_provider.Consumer<AppSettingsProvider>(
           builder: (_, settings, __) => MaterialApp.router(

@@ -104,4 +104,10 @@ class LocationProvider extends ChangeNotifier {
       LoggerService.error('LocationProvider: failed to clear region', e);
     }
   }
+
+  @override
+  void dispose() {
+    _regionNotifier.dispose();
+    super.dispose();
+  }
 }

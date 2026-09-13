@@ -1,8 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../models/conversation_model.dart';
@@ -10,19 +11,9 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
-import '../widgets/app_network_image.dart';
+import '../widgets/chat/conversation_list_tile.dart';
+import '../widgets/chat/conversations_desktop_sidebar.dart';
 import '../widgets/skeleton.dart';
-
-String _formatConvTime(DateTime? dt) {
-  if (dt == null) return '';
-  final now = DateTime.now();
-  final diff = now.difference(dt);
-  if (diff.inDays == 0) return DateFormat('HH:mm').format(dt);
-  if (diff.inDays == 1) return 'juče';
-  if (diff.inDays < 7) return DateFormat('EEE', 'sr').format(dt);
-  if (dt.year == now.year) return DateFormat('d. MMM', 'sr').format(dt);
-  return DateFormat('d.M.yy', 'sr').format(dt);
-}
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -78,7 +69,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -110,7 +102,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -127,7 +120,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _showDesktopMenu(
       BuildContext context, ConversationModel conv, Offset position) async {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
     final rel = RelativeRect.fromRect(
       Rect.fromLTWH(position.dx, position.dy, 1, 1),
       Offset.zero & overlay.size,
@@ -261,7 +255,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             itemCount: filtered.length,
             itemBuilder: (_, i) {
               final conv = filtered[i];
-              return _ConversationTile(
+              return ConversationListTile(
                 conv: conv,
                 onTap: () => context.push('/chat/${conv.id}'),
                 onLongPress: () => _showConversationMenu(context, conv),
@@ -277,112 +271,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  Widget _buildDesktopSidebar(
-    BuildContext context,
-    List<ConversationModel> list,
-  ) {
-    final favoritesCount = list.where((c) => c.isFavorite).length;
-    final unreadCount = list.fold<int>(0, (sum, c) => sum + c.unreadCount);
-    final cardPadding = Breakpoints.cardPadding(context);
-    final selectedIndex = _tabController.index;
-
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Poruke',
-                    style: Breakpoints.sectionTitleStyle(
-                      context,
-                      Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Brz pregled razgovora i nepročitanih poruka.',
-                    style: Breakpoints.supportingTextStyle(
-                      context,
-                      Theme.of(context).textTheme.bodyMedium,
-                      phone: 13,
-                      largeTabletValue: 14,
-                      desktop: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _StatChip(
-                        icon: Icons.chat_bubble_outline,
-                        label: 'Ukupno',
-                        value: list.length.toString(),
-                      ),
-                      _StatChip(
-                        icon: Icons.star_border,
-                        label: 'Omiljeni',
-                        value: favoritesCount.toString(),
-                      ),
-                      _StatChip(
-                        icon: Icons.mark_chat_unread_outlined,
-                        label: 'Nepročitano',
-                        value: unreadCount.toString(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.tonalIcon(
-                    onPressed: () => _refreshController.add(null),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Osveži razgovore'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: Breakpoints.panelGap(context)),
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Prikaz',
-                    style: Breakpoints.sectionTitleStyle(
-                      context,
-                      Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _SidebarNavTile(
-                    icon: Icons.chat_outlined,
-                    label: 'Svi razgovori',
-                    selected: selectedIndex == 0,
-                    onTap: () => _tabController.animateTo(0),
-                  ),
-                  const SizedBox(height: 8),
-                  _SidebarNavTile(
-                    icon: Icons.star_border,
-                    label: 'Omiljeni',
-                    selected: selectedIndex == 1,
-                    onTap: () => _tabController.animateTo(1),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
@@ -392,7 +280,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         body: AppEmptyState(
           icon: Icons.chat_bubble_outline,
           title: 'Vaše poruke',
-          subtitle: 'Prijavite se da biste mogli da komunicirate sa prodavcima.',
+          subtitle:
+              'Prijavite se da biste mogli da komunicirate sa prodavcima.',
           ctaLabel: 'Prijavi se',
           onCtaPressed: () => context.go('/login'),
         ),
@@ -455,7 +344,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     children: [
                       SizedBox(
                         width: Breakpoints.desktopSidebarWidth(context),
-                        child: _buildDesktopSidebar(context, list),
+                        child: ConversationsDesktopSidebar(
+                          list: list,
+                          selectedIndex: _tabController.index,
+                          onSelectTab: (idx) =>
+                              _tabController.animateTo(idx),
+                          onRefresh: () => _refreshController.add(null),
+                        ),
                       ),
                       SizedBox(width: panelGap),
                       Expanded(
@@ -538,256 +433,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _SidebarNavTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _SidebarNavTile({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: selected
-              ? colorScheme.primary.withValues(alpha: 0.10)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(icon,
-                  size: 18, color: selected ? colorScheme.primary : null),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? colorScheme.primary : null,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _StatChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16),
-            const SizedBox(width: 8),
-            Text('$label: $value'),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Conversation tile with hover actions for desktop ─────────────────────────
-
-class _ConversationTile extends StatefulWidget {
-  final ConversationModel conv;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final void Function(Offset) onSecondaryTap;
-  final VoidCallback onToggleFavorite;
-  final VoidCallback onHide;
-
-  const _ConversationTile({
-    required this.conv,
-    required this.onTap,
-    required this.onLongPress,
-    required this.onSecondaryTap,
-    required this.onToggleFavorite,
-    required this.onHide,
-  });
-
-  @override
-  State<_ConversationTile> createState() => _ConversationTileState();
-}
-
-class _ConversationTileState extends State<_ConversationTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final conv = widget.conv;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onSecondaryTapUp: (d) => widget.onSecondaryTap(d.globalPosition),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: widget.onTap,
-            onLongPress: widget.onLongPress,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  // Avatar
-                  conv.otherPartyImageUrl != null &&
-                          conv.otherPartyImageUrl!.isNotEmpty
-                      ? ClipOval(
-                          child: AppNetworkImage.profileSmall(
-                            imageUrl: conv.otherPartyImageUrl!,
-                            width: 44,
-                            height: 44,
-                          ),
-                        )
-                      : CircleAvatar(
-                          radius: 22,
-                          backgroundColor: Colors.grey.shade300,
-                          child:
-                              Icon(Icons.person, color: Colors.grey.shade600),
-                        ),
-                  const SizedBox(width: 12),
-                  // Tekst
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (conv.isFavorite)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: Icon(Icons.star,
-                                    size: 14, color: Colors.amber.shade700),
-                              ),
-                            Expanded(
-                              child: Text(
-                                conv.otherPartyName ?? 'Korisnik',
-                                style: TextStyle(
-                                  fontWeight: conv.unreadCount > 0
-                                      ? FontWeight.bold
-                                      : FontWeight.w600,
-                                  fontSize: 15,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          conv.lastMessageBody ?? 'Nema poruka',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: conv.unreadCount > 0
-                                ? Colors.black87
-                                : Colors.grey.shade600,
-                            fontWeight: conv.unreadCount > 0
-                                ? FontWeight.w500
-                                : FontWeight.normal,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Hover akcije (desktop) ili vreme+badge (uvek)
-                  if (_hovered)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: conv.isFavorite
-                              ? 'Ukloni iz omiljenih'
-                              : 'Dodaj u omiljene',
-                          icon: Icon(
-                            conv.isFavorite ? Icons.star : Icons.star_border,
-                            color: conv.isFavorite ? Colors.amber : null,
-                          ),
-                          onPressed: widget.onToggleFavorite,
-                        ),
-                        IconButton(
-                          tooltip: 'Sakrij razgovor',
-                          icon: const Icon(Icons.visibility_off_outlined),
-                          onPressed: widget.onHide,
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _formatConvTime(conv.lastMessageAt),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: conv.unreadCount > 0
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.shade500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        if (conv.unreadCount > 0)
-                          Badge(
-                            label: Text('${conv.unreadCount}'),
-                            child: const SizedBox(width: 8),
-                          )
-                        else
-                          const Icon(Icons.chevron_right, size: 18),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

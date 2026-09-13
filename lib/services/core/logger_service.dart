@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
 import '../../models/app_error.dart';
+import 'crash_reporting_service.dart';
 
 /// Centralizovani logger servis za sve log poruke.
 /// Čuva poslednjih [maxLoggedEntries] logova u memoriji za dijagnostiku.
@@ -84,6 +85,13 @@ class LoggerService {
         debugPrint('$_prefix StackTrace:\n$stackTrace');
       }
     }
+
+    CrashReportingService.recordError(
+      exception,
+      stackTrace,
+      reason: message,
+      information: extra != null ? [extra] : const [],
+    );
   }
 
   /// Log AppError sa svim detaljima
@@ -97,6 +105,12 @@ class LoggerService {
         debugPrint('$_prefix StackTrace:\n${error.stackTrace}');
       }
     }
+
+    CrashReportingService.recordError(
+      error.originalException ?? error.message,
+      error.stackTrace,
+      reason: 'AppError: ${error.type} (${error.code ?? "N/A"}) - ${error.message}',
+    );
   }
 
   /// Log performanse - koristi za tracking spore operacije

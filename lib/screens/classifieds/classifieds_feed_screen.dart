@@ -5,14 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../constants/serbian_cities.dart';
+import '../../constants/serbian_districts.dart';
 import '../../core/responsive.dart';
+import '../../models/category_attribute_model.dart';
 import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../services/classifieds/classifieds_service.dart';
+import '../../utils/classified_attributes_engine.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/classifieds/classified_ad_card.dart';
+import '../../widgets/classifieds/classified_category_tiles.dart';
+import '../../widgets/classifieds/classified_filter_bottom_sheets.dart';
+import '../../widgets/classifieds/classified_sort_dropdown.dart';
+import '../../widgets/classifieds/classified_subscription_chip.dart';
 
 class ClassifiedsFeedScreen extends StatefulWidget {
   final Widget? headerWidget;
@@ -70,115 +75,31 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     });
   }
 
-  void _openCityPicker(BuildContext context) {
-    final provider = context.read<ClassifiedsProvider>();
-    String searchQuery = '';
-
-    showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final filteredCities = searchQuery.trim().isEmpty
-                ? SerbianCities.all
-                : SerbianCities.suggestions(searchQuery);
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.75,
-              minChildSize: 0.4,
-              maxChildSize: 0.95,
-              expand: false,
-              builder: (_, scrollCtl) {
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Text(
-                            'Izaberi grad ili lokaciju',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(ctx),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Pretraži grad...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          isDense: true,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onChanged: (val) {
-                          setModalState(() => searchQuery = val);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ListView(
-                        controller: scrollCtl,
-                        children: [
-                          if (searchQuery.trim().isEmpty)
-                            ListTile(
-                              title: const Text('Svi gradovi', style: TextStyle(fontWeight: FontWeight.bold)),
-                              trailing: provider.selectedCity == null
-                                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
-                                  : null,
-                              onTap: () {
-                                provider.selectCity(null);
-                                Navigator.pop(ctx);
-                              },
-                            ),
-                          ...filteredCities.map((city) {
-                            final isSelected = provider.selectedCity == city;
-                            return ListTile(
-                              title: Text(city),
-                              trailing: isSelected
-                                  ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
-                                  : null,
-                              onTap: () {
-                                provider.selectCity(city);
-                                Navigator.pop(ctx);
-                              },
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildCityButton(
     BuildContext context,
     ClassifiedsProvider classifieds,
     ColorScheme colorScheme,
   ) {
     final hasSelectedCity = classifieds.selectedCity != null;
+    final hasSelectedDistrict = classifieds.selectedDistrict != null;
+    final hasSelection = hasSelectedCity || hasSelectedDistrict;
+
+    String labelText = 'Sve lokacije';
+    if (hasSelectedCity) {
+      labelText = classifieds.selectedCity!;
+    } else if (hasSelectedDistrict) {
+      final d = SerbianDistricts.findDistrictById(classifieds.selectedDistrict!);
+      labelText = d?.name ?? classifieds.selectedDistrict!;
+    }
+
     return SizedBox(
       height: 40,
       child: OutlinedButton.icon(
-        onPressed: () => _openCityPicker(context),
+        onPressed: () => showClassifiedCityPickerSheet(context),
         icon: Icon(
-          Icons.location_on_outlined,
+          hasSelectedDistrict ? Icons.map_outlined : Icons.location_on_outlined,
           size: 16,
-          color: hasSelectedCity ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          color: hasSelection ? colorScheme.primary : colorScheme.onSurfaceVariant,
         ),
         label: Row(
           mainAxisSize: MainAxisSize.min,
@@ -186,20 +107,23 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 140),
               child: Text(
-                classifieds.selectedCity ?? 'Svi gradovi',
+                labelText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: hasSelectedCity ? FontWeight.bold : FontWeight.w500,
-                  color: hasSelectedCity ? colorScheme.primary : colorScheme.onSurface,
+                  fontWeight: hasSelection ? FontWeight.bold : FontWeight.w500,
+                  color: hasSelection ? colorScheme.primary : colorScheme.onSurface,
                 ),
               ),
             ),
-            if (hasSelectedCity) ...[
+            if (hasSelection) ...[
               const SizedBox(width: 4),
               InkWell(
-                onTap: () => classifieds.selectCity(null),
+                onTap: () {
+                  classifieds.selectCity(null);
+                  classifieds.selectDistrict(null);
+                },
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.all(2),
@@ -215,59 +139,13 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           side: BorderSide(
-            color: hasSelectedCity
+            color: hasSelection
                 ? colorScheme.primary
                 : colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
-          backgroundColor: hasSelectedCity
+          backgroundColor: hasSelection
               ? colorScheme.primaryContainer.withValues(alpha: 0.25)
               : colorScheme.surfaceContainerLowest,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSortDropdown(
-    BuildContext context,
-    ClassifiedsProvider classifieds,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<ClassifiedSort>(
-          value: classifieds.sort,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-          borderRadius: BorderRadius.circular(12),
-          items: const [
-            DropdownMenuItem(
-              value: ClassifiedSort.newest,
-              child: Text('Najnovije', style: TextStyle(fontSize: 12)),
-            ),
-            DropdownMenuItem(
-              value: ClassifiedSort.priceAsc,
-              child: Text('Cena: najniža', style: TextStyle(fontSize: 12)),
-            ),
-            DropdownMenuItem(
-              value: ClassifiedSort.priceDesc,
-              child: Text('Cena: najviša', style: TextStyle(fontSize: 12)),
-            ),
-            DropdownMenuItem(
-              value: ClassifiedSort.popular,
-              child: Text('Najpopularnije', style: TextStyle(fontSize: 12)),
-            ),
-          ],
-          onChanged: (s) {
-            if (s != null) classifieds.changeSort(s);
-          },
         ),
       ),
     );
@@ -281,17 +159,17 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     final selected = classifieds.selectedCondition;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Widget buildChip({
-      required String? value,
+    Widget buildChipItem({
+      required bool isSelected,
+      required VoidCallback onTap,
       required String label,
       IconData? icon,
       Color? activeColor,
     }) {
-      final isSelected = selected == value;
       final effectiveColor = activeColor ?? colorScheme.primary;
 
       return InkWell(
-        onTap: () => classifieds.selectCondition(value),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -334,23 +212,122 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       );
     }
 
+    final activeRootId = classifieds.activeRootCategory?.id;
+    final selectedCatId = classifieds.selectedCategoryId;
+    final isRealEstate = activeRootId == 'nekretnine' ||
+        selectedCatId == 'nekretnine' ||
+        (selectedCatId != null &&
+            (selectedCatId.contains('stan') ||
+                selectedCatId.contains('kuc') ||
+                selectedCatId.contains('plac') ||
+                selectedCatId.contains('zemlj') ||
+                selectedCatId.contains('poslovn') ||
+                selectedCatId.contains('vikendic') ||
+                selectedCatId.contains('garaz')));
+
+    final hasCondition = classifieds.isConditionApplicableForSelectedCategory;
+    final selectedTx = classifieds.selectedAttributes['transaction_type']?.toString();
+    final hasPriceOrArea = classifieds.minPrice != null ||
+        classifieds.maxPrice != null ||
+        classifieds.selectedAttributes.containsKey('min_area_m2') ||
+        classifieds.selectedAttributes.containsKey('max_area_m2');
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        buildChip(value: null, label: 'Sve'),
-        const SizedBox(width: 6),
-        buildChip(
-          value: 'new',
-          label: 'Novo',
-          icon: Icons.check_circle_outline,
-          activeColor: const Color(0xFF059669),
+        if (isRealEstate) ...[
+          // Tip transakcije za nekretnine (Prodaja / Izdavanje / Stan na dan)
+          buildChipItem(
+            isSelected: selectedTx == null,
+            onTap: () => classifieds.removeAttributeFilter('transaction_type'),
+            label: 'Sve',
+          ),
+          const SizedBox(width: 6),
+          buildChipItem(
+            isSelected: selectedTx == 'prodaja',
+            onTap: () => classifieds.setAttributeFilter('transaction_type', 'prodaja'),
+            label: 'Prodaja',
+            icon: Icons.sell_outlined,
+            activeColor: const Color(0xFF4338CA),
+          ),
+          const SizedBox(width: 6),
+          buildChipItem(
+            isSelected: selectedTx == 'izdavanje',
+            onTap: () => classifieds.setAttributeFilter('transaction_type', 'izdavanje'),
+            label: 'Izdavanje',
+            icon: Icons.vpn_key_outlined,
+            activeColor: const Color(0xFF0284C7),
+          ),
+          const SizedBox(width: 6),
+          buildChipItem(
+            isSelected: selectedTx == 'na_dan',
+            onTap: () => classifieds.setAttributeFilter('transaction_type', 'na_dan'),
+            label: 'Na dan',
+            icon: Icons.hotel_outlined,
+            activeColor: const Color(0xFF0F766E),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 1,
+            height: 20,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 8),
+        ] else if (hasCondition) ...[
+          buildChipItem(
+            isSelected: selected == null,
+            onTap: () => classifieds.selectCondition(null),
+            label: 'Sve',
+          ),
+          const SizedBox(width: 6),
+          buildChipItem(
+            isSelected: selected == 'new',
+            onTap: () => classifieds.selectCondition('new'),
+            label: 'Novo',
+            icon: Icons.check_circle_outline,
+            activeColor: const Color(0xFF059669),
+          ),
+          const SizedBox(width: 6),
+          buildChipItem(
+            isSelected: selected == 'used',
+            onTap: () => classifieds.selectCondition('used'),
+            label: 'Polovno',
+            icon: Icons.inventory_2_outlined,
+            activeColor: const Color(0xFF475569),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 1,
+            height: 20,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 8),
+        ],
+
+        // Brzo dugme za filter cene i kvadrature
+        buildChipItem(
+          isSelected: hasPriceOrArea,
+          onTap: () => showClassifiedPriceAndAreaFilterSheet(context, isRealEstate: isRealEstate),
+          label: isRealEstate ? 'Cena i m²' : 'Cena',
+          icon: Icons.tune_rounded,
+          activeColor: colorScheme.primary,
         ),
         const SizedBox(width: 6),
-        buildChip(
-          value: 'used',
-          label: 'Polovno',
-          icon: Icons.inventory_2_outlined,
-          activeColor: const Color(0xFF475569),
+
+        buildChipItem(
+          isSelected: classifieds.onlyFeatured,
+          onTap: () => classifieds.setOnlyFeatured(!classifieds.onlyFeatured),
+          label: 'Istaknuto',
+          icon: Icons.star_rounded,
+          activeColor: const Color(0xFFD97706),
+        ),
+        const SizedBox(width: 6),
+        buildChipItem(
+          isSelected: classifieds.onlyUrgent,
+          onTap: () => classifieds.setOnlyUrgent(!classifieds.onlyUrgent),
+          label: 'Hitno',
+          icon: Icons.bolt_rounded,
+          activeColor: const Color(0xFFDC2626),
         ),
       ],
     );
@@ -391,6 +368,30 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
+          if (classifieds.selectedDistrict != null) ...[
+            () {
+              final dist = SerbianDistricts.findDistrictById(classifieds.selectedDistrict!);
+              final name = dist?.name ?? classifieds.selectedDistrict!;
+              return InputChip(
+                avatar: const Icon(Icons.map_outlined, size: 14),
+                label: Text('Okrug: $name', style: const TextStyle(fontSize: 11)),
+                onDeleted: () => classifieds.selectDistrict(null),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              );
+            }(),
+          ],
+          if (classifieds.minPrice != null || classifieds.maxPrice != null)
+            InputChip(
+              avatar: const Icon(Icons.payments_outlined, size: 14),
+              label: Text(
+                'Cena: ${classifieds.minPrice != null ? '${classifieds.minPrice!.toInt()}€' : '0€'} - ${classifieds.maxPrice != null ? '${classifieds.maxPrice!.toInt()}€' : '∞'}',
+                style: const TextStyle(fontSize: 11),
+              ),
+              onDeleted: () => classifieds.setPriceRange(minPrice: null, maxPrice: null),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           if (classifieds.selectedCondition != null)
             InputChip(
               avatar: Icon(
@@ -418,13 +419,81 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
+          if (classifieds.onlyFeatured)
+            InputChip(
+              avatar: const Icon(Icons.star_rounded, size: 14, color: Color(0xFFD97706)),
+              label: const Text('Istaknuto', style: TextStyle(fontSize: 11)),
+              onDeleted: () => classifieds.setOnlyFeatured(false),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          if (classifieds.onlyUrgent)
+            InputChip(
+              avatar: const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFDC2626)),
+              label: const Text('Hitno', style: TextStyle(fontSize: 11)),
+              onDeleted: () => classifieds.setOnlyUrgent(false),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          if (classifieds.selectedAttributes.isNotEmpty) ...[
+            for (final entry in classifieds.selectedAttributes.entries) ...[
+              () {
+                final attr =
+                    ClassifiedAttributesEngine.findAttributeByKey(entry.key);
+                final label = attr?.label ?? entry.key;
+                final formatted = attr != null
+                    ? attr.formatValue(entry.value)
+                    : entry.value.toString();
+                return InputChip(
+                  avatar:
+                      attr?.icon != null ? Icon(attr!.icon, size: 14) : null,
+                  label: Text('$label: $formatted',
+                      style: const TextStyle(fontSize: 11)),
+                  onDeleted: () => classifieds.removeAttributeFilter(entry.key),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              }(),
+            ],
+          ],
+          if (classifieds.selectedCategoryId != null ||
+              (classifieds.searchQuery != null &&
+                  classifieds.searchQuery!.isNotEmpty))
+            ActionChip(
+              avatar: Icon(
+                (classifieds.selectedCategoryId != null &&
+                        classifieds.isCategorySubscribed(
+                            classifieds.selectedCategoryId!))
+                    ? Icons.notifications_active_rounded
+                    : Icons.notification_add_outlined,
+                size: 13,
+                color: (classifieds.selectedCategoryId != null &&
+                        classifieds.isCategorySubscribed(
+                            classifieds.selectedCategoryId!))
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+              label: Text(
+                (classifieds.selectedCategoryId != null &&
+                        classifieds.isCategorySubscribed(
+                            classifieds.selectedCategoryId!))
+                    ? 'Pratite'
+                    : 'Sačuvaj pretragu',
+                style: const TextStyle(fontSize: 11),
+              ),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onPressed: () => handleClassifiedSubscribe(
+                context,
+                classifieds,
+                categoryId: classifieds.selectedCategoryId,
+                searchQuery: classifieds.searchQuery,
+              ),
+            ),
           TextButton.icon(
             onPressed: () {
               _searchController.clear();
-              classifieds.selectCategory(null);
-              classifieds.selectCity(null);
-              classifieds.selectCondition(null);
-              classifieds.search(null);
+              classifieds.clearAllFilters();
             },
             icon: const Icon(Icons.close, size: 12),
             style: TextButton.styleFrom(
@@ -589,29 +658,24 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     final isFiltered = classifieds.selectedCategoryId != null ||
         classifieds.selectedCity != null ||
+        classifieds.selectedDistrict != null ||
+        classifieds.minPrice != null ||
+        classifieds.maxPrice != null ||
         classifieds.selectedCondition != null ||
+        classifieds.selectedAttributes.isNotEmpty ||
+        classifieds.onlyFeatured ||
+        classifieds.onlyUrgent ||
         (classifieds.searchQuery != null && classifieds.searchQuery!.isNotEmpty);
 
-    // FAB
-    final fab = FloatingActionButton.extended(
-      onPressed: () {
-        if (user == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Prijavite se da biste postavili oglas.'),
-              action: SnackBarAction(
-                label: 'Prijava',
-                onPressed: () => context.push('/login'),
-              ),
-            ),
+    // FAB — samo za prijavljene korisnike (gost može samo da pregleda)
+    final isGuest = user == null || user.isGuest;
+    final fab = isGuest
+        ? null
+        : FloatingActionButton.extended(
+            onPressed: () => context.push('/classifieds/new'),
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.bold)),
           );
-          return;
-        }
-        context.push('/classifieds/new');
-      },
-      icon: const Icon(Icons.add_circle_outline),
-      label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.bold)),
-    );
 
     final scrollBody = RefreshIndicator(
       onRefresh: classifieds.refresh,
@@ -642,6 +706,40 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (user?.isAdmin == true) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: InkWell(
+                        onTap: () => context.push('/admin/classifieds'),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.amber.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.shield_outlined, size: 18, color: Colors.amber.shade900),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Admin panel: Moderacija prijavljenih oglasa',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber.shade900,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, size: 18, color: Colors.amber.shade900),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   // Search bar
                   TextField(
                     controller: _searchController,
@@ -683,7 +781,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   // Filteri grad + kategorije + sort (jedan red na desktopu, dva reda na mobilnom)
                   const SizedBox(height: 8),
                   if (isDesktop) ...[
-                    // JEDAN RED NA DESKTOPU: [ SVI GRADOVI ] [ STANJE ] [ <- KATEGORIJE ... -> ] [ NAJNOVIJE v ]
+                    // JEDAN RED NA DESKTOPU: [ SVI GRADOVI ] [ STANJE (ako važi) ] [ <- KATEGORIJE ... -> ] [ NAJNOVIJE v ]
                     Row(
                       children: [
                         _buildCityButton(context, classifieds, colorScheme),
@@ -702,7 +800,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         else
                           const Spacer(),
                         const SizedBox(width: 8),
-                        _buildSortDropdown(context, classifieds, colorScheme),
+                        ClassifiedSortDropdown(classifieds: classifieds),
                       ],
                     ),
                   ] else ...[
@@ -714,11 +812,11 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                           child: _buildCityButton(context, classifieds, colorScheme),
                         ),
                         const SizedBox(width: 8),
-                        _buildSortDropdown(context, classifieds, colorScheme),
+                        ClassifiedSortDropdown(classifieds: classifieds),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Red 2: Stanje (Sve / Novo / Polovno)
+                    // Red 2: Stanje (ako važi) + Promocije (Istaknuto, Hitno)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: _buildConditionChips(context, classifieds, colorScheme),
@@ -764,7 +862,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     mainAxisExtent: 56,
                   ),
                   delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => _CategoryGridTile(
+                    (ctx, i) => CategoryGridTile(
                       category: classifieds.categories[i],
                       onTap: () => classifieds.selectCategory(classifieds.categories[i].id),
                     ),
@@ -828,6 +926,29 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             if (classifieds.activeRootCategory != null)
               ..._buildSubcategoriesSlivers(context, classifieds, theme, colorScheme),
 
+            // 3. Filteri parametara/karakteristika (gorivo, menjač, karoserija, sobe...)
+            () {
+              final catAttrs =
+                  ClassifiedAttributesEngine.getAttributesForCategory(
+                classifieds.selectedCategoryId,
+                breadcrumbs: classifieds.categoryBreadcrumbs,
+              );
+              if (catAttrs.isNotEmpty) {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: _buildAttributeFilterBar(
+                      context,
+                      classifieds,
+                      colorScheme,
+                      catAttrs,
+                    ),
+                  ),
+                );
+              }
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            }(),
+
             // Separator i naslov sekcije oglasa sa dugmetom za poništavanje
             SliverToBoxAdapter(
               child: Padding(
@@ -847,6 +968,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         classifieds.selectCategory(null);
                         classifieds.selectCity(null);
                         classifieds.selectCondition(null);
+                        classifieds.clearAttributeFilters();
                         classifieds.search(null);
                       },
                       icon: const Icon(Icons.close, size: 14),
@@ -892,20 +1014,23 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   title: 'Nema oglasa',
                   subtitle: isFiltered
                       ? 'Pokušajte sa promenom filtera ili pretrage.'
-                      : 'Budite prvi koji će postaviti oglas!',
-                  ctaLabel: isFiltered ? 'Poništi filtere' : 'Postavi oglas',
-                  ctaIcon: isFiltered ? Icons.refresh : Icons.add_circle_outline,
-                  onCtaPressed: () {
-                    if (isFiltered) {
-                      _searchController.clear();
-                      classifieds.selectCategory(null);
-                      classifieds.selectCity(null);
-                      classifieds.selectCondition(null);
-                      classifieds.search(null);
-                    } else {
-                      context.push('/classifieds/new');
-                    }
-                  },
+                      : (isGuest
+                          ? 'Trenutno nema objavljenih oglasa.'
+                          : 'Budite prvi koji će postaviti oglas!'),
+                  ctaLabel: isFiltered
+                      ? 'Poništi filtere'
+                      : (isGuest ? null : 'Postavi oglas'),
+                  ctaIcon: isFiltered
+                      ? Icons.refresh
+                      : (isGuest ? null : Icons.add_circle_outline),
+                  onCtaPressed: isFiltered
+                      ? () {
+                          _searchController.clear();
+                          classifieds.clearAllFilters();
+                        }
+                      : (isGuest
+                          ? null
+                          : () => context.push('/classifieds/new')),
                 ),
               ),
             )
@@ -957,11 +1082,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         fit: StackFit.expand,
         children: [
           content,
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: SafeArea(child: fab),
-          ),
+          if (fab != null)
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: SafeArea(child: fab),
+            ),
         ],
       );
     }
@@ -1091,22 +1217,30 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             ),
             const SizedBox(height: 6),
           ],
-          SizedBox(
-            width: double.infinity,
-            height: 38,
-            child: ChoiceChip(
-              selected: isAllInActiveParent,
-              avatar: Icon(activeParent.iconData, size: 15),
-              label: Text(
-                'Svi oglasi u „${activeParent.name}”',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isAllInActiveParent ? FontWeight.bold : FontWeight.w500,
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 38,
+                  child: ChoiceChip(
+                    selected: isAllInActiveParent,
+                    avatar: Icon(activeParent.iconData, size: 15),
+                    label: Text(
+                      'Svi oglasi u „${activeParent.name}”',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isAllInActiveParent ? FontWeight.bold : FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    onSelected: (_) => classifieds.selectCategory(activeParent.id),
+                  ),
                 ),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              onSelected: (_) => classifieds.selectCategory(activeParent.id),
-            ),
+              const SizedBox(width: 8),
+              ClassifiedCategorySubscriptionChip(category: crumbs.last),
+            ],
           ),
         ],
       ),
@@ -1237,7 +1371,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   final brand = group.subcategories[idx];
                   final isSelected = classifieds.selectedCategoryId == brand.id;
 
-                  return _SubcategoryTile(
+                  return SubcategoryTile(
                     category: brand,
                     isSelected: isSelected,
                     hasChildren: false,
@@ -1304,7 +1438,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   final item = standaloneItems[idx];
                   final isSelected = classifieds.selectedCategoryId == item.id;
 
-                  return _SubcategoryTile(
+                  return SubcategoryTile(
                     category: item,
                     isSelected: isSelected,
                     hasChildren: false,
@@ -1350,7 +1484,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               final item = items[idx];
               final isSelected = classifieds.selectedCategoryId == item.id;
 
-              return _SubcategoryTile(
+              return SubcategoryTile(
                 category: item,
                 isSelected: isSelected,
                 hasChildren: item.subcategories.isNotEmpty,
@@ -1369,249 +1503,148 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       ),
     ];
   }
-}
 
-/// Pravougaona 2-kolonska kartica podkategorije sa ikonicom i imenom
-class _SubcategoryTile extends StatelessWidget {
-  final ClassifiedCategoryModel category;
-  final bool isSelected;
-  final bool hasChildren;
-  final VoidCallback onTap;
+  Widget _buildAttributeFilterBar(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+    ColorScheme colorScheme,
+    List<CategoryAttribute> attributes,
+  ) {
+    // Prikazujemo atribute sa predefinisanim opcijama (select i boolean) za horizontalni brzi filter
+    final filterable = attributes
+        .where((a) =>
+            a.type == AttributeType.select || a.type == AttributeType.boolean)
+        .toList();
 
-  const _SubcategoryTile({
-    required this.category,
-    required this.isSelected,
-    this.hasChildren = false,
-    required this.onTap,
-  });
+    if (filterable.isEmpty) return const SizedBox.shrink();
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: filterable.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (ctx, i) {
+          final attr = filterable[i];
+          final isApplied = classifieds.selectedAttributes.containsKey(attr.key);
+          final currentValue = classifieds.selectedAttributes[attr.key];
 
-    final bgColor = isSelected
-        ? colorScheme.primary.withValues(alpha: isDark ? 0.25 : 0.12)
-        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC));
-
-    final borderColor = isSelected
-        ? colorScheme.primary
-        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
-
-    final iconBgColor = isSelected
-        ? colorScheme.primary.withValues(alpha: isDark ? 0.35 : 0.18)
-        : (isDark ? const Color(0xFF0F172A) : Colors.white);
-
-    final iconColor = isSelected
-        ? colorScheme.primary
-        : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155));
-
-    final textColor = isSelected
-        ? colorScheme.primary
-        : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A));
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: borderColor,
-            width: isSelected ? 1.6 : 1.0,
-          ),
-          boxShadow: [
-            if (!isDark && !isSelected)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
+          if (attr.type == AttributeType.boolean) {
+            final isTrue = currentValue == true;
+            return FilterChip(
+              selected: isTrue,
+              label: Text(attr.label, style: const TextStyle(fontSize: 11.5)),
+              avatar: attr.icon != null ? Icon(attr.icon, size: 14) : null,
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
               ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: category.brandLogoAsset != null ? Colors.white : iconBgColor,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isSelected
-                      ? colorScheme.primary.withValues(alpha: 0.4)
-                      : (isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB)),
-                  width: 1,
+              onSelected: (sel) {
+                if (sel) {
+                  classifieds.setAttributeFilter(attr.key, true);
+                } else {
+                  classifieds.removeAttributeFilter(attr.key);
+                }
+              },
+            );
+          }
+
+          if (attr.type == AttributeType.select) {
+            String labelText = attr.label;
+            final options = attr.options ?? const [];
+            if (isApplied) {
+              final opt = options.firstWhere(
+                (o) => o.value == currentValue.toString(),
+                orElse: () => CategoryAttributeOption(
+                  value: currentValue.toString(),
+                  label: currentValue.toString(),
                 ),
-              ),
-              child: category.brandLogoAsset != null
-                  ? Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Image.asset(
-                        category.brandLogoAsset!,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.medium,
-                        errorBuilder: (_, __, ___) => Icon(
-                          category.iconData,
-                          size: 20,
-                          color: iconColor,
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      category.iconData,
-                      size: 20,
-                      color: iconColor,
-                    ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                category.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontSize: 13.5,
-                  height: 1.2,
-                  color: textColor,
-                ),
-              ),
-            ),
-            if (hasChildren)
-              Padding(
-                padding: const EdgeInsets.only(left: 2),
-                child: Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : (isDark ? Colors.white54 : Colors.black38),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+              );
+              labelText = '${attr.label}: ${opt.label}';
+            }
 
-Color _getClassifiedCategoryColor(String name) {
-  final lower = name.toLowerCase();
-  if (lower.contains('vozil') || lower.contains('auto') || lower.contains('motor')) {
-    return const Color(0xFF0288D1); // Vozila - Plava
-  }
-  if (lower.contains('nekretnin') || lower.contains('stan') || lower.contains('kuć')) {
-    return const Color(0xFF1B5E20); // Nekretnine - Šumska zelena
-  }
-  if (lower.contains('poljoprivred') || lower.contains('traktor')) {
-    return const Color(0xFF2E7D32); // Poljoprivreda - Sveža poljoprivredna zelena
-  }
-  if (lower.contains('mašin') || lower.contains('alat') || lower.contains('zanat')) {
-    return const Color(0xFFE65100); // Mašine i alati - Zlatno narandžasta
-  }
-  if (lower.contains('telefon') || lower.contains('mobiln')) {
-    return const Color(0xFF00897B); // Telefoni - Teal
-  }
-  if (lower.contains('tehnik') ||
-      lower.contains('računar') ||
-      lower.contains('laptop') ||
-      lower.contains('tv')) {
-    return const Color(0xFF5C6BC0); // Tehnika - Indigo
-  }
-  if (lower.contains('ljubim') ||
-      lower.contains('životinj') ||
-      lower.contains('pas') ||
-      lower.contains('mačk')) {
-    return const Color(0xFF8D6E63); // Ljubimci - Topla braon
-  }
-  if (lower.contains('dom') || lower.contains('bašt') || lower.contains('nameštaj')) {
-    return const Color(0xFF0097A7); // Dom i bašta - Cijan
-  }
-  if (lower.contains('odeć') || lower.contains('obuć') || lower.contains('garderob')) {
-    return const Color(0xFFAD1457); // Odeća i obuća - Bordo / rubin
-  }
-  if (lower.contains('sport') || lower.contains('hobi')) {
-    return const Color(0xFFD84315); // Sport i hobi - Terakota
-  }
-  if (lower.contains('građevinarstv') || lower.contains('materijal')) {
-    return const Color(0xFF546E7A); // Građevinarstvo - Čelik siva
-  }
-  if (lower.contains('uslug')) {
-    return const Color(0xFF6A1B9A); // Usluge - Ljubičasta
-  }
-  return const Color(0xFF1B5E20);
-}
-
-/// Grid tile za kategoriju na discovery ekranu - organizovan identično kao na strani malih proizvođača
-class _CategoryGridTile extends StatelessWidget {
-  final ClassifiedCategoryModel category;
-  final VoidCallback onTap;
-
-  const _CategoryGridTile({
-    required this.category,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final catColor = _getClassifiedCategoryColor(category.name);
-
-    return Semantics(
-      button: true,
-      label: 'Kategorija ${category.name}',
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: catColor.withValues(alpha: 0.25),
-            width: 1.2,
-          ),
-        ),
-        color: catColor.withValues(alpha: 0.05),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(12),
+            return PopupMenuButton<String>(
+              tooltip: attr.label,
+              initialValue: currentValue?.toString(),
+              onSelected: (val) {
+                if (val == '__clear__') {
+                  classifieds.removeAttributeFilter(attr.key);
+                } else {
+                  classifieds.setAttributeFilter(attr.key, val);
+                }
+              },
+              itemBuilder: (context) => [
+                if (isApplied)
+                  const PopupMenuItem(
+                    value: '__clear__',
+                    child: Text('Poništi filter',
+                        style: TextStyle(color: Colors.red)),
                   ),
-                  child: Icon(
-                    category.iconData,
-                    size: 22,
-                    color: catColor,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    category.name,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                ...options.map(
+                  (opt) => PopupMenuItem(
+                    value: opt.value,
+                    child: Text(opt.label),
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isApplied
+                      ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+                      : colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isApplied
+                        ? colorScheme.primary
+                        : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    width: isApplied ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (attr.icon != null) ...[
+                      Icon(
+                        attr.icon,
+                        size: 14,
+                        color: isApplied
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      labelText,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight:
+                            isApplied ? FontWeight.bold : FontWeight.w500,
+                        color: isApplied
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      size: 16,
+                      color: isApplied
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
 }
+

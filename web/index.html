@@ -62,6 +62,10 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="manifest" href="manifest.json">
 
+  <!-- Preload kritičnih skripti za brže inicijalno učitavanje -->
+  <link rel="preload" href="flutter_bootstrap.js" as="script">
+  <!-- __PRELOAD_MAIN_JS__ -->
+
   <!-- Strukturirani podaci (Schema.org JSON-LD po Google Search smernicama) -->
   <!-- 1. Organizacija -->
   <script type="application/ld+json">
@@ -236,14 +240,7 @@
       });
     }
 
-    // Dinamičko učitavanje flutter_bootstrap.js sa cache-busting parametrom
-    // garantuje da Cloudflare edge serveri ne mogu servirati zastareli js fajl
-    (function () {
-      var s = document.createElement('script');
-      s.src = 'flutter_bootstrap.js?v=' + Date.now();
-      s.async = true;
-      document.body.appendChild(s);
-    })();
   </script>
+  <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>

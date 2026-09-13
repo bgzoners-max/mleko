@@ -36,6 +36,7 @@ import '../screens/support_ticket_chat_screen.dart';
 import '../screens/admin/admin_tickets_screen.dart';
 import '../screens/admin/admin_ticket_detail_screen.dart';
 import '../screens/admin/admin_push_health_screen.dart';
+import '../screens/admin/classifieds_moderation_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/child_categories_screen.dart';
 import '../screens/privacy_policy_screen.dart';
@@ -45,8 +46,11 @@ import '../screens/classifieds/classifieds_feed_screen.dart';
 import '../screens/classifieds/classified_ad_detail_screen.dart';
 import '../screens/classifieds/add_edit_classified_ad_screen.dart';
 import '../screens/classifieds/my_classified_ads_screen.dart';
+import '../screens/classifieds/saved_searches_screen.dart';
 import '../models/category.dart';
+import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
+import '../providers/classifieds_provider.dart';
 import 'web_seo.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -126,36 +130,35 @@ GoRouter createRouter(AppState appState) {
       if (loc == '/auth/confirmed') return null;
 
       if (loc.startsWith('/login') || loc.startsWith('/register')) {
-        if (appState.user != null) return '/';
+        if (appState.user != null && !appState.user!.isGuest) return '/';
         return null;
       }
-      if (appState.user == null &&
-          !loc.startsWith('/login') &&
-          !loc.startsWith('/register') &&
-          !loc.startsWith('/onboarding')) {
-        return '/login';
+
+      // Javne rute koje posetilac bez naloga (gost) može slobodno da pregleda
+      final isPublicClassifiedRoute = loc.startsWith('/classifieds') &&
+          !loc.startsWith('/classifieds/new') &&
+          !loc.startsWith('/classifieds/edit') &&
+          !loc.startsWith('/classifieds/my') &&
+          !loc.startsWith('/classifieds/saved-searches');
+
+      final isPublicRoute = loc == '/' ||
+          loc.startsWith('/search') ||
+          loc.startsWith('/product/') ||
+          loc.startsWith('/categories') ||
+          loc == '/sellers-map' ||
+          loc == '/cart' ||
+          loc == '/settings' ||
+          isPublicClassifiedRoute ||
+          (loc.startsWith('/seller/') && !loc.endsWith('/reviews'));
+
+      if (isPublicRoute) {
+        return null;
       }
 
-      // Gost (anonymous) može samo da gleda proizvode, ne i da naručuje
-      // niti da postane prodavac.
-      final isGuest = appState.user?.isGuest ?? false;
+      // Sve ostale rute (profil, porudžbine, dodavanje oglasa itd.) zahtevaju prijavu
+      final isGuest = appState.user == null || appState.user!.isGuest;
       if (isGuest) {
-        if (loc.startsWith('/becoming-seller') ||
-            loc.startsWith('/seller-settings') ||
-            loc.startsWith('/settings') ||
-            loc.startsWith('/add-product') ||
-            loc.startsWith('/product/edit') ||
-            loc.startsWith('/favorites') ||
-            loc.startsWith('/favorite-sellers') ||
-            loc.startsWith('/notifications') ||
-            loc.startsWith('/conversations') ||
-            loc.startsWith('/chat/') ||
-            loc.startsWith('/buyer/') ||
-            loc.startsWith('/classifieds/new') ||
-            loc.startsWith('/classifieds/edit') ||
-            loc.startsWith('/classifieds/my')) {
-          return '/login';
-        }
+        return '/login';
       }
 
       // Admin stranice — samo korisnici sa is_admin = true
@@ -420,6 +423,13 @@ GoRouter createRouter(AppState appState) {
         ),
       ),
       GoRoute(
+        path: '/admin/classifieds',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const ClassifiedsModerationScreen(),
+        ),
+      ),
+      GoRoute(
         path: '/favorite-sellers',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
@@ -559,6 +569,14 @@ GoRouter createRouter(AppState appState) {
           child: const MyClassifiedAdsScreen(),
         ),
       ),
+      GoRoute(
+        path: '/classifieds/saved-searches',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SavedSearchesScreen(),
+        ),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainShell(navigationShell: navigationShell),
@@ -608,34 +626,49 @@ class MainShell extends StatelessWidget {
 
   const MainShell({super.key, required this.navigationShell});
 
-  static const _sellerDestinations = [
-    (icon: Icons.cottage, label: 'Home'),
-    (icon: Icons.receipt_long, label: 'Porudžbine'),
-    (icon: Icons.person, label: 'Profil'),
-  ];
-  static const _buyerDestinations = [
-    (icon: Icons.cottage, label: 'Home'),
+  static const _destinations = [
+    (icon: Icons.cottage, label: 'Početna'),
     (icon: Icons.receipt_long, label: 'Porudžbine'),
     (icon: Icons.person, label: 'Profil'),
   ];
 
-  /// Branches: 0=Home, 1=Orders, 2=Profile.
-  int _destIndexToBranch(int i, bool isSeller) {
-    return i;
-  }
+  static const _guestDestinations = [
+    (icon: Icons.cottage, label: 'Početna'),
+    (icon: Icons.login_rounded, label: 'Prijavi se'),
+  ];
 
-  int _branchToDestIndex(int branch, bool isSeller) {
-    return branch.clamp(0, 2);
+  void _onDestinationSelected(BuildContext context, int i, {required bool isGuest}) {
+    if (isGuest) {
+      if (i == 0) {
+        context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+        context.read<ClassifiedsProvider>().clearFilters();
+        navigationShell.goBranch(0, initialLocation: true);
+        context.go('/');
+      } else {
+        context.push('/login');
+      }
+      return;
+    }
+
+    if (i == 0) {
+      context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+      context.read<ClassifiedsProvider>().clearFilters();
+      navigationShell.goBranch(0, initialLocation: true);
+      context.go('/');
+    } else {
+      navigationShell.goBranch(i, initialLocation: true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final appState = context.watch<AppState>();
-    final isSeller = appState.user?.isSeller ?? false;
-    final dest = isSeller ? _sellerDestinations : _buyerDestinations;
+    final user = context.watch<AppState>().user;
+    final isGuest = user == null || user.isGuest;
+    final destinations = isGuest ? _guestDestinations : _destinations;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
-    final selectedDestIndex =
-        _branchToDestIndex(navigationShell.currentIndex, isSeller);
+    final selectedDestIndex = isGuest
+        ? 0
+        : navigationShell.currentIndex.clamp(0, destinations.length - 1);
 
     if (isWide) {
       return Scaffold(
@@ -643,15 +676,10 @@ class MainShell extends StatelessWidget {
           children: [
             NavigationRail(
               selectedIndex: selectedDestIndex,
-              onDestinationSelected: (i) {
-                navigationShell.goBranch(
-                  _destIndexToBranch(i, isSeller),
-                  initialLocation: true,
-                );
-              },
+              onDestinationSelected: (i) =>
+                  _onDestinationSelected(context, i, isGuest: isGuest),
               labelType: NavigationRailLabelType.all,
-              destinations: dest.asMap().entries.map((e) {
-                final d = e.value;
+              destinations: destinations.map((d) {
                 return NavigationRailDestination(
                   icon: Icon(d.icon),
                   label: Text(d.label),
@@ -666,17 +694,15 @@ class MainShell extends StatelessWidget {
     }
 
     return Scaffold(
-      body: navigationShell,
+      body: SafeArea(
+        bottom: false,
+        child: navigationShell,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedDestIndex,
-        onDestinationSelected: (i) {
-          navigationShell.goBranch(
-            _destIndexToBranch(i, isSeller),
-            initialLocation: true,
-          );
-        },
-        destinations: dest.asMap().entries.map((e) {
-          final d = e.value;
+        onDestinationSelected: (i) =>
+            _onDestinationSelected(context, i, isGuest: isGuest),
+        destinations: destinations.map((d) {
           return NavigationDestination(
             icon: Icon(d.icon),
             label: d.label,

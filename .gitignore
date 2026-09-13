@@ -45,6 +45,7 @@ app.*.map.json
 /android/app/release
 
 # Secrets (never commit)
+.firebase/
 *-firebase-adminsdk-*.json
 *firebase-adminsdk*.json
 service-account*.json
@@ -64,7 +65,12 @@ backups/*.zip
 ci_log.txt
 patch.diff
 supabase/.branches/
+supabase/.temp/
 node_modules/
+depot_tools/
+.venv/
+venv/
+chromium/
 
 # Lokalni logovi i generisani izlazi (junk)
 analyze_output*.txt

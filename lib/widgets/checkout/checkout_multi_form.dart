@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 import '../../models/seller_delivery_models.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
+import '../../utils/quantity_engine.dart';
 import 'package:mleko/services/services.dart';
 import '../offline_indicator.dart';
 import 'checkout_address_form.dart';
@@ -425,6 +426,19 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
       if (item.quantity < item.product.minOrderKg) {
         setState(() => _error =
             '${item.product.name}: minimalno ${item.product.minOrderFormatted}');
+        return;
+      }
+      if (!QuantityEngine.isProductQuantityValid(
+        quantity: item.quantity,
+        minOrderKg: item.product.minOrderKg,
+        orderStep: item.product.orderStep,
+      )) {
+        final step = QuantityEngine.resolveStep(
+          orderStep: item.product.orderStep,
+          minQuantity: item.product.minOrderKg,
+        );
+        setState(() => _error =
+            '${item.product.name}: količina mora pratiti korak (${item.product.formatQuantity(step)}).');
         return;
       }
     }

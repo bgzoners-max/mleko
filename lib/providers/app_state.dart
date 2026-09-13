@@ -9,13 +9,14 @@ import 'package:supabase_flutter/supabase_flutter.dart'
         PostgresChangeEvent,
         PostgresChangeFilter,
         PostgresChangeFilterType,
+        PostgresChangePayload,
         RealtimeChannel;
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../services/media/image_cache_service.dart';
 
 class AppState extends ChangeNotifier {
-  final AuthService _auth = AuthService();
+  final AuthService _auth;
   final ConnectivityService _connectivity = ConnectivityService();
   final OrderQueueService _orderQueue = OrderQueueService();
   final OrdersService _ordersService;
@@ -47,6 +48,12 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  void setUserForTesting(UserModel? user) {
+    _user = user;
+    notifyListeners();
+  }
+
   bool get isOnline => _connectivity.isOnline;
   bool get isOffline => _connectivity.isOffline;
   AuthService get authService => _auth;
@@ -55,8 +62,9 @@ class AppState extends ChangeNotifier {
   SyncManager get syncManager => _syncManager;
   int get unreadNotificationCount => _unreadNotificationCount;
 
-  AppState({required OrdersService ordersService})
-      : _ordersService = ordersService {
+  AppState({required OrdersService ordersService, AuthService? authService})
+      : _auth = authService ?? AuthService(),
+        _ordersService = ordersService {
     _syncManager = SyncManager(
       queueService: _orderQueue,
       ordersService: _ordersService,
@@ -73,11 +81,18 @@ class AppState extends ChangeNotifier {
       final authVersion = ++_authEventVersion;
       final sessionUserId = authState.session?.user.id;
 
-      if (authState.session == null) {
+      if (authState.session == null || authState.session?.user.isAnonymous == true) {
+        if (authState.session?.user.isAnonymous == true) {
+          try {
+            await _auth.signOut();
+          } catch (_) {}
+        }
         await PushService.clearRegistrationState();
         if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
         _user = null;
         _unreadNotificationCount = 0;
+        _unreadDebounceTimer?.cancel();
+        _unreadDebounceTimer = null;
         _notifChannel?.unsubscribe();
         _notifChannel = null;
         // Očisti image cache na logout (privatnost + memorija)
@@ -97,11 +112,8 @@ class AppState extends ChangeNotifier {
 
         _user = resolvedUser;
         if (_user != null && !_user!.isGuest) {
-          // Pokreni registraciju tokena i učitavanje unread count-a paralelno
-          await Future.wait([
-            PushService().registerToken(_user!.id),
-            _loadUnreadCount(),
-          ]);
+          _scheduleLoadUnreadCount();
+          await PushService().registerToken(_user!.id);
 
           if (!_isCurrentAuthEvent(authVersion,
               expectedUserId: sessionUserId)) {
@@ -115,6 +127,8 @@ class AppState extends ChangeNotifier {
             return;
           }
           _unreadNotificationCount = 0;
+          _unreadDebounceTimer?.cancel();
+          _unreadDebounceTimer = null;
           _notifChannel?.unsubscribe();
           _notifChannel = null;
         }
@@ -137,11 +151,39 @@ class AppState extends ChangeNotifier {
     _connectivity.addListener(_connectivityListener);
   }
 
+  Timer? _unreadDebounceTimer;
+  final StreamController<PostgresChangePayload> _notificationEventsController =
+      StreamController<PostgresChangePayload>.broadcast();
+
+  /// Stream promena na tabeli notifications za prijavljenog korisnika.
+  /// Omogućava ekranima (poput NotificationsScreen) da reaguju na promene
+  /// bez otvaranja dodatnih Realtime kanala ka serveru.
+  Stream<PostgresChangePayload> get notificationEvents =>
+      _notificationEventsController.stream;
+
   Future<void> _loadUnreadCount() async {
     if (_user == null || _user!.isGuest) return;
     _unreadNotificationCount =
         await NotificationsService().getUnreadCount(_user!.id);
     notifyListeners();
+  }
+
+  void _scheduleLoadUnreadCount([Duration delay = const Duration(milliseconds: 300)]) {
+    _unreadDebounceTimer?.cancel();
+    _unreadDebounceTimer = Timer(delay, () async {
+      final currentUserId = _user?.id;
+      if (_user == null || _user!.isGuest || currentUserId == null) return;
+      try {
+        await _loadUnreadCount();
+      } catch (e, st) {
+        LoggerService.error(
+          'Failed to load unread count in debounced notification callback',
+          e,
+          stackTrace: st,
+          extra: {'user_id': currentUserId},
+        );
+      }
+    });
   }
 
   void _subscribeToNotifications() {
@@ -153,20 +195,6 @@ class AppState extends ChangeNotifier {
 
     final client = Supabase.instance.client;
     final userId = _user!.id;
-
-    // Wrapped callback sa error handling i logging
-    Future<void> safeLoadUnreadCount() async {
-      try {
-        await _loadUnreadCount();
-      } catch (e, st) {
-        LoggerService.error(
-          'Failed to load unread count in notification callback',
-          e,
-          stackTrace: st,
-          extra: {'user_id': userId},
-        );
-      }
-    }
 
     try {
       LoggerService.debug('Subscribing to notifications',
@@ -182,7 +210,12 @@ class AppState extends ChangeNotifier {
               column: 'user_id',
               value: userId,
             ),
-            callback: (_) => safeLoadUnreadCount(),
+            callback: (payload) {
+              if (!_notificationEventsController.isClosed) {
+                _notificationEventsController.add(payload);
+              }
+              _scheduleLoadUnreadCount();
+            },
           )
           .onPostgresChanges(
             event: PostgresChangeEvent.update,
@@ -193,7 +226,12 @@ class AppState extends ChangeNotifier {
               column: 'user_id',
               value: userId,
             ),
-            callback: (_) => safeLoadUnreadCount(),
+            callback: (payload) {
+              if (!_notificationEventsController.isClosed) {
+                _notificationEventsController.add(payload);
+              }
+              _scheduleLoadUnreadCount();
+            },
           )
           .subscribe();
     } catch (e, st) {
@@ -225,6 +263,9 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    _unreadDebounceTimer?.cancel();
+    _unreadDebounceTimer = null;
+    _notificationEventsController.close();
     _authSubscription?.cancel();
     _notifChannel?.unsubscribe();
     _connectivity.removeListener(_connectivityListener);

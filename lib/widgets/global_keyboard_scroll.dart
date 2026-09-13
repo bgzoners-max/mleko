@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Globalni omotač koji omogućava navigaciju tastaturom (PgUp, PgDn, Home, End, Space, Arrows)
-/// na svim stranicama aplikacije, simulirajući standardno desktop/web iskustvo.
+/// Globalni omotač koji omogućava navigaciju tastaturom (PgUp, PgDn, Home, End)
+/// na stranicama aplikacije, bez ometanja unosa teksta i tastera Space.
 class GlobalKeyboardScroll extends StatefulWidget {
   final Widget child;
 
@@ -18,8 +18,6 @@ class _GlobalKeyboardScrollState extends State<GlobalKeyboardScroll> {
   @override
   void initState() {
     super.initState();
-    // Umesto autofocus: true, zahtevamo fokus nakon što se frejm iscrta.
-    // Ovo sprečava "RenderBox was not laid out" grešku tokom inicijalizacije.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
@@ -33,44 +31,61 @@ class _GlobalKeyboardScrollState extends State<GlobalKeyboardScroll> {
     super.dispose();
   }
 
+  bool _isTextInputFocused() {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus == null) return false;
+    final context = focus.context;
+    if (context == null) return false;
+    return context.widget is EditableText ||
+        context.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        // Page Up / Down
-        const SingleActivator(LogicalKeyboardKey.pageUp): () =>
-            _handleScroll(context, AxisDirection.up, ScrollIncrementType.page),
-        const SingleActivator(LogicalKeyboardKey.pageDown): () =>
-            _handleScroll(context, AxisDirection.down, ScrollIncrementType.page),
-        // Home / End
-        const SingleActivator(LogicalKeyboardKey.home): () =>
-            _handleScroll(context, AxisDirection.up, ScrollIncrementType.page,
-                isExtreme: true),
-        const SingleActivator(LogicalKeyboardKey.end): () =>
-            _handleScroll(context, AxisDirection.down, ScrollIncrementType.page,
-                isExtreme: true),
-        // Space / Shift+Space (Web standard)
-        const SingleActivator(LogicalKeyboardKey.space): () =>
-            _handleScroll(context, AxisDirection.down, ScrollIncrementType.page),
-        const SingleActivator(LogicalKeyboardKey.space, shift: true): () =>
-            _handleScroll(context, AxisDirection.up, ScrollIncrementType.page),
-        // Arrows (Fine scrolling)
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
-            _handleScroll(context, AxisDirection.up, ScrollIncrementType.line),
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
-            _handleScroll(context, AxisDirection.down, ScrollIncrementType.line),
+    return Focus(
+      focusNode: _focusNode,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+          return KeyEventResult.ignored;
+        }
+
+        // AKO JE FOKUSIRANO BILO KOJE TEKSTUALNO POLJE -> NIKADA NE PRESREĆI TASTERE
+        if (_isTextInputFocused()) {
+          return KeyEventResult.ignored;
+        }
+
+        // Space NIKADA ne vezujemo ovde jer ometa kucanje u formama.
+        // Skrolovanje tastaturom dozvoljavamo samo za eksplicitne navigacione tastere:
+        if (event.logicalKey == LogicalKeyboardKey.pageUp) {
+          _handleScroll(context, AxisDirection.up, ScrollIncrementType.page);
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.pageDown) {
+          _handleScroll(context, AxisDirection.down, ScrollIncrementType.page);
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.home) {
+          _handleScroll(context, AxisDirection.up, ScrollIncrementType.page,
+              isExtreme: true);
+          return KeyEventResult.handled;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.end) {
+          _handleScroll(context, AxisDirection.down, ScrollIncrementType.page,
+              isExtreme: true);
+          return KeyEventResult.handled;
+        }
+
+        return KeyEventResult.ignored;
       },
-      child: Focus(
-        focusNode: _focusNode,
-        child: widget.child,
-      ),
+      child: widget.child,
     );
   }
 
   void _handleScroll(BuildContext context, AxisDirection direction,
       ScrollIncrementType type,
       {bool isExtreme = false}) {
-    // Koristimo kontekst fokusiranog elementa ako postoji, jer je on bliži Scrollable-u
+    if (_isTextInputFocused()) return;
+
     final BuildContext effectiveContext = primaryFocus?.context ?? context;
     final ScrollController? primary =
         PrimaryScrollController.maybeOf(effectiveContext);
@@ -87,13 +102,12 @@ class _GlobalKeyboardScrollState extends State<GlobalKeyboardScroll> {
               ? position.viewportDimension * 0.8
               : -position.viewportDimension * 0.8;
         } else {
-          // Line scroll - pomeramo za fiksnu vrednost
           delta = direction == AxisDirection.down ? 80.0 : -80.0;
         }
 
         final double target =
             (position.pixels + delta).clamp(0.0, position.maxScrollExtent);
-        
+
         position.animateTo(
           target,
           duration: Duration(milliseconds: isExtreme ? 400 : 250),
@@ -103,3 +117,4 @@ class _GlobalKeyboardScrollState extends State<GlobalKeyboardScroll> {
     }
   }
 }
+

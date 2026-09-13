@@ -193,6 +193,15 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => context.push('/admin/push-health'),
                 ),
                 const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.shield_outlined),
+                  title: const Text('Moderacija oglasa'),
+                  subtitle:
+                      const Text('Pregled i rešavanje prijava malih oglasa'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/admin/classifieds'),
+                ),
+                const Divider(height: 1),
               ],
               ListTile(
                 leading: const Icon(Icons.support_outlined),

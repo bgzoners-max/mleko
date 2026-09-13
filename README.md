@@ -1,124 +1,131 @@
-# Domaći market – MVP (B2C)
+# Naše Selo (mleko) — Marketplace & Oglasnik Domaćih Proizvoda
 
 [![CI](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth%20%7C%20Storage-3ECF8E?logo=supabase)](https://supabase.com)
+[![License](https://img.shields.io/badge/License-Proprietary-blue.svg)]()
 
-Marketplace za domaće proizvode, sa fokusom na direktnu kupovinu od proizvođača.
+**Naše Selo** je moderna multiplatformska platforma (Web, Android, iOS) koja direktno povezuje lokalne poljoprivredne proizvođače i seoska gazdinstva sa krajnjim kupcima širom Srbije, uz integrisane male oglase za poljoprivredu.
 
-## CI
+---
 
-GitHub Actions workflow `.github/workflows/ci.yml` pokreće:
+## 🌟 Ključne Funkcionalnosti
 
-- `flutter-checks`: `flutter analyze` + `flutter test`
-- `db-integration-checks`: lokalni Supabase stack + reset migracija + SQL integration provere + provera svežine `supabase/types/database.types.ts`
+### 1. Pijaca i Katalog Proizvoda
+- **Direktna kupovina**: Pretraga domaćih proizvoda (mleko i sir, meso, voće, povrće, jaja, med, zimnica...) direktno od seoskih gazdinstava.
+- **Fleksibilne merne jedinice**: Podrška za `kg`, `L`, `kom`, `pak`, `veza` sa definisanim minimalnim količinama i koracima naručivanja (`min_order`, `order_step`).
+- **Geo-lokacija i gradovi**: Filtriranje i sortiranje po gradovima i opštinama u Srbiji, opcije preuzimanja (lično, dostava, dogovor).
+- **Korpa (Cart) i Upiti**: Dodavanje artikala od više proizvođača, automatsko grupisanje porudžbina po prodavcima i slanje upita za rezervaciju.
 
-DB integration skripta:
+### 2. Mali Oglasi za Poljoprivredu (Classifieds)
+- Oglasi specijalizovani za ruralni sektor: poljoprivredne mašine, stoka i živina, stočna hrana, oprema, sadnice i usluge.
+- Napredna pretraga sa filterima, galerija slika, brojač jedinstvenih pregleda sa zaštitom od zloupotrebe.
+- Mogućnost direktnog kontakta prodavca putem poziva ili chata.
 
-- `supabase/tests/order_status_flow_integration.sql`
+### 3. Direktni Real-time Chat
+- Integrisana razmena poruka između kupca i prodavca u realnom vremenu (Supabase Realtime).
+- Kontekst razgovora vezan za konkretne proizvode, porudžbine ili oglase.
+- Prikaz nepročitanih poruka (unread badges) i push notifikacije o novim porukama.
 
-Ove provere pokrivaju ključne delove status flow-a: tranzicije, trigger-e, audit log i ručno arhiviranje.
+### 4. Push Notifikacije i Centar za Obaveštenja
+- **FCM (Firebase Cloud Messaging)**: Pozadinska i in-app dostava notifikacija na mobilnim i web uređajima.
+- **Bezbedna arhitektura**: Obaveštenja se kreiraju isključivo na serveru (PostgreSQL `SECURITY DEFINER` trigeri) i isporučuju kroz `send-push` Edge funkciju autorizovanu striktno preko `service_role`.
+- **Centar za obaveštenja**: Pregled istorije obaveštenja, statusa porudžbina, poruka i sistemskih preporuka.
 
-U istom job-u se lokalno regenerišu Supabase TypeScript tipovi i CI pada ako checked-in fajl nije usklađen sa aktuelnim migracijama.
+### 5. Gazdinstva i Prodavci
+- Jednostavna registracija gazdinstva sa verifikacijom lokacije i kontakt telefona.
+- Dashboard za prodavce: upravljanje zalihama, cenama, dostupnošću („Dostupno odmah”) i praćenje statusa pristiglih upita/porudžbina.
 
-## Šta je urađeno (MVP ekrani)
+### 6. Admin Panel i Moderacija
+- Moderacija malih oglasa, odobravanje i suspenzija sumnjivih objava.
+- Verifikacija profila prodavaca i uvid u audit logove.
 
-- **Splash** → Login
-- **Login / Register** – email + lozinka, „Nastavi kao gost”, Zaboravljena lozinka
-- **Home** – lokacija, search bar, kategorije domaćih proizvoda, lista proizvoda (kartice)
-- **Search + filter** – kategorija, region, dostupno sada
-- **Product details** – carousel slika, naziv, cena, opis, min porudžbina, način preuzimanja, CTA „Pošalji porudžbinu”
-- **Checkout-lite** – količina, napomena, grad, telefon, „Pozovi me” / „Pošalji poruku” → „Pošalji upit prodavcu”
-- **Orders** – lista porudžbina sa statusom (Poslato, Prihvaćeno, Odbijeno, Isporučeno)
-- **Profile** – moji podaci, „Postani prodavac”, Podrška, Logout
-- **Postani prodavac** – Ime gazdinstva, Mesto, Telefon
-- **Seller: Moji proizvodi** – lista, „Dodaj proizvod”
-- **Add/Edit proizvod** – kategorija, naziv, cena/kg, min porudžbina, količina, opis, slike (1–5), način preuzimanja
-- **Seller Inbox** – lista upita, „Pozovi”, „Označi kao rešeno”
+---
 
-**Navigacija:** donji bar – kupac: Home | Pretraga | Porudžbine | Profil; prodavac: Home | Moji proizvodi | Upiti | Profil.
+## 🏗️ Tehnološki Stack
 
-## Pokretanje
+- **Frontend**: [Flutter 3](https://flutter.dev) (Dart), State Management (`Provider`), Navigacija (`GoRouter` sa `StatefulShellRoute`).
+- **Backend & Baza**: [Supabase](https://supabase.com) (PostgreSQL 15+, Row Level Security, Realtime, Edge Functions u Deno/TypeScript).
+- **Push Notifikacije**: Firebase Cloud Messaging (FCM) + Supabase Edge Functions (`send-push`).
+- **Pohrana datoteka**: Supabase Storage (`product-images`, `classified-images`, `avatars`).
+- **Hosting / Deploy**: Vercel za Web distribuciju, CI/CD preko GitHub Actions.
 
-1. **Flutter**
+---
 
-   Instaliraj [Flutter](https://docs.flutter.dev/get-started/install) i u PATH dodaj `flutter`.
+## 🚀 Brzi Start
 
-2. **Supabase**
+### 1. Preduslovi
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (`>= 3.2.0`)
+- [Node.js](https://nodejs.org) (v18+) & `npm`
+- [Supabase CLI](https://supabase.com/docs/guides/cli)
 
-   Aplikacija koristi Supabase za auth, bazu i storage. Zvanični izvor istine za šemu baze su migracije u **`supabase/migrations/`** (primeniti preko `supabase db push` ili CI/CD). Vidi **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** za detalje.
-
-3. **Projekat**
-
-   ```bash
-   cd c:\dev\mleko
-   flutter pub get
-   ```
-
-   **Nova obaveza: Environment vars (.env)**
-
-   ```bash
-   cp .env.example .env
-   # Popuni SUPABASE_URL i SUPABASE_ANON_KEY iz Supabase Dashboard -> Settings -> API
-   ```
-
-   ```bash
-   flutter run -d chrome
-   ```
-
-Ako nemaš još uvek platforme (android/ios/web), u root-u pokreni:
-
+### 2. Podešavanje okruženja
+Klonirajte repozitorijum i instalirajte zavisnosti:
 ```bash
-flutter create . --project-name mleko --org com.mleko
+git clone https://github.com/bgzoners-max/mleko.git
+cd mleko
+flutter pub get
 ```
 
-pa ponovo `flutter pub get` i `flutter run`.
-
-## Supabase struktura
-
-- **profiles** – email, phone, display_name, city, role (buyer/seller), is_guest, farm_name, location
-- **products** – seller_id, category, name, price_per_kg, min_order_kg, available_kg, description, image_urls[], pickup_options[], location, is_domestic, available_now
-- **orders** – buyer_id, seller_id, product_id, product_name, quantity_kg, note, buyer_city, buyer_phone, prefer_call, status (sent/accepted/rejected/delivered)
-
-Slike proizvoda i profila se čuvaju u **Supabase Storage** (bucketovi `product-images` i `profiles`).
-
-## Supabase tipovi
-
-TypeScript schema snapshot za linked projekat čuva se u `supabase/types/database.types.ts`.
-
-Osvežavanje tipova:
-
+Kopirajte šablon promenljivih okruženja:
 ```bash
+cp .env.example .env
+```
+Popunite `SUPABASE_URL` i `SUPABASE_ANON_KEY` kredencijalima iz vašeg Supabase projekta.
+
+### 3. Pokretanje aplikacije
+```bash
+# Pokretanje u Chrome pregledaču
+flutter run -d chrome
+
+# Pokretanje na povezanom mobilnom uređaju ili emulatoru
+flutter run
+```
+
+---
+
+## 🧪 Testiranje i CI/CD
+
+Na projektu se primenjuje striktna automatizovana kontrola kvaliteta:
+```bash
+# Statička analiza koda
+dart analyze
+
+# Pokretanje Flutter testova
+flutter test
+
+# Regeneracija Supabase TypeScript tipova
 npm run supabase:types
 ```
 
-Lokalna varijanta za CI i proveru nakon migracija:
+GitHub Actions workflow (`.github/workflows/ci.yml`) automatski izvršava:
+1. `flutter-checks`: Analizu i testove sa nula dozvoljenih upozorenja.
+2. `db-integration-checks`: Podizanje lokalnog Supabase okruženja, primenu migracija i izvršavanje SQL integracionih provera (`supabase/tests/order_status_flow_integration.sql`).
 
-```bash
-npm run supabase:types:local
-```
+---
 
-Ovaj korak je koristan posle novih migracija ili pre izmena u Edge Functions kako bi `createClient<Database>` ostao usklađen sa trenutnom bazom.
+## 📚 Dokumentacija Repozitorijuma
 
-## Vercel deploy
+Za detaljnije tehničke specifikacije pogledajte prateću dokumentaciju u repozitorijumu:
 
-Za produkcioni deploy koristi samo root komandu:
+| Dokument | Sadržaj |
+| :--- | :--- |
+| **[REPO_BIBLE.md](REPO_BIBLE.md)** | **Kanonski izvor istine**: pravila za merne jedinice, korake naručivanja, statuse porudžbina, RLS matrice i filozofiju zaliha. |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Pravila grananja, kodiranja, konvencija commit poruka i kreiranja PR-ova. |
+| **[docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)** | Uputstvo za konfiguraciju lokalnog i udaljenog Supabase projekta. |
+| **[docs/MIGRATIONS_SOLO.md](docs/MIGRATIONS_SOLO.md)** | Rad sa SQL migracijama, rešavanje konflikata i postupak deploymenta šeme. |
+| **[docs/PUSH_SETUP.md](docs/PUSH_SETUP.md)** | Arhitektura i podešavanje FCM push notifikacija i Edge funkcija. |
+| **[docs/LOGIKA_PORUDZBINE.md](docs/LOGIKA_PORUDZBINE.md)** | Detaljan tok kreiranja porudžbina, validacija i bezbednosni triggeri. |
+| **[docs/ERROR_HANDLING_GUIDE.md](docs/ERROR_HANDLING_GUIDE.md)** | Standardizovani obrasci rukovanja greškama i mrežnim prekidima. |
+| **[docs/OFFLINE_MODE_GUIDE.md](docs/OFFLINE_MODE_GUIDE.md)** | Keširanje podataka, offline režim rada i sinhronizacija. |
+| **[docs/archive/README.md](docs/archive/README.md)** | Arhivirani izveštaji o završenim fazama razvoja (Faza 3, Faza 4, UI/UX auditi). |
 
+---
+
+## 🚢 Produkcijski Deploy
+
+Za produkcioni deploy Web verzije koristi se skripta:
 ```bash
 npm run vercel:deploy
 ```
-
-Ta komanda:
-
-- regeneriše `build/web`
-- priprema `build/vercel-deploy`
-- eksplicitno linkuje bundle na Vercel projekat `mleko`
-- radi production deploy
-
-Ne pokreći deploy ručno iz `build/vercel-deploy`, jer se taj folder rekreira i može privremeno ostati linkovan na pogrešan Vercel projekat.
-
-## Šta nije u MVP-u (nice to have)
-
-- Recenzije
-- Online plaćanje
-- Integracija dostave
-- Geo „najbliže tebi”
-- Chat (samo kontakt: Pozovi / poruka)
+Ova skripta kompajlira optimizovani Flutter Web bundle (`build/web`), priprema `build/vercel-deploy` i vrši bezbedan deploy na produkcioni Vercel projekat.

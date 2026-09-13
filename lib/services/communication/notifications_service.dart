@@ -3,11 +3,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/notification_model.dart';
 
 class NotificationsService {
-  static final NotificationsService _instance = NotificationsService._();
-  factory NotificationsService() => _instance;
-  NotificationsService._();
+  static final NotificationsService _instance = NotificationsService._internal();
+  factory NotificationsService({SupabaseClient? client}) {
+    if (client != null) return NotificationsService._(client);
+    return _instance;
+  }
+  NotificationsService._([SupabaseClient? client]) : _customClient = client;
+  NotificationsService._internal() : _customClient = null;
 
-  final _client = Supabase.instance.client;
+  final SupabaseClient? _customClient;
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   Future<List<NotificationModel>> getNotifications(String userId) async {
     final list = await _client
@@ -20,11 +25,14 @@ class NotificationsService {
   }
 
   Future<int> getUnreadCount(String userId) async {
+    // Lean upit: samo 1 red (Range 0-0) + tačan count preko parcijalnog indeksa
+    // (user_id) WHERE read_at IS NULL — bez preuzimanja svih nepročitanih redova.
     final response = await _client
         .from('notifications')
-        .select()
+        .select('id')
         .eq('user_id', userId)
         .isFilter('read_at', null)
+        .range(0, 0)
         .count(CountOption.exact);
     return response.count;
   }

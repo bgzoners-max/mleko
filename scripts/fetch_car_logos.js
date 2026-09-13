@@ -51,6 +51,22 @@ const brands = [
   { id: 'auto_cupra', slug: 'cupra' },
   { id: 'auto_dacia', slug: 'dacia' },
   { id: 'auto_lada', slug: 'lada' },
+  { id: 'auto_zastava', slug: 'zastava' },
+  { id: 'auto_smart', slug: 'smart' },
+  { id: 'auto_mini', slug: 'mini' },
+  { id: 'auto_lancia', slug: 'lancia' },
+  { id: 'auto_saab', slug: 'saab' },
+  { id: 'auto_chrysler', slug: 'chrysler' },
+  { id: 'auto_dodge', slug: 'dodge' },
+  { id: 'auto_daewoo', slug: 'daewoo' },
+  { id: 'auto_geely', slug: 'geely' },
+  { id: 'auto_chery', slug: 'chery' },
+  { id: 'auto_infiniti', slug: 'infiniti' },
+  { id: 'auto_isuzu', slug: 'isuzu' },
+  { id: 'auto_ds', slug: 'ds' },
+  { id: 'auto_ssangyong', slug: 'ssangyong' },
+  { id: 'auto_rover', slug: 'rover' },
+  { id: 'auto_genesis', slug: 'genesis' },
 ];
 
 function fetchJson(url) {

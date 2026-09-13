@@ -11,10 +11,14 @@ const _kMsgPageSize = 50;
 
 class ChatService {
   static final ChatService _instance = ChatService._();
-  factory ChatService() => _instance;
-  ChatService._();
+  factory ChatService({SupabaseClient? client}) {
+    if (client != null) return ChatService._(client: client);
+    return _instance;
+  }
+  ChatService._({SupabaseClient? client}) : _customClient = client;
 
-  final _client = Supabase.instance.client;
+  final SupabaseClient? _customClient;
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   static const typingStaleThreshold = Duration(seconds: 6);
 
@@ -35,19 +39,28 @@ class ChatService {
   // ─── Razgovori ─────────────────────────────────────────────────────────────
 
   /// Pronađi ili kreiraj razgovor između kupca i prodavca.
+  ///
+  /// Razgovor između kupca i prodavca je jedinstven (1-na-1 thread).
+  /// Polje `orderId` predstavlja kontekst najrelevantnije/poslednje porudžbine
+  /// koja se prikazuje u zaglavlju razgovora.
+  /// - Ako je [orderId] prosleđen i [updateOrderIdIfPresent] je true, zaglavlje se
+  ///   ažurira na novu porudžbinu.
+  /// - Ako [orderId] nije prosleđen, postojeće vezivanje za porudžbinu u bazi se NE briše.
   Future<String> getOrCreateConversation(
     String buyerId,
     String sellerId, {
     String? orderId,
+    bool updateOrderIdIfPresent = true,
   }) async {
     try {
+      final shouldUpdateOrderId = orderId != null && updateOrderIdIfPresent;
       final res = await _client
           .from('conversations')
           .upsert(
             {
               'buyer_id': buyerId,
               'seller_id': sellerId,
-              if (orderId != null) 'order_id': orderId,
+              if (shouldUpdateOrderId) 'order_id': orderId,
             },
             onConflict: 'buyer_id,seller_id',
           )
@@ -63,7 +76,7 @@ class ChatService {
       if (existingId == null) {
         throw AppError.from(e, stackTrace: st);
       }
-      if (orderId != null) {
+      if (orderId != null && updateOrderIdIfPresent) {
         await _client
             .from('conversations')
             .update({'order_id': orderId}).eq('id', existingId);
@@ -144,10 +157,16 @@ class ChatService {
       }
     }
 
+    Timer? debounceTimer;
+    void onEvent() {
+      debounceTimer?.cancel();
+      debounceTimer = Timer(const Duration(milliseconds: 300), refetch);
+    }
+
     void initChannel() {
       refetch().then((_) {
         if (controller.isClosed) return;
-        channel = _subscribeConversations(userId, lastConvIds, refetch);
+        channel = _subscribeConversations(userId, lastConvIds, onEvent);
         channel!.subscribe();
       });
     }
@@ -157,6 +176,7 @@ class ChatService {
     refreshSub = refreshTrigger?.listen((_) => refetch());
 
     controller.onCancel = () {
+      debounceTimer?.cancel();
       refreshSub?.cancel();
       if (channel != null) _client.removeChannel(channel!);
       if (!controller.isClosed) {
@@ -236,18 +256,31 @@ class ChatService {
   }
 
   /// Poruke starije od [before] — za paginaciju "učitaj starije".
+  /// Koristi keyset paginaciju (created_at, id) radi sprečavanja duplikata i preskakanja.
   Future<List<MessageModel>> getOlderMessages(
     String conversationId, {
     required DateTime before,
+    String? beforeId,
     int limit = _kMsgPageSize,
   }) async {
     try {
-      final list = await _client
+      final beforeIso = before.toIso8601String();
+      var query = _client
           .from('messages')
           .select()
-          .eq('conversation_id', conversationId)
-          .lt('created_at', before.toIso8601String())
+          .eq('conversation_id', conversationId);
+
+      if (beforeId != null && beforeId.isNotEmpty) {
+        query = query.or(
+          'created_at.lt.$beforeIso,and(created_at.eq.$beforeIso,id.lt.$beforeId)',
+        );
+      } else {
+        query = query.lt('created_at', beforeIso);
+      }
+
+      final list = await query
           .order('created_at', ascending: false)
+          .order('id', ascending: false)
           .limit(limit);
       return (list as List)
           .reversed
@@ -258,17 +291,107 @@ class ChatService {
     }
   }
 
+  final Map<String, _ConversationRoomSubscription> _conversationRooms = {};
+
+  /// Broj trenutno aktivnih deljenih soba za razgovore (za dijagnostiku i testove)
+  int get activeConversationRoomCount => _conversationRooms.length;
+
+  _ConversationRoomSubscription _getOrCreateConversationRoom(String conversationId) {
+    var room = _conversationRooms[conversationId];
+    if (room == null) {
+      final channel = _client.channel('conversation-$conversationId');
+      room = _ConversationRoomSubscription(channel);
+      final currentRoom = room;
+
+      channel
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'messages',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'conversation_id',
+              value: conversationId,
+            ),
+            callback: (payload) {
+              for (final cb in List.of(currentRoom.onMessageCallbacks)) {
+                cb(payload);
+              }
+            },
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'conversation_typing',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'conversation_id',
+              value: conversationId,
+            ),
+            callback: (payload) {
+              for (final cb in List.of(currentRoom.onTypingCallbacks)) {
+                cb(payload);
+              }
+            },
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'message_reactions',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'conversation_id',
+              value: conversationId,
+            ),
+            callback: (payload) {
+              for (final cb in List.of(currentRoom.onReactionCallbacks)) {
+                cb(payload);
+              }
+            },
+          )
+          .subscribe();
+
+      _conversationRooms[conversationId] = room;
+    }
+    return room;
+  }
+
+  void _releaseConversationRoom(String conversationId) {
+    final room = _conversationRooms[conversationId];
+    if (room == null) return;
+    room.refCount--;
+    if (room.refCount <= 0) {
+      _conversationRooms.remove(conversationId);
+      try {
+        _client.removeChannel(room.channel);
+      } catch (e) {
+        LoggerService.warning('Failed to remove conversation room channel',
+            extra: {'conversationId': conversationId, 'error': e.toString()});
+      }
+    }
+  }
+
+  /// Prati poruke u razgovoru inkrementalno:
+  /// - Pri otvaranju / retry-u radi pun fetch najnovijih poruka.
+  /// - Na realtime insert dodaje poruku uz deduplikaciju po ID-u bez ponovnog učitavanja svih 50 poruka.
+  /// - Na realtime update / delete inkrementalno ažurira lokalnu listu.
   Stream<List<MessageModel>> watchMessages(
     String conversationId, {
     Stream<void>? refreshTrigger,
   }) {
     final controller = StreamController<List<MessageModel>>.broadcast();
     StreamSubscription? refreshSub;
+    final List<MessageModel> currentMessages = [];
 
-    Future<void> refetch() async {
+    Future<void> fullFetch() async {
       try {
         final list = await getMessages(conversationId);
-        if (!controller.isClosed) controller.add(list);
+        currentMessages
+          ..clear()
+          ..addAll(list);
+        if (!controller.isClosed) {
+          controller.add(List.unmodifiable(currentMessages));
+        }
       } catch (e, st) {
         LoggerService.error('Failed to watch messages', e,
             stackTrace: st, extra: {'conversationId': conversationId});
@@ -276,28 +399,68 @@ class ChatService {
       }
     }
 
-    refetch();
+    void onMessageEvent(PostgresChangePayload payload) {
+      try {
+        if (payload.eventType == PostgresChangeEvent.insert) {
+          final raw = payload.newRecord;
+          if (raw.isNotEmpty) {
+            final newMsg = MessageModel.fromJson(raw);
+            final exists = currentMessages.any((m) => m.id == newMsg.id);
+            if (!exists) {
+              currentMessages.add(newMsg);
+              currentMessages.sort((a, b) {
+                final cmp = a.createdAt.compareTo(b.createdAt);
+                if (cmp != 0) return cmp;
+                return a.id.compareTo(b.id);
+              });
+              if (!controller.isClosed) {
+                controller.add(List.unmodifiable(currentMessages));
+              }
+              return;
+            }
+          }
+        } else if (payload.eventType == PostgresChangeEvent.update) {
+          final raw = payload.newRecord;
+          if (raw.isNotEmpty) {
+            final updatedMsg = MessageModel.fromJson(raw);
+            final idx = currentMessages.indexWhere((m) => m.id == updatedMsg.id);
+            if (idx != -1) {
+              currentMessages[idx] = updatedMsg;
+              if (!controller.isClosed) {
+                controller.add(List.unmodifiable(currentMessages));
+              }
+              return;
+            }
+          }
+        } else if (payload.eventType == PostgresChangeEvent.delete) {
+          final id = (payload.oldRecord['id'] ?? payload.newRecord['id']) as String?;
+          if (id != null) {
+            currentMessages.removeWhere((m) => m.id == id);
+            if (!controller.isClosed) {
+              controller.add(List.unmodifiable(currentMessages));
+            }
+            return;
+          }
+        }
+        // Sigurnosni fallback na pun fetch ako je payload neuobičajen
+        fullFetch();
+      } catch (_) {
+        fullFetch();
+      }
+    }
 
-    final channel = _client.channel('messages-$conversationId');
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'conversation_id',
-            value: conversationId,
-          ),
-          callback: (_) => refetch(),
-        )
-        .subscribe();
+    fullFetch();
 
-    refreshSub = refreshTrigger?.listen((_) => refetch());
+    final room = _getOrCreateConversationRoom(conversationId);
+    room.refCount++;
+    room.onMessageCallbacks.add(onMessageEvent);
+
+    refreshSub = refreshTrigger?.listen((_) => fullFetch());
 
     controller.onCancel = () {
       refreshSub?.cancel();
-      _client.removeChannel(channel);
+      room.onMessageCallbacks.remove(onMessageEvent);
+      _releaseConversationRoom(conversationId);
       if (!controller.isClosed) {
         controller.close();
       }
@@ -306,10 +469,13 @@ class ChatService {
     return controller.stream;
   }
 
+  /// Prati korisnike koji kuckaju inkrementalno (payload is_typing).
   Stream<Set<String>> watchTypingUsers(String conversationId) {
     final controller = StreamController<Set<String>>.broadcast();
+    final Set<String> typingUsers = {};
+    Timer? cleanupTimer;
 
-    Future<void> refetch() async {
+    Future<void> fullFetch() async {
       try {
         final threshold =
             DateTime.now().subtract(typingStaleThreshold).toIso8601String();
@@ -324,8 +490,11 @@ class ChatService {
             .map((r) => (r as Map<String, dynamic>)['user_id'] as String?)
             .whereType<String>()
             .toSet();
+        typingUsers
+          ..clear()
+          ..addAll(users);
         if (!controller.isClosed) {
-          controller.add(users);
+          controller.add(Set.unmodifiable(typingUsers));
         }
       } catch (e, st) {
         LoggerService.error('Failed to watch typing users', e,
@@ -333,25 +502,42 @@ class ChatService {
       }
     }
 
-    refetch();
+    void onTypingEvent(PostgresChangePayload payload) {
+      try {
+        final record = payload.newRecord;
+        final userId = record['user_id'] as String?;
+        final isTyping = record['is_typing'] as bool? ?? false;
+        if (userId != null) {
+          if (isTyping) {
+            typingUsers.add(userId);
+          } else {
+            typingUsers.remove(userId);
+          }
+          if (!controller.isClosed) {
+            controller.add(Set.unmodifiable(typingUsers));
+          }
+        }
+      } catch (_) {
+        fullFetch();
+      }
+    }
 
-    final channel = _client.channel('typing-$conversationId');
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'conversation_typing',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'conversation_id',
-            value: conversationId,
-          ),
-          callback: (_) => refetch(),
-        )
-        .subscribe();
+    fullFetch();
+
+    final room = _getOrCreateConversationRoom(conversationId);
+    room.refCount++;
+    room.onTypingCallbacks.add(onTypingEvent);
+
+    cleanupTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (typingUsers.isNotEmpty) {
+        fullFetch();
+      }
+    });
 
     controller.onCancel = () {
-      _client.removeChannel(channel);
+      cleanupTimer?.cancel();
+      room.onTypingCallbacks.remove(onTypingEvent);
+      _releaseConversationRoom(conversationId);
       if (!controller.isClosed) {
         controller.close();
       }
@@ -440,23 +626,14 @@ class ChatService {
 
     refetch();
 
-    final channel = _client.channel('reactions-$conversationId');
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'message_reactions',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'conversation_id',
-            value: conversationId,
-          ),
-          callback: (_) => refetch(),
-        )
-        .subscribe();
+    final room = _getOrCreateConversationRoom(conversationId);
+    room.refCount++;
+    void onEvent(PostgresChangePayload _) => refetch();
+    room.onReactionCallbacks.add(onEvent);
 
     controller.onCancel = () {
-      _client.removeChannel(channel);
+      room.onReactionCallbacks.remove(onEvent);
+      _releaseConversationRoom(conversationId);
       if (!controller.isClosed) {
         controller.close();
       }
@@ -567,7 +744,7 @@ class ChatService {
     }
   }
 
-  /// Otprema sliku u chat-media bucket i vraća public URL.
+  /// Otprema sliku u namenski chat-images bucket i vraća public URL.
   Future<String> uploadMessageImage(
     String conversationId,
     String userId,
@@ -575,16 +752,15 @@ class ChatService {
   ) async {
     try {
       final name = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final path = 'chat/$conversationId/$userId/$name';
+      final path = '$userId/$conversationId/$name';
 
-      // Koristimo postojeći StorageService mehanizam, ali prilagođen chatu
-      await _client.storage.from('product-images').uploadBinary(
+      await _client.storage.from('chat-images').uploadBinary(
             path,
             bytes as dynamic,
             fileOptions:
                 const FileOptions(contentType: 'image/jpeg', upsert: true),
           );
-      return _client.storage.from('product-images').getPublicUrl(path);
+      return _client.storage.from('chat-images').getPublicUrl(path);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -672,4 +848,14 @@ class ChatService {
       throw AppError.from(e, stackTrace: st);
     }
   }
+}
+
+class _ConversationRoomSubscription {
+  final RealtimeChannel channel;
+  int refCount = 0;
+  final Set<void Function(PostgresChangePayload payload)> onMessageCallbacks = {};
+  final Set<void Function(PostgresChangePayload payload)> onTypingCallbacks = {};
+  final Set<void Function(PostgresChangePayload payload)> onReactionCallbacks = {};
+
+  _ConversationRoomSubscription(this.channel);
 }

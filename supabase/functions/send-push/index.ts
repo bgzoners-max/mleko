@@ -80,6 +80,64 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders })
   }
 
+  // S2 Security Fix: Zahtevaj kriptografski verifikovanu 'service_role' autorizaciju.
+  // Javni anon ključ ili obični korisnički JWT ne smeju imati pristup slanju push-a.
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization")
+  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+    console.warn("FCM: Odbijen zahtev - nedostaje Authorization header")
+    return new Response(
+      JSON.stringify({ error: "Missing or invalid authorization header" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+
+  const token = authHeader.slice(7).trim()
+  const expectedServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+  const jwtSecret = Deno.env.get("SUPABASE_JWT_SECRET")
+
+  let authorized = false
+
+  // 1. Neposredno poklapanje sa tajnim service_role_key-em (koji šalje postgres trigger preko pg_net)
+  if (expectedServiceKey && token === expectedServiceKey) {
+    authorized = true
+  } else if (jwtSecret) {
+    // 2. Kriptografska provera potpisa JWT tokena pomoću SUPABASE_JWT_SECRET
+    try {
+      const secretBytes = new TextEncoder().encode(jwtSecret)
+      const { payload } = await jose.jwtVerify(token, secretBytes)
+      if (payload.role === "service_role") {
+        authorized = true
+      } else {
+        console.warn(`FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role'`)
+        return new Response(
+          JSON.stringify({ error: "Forbidden: service_role required" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
+    } catch (verifyErr) {
+      console.warn("FCM: Odbijen zahtev - nevalidan JWT potpis:", String(verifyErr))
+      return new Response(
+        JSON.stringify({ error: "Invalid authorization token signature" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+  } else {
+    // 3. Ako SUPABASE_JWT_SECRET nije ubačen u runtime environment, token se MORA poklapati
+    // sa expectedServiceKey vrednošću (odbacujemo neproverene nepotpisane tokene).
+    console.warn("FCM: Odbijen zahtev - token se ne poklapa sa service_role_key a SUPABASE_JWT_SECRET nije konfigurisan.")
+    return new Response(
+      JSON.stringify({ error: "Unauthorized: Signature verification required" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+
+  if (!authorized) {
+    return new Response(
+      JSON.stringify({ error: "Forbidden: service_role required" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+
   try {
     const requestId = crypto.randomUUID()
     const supabase = createClient<Database>(
@@ -381,10 +439,18 @@ Deno.serve(async (req) => {
       console.log(`FCM: Batch gotov - poslano: ${results.filter((r) => r.success).length}/${batch.length}`)
     }
 
-    // Obriši sve invalid tokene odjednom (umesto jedan po jedan)
+    // Obriši sve invalid tokene u chunk-ovima od max 50 kako ne bismo prebili PostgREST URL limit (HTTP 414)
     if (invalidTokens.length > 0) {
-      console.log(`FCM: Brisanje ${invalidTokens.length} invalid tokena`)
-      await supabase.from("user_push_tokens").delete().in("token", invalidTokens)
+      console.log(`FCM: Brisanje ${invalidTokens.length} invalid tokena u chunk-ovima`)
+      const DELETE_CHUNK_SIZE = 50
+      for (let i = 0; i < invalidTokens.length; i += DELETE_CHUNK_SIZE) {
+        const chunk = invalidTokens.slice(i, i + DELETE_CHUNK_SIZE)
+        try {
+          await supabase.from("user_push_tokens").delete().in("token", chunk)
+        } catch (delErr) {
+          console.error("FCM: Greška pri brisanju chunk-a tokena:", String(delErr))
+        }
+      }
     }
 
     await writeDeliveryLog({

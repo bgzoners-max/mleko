@@ -50,7 +50,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
       initialData: latestHomeData,
       stream: stream,
       builder: (context, snap) {
-        if (snap.hasError) {
+        if (snap.hasError && !snap.hasData) {
           final appError = AppError.from(snap.error);
           return SliverToBoxAdapter(
             child: AppErrorRetry(
@@ -60,7 +60,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
             ),
           );
         }
-        if (snap.connectionState == ConnectionState.waiting) {
+        if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
           return SliverPadding(
             padding: EdgeInsets.symmetric(
                 horizontal: Breakpoints.horizontalPadding(context)),

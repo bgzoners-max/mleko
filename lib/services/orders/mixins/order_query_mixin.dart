@@ -64,7 +64,7 @@ mixin OrderQueryMixin {
     var query = client.from('orders').select().eq('buyer_id', buyerId);
     if (statusFilter != null && statusFilter.isNotEmpty) {
       if (statusFilter == statusFilterActiveNonArchived) {
-        query = query.neq('status', 'arhivirano');
+        query = query.neq('status', 'archived');
       } else {
         query = query.eq('status', statusFilter);
       }
@@ -87,7 +87,7 @@ mixin OrderQueryMixin {
     var query = client.from('orders').select().eq('seller_id', sellerId);
     if (statusFilter != null && statusFilter.isNotEmpty) {
       if (statusFilter == statusFilterActiveNonArchived) {
-        query = query.neq('status', 'arhivirano');
+        query = query.neq('status', 'archived');
       } else {
         query = query.eq('status', statusFilter);
       }

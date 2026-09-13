@@ -19,71 +19,141 @@ class RegisterScreen extends StatelessWidget {
     final isDesktop = width >= 850;
 
     if (isDesktop) {
+      final isDark = theme.brightness == Brightness.dark;
       return Scaffold(
-        body: Row(
+        body: Column(
           children: [
-            // Left Side: Marketing Content
+            const BetaAnnouncementBanner(),
             Expanded(
-              flex: 5,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF083313), // Deep forest green
-                      Color(0xFF0F5A22), // Warm nature green
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: const Center(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-                    child: MarketingContent(isDesktop: true),
-                  ),
-                ),
-              ),
-            ),
-            // Right Side: Register Form
-            Expanded(
-              flex: 5,
-              child: Container(
-                color: theme.scaffoldBackgroundColor,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Row(
+                children: [
+                  // Left Side: Marketing Content
+                  Expanded(
+                    flex: 6,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFF03190B), // Najdublja smaragdno-crna
+                            Color(0xFF072C15), // Duboka šumska zelena
+                            Color(0xFF0E4521), // Topla priroda
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Stack(
                         children: [
-                          const BetaAnnouncementBanner(
-                            margin: EdgeInsets.only(bottom: 24),
-                          ),
-                          Text(
-                            'Kreirajte nalog',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: theme.colorScheme.onSurface,
+                          Positioned(
+                            top: -80,
+                            left: -80,
+                            child: Container(
+                              width: 360,
+                              height: 360,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    const Color(0xFF2E7D32).withAlpha(85),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Povežite se sa lokalnim proizvođačima',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                          Positioned(
+                            bottom: 30,
+                            right: -60,
+                            child: Container(
+                              width: 380,
+                              height: 380,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    const Color(0xFFFFB300).withAlpha(45),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 32),
-                          _RegisterForm(),
+                          const Center(
+                            child: SingleChildScrollView(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 48, vertical: 36),
+                              child: MarketingContent(isDesktop: true),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                ),
+                  // Right Side: Register Form
+                  Expanded(
+                    flex: 5,
+                    child: Container(
+                      color: isDark
+                          ? theme.scaffoldBackgroundColor
+                          : const Color(0xFFF7FAF7),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 32),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 32, vertical: 36),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white12
+                                      : const Color(0xFFE2EBE2),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withAlpha(isDark ? 55 : 16),
+                                    blurRadius: 28,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Kreirajte nalog',
+                                    style: theme.textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: theme.colorScheme.onSurface,
+                                      letterSpacing: -0.5,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Pridružite se zajednici domaćih proizvođača i kupaca',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 28),
+                                  _RegisterForm(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -161,6 +231,10 @@ class _RegisterFormState extends State<_RegisterForm> {
   bool _checkingEmail = false;
   bool _checkingPhone = false;
 
+  // Klijentski keš za proverene emailove i telefone (sprečava suvišne RPC pozive pri kretanju kroz formu)
+  final Map<String, bool> _checkedEmails = {};
+  final Map<String, bool> _checkedPhones = {};
+
   // form-level submit error
   String? _submitError;
 
@@ -197,6 +271,13 @@ class _RegisterFormState extends State<_RegisterForm> {
       setState(() => _emailError = 'Unesite ispravnu email adresu.');
       return;
     }
+
+    if (_checkedEmails.containsKey(email)) {
+      setState(() => _emailError =
+          _checkedEmails[email] == true ? 'Ova email adresa je već registrovana.' : null);
+      return;
+    }
+
     setState(() {
       _checkingEmail = true;
       _emailError = null;
@@ -204,12 +285,13 @@ class _RegisterFormState extends State<_RegisterForm> {
     try {
       final exists =
           await context.read<AppState>().authService.checkEmailExists(email);
+      _checkedEmails[email] = exists;
       if (mounted) {
         setState(() => _emailError =
             exists ? 'Ova email adresa je već registrovana.' : null);
       }
     } catch (_) {
-      // silent — server check failed, submit will catch it
+      // silent — server check failed ili rate-limited, submit će proveriti
     } finally {
       if (mounted) setState(() => _checkingEmail = false);
     }
@@ -218,7 +300,14 @@ class _RegisterFormState extends State<_RegisterForm> {
   Future<void> _onPhoneFocusChange() async {
     if (_phoneFocus.hasFocus) return;
     final phone = _phoneCtrl.text.trim();
-    if (phone.isEmpty) return;
+    if (phone.length < 6) return;
+
+    if (_checkedPhones.containsKey(phone)) {
+      setState(() => _phoneError =
+          _checkedPhones[phone] == true ? 'Ovaj broj telefona je već registrovan.' : null);
+      return;
+    }
+
     setState(() {
       _checkingPhone = true;
       _phoneError = null;
@@ -226,6 +315,7 @@ class _RegisterFormState extends State<_RegisterForm> {
     try {
       final exists =
           await context.read<AppState>().authService.checkPhoneExists(phone);
+      _checkedPhones[phone] = exists;
       if (mounted) {
         setState(() => _phoneError =
             exists ? 'Ovaj broj telefona je već registrovan.' : null);
@@ -296,11 +386,24 @@ class _RegisterFormState extends State<_RegisterForm> {
       }
     } on Exception catch (e) {
       if (mounted) {
-        final msg = e.toString().replaceFirst('Exception: ', '');
-        setState(() => _submitError = msg);
+        final raw = e.toString().toLowerCase();
+        String userFriendly = 'Greška pri registraciji.';
+        if (raw.contains('already registered') ||
+            raw.contains('user already registered') ||
+            (raw.contains('23505') && raw.contains('email'))) {
+          userFriendly =
+              'Korisnik sa ovom email adresom već postoji. Prijavite se na svoj nalog.';
+        } else if (raw.contains('phone') &&
+            (raw.contains('23505') || raw.contains('unique'))) {
+          userFriendly = 'Korisnik sa ovim brojem telefona već postoji.';
+        } else {
+          userFriendly = e.toString().replaceFirst('Exception: ', '');
+        }
+
+        setState(() => _submitError = userFriendly);
         final error = AppError.from(e,
             stackTrace: StackTrace.current,
-            userMessage: 'Greška pri registraciji.');
+            userMessage: userFriendly);
         await ErrorDialog.show(context, error: error, onRetry: _submit);
       }
     } finally {

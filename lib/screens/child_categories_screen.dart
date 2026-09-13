@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +6,7 @@ import '../core/web_seo.dart';
 import '../models/category.dart';
 import '../models/product_model.dart';
 import 'package:mleko/services/services.dart';
+import '../utils/image_precache_utils.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton.dart';
@@ -40,28 +40,12 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
   final Set<String> _preloadedImages = <String>{};
 
   void _warmupProductImages(List<ProductModel> products) {
-    final List<String> urls = [];
-    for (var i = 0; i < products.length; i++) {
-      final p = products[i];
-      if (p.imageUrls.isNotEmpty) {
-        urls.add(p.imageUrls.first);
-        // Za top 4 proizvoda preload-uj i drugu sliku (carousel detalji)
-        if (i < 4 && p.imageUrls.length > 1) {
-          urls.add(p.imageUrls[1]);
-        }
-      }
-      if (urls.length >= 10) break;
-    }
-    if (urls.isEmpty) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      for (final url in urls) {
-        if (!mounted) return;
-        if (_preloadedImages.add(url)) {
-          await precacheImage(CachedNetworkImageProvider(url), context);
-        }
-      }
-    });
+    warmupProductImages(
+      context: context,
+      products: products,
+      preloadedUrls: _preloadedImages,
+      isMounted: () => mounted,
+    );
   }
 
   @override

@@ -134,7 +134,7 @@ class OrderModel {
     final statusStr = json['status'] as String? ?? 'sent';
     OrderStatus status = OrderStatus.sent;
     for (final s in OrderStatus.values) {
-      if (s.name == statusStr || s.dbValue == statusStr) {
+      if (s.name == statusStr || s.dbValue == statusStr || (s == OrderStatus.archived && statusStr == 'arhivirano')) {
         status = s;
         break;
       }

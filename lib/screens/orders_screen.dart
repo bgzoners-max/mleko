@@ -10,11 +10,11 @@ import '../providers/app_state.dart';
 import '../services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
-import '../widgets/skeleton.dart';
-
 import '../widgets/orders/buyer_order_card.dart';
 import '../widgets/orders/by_seller_tab.dart';
-import '../widgets/orders/orders_sidebar_tile.dart';
+import '../widgets/orders/orders_desktop_sidebar.dart';
+import '../widgets/orders/orders_status_filter_bar.dart';
+import '../widgets/skeleton.dart';
 
 /// Posebna sekcija Porudžbine za kupca – pregledna lista naručenih proizvoda
 class OrdersScreen extends StatefulWidget {
@@ -40,7 +40,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   int _statusChipIndex = 0;
 
   String? get _statusFilter {
-    if (_segmentIndex == 1) return 'arhivirano';
+    if (_segmentIndex == 1) return 'archived';
     if (_segmentIndex != 0) return null;
     switch (_statusChipIndex) {
       case 1:
@@ -154,170 +154,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
-  Widget _buildSegmentedControl(BuildContext context) {
-    return SegmentedButton<int>(
-      segments: const [
-        ButtonSegment(
-          value: 0,
-          label: Text('U toku'),
-          icon: Icon(Icons.receipt_long),
-        ),
-        ButtonSegment(
-          value: 1,
-          label: Text('Arhiva'),
-          icon: Icon(Icons.archive_outlined),
-        ),
-        ButtonSegment(
-          value: 2,
-          label: Text('Prodavci'),
-          icon: Icon(Icons.store),
-        ),
-      ],
-      selected: {_segmentIndex},
-      onSelectionChanged: (selection) => _selectSegment(selection.first),
-    );
-  }
-
-  Widget _buildStatusFilters() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        FilterChip(
-          label: const Text('Sve'),
-          selected: _statusChipIndex == 0,
-          onSelected: (_) => _selectStatusChip(0),
-        ),
-        FilterChip(
-          label: const Text('Čeka prodavca'),
-          selected: _statusChipIndex == 1,
-          onSelected: (_) => _selectStatusChip(1),
-        ),
-        FilterChip(
-          label: const Text('Prihvaćene'),
-          selected: _statusChipIndex == 2,
-          onSelected: (_) => _selectStatusChip(2),
-        ),
-        FilterChip(
-          label: const Text('Poslate'),
-          selected: _statusChipIndex == 3,
-          onSelected: (_) => _selectStatusChip(3),
-        ),
-        FilterChip(
-          label: const Text('Odbijene'),
-          selected: _statusChipIndex == 4,
-          onSelected: (_) => _selectStatusChip(4),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDesktopSidebar(BuildContext context) {
-    final cardPadding = Breakpoints.cardPadding(context);
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Porudžbine',
-                    style: Breakpoints.sectionTitleStyle(
-                      context,
-                      Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _segmentDescription,
-                    style: Breakpoints.supportingTextStyle(
-                      context,
-                      Theme.of(context).textTheme.bodyMedium,
-                      phone: 13,
-                      largeTabletValue: 14,
-                      desktop: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.tonalIcon(
-                    onPressed: _onRefresh,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Osveži prikaz'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: Breakpoints.panelGap(context)),
-          Card(
-            child: Padding(
-              padding: EdgeInsets.all(cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Sekcije',
-                    style: Breakpoints.sectionTitleStyle(
-                      context,
-                      Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OrdersSidebarTile(
-                    icon: Icons.receipt_long,
-                    label: 'U toku',
-                    selected: _segmentIndex == 0,
-                    onTap: () => _selectSegment(0),
-                  ),
-                  const SizedBox(height: 8),
-                  OrdersSidebarTile(
-                    icon: Icons.archive_outlined,
-                    label: 'Arhiva',
-                    selected: _segmentIndex == 1,
-                    onTap: () => _selectSegment(1),
-                  ),
-                  const SizedBox(height: 8),
-                  OrdersSidebarTile(
-                    icon: Icons.store,
-                    label: 'Prodavci',
-                    selected: _segmentIndex == 2,
-                    onTap: () => _selectSegment(2),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_segmentIndex == 0) ...[
-            SizedBox(height: Breakpoints.panelGap(context)),
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(cardPadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Status filter',
-                      style: Breakpoints.sectionTitleStyle(
-                        context,
-                        Theme.of(context).textTheme.titleSmall,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildStatusFilters(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   Widget _buildOrdersPanel(BuildContext context, String userId) {
     if (_isBySeller) {
       return BySellerTab(userId: userId, onRefresh: _onRefresh);
@@ -405,10 +241,32 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    if (user == null) {
+    if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Moje porudžbine')),
-        body: const Center(child: Text('Prijavite se da vidite porudžbine.')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.receipt_long_outlined, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'Za pregled i praćenje porudžbina potrebno je da se prijavite na svoj nalog.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, height: 1.4),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.go('/login'),
+                  icon: const Icon(Icons.login),
+                  label: const Text('Prijavi se'),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -434,7 +292,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     children: [
                       SizedBox(
                         width: Breakpoints.desktopSidebarWidth(context),
-                        child: _buildDesktopSidebar(context),
+                        child: OrdersDesktopSidebar(
+                          segmentIndex: _segmentIndex,
+                          onSegmentChanged: _selectSegment,
+                          statusChipIndex: _statusChipIndex,
+                          onStatusChipChanged: _selectStatusChip,
+                          segmentDescription: _segmentDescription,
+                          onRefresh: _onRefresh,
+                        ),
                       ),
                       SizedBox(width: panelGap),
                       Expanded(
@@ -549,7 +414,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         Breakpoints.horizontalPadding(context),
                         4,
                       ),
-                      child: _buildSegmentedControl(context),
+                      child: OrdersSegmentedControl(
+                        segmentIndex: _segmentIndex,
+                        onSegmentChanged: _selectSegment,
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -566,7 +434,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          child: _buildStatusFilters(),
+                          child: OrderStatusFilterChips(
+                            statusChipIndex: _statusChipIndex,
+                            onStatusChipChanged: _selectStatusChip,
+                          ),
                         ),
                       ),
                     const SizedBox(height: 8),

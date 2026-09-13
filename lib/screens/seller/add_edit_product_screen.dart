@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
+import '../../utils/number_input_utils.dart';
 import '../../utils/product_helpers.dart';
 import '../../widgets/grouped_category_dropdown.dart';
 import '../../providers/categories_provider.dart';
@@ -287,19 +288,17 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _showErrorDialog(msg);
       return;
     }
-    final price = double.tryParse(_priceController.text.replaceAll(',', '.'));
+    final price = NumberInputUtils.parseDecimal(_priceController.text);
     final minOrder = _unitType == ProductModel.unitL
         ? ProductModel.parseQuantityL(_minOrderController.text)
-        : (double.tryParse(_minOrderController.text.replaceAll(',', '.')) ?? 1);
+        : (NumberInputUtils.parseDecimal(_minOrderController.text) ?? 1.0);
     final available = _unitType == ProductModel.unitL
         ? ProductModel.parseQuantityL(_availableController.text)
-        : (double.tryParse(
-                _availableController.text.replaceAll(',', '.')) ??
-            0);
+        : (NumberInputUtils.parseDecimal(_availableController.text) ?? 0.0);
     final parsedOrderStep = _orderStepController.text.trim().isNotEmpty
         ? (_unitType == ProductModel.unitL
             ? ProductModel.parseQuantityL(_orderStepController.text)
-            : double.tryParse(_orderStepController.text.replaceAll(',', '.')))
+            : NumberInputUtils.parseDecimal(_orderStepController.text))
         : null;
 
     final resolvedStep = (parsedOrderStep != null && parsedOrderStep > 0)

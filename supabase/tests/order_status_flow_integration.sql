@@ -71,4 +71,55 @@ BEGIN
   END IF;
 END $$;
 
+-- Product aggregates (Nivo 2 – održavane sume umesto N+1 u products_with_ratings)
+DO $$
+BEGIN
+  IF to_regclass('public.product_order_summary') IS NULL THEN
+    RAISE EXCEPTION 'product_order_summary table missing';
+  END IF;
+
+  IF to_regclass('public.product_review_summary') IS NULL THEN
+    RAISE EXCEPTION 'product_review_summary table missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_maintain_product_order_summary'
+  ) THEN
+    RAISE EXCEPTION 'trg_maintain_product_order_summary missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_maintain_product_review_summary'
+  ) THEN
+    RAISE EXCEPTION 'trg_maintain_product_review_summary missing';
+  END IF;
+
+  IF to_regclass('public.products_with_ratings') IS NULL THEN
+    RAISE EXCEPTION 'products_with_ratings view missing';
+  END IF;
+
+  IF to_regprocedure('public.get_home_products(integer,text,text)') IS NULL THEN
+    RAISE EXCEPTION 'get_home_products(integer,text,text) missing';
+  END IF;
+END $$;
+
+-- Uveri se da view vise ne poziva stare N+1 funkcije po redu
+DO $$
+DECLARE
+  view_def text;
+BEGIN
+  SELECT pg_get_viewdef('public.products_with_ratings'::regclass, false)
+  INTO view_def;
+
+  IF view_def LIKE '%get_product_order_count(%' THEN
+    RAISE EXCEPTION 'products_with_ratings still uses per-row get_product_order_count()';
+  END IF;
+
+  IF view_def LIKE '%is_seller_verified(%' THEN
+    RAISE EXCEPTION 'products_with_ratings still uses per-row is_seller_verified()';
+  END IF;
+END $$;
+
 ROLLBACK;

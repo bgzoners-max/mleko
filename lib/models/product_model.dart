@@ -1,3 +1,5 @@
+import '../utils/quantity_engine.dart';
+
 enum ProductDeliveryMode { none, allSellerPoints, selectedPoints }
 
 extension ProductDeliveryModeX on ProductDeliveryMode {
@@ -76,6 +78,55 @@ class ProductModel {
     this.reviewCount = 0,
   });
 
+  ProductModel copyWith({
+    String? id,
+    String? sellerId,
+    String? category,
+    String? name,
+    double? pricePerKg,
+    double? minOrderKg,
+    double? orderStep,
+    double? availableKg,
+    String? unitType,
+    String? description,
+    List<String>? imageUrls,
+    List<String>? pickupOptions,
+    String? location,
+    bool? isDomestic,
+    bool? availableNow,
+    ProductDeliveryMode? deliveryMode,
+    List<String>? selectedDeliveryPointIds,
+    DateTime? createdAt,
+    bool? sellerIsVerified,
+    double? avgRating,
+    int? reviewCount,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      sellerId: sellerId ?? this.sellerId,
+      category: category ?? this.category,
+      name: name ?? this.name,
+      pricePerKg: pricePerKg ?? this.pricePerKg,
+      minOrderKg: minOrderKg ?? this.minOrderKg,
+      orderStep: orderStep ?? this.orderStep,
+      availableKg: availableKg ?? this.availableKg,
+      unitType: unitType ?? this.unitType,
+      description: description ?? this.description,
+      imageUrls: imageUrls ?? this.imageUrls,
+      pickupOptions: pickupOptions ?? this.pickupOptions,
+      location: location ?? this.location,
+      isDomestic: isDomestic ?? this.isDomestic,
+      availableNow: availableNow ?? this.availableNow,
+      deliveryMode: deliveryMode ?? this.deliveryMode,
+      selectedDeliveryPointIds:
+          selectedDeliveryPointIds ?? this.selectedDeliveryPointIds,
+      createdAt: createdAt ?? this.createdAt,
+      sellerIsVerified: sellerIsVerified ?? this.sellerIsVerified,
+      avgRating: avgRating ?? this.avgRating,
+      reviewCount: reviewCount ?? this.reviewCount,
+    );
+  }
+
   bool get isVolumeUnit => unitType == unitL;
 
   String get priceFormatted {
@@ -130,32 +181,11 @@ class ProductModel {
   bool get usesSelectedDeliveryPoints =>
       deliveryMode == ProductDeliveryMode.selectedPoints;
 
-  /// Korak kojim se menja količina u UI-u (step), nezavisno od minimalne količine.
-  double get quantityStep {
-    final explicitStep = orderStep;
-    if (explicitStep != null && explicitStep > 0) {
-      return explicitStep;
-    }
-
-    if (minOrderKg > 0) {
-      return minOrderKg;
-    }
-
-    switch (unitType) {
-      case unitL:
-        // Tečnosti (mleko, sok) – osnovni korak 1L; specijalni slučajevi (0.5L) mogu se rešiti kasnije po kategoriji.
-        return 1.0;
-      case unitG:
-        // 50g
-        return 0.05;
-      case unitPiece:
-        // 10 kom
-        return 10.0;
-      default:
-        // kg – 1 kg
-        return 1.0;
-    }
-  }
+  /// Korak kojim se menja količina u UI-u (step), usklađen sa REPO_BIBLE.md i QuantityEngine.
+  double get quantityStep => QuantityEngine.resolveStep(
+        orderStep: orderStep,
+        minQuantity: minOrderKg,
+      );
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final images = json['image_urls'] as List<dynamic>?;

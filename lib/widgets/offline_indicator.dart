@@ -84,13 +84,21 @@ class OfflineSnackBar {
 
 /// Read-only badge kada je korisnik offline
 class OfflineReadOnlyBadge extends StatelessWidget {
-  const OfflineReadOnlyBadge({super.key});
+  final bool? isOffline;
+  const OfflineReadOnlyBadge({super.key, this.isOffline});
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = context.watch<AppState>().isOffline;
+    final effectiveOffline = isOffline ??
+        (() {
+          try {
+            return context.watch<AppState>().isOffline;
+          } catch (_) {
+            return false;
+          }
+        })();
 
-    if (!isOffline) {
+    if (!effectiveOffline) {
       return const SizedBox.shrink();
     }
 

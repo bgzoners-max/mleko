@@ -4,6 +4,7 @@ class NotificationModel {
   final String? orderId;
   final String? ticketId;
   final String? conversationId;
+  final String? classifiedAdId;
   final String type;
   final String title;
   final String body;
@@ -16,6 +17,7 @@ class NotificationModel {
     this.orderId,
     this.ticketId,
     this.conversationId,
+    this.classifiedAdId,
     required this.type,
     required this.title,
     this.body = '',
@@ -45,6 +47,7 @@ class NotificationModel {
       orderId: json['order_id'] as String?,
       ticketId: json['ticket_id'] as String?,
       conversationId: json['conversation_id'] as String?,
+      classifiedAdId: json['classified_ad_id'] as String?,
       type: type,
       title: title,
       body: body,

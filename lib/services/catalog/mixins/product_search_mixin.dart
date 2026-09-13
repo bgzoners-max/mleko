@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/product_model.dart';
 import '../../../models/product_sort.dart';
+import '../../../utils/refetch_throttle.dart';
 import '../../../utils/search_utils.dart';
 import '../../core/logger_service.dart';
 import '../../core/retry_utils.dart';
@@ -186,7 +187,7 @@ mixin ProductSearchMixin {
         (offset + limit) > filtered.length ? filtered.length : (offset + limit);
     final page = filtered.sublist(offset, end);
 
-    LoggerService.info('Local cache search completed', extra: {
+    LoggerService.debug('Local cache search completed', extra: {
       'query': safeSearch ?? '',
       'tokens': tokens,
       'total': filtered.length,
@@ -215,6 +216,11 @@ mixin ProductSearchMixin {
     int limit = 50,
     Stream<void>? refreshTrigger,
   }) {
+    // Maksimalna učestanost refetch-a izazvana realtime događajima.
+    // Eksplicitno osvežavanje (pull-to-refresh, promena regije) ide odmah.
+    const throttleInterval = Duration(seconds: 2);
+    final realtimeThrottle = RefetchThrottle(minInterval: throttleInterval);
+    Timer? realtimeThrottleTimer;
     final controller = StreamController<
         ({
           List<ProductModel> products,
@@ -226,6 +232,23 @@ mixin ProductSearchMixin {
     VoidCallback? regionListener;
     var isFetching = false;
     var hasQueuedRefetch = false;
+
+    final initialRegion = regionNotifier?.value ?? region;
+    final initialCacheKey = initialRegion != null
+        ? '${ProductCacheService.homeProductsKey}_$initialRegion'
+        : ProductCacheService.homeProductsKey;
+    final syncCached = cache.getCachedProductsSync(initialCacheKey);
+    ({
+      List<ProductModel> products,
+      Map<String, int> salesCounts,
+      Map<String, ({double avg, int count})> ratings
+    })? lastEmitted = (syncCached != null && syncCached.isNotEmpty)
+        ? (
+            products: syncCached,
+            salesCounts: <String, int>{},
+            ratings: <String, ({double avg, int count})>{}
+          )
+        : null;
 
     Future<void> runSingleFetch() async {
       final currentRegion = regionNotifier?.value ?? region;
@@ -261,9 +284,11 @@ mixin ProductSearchMixin {
 
         await cache.cacheProducts(cacheKey, products);
 
+        final emittedData =
+            (products: products, salesCounts: salesCounts, ratings: ratings);
+        lastEmitted = emittedData;
         if (!controller.isClosed) {
-          controller.add(
-              (products: products, salesCounts: salesCounts, ratings: ratings));
+          controller.add(emittedData);
         }
       } catch (e, st) {
         LoggerService.error('Failed to load home products', e, stackTrace: st);
@@ -271,12 +296,23 @@ mixin ProductSearchMixin {
         final cachedProducts = await cache.getCachedProducts(cacheKey);
         if (cachedProducts != null && cachedProducts.isNotEmpty) {
           LoggerService.info('Using cached home products as fallback');
+          final fallbackData = (
+            products: cachedProducts,
+            salesCounts: <String, int>{},
+            ratings: <String, ({double avg, int count})>{}
+          );
+          lastEmitted = fallbackData;
           if (!controller.isClosed) {
-            controller
-                .add((products: cachedProducts, salesCounts: {}, ratings: {}));
+            controller.add(fallbackData);
           }
         } else if (!controller.isClosed) {
-          controller.add((products: [], salesCounts: {}, ratings: {}));
+          final emptyData = (
+            products: <ProductModel>[],
+            salesCounts: <String, int>{},
+            ratings: <String, ({double avg, int count})>{}
+          );
+          lastEmitted = emptyData;
+          controller.add(emptyData);
         }
       }
     }
@@ -297,15 +333,46 @@ mixin ProductSearchMixin {
       }
     }
 
-    final initialRegion = regionNotifier?.value ?? region;
-    final initialCacheKey = initialRegion != null
-        ? '${ProductCacheService.homeProductsKey}_$initialRegion'
-        : ProductCacheService.homeProductsKey;
+    // Realtime callback: filtrira promene van izabranog regiona i guši pljusak
+    // promena u kratkom prozoru (max 1 RPC na 2 s) da ne plavi bazu pozivima.
+    void scheduleThrottledRealtimeRefetch(PostgresChangePayload payload) {
+      final currentRegion = regionNotifier?.value ?? region;
+      if (currentRegion != null && currentRegion.isNotEmpty) {
+        final row = payload.newRecord.isNotEmpty
+            ? payload.newRecord
+            : payload.oldRecord;
+        if (row.isNotEmpty) {
+          final rowRegion = row['location']?.toString();
+          if (rowRegion != null &&
+              rowRegion.isNotEmpty &&
+              rowRegion != currentRegion) {
+            return; // Promena nije vezana za izabran region.
+          }
+        }
+      }
+
+      if (realtimeThrottle.tryAcquire()) {
+        unawaited(refetch());
+        return;
+      }
+      realtimeThrottleTimer ??= Timer(realtimeThrottle.remainingWait, () {
+        realtimeThrottleTimer = null;
+        if (controller.isClosed) return;
+        realtimeThrottle.tryAcquire();
+        unawaited(refetch());
+      });
+    }
+
     cache.getCachedProducts(initialCacheKey).then((cachedProducts) {
       if (controller.isClosed) return;
       if (cachedProducts != null && cachedProducts.isNotEmpty) {
-        controller
-            .add((products: cachedProducts, salesCounts: {}, ratings: {}));
+        final cachedData = (
+          products: cachedProducts,
+          salesCounts: <String, int>{},
+          ratings: <String, ({double avg, int count})>{}
+        );
+        lastEmitted = cachedData;
+        controller.add(cachedData);
       }
       refetch();
     }).catchError((e) {
@@ -319,7 +386,7 @@ mixin ProductSearchMixin {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'products',
-          callback: (_) => refetch(),
+          callback: scheduleThrottledRealtimeRefetch,
         )
         .subscribe();
 
@@ -332,6 +399,8 @@ mixin ProductSearchMixin {
 
     controller.onCancel = () {
       refreshSub?.cancel();
+      realtimeThrottleTimer?.cancel();
+      realtimeThrottleTimer = null;
       if (regionNotifier != null && regionListener != null) {
         regionNotifier.removeListener(regionListener);
       }
@@ -341,6 +410,21 @@ mixin ProductSearchMixin {
       }
     };
 
-    return controller.stream;
+    return Stream.multi(
+      (multiController) {
+        if (lastEmitted != null) {
+          multiController.add(lastEmitted!);
+        }
+        final sub = controller.stream.listen(
+          multiController.add,
+          onError: multiController.addError,
+          onDone: multiController.close,
+        );
+        multiController.onCancel = () {
+          sub.cancel();
+        };
+      },
+      isBroadcast: true,
+    );
   }
 }

@@ -56,6 +56,91 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        OrderStatusFlowRules.isAllowedTransition(
+          oldStatus: 'delivered',
+          newStatus: 'arhivirano',
+        ),
+        isFalse,
+      );
+    });
+
+    test('enforces role-based permissions matching database trigger', () {
+      // Seller permissions
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'sent',
+          newStatus: 'accepted',
+          role: 'seller',
+        ),
+        isTrue,
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'sent',
+          newStatus: 'rejected',
+          role: 'seller',
+        ),
+        isTrue,
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'accepted',
+          newStatus: 'shipped',
+          role: 'seller',
+        ),
+        isTrue,
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'shipped',
+          newStatus: 'delivered',
+          role: 'seller',
+        ),
+        isFalse, // Only buyer confirms receipt
+      );
+
+      // Buyer permissions
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'sent',
+          newStatus: 'accepted',
+          role: 'buyer',
+        ),
+        isFalse, // Buyer cannot accept own order
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'accepted',
+          newStatus: 'shipped',
+          role: 'buyer',
+        ),
+        isFalse, // Buyer cannot ship own order
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'shipped',
+          newStatus: 'delivered',
+          role: 'buyer',
+        ),
+        isTrue, // Buyer confirms delivery
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'delivered',
+          newStatus: 'archived',
+          role: 'buyer',
+        ),
+        isTrue,
+      );
+      expect(
+        OrderStatusFlowRules.isAllowedTransitionForRole(
+          oldStatus: 'delivered',
+          newStatus: 'arhivirano',
+          role: 'buyer',
+        ),
+        isFalse,
+      );
     });
   });
 

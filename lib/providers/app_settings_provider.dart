@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/core/logger_service.dart';
 import '../widgets/home/market_mode_switcher.dart';
+export '../widgets/home/market_mode_switcher.dart' show MarketMode;
 
 const _keyThemeMode = 'mleko_theme_mode'; // 0=system, 1=light, 2=dark
 const _keyAnimationsEnabled = 'mleko_animations_enabled';

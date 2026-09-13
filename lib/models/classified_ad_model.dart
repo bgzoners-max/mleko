@@ -20,6 +20,13 @@ class ClassifiedAdModel {
   final String? sellerName;
   final String? sellerAvatar;
   final bool? categoryConditionApplicable;
+  final Map<String, dynamic> attributes;
+  final bool isFeatured;
+  final DateTime? featuredUntil;
+  final bool isUrgent;
+  final int reportsCount;
+  final int callClicksCount;
+  final int sharesCount;
 
   const ClassifiedAdModel({
     required this.id,
@@ -43,11 +50,24 @@ class ClassifiedAdModel {
     this.sellerName,
     this.sellerAvatar,
     this.categoryConditionApplicable,
+    this.attributes = const {},
+    this.isFeatured = false,
+    this.featuredUntil,
+    this.isUrgent = false,
+    this.reportsCount = 0,
+    this.callClicksCount = 0,
+    this.sharesCount = 0,
   });
 
   bool get isActive => status == 'active';
   bool get isSold => status == 'sold';
   bool get isArchived => status == 'archived';
+  bool get isRejected => status == 'rejected';
+  bool get isFlagged => status == 'flagged';
+  bool get isAvailable => isActive;
+  bool get isCurrentlyFeatured =>
+      isFeatured &&
+      (featuredUntil == null || featuredUntil!.isAfter(DateTime.now()));
 
   String get priceFormatted {
     if (priceType == 'free') return 'Besplatno';
@@ -66,6 +86,101 @@ class ClassifiedAdModel {
     }
     return '$formattedNum $currency';
   }
+
+  // --- Real Estate (Nekretnine) specifična svojstva ---
+  static const Set<String> _realEstateCategoryIds = {
+    'nekretnine',
+    'stanovi',
+    'prodaja_stanova',
+    'izdavanje_stanova',
+    'stan_na_dan',
+    'kuce_domacinstva',
+    'prodaja_kuca',
+    'seoska_domacinstva',
+    'izdavanje_kuca',
+    'vikendice',
+    'planinske_vikendice',
+    'vikendice_reka_jezero',
+    'brvnare_eko_kuce',
+    'poljoprivredno_zemljiste',
+    'njive_oranice',
+    'vocnjaci_vinogradi',
+    'sume_pasnjaci',
+    'gradjevinski_placevi',
+    'placevi_za_kuce',
+    'industrijski_placevi',
+    'poslovni_prostori',
+    'lokali',
+    'kancelarije',
+    'magacini_hale',
+    'garaze_parking',
+    'prodaja_garaza',
+    'izdavanje_garaza',
+  };
+
+  /// Da li je oglas u kategoriji nekretnina ili poseduje atribute nekretnina
+  bool get isRealEstate {
+    final cat = categoryId.toLowerCase().trim();
+    if (_realEstateCategoryIds.contains(cat)) return true;
+    if (attributes.containsKey('area_m2') || attributes.containsKey('land_area_ari')) return true;
+    final catName = (categoryName ?? '').toLowerCase();
+    return catName.contains('nekretnin') ||
+        catName.contains('stan') ||
+        catName.contains('kuć') ||
+        catName.contains('kuc') ||
+        catName.contains('plac') ||
+        catName.contains('zemljišt') ||
+        catName.contains('zemljist');
+  }
+
+  /// Kvadratura u m²
+  double? get realEstateAreaM2 {
+    final val = attributes['area_m2'];
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val.trim());
+    return null;
+  }
+
+  /// Površina placa / zemljišta u arima
+  double? get realEstateLandAreaAri {
+    final val = attributes['land_area_ari'];
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val.trim());
+    return null;
+  }
+
+  /// Broj soba (npr. "1.5", "2.0", "3.5")
+  String? get realEstateRooms => attributes['rooms']?.toString();
+
+  /// Sprat (npr. "2", "prizemlje")
+  String? get realEstateFloor => attributes['floor']?.toString();
+
+  /// Grejanje
+  String? get realEstateHeating => attributes['heating']?.toString();
+
+  /// Tip transakcije ('prodaja', 'izdavanje', 'na_dan')
+  String? get realEstateTransactionType => attributes['transaction_type']?.toString();
+
+  /// Cena po kvadratu (€/m² ili RSD/m²)
+  double? get pricePerM2 {
+    if (price <= 0) return null;
+    final m2 = realEstateAreaM2;
+    if (m2 != null && m2 > 0) {
+      return price / m2;
+    }
+    return null;
+  }
+
+  /// Cena po aru (€/ar ili RSD/ar)
+  double? get pricePerAr {
+    if (price <= 0) return null;
+    final ari = realEstateLandAreaAri;
+    if (ari != null && ari > 0) {
+      return price / ari;
+    }
+    return null;
+  }
+
 
   /// Kategorije za koje stanje ("Novo" / "Polovno") nema smisla:
   /// - Životinje (mačići, mačke, psi, stoka, živina, ptice, pčele...)
@@ -120,21 +235,67 @@ class ClassifiedAdModel {
     // 3. Usluge
     'usluge',
     'poljoprivredne_usluge',
+    'oranje_setva',
+    'zetva_kombajniranje',
+    'baliranje_usluge',
+    'orezivanje_prskanje_voca',
+    'seca_cepanje_drva',
     'majstori_zanatlije',
+    'vodoinstalaterske_usluge',
+    'elektricarske_usluge',
+    'molerski_gipsarski_radovi',
+    'keramicari_plocice',
+    'bravarske_usluge',
     'gradjevinske_usluge',
+    'iskopi_bageri',
+    'zidanje_betoniranje',
+    'krovopokrivacki_radovi',
+    'asfaltiranje_behaton',
+    'rusenje_odvoz_suta',
     'prevoz_selidbe',
+    'kombi_prevoz',
+    'kamionski_prevoz',
+    'slep_sluzba',
+    'selidbe_usluge',
     'servis_mehanike',
+    'servis_traktora',
+    'automehanicari',
+    'autolimari_farbari',
+    'vulkanizerske_usluge',
     'poslovi_zaposlenje',
+    'sezonski_poslovi',
+    'poslovi_gradjevina',
+    'poslovi_vozaci',
+    'poslovi_ugostiteljstvo',
 
     // 4. Nekretnine
     'nekretnine',
     'stanovi',
+    'prodaja_stanova',
+    'izdavanje_stanova',
+    'stan_na_dan',
     'kuce_domacinstva',
+    'prodaja_kuca',
+    'seoska_domacinstva',
+    'izdavanje_kuca',
     'vikendice',
+    'planinske_vikendice',
+    'vikendice_reka_jezero',
+    'brvnare_eko_kuce',
     'poljoprivredno_zemljiste',
+    'njive_oranice',
+    'vocnjaci_vinogradi',
+    'sume_pasnjaci',
     'gradjevinski_placevi',
+    'placevi_za_kuce',
+    'industrijski_placevi',
     'poslovni_prostori',
+    'lokali',
+    'kancelarije',
+    'magacini_hale',
     'garaze_parking',
+    'prodaja_garaza',
+    'izdavanje_garaza',
   };
 
   static const List<String> _equipmentKeywords = [
@@ -237,13 +398,21 @@ class ClassifiedAdModel {
     String? title,
     bool? categoryConditionApplicable,
   }) {
-    if (categoryConditionApplicable != null) {
-      return categoryConditionApplicable;
+    // 1. Ako baza eksplicitno kaže false -> NIKADA nije primenjivo
+    if (categoryConditionApplicable == false) {
+      return false;
     }
 
-    if (categoryId != null &&
-        _inapplicableCategoryIds.contains(categoryId.trim().toLowerCase())) {
+    // 2. Ako je ID kategorije na strogoj listi neprikladnih (nekretnine, usluge, životinje, usevi...)
+    // -> NIKADA nije primenjivo (čak i ako keš ili klijent ima neusklađenu vrednost)
+    final cleanCatId = categoryId?.trim().toLowerCase();
+    if (cleanCatId != null && _inapplicableCategoryIds.contains(cleanCatId)) {
       return false;
+    }
+
+    // 3. Ako baza eksplicitno kaže true (i nije na strogoj crnoj listi)
+    if (categoryConditionApplicable == true) {
+      return true;
     }
 
     final combinedText = '${categoryName ?? ''} ${title ?? ''}'.trim();
@@ -320,7 +489,7 @@ class ClassifiedAdModel {
 
     return ClassifiedAdModel(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
+      userId: (json['user_id'] ?? json['seller_id'] ?? '') as String,
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
@@ -347,6 +516,17 @@ class ClassifiedAdModel {
       sellerAvatar: profile?['profile_image_url'] as String?,
       categoryConditionApplicable:
           cat?['is_condition_applicable'] as bool?,
+      attributes: (json['attributes'] is Map)
+          ? Map<String, dynamic>.from(json['attributes'] as Map)
+          : const {},
+      isFeatured: json['is_featured'] as bool? ?? false,
+      featuredUntil: json['featured_until'] != null
+          ? DateTime.tryParse(json['featured_until'].toString())
+          : null,
+      isUrgent: json['is_urgent'] as bool? ?? false,
+      reportsCount: (json['reports_count'] as num?)?.toInt() ?? 0,
+      callClicksCount: (json['call_clicks_count'] as num?)?.toInt() ?? 0,
+      sharesCount: (json['shares_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -369,6 +549,14 @@ class ClassifiedAdModel {
       if (phone != null) 'phone': phone,
       'phone_public': phonePublic,
       'status': status,
+      'attributes': attributes,
+      'is_featured': isFeatured,
+      if (featuredUntil != null)
+        'featured_until': featuredUntil!.toIso8601String(),
+      'is_urgent': isUrgent,
+      'reports_count': reportsCount,
+      'call_clicks_count': callClicksCount,
+      'shares_count': sharesCount,
       if (includeCreatedAt) 'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -396,6 +584,14 @@ class ClassifiedAdModel {
     DateTime? updatedAt,
     String? sellerName,
     String? sellerAvatar,
+    bool? categoryConditionApplicable,
+    Map<String, dynamic>? attributes,
+    bool? isFeatured,
+    DateTime? featuredUntil,
+    bool? isUrgent,
+    int? reportsCount,
+    int? callClicksCount,
+    int? sharesCount,
   }) {
     return ClassifiedAdModel(
       id: id ?? this.id,
@@ -418,6 +614,15 @@ class ClassifiedAdModel {
       updatedAt: updatedAt ?? this.updatedAt,
       sellerName: sellerName ?? this.sellerName,
       sellerAvatar: sellerAvatar ?? this.sellerAvatar,
+      categoryConditionApplicable:
+          categoryConditionApplicable ?? this.categoryConditionApplicable,
+      attributes: attributes ?? this.attributes,
+      isFeatured: isFeatured ?? this.isFeatured,
+      featuredUntil: featuredUntil ?? this.featuredUntil,
+      isUrgent: isUrgent ?? this.isUrgent,
+      reportsCount: reportsCount ?? this.reportsCount,
+      callClicksCount: callClicksCount ?? this.callClicksCount,
+      sharesCount: sharesCount ?? this.sharesCount,
     );
   }
 }

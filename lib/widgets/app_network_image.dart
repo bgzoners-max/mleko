@@ -2,9 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-/// Zajednički wrapper za mrežne slike – placeholder, error i memCache za optimizaciju.
-class AppNetworkImage extends StatelessWidget {
+import '../utils/image_url_utils.dart';
+
+/// Zajednički wrapper za mrežne slike – podržava automatsku server-side
+/// transformaciju (Supabase Storage), fallback na original, placeholder, error i memCache.
+class AppNetworkImage extends StatefulWidget {
   final String imageUrl;
+  final String? serverTransformedUrl;
   final double? width;
   final double? height;
   final BoxFit fit;
@@ -18,6 +22,7 @@ class AppNetworkImage extends StatelessWidget {
   const AppNetworkImage({
     super.key,
     required this.imageUrl,
+    this.serverTransformedUrl,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
@@ -35,16 +40,22 @@ class AppNetworkImage extends StatelessWidget {
     double? width,
     double? height,
     BoxFit fit = BoxFit.cover,
-  }) =>
-      AppNetworkImage(
-        key: key,
-        imageUrl: imageUrl,
-        width: width,
-        height: height,
-        fit: fit,
-        memCacheWidth: 400,
-        fadeInDuration: Duration.zero,
-      );
+    Widget? placeholder,
+    Widget? errorWidget,
+  }) {
+    return AppNetworkImage(
+      key: key,
+      imageUrl: imageUrl,
+      serverTransformedUrl: ImageUrlUtils.thumbnailUrl(imageUrl),
+      width: width,
+      height: height,
+      fit: fit,
+      memCacheWidth: 400,
+      fadeInDuration: Duration.zero,
+      placeholder: placeholder,
+      errorWidget: errorWidget,
+    );
+  }
 
   /// Za male ikone (120x120), bez fade-in za brži scroll u listama.
   factory AppNetworkImage.icon({
@@ -56,6 +67,7 @@ class AppNetworkImage extends StatelessWidget {
       AppNetworkImage(
         key: key,
         imageUrl: imageUrl,
+        serverTransformedUrl: ImageUrlUtils.iconUrl(imageUrl, size: 120),
         width: width,
         height: height,
         memCacheWidth: 120,
@@ -73,6 +85,7 @@ class AppNetworkImage extends StatelessWidget {
       AppNetworkImage(
         key: key,
         imageUrl: imageUrl,
+        serverTransformedUrl: ImageUrlUtils.iconUrl(imageUrl, size: 96),
         width: width ?? 48,
         height: height ?? 48,
         memCacheWidth: 48,
@@ -100,6 +113,7 @@ class AppNetworkImage extends StatelessWidget {
       AppNetworkImage(
         key: key,
         imageUrl: imageUrl,
+        serverTransformedUrl: ImageUrlUtils.iconUrl(imageUrl, size: 240),
         width: width ?? 120,
         height: height ?? 120,
         memCacheWidth: 120,
@@ -127,11 +141,13 @@ class AppNetworkImage extends StatelessWidget {
       AppNetworkImage(
         key: key,
         imageUrl: imageUrl,
+        serverTransformedUrl: ImageUrlUtils.transformUrl(imageUrl, width: 800, height: 300, quality: 80),
         width: width,
         height: height ?? 180,
         memCacheWidth: 800,
         memCacheHeight: 300,
         fit: BoxFit.cover,
+        fadeInDuration: const Duration(milliseconds: 400),
       );
 
   /// Za product detail slike (600x600), sa fade-in.
@@ -144,11 +160,13 @@ class AppNetworkImage extends StatelessWidget {
       AppNetworkImage(
         key: key,
         imageUrl: imageUrl,
+        serverTransformedUrl: ImageUrlUtils.detailUrl(imageUrl, width: 800, quality: 85),
         width: width,
         height: height,
         memCacheWidth: 600,
         memCacheHeight: 600,
         fit: BoxFit.contain,
+        fadeInDuration: const Duration(milliseconds: 300),
       );
 
   static Widget _defaultPlaceholder() => Shimmer.fromColors(
@@ -163,26 +181,85 @@ class AppNetworkImage extends StatelessWidget {
       );
 
   @override
+  State<AppNetworkImage> createState() => _AppNetworkImageState();
+}
+
+class _AppNetworkImageState extends State<AppNetworkImage> {
+  bool _useServerTransform = true;
+
+  @override
   Widget build(BuildContext context) {
+    final serverUrl = widget.serverTransformedUrl;
+    final resolvedUrl =
+        _useServerTransform && serverUrl != null ? serverUrl : widget.imageUrl;
+
     return CachedNetworkImage(
-      imageUrl: imageUrl,
-      width: width,
-      height: height,
-      fit: fit,
-      memCacheWidth: memCacheWidth,
-      memCacheHeight: memCacheHeight,
-      fadeInDuration: fadeInDuration ?? const Duration(milliseconds: 500),
+      imageUrl: resolvedUrl,
+      width: widget.width,
+      height: widget.height,
+      fit: widget.fit,
+      memCacheWidth: widget.memCacheWidth,
+      memCacheHeight: widget.memCacheHeight,
+      fadeInDuration: widget.fadeInDuration ?? const Duration(milliseconds: 500),
       fadeInCurve: Curves.easeInCubic,
-      placeholder: (_, __) => placeholder ?? _defaultPlaceholder(),
-      errorWidget: (_, __, ___) => errorWidget ?? _defaultError(),
+      placeholder: (_, __) =>
+          widget.placeholder ?? AppNetworkImage._defaultPlaceholder(),
+      errorWidget: (context, url, error) {
+        // Ako server transform nije uspeo, jednom bezbedno padni na originalni URL
+        if (_useServerTransform && serverUrl != null && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() => _useServerTransform = false);
+            }
+          });
+        }
+        return widget.errorWidget ?? AppNetworkImage._defaultError();
+      },
       imageBuilder: (context, imageProvider) => Container(
         decoration: BoxDecoration(
           image: DecorationImage(
             image: imageProvider,
-            fit: fit,
+            fit: widget.fit,
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Namenska komponenta za thumbnails sa kompatibilnim interfejsom
+class AppNetworkImageThumbnail extends StatelessWidget {
+  final String imageUrl;
+  final String? serverThumbnailUrl;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Widget? placeholder;
+  final Widget? errorWidget;
+
+  const AppNetworkImageThumbnail({
+    super.key,
+    required this.imageUrl,
+    this.serverThumbnailUrl,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.placeholder,
+    this.errorWidget,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppNetworkImage(
+      imageUrl: imageUrl,
+      serverTransformedUrl: serverThumbnailUrl ?? ImageUrlUtils.thumbnailUrl(imageUrl),
+      width: width,
+      height: height,
+      fit: fit,
+      memCacheWidth: 400,
+      fadeInDuration: Duration.zero,
+      placeholder: placeholder,
+      errorWidget: errorWidget,
     );
   }
 }

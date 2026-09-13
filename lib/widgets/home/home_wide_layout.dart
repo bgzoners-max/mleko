@@ -87,7 +87,7 @@ class HomeWideLayout extends StatelessWidget {
                 initialData: latestHomeData,
                 stream: stream,
                 builder: (context, snap) {
-                  if (snap.hasError) {
+                  if (snap.hasError && !snap.hasData) {
                     final appError = AppError.from(snap.error);
                     return AppErrorRetry(
                       message: appError.getUserMessage(),
@@ -95,7 +95,8 @@ class HomeWideLayout extends StatelessWidget {
                       onRetry: () => refreshController.add(null),
                     );
                   }
-                  if (snap.connectionState == ConnectionState.waiting) {
+                  if (snap.connectionState == ConnectionState.waiting &&
+                      !snap.hasData) {
                     return GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),

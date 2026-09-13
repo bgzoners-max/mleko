@@ -2,10 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:mleko/services/services.dart';
 
 class FavoritesProvider extends ChangeNotifier {
-  final FavoritesService _service = FavoritesService();
+  final FavoritesService _service;
   List<String> _ids = [];
   bool _loaded = false;
   String? _loadedUserId;
+
+  FavoritesProvider({FavoritesService? service})
+      : _service = service ?? FavoritesService();
 
   List<String> get ids => List.unmodifiable(_ids);
   bool get isLoaded => _loaded;

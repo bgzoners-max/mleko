@@ -7,19 +7,45 @@ import '../communication/push_service.dart';
 import 'users_service.dart';
 
 class AuthService {
-  final UsersService _users = UsersService();
+  AuthService({SupabaseClient? client, UsersService? usersService})
+      : _customClient = client,
+        _users = usersService ?? UsersService(client: client);
+
+  final SupabaseClient? _customClient;
+  final UsersService _users;
+
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   String get _authRedirectTo =>
       kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
 
-  User? get currentSupabaseUser => Supabase.instance.client.auth.currentUser;
-  Stream<AuthState> get authStateChanges =>
-      Supabase.instance.client.auth.onAuthStateChange;
+  User? get currentSupabaseUser {
+    try {
+      return _client.auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Stream<AuthState> get authStateChanges {
+    try {
+      return _client.auth.onAuthStateChange;
+    } catch (_) {
+      return const Stream.empty();
+    }
+  }
 
   Future<UserModel?> getCurrentUser() async {
     try {
-      final u = Supabase.instance.client.auth.currentUser;
+      final u = _client.auth.currentUser;
       if (u == null) return null;
+      if (u.isAnonymous) {
+        // Nalog gosta ne treba da postoji — odjavljujemo zaostalu anonimnu sesiju
+        try {
+          await _client.auth.signOut();
+        } catch (_) {}
+        return null;
+      }
 
       final profile = await _users.getUser(u.id);
       if (profile != null) return profile;
@@ -27,7 +53,7 @@ class AuthService {
       return UserModel(
         id: u.id,
         email: u.email,
-        isGuest: u.isAnonymous,
+        isGuest: false,
       );
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
@@ -36,7 +62,7 @@ class AuthService {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
-      await Supabase.instance.client.auth
+      await _client.auth
           .signInWithPassword(email: email, password: password);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
@@ -54,7 +80,7 @@ class AuthService {
     String? location,
   }) async {
     try {
-      await Supabase.instance.client.auth.signUp(
+      await _client.auth.signUp(
         email: email,
         password: password,
         emailRedirectTo: _authRedirectTo,
@@ -75,7 +101,7 @@ class AuthService {
 
   Future<void> resendConfirmationEmail(String email) async {
     try {
-      await Supabase.instance.client.auth.resend(
+      await _client.auth.resend(
         type: OtpType.signup,
         email: email,
         emailRedirectTo: _authRedirectTo,
@@ -86,11 +112,21 @@ class AuthService {
   }
 
   Future<bool> checkEmailExists(String email) async {
+    final trimmed = email.trim().toLowerCase();
+    if (trimmed.length < 5 || !trimmed.contains('@')) return false;
     try {
-      final result = await Supabase.instance.client.rpc('check_email_exists',
-          params: {'p_email': email.trim().toLowerCase()});
+      final result = await _client.rpc('check_email_exists',
+          params: {'p_email': trimmed});
       return result as bool;
     } catch (e, st) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('prekoračen') ||
+          errStr.contains('p0001') ||
+          errStr.contains('rate limit')) {
+        // Ako je dostignut rate limit, registracija ne treba da bude blokirana;
+        // submit korak (signUp) će proveriti jedinstvenost.
+        return false;
+      }
       throw AppError.from(e, stackTrace: st);
     }
   }
@@ -98,30 +134,33 @@ class AuthService {
   Future<bool> checkPhoneExists(String phone) async {
     try {
       final trimmed = phone.trim();
-      if (trimmed.isEmpty) return false;
-      final res = await Supabase.instance.client
+      if (trimmed.length < 6) return false;
+      final res = await _client
           .rpc('check_phone_exists', params: {'p_phone': trimmed});
       return res == true;
     } catch (e, st) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('prekoračen') ||
+          errStr.contains('p0001') ||
+          errStr.contains('rate limit')) {
+        return false;
+      }
       throw AppError.from(e, stackTrace: st);
     }
   }
 
   Future<void> signInAsGuest() async {
-    try {
-      await Supabase.instance.client.auth.signInAnonymously();
-      final u = Supabase.instance.client.auth.currentUser;
-      if (u != null) {
-        await _users.upsertProfile(u.id, role: 'buyer', isGuest: true);
-      }
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
+    // Nalog gosta ne treba da postoji. Ako je zaostao anonimni korisnik, odjavi ga.
+    if (_client.auth.currentUser?.isAnonymous == true) {
+      try {
+        await _client.auth.signOut();
+      } catch (_) {}
     }
   }
 
   Future<void> sendPasswordReset(String email) async {
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(
+      await _client.auth.resetPasswordForEmail(
         email,
         redirectTo: _authRedirectTo,
       );
@@ -138,7 +177,7 @@ class AuthService {
       }
     } finally {
       await PushService.clearRegistrationState();
-      await Supabase.instance.client.auth.signOut();
+      await _client.auth.signOut();
     }
   }
 

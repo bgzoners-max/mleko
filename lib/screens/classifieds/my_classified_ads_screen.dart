@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/classified_ad_model.dart';
+import '../../models/classified_seller_stats_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/classifieds/seller_analytics_summary_card.dart';
 
 class MyClassifiedAdsScreen extends StatefulWidget {
   const MyClassifiedAdsScreen({super.key});
@@ -19,6 +21,7 @@ class MyClassifiedAdsScreen extends StatefulWidget {
 class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
   late ClassifiedsService _service;
   late Future<List<ClassifiedAdModel>> _adsFuture;
+  Future<ClassifiedSellerStatsModel>? _statsFuture;
 
   @override
   void initState() {
@@ -29,9 +32,10 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
 
   void _load() {
     final user = context.read<AppState>().user;
-    if (user != null) {
+    if (user != null && !user.isGuest) {
       setState(() {
         _adsFuture = _service.getUserAds(user.id);
+        _statsFuture = _service.getSellerStats(user.id);
       });
     }
   }
@@ -93,15 +97,78 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
     }
   }
 
+  Future<void> _toggleFeatured(ClassifiedAdModel ad) async {
+    final nextVal = !ad.isFeatured;
+    try {
+      await _service.updateAdFeatured(
+        ad.id,
+        nextVal,
+        until: nextVal ? DateTime.now().add(const Duration(days: 30)) : null,
+      );
+      _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextVal
+                ? 'Oglas je uspešno istaknut na vrhu pretrage!'
+                : 'Isticanje oglasa je uklonjeno.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleUrgent(ClassifiedAdModel ad) async {
+    final nextVal = !ad.isUrgent;
+    try {
+      await _service.updateAdUrgent(ad.id, nextVal);
+      _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(nextVal
+                ? 'Oglas je označen kao HITAN!'
+                : 'Oznaka hitnosti je uklonjena.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (user == null) {
+    if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Moji oglasi')),
-        body: const Center(child: Text('Prijavite se da vidite svoje oglase.')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: AppEmptyState(
+              icon: Icons.lock_outline,
+              title: 'Prijavite se na nalog',
+              subtitle:
+                  'Pregled i upravljanje sopstvenim oglasima dostupni su samo prijavljenim korisnicima.',
+              ctaLabel: 'Prijavi se',
+              ctaIcon: Icons.login,
+              onCtaPressed: () => context.push('/login'),
+            ),
+          ),
+        ),
       );
     }
 
@@ -150,19 +217,42 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
 
           return RefreshIndicator(
             onRefresh: () async => _load(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+            child: ListView.builder(
+              padding: const EdgeInsets.only(bottom: 24),
+              itemCount: list.length + 1,
               itemBuilder: (ctx, i) {
-                final ad = list[i];
-                return Card(
+                if (i == 0) {
+                  if (_statsFuture != null) {
+                    return FutureBuilder<ClassifiedSellerStatsModel>(
+                      future: _statsFuture,
+                      builder: (context, statsSnap) {
+                        final stats = statsSnap.data;
+                        if (stats == null || !stats.hasAds) {
+                          return const SizedBox.shrink();
+                        }
+                        return SellerAnalyticsSummaryCard(
+                          stats: stats,
+                          onRefresh: _load,
+                        );
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }
+
+                final ad = list[i - 1];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  child: Card(
                   elevation: 1,
                   clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                      color: ad.isCurrentlyFeatured
+                          ? const Color(0xFFF59E0B).withValues(alpha: 0.8)
+                          : colorScheme.outlineVariant.withValues(alpha: 0.3),
+                      width: ad.isCurrentlyFeatured ? 1.5 : 1.0,
                     ),
                   ),
                   child: InkWell(
@@ -232,6 +322,58 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                                       ),
                                     ),
                                   ),
+                                  if (ad.isCurrentlyFeatured) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD97706),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.star_rounded, size: 11, color: Colors.white),
+                                          SizedBox(width: 3),
+                                          Text(
+                                            'ISTAKNUTO',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  if (ad.isUrgent) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 7, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFDC2626),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.bolt_rounded, size: 11, color: Colors.white),
+                                          SizedBox(width: 2),
+                                          Text(
+                                            'HITNO',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                   const Spacer(),
                                   Text(
                                     ad.priceFormatted,
@@ -253,23 +395,68 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                               const SizedBox(height: 4),
                               // Lokacija i pregledi
                               Text(
-                                '${ad.city} · ${ad.viewsCount} pregleda · ${ad.timeAgo}',
+                                '${ad.city} · ${ad.timeAgo}',
                                 style: TextStyle(
                                     color: colorScheme.onSurfaceVariant,
                                     fontSize: 12),
+                              ),
+                              const SizedBox(height: 6),
+                              // Metrika angažovanosti kupaca
+                              Row(
+                                children: [
+                                  _buildMetricBadge(
+                                    icon: Icons.visibility_outlined,
+                                    text: '${ad.viewsCount}',
+                                    tooltip: 'Ukupno pregleda',
+                                    color: const Color(0xFF0284C7),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildMetricBadge(
+                                    icon: Icons.phone_in_talk_outlined,
+                                    text: '${ad.callClicksCount}',
+                                    tooltip: 'Klikovi na telefon',
+                                    color: const Color(0xFF059669),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildMetricBadge(
+                                    icon: Icons.share_outlined,
+                                    text: '${ad.sharesCount}',
+                                    tooltip: 'Deljenja oglasa',
+                                    color: const Color(0xFF8B5CF6),
+                                  ),
+                                ],
                               ),
                               const Divider(height: 20),
                               // Radnje
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  if (!ad.isSold)
+                                  if (!ad.isSold) ...[
+                                    IconButton(
+                                      tooltip: ad.isCurrentlyFeatured ? 'Ukloni isticanje' : 'Istakni oglas',
+                                      icon: Icon(
+                                        ad.isCurrentlyFeatured ? Icons.star_rounded : Icons.star_outline_rounded,
+                                        color: ad.isCurrentlyFeatured ? const Color(0xFFD97706) : colorScheme.onSurfaceVariant,
+                                        size: 20,
+                                      ),
+                                      onPressed: () => _toggleFeatured(ad),
+                                    ),
+                                    IconButton(
+                                      tooltip: ad.isUrgent ? 'Ukloni hitnost' : 'Označi kao hitno',
+                                      icon: Icon(
+                                        ad.isUrgent ? Icons.bolt_rounded : Icons.bolt_outlined,
+                                        color: ad.isUrgent ? const Color(0xFFDC2626) : colorScheme.onSurfaceVariant,
+                                        size: 20,
+                                      ),
+                                      onPressed: () => _toggleUrgent(ad),
+                                    ),
                                     TextButton.icon(
                                       onPressed: () => _markAsSold(ad.id),
                                       icon: const Icon(Icons.check, size: 16),
                                       label: const Text('Prodato',
                                           style: TextStyle(fontSize: 12)),
                                     ),
+                                  ],
                                   IconButton(
                                     tooltip: 'Pogledaj oglas',
                                     icon: const Icon(Icons.visibility_outlined, size: 20),
@@ -300,11 +487,45 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                     ),
                   ),
                 ),
-              );
-              },
+              ),
+            );
+          },
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildMetricBadge({
+    required IconData icon,
+    required String text,
+    required String tooltip,
+    required Color color,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 3),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

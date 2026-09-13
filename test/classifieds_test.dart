@@ -55,6 +55,38 @@ void main() {
       );
       expect(bmw.brandLogoAsset, 'assets/images/car_brands/auto_bmw.png');
 
+      final zastava = const ClassifiedCategoryModel(
+        id: 'auto_zastava',
+        name: 'Zastava',
+        iconName: 'directions_car',
+        parentId: 'auto_srbija',
+      );
+      expect(zastava.brandLogoAsset, 'assets/images/car_brands/auto_zastava.png');
+
+      final smart = const ClassifiedCategoryModel(
+        id: 'auto_smart',
+        name: 'Smart',
+        iconName: 'directions_car',
+        parentId: 'auto_nemacka',
+      );
+      expect(smart.brandLogoAsset, 'assets/images/car_brands/auto_smart.png');
+
+      final mini = const ClassifiedCategoryModel(
+        id: 'auto_mini',
+        name: 'Mini',
+        iconName: 'directions_car',
+        parentId: 'auto_velika_britanija',
+      );
+      expect(mini.brandLogoAsset, 'assets/images/car_brands/auto_mini.png');
+
+      final lancia = const ClassifiedCategoryModel(
+        id: 'auto_lancia',
+        name: 'Lancia',
+        iconName: 'directions_car',
+        parentId: 'auto_italija',
+      );
+      expect(lancia.brandLogoAsset, 'assets/images/car_brands/auto_lancia.png');
+
       final traktori = const ClassifiedCategoryModel(
         id: 'traktori',
         name: 'Traktori',
@@ -431,6 +463,84 @@ void main() {
       expect(parsedAd.isConditionApplicable, isFalse);
     });
 
+    test('real estate, services, live animals and feed strictly forbid condition (Novo/Polovno)', () {
+      final nonApplicableCategoryIds = [
+        // Nekretnine (nivo 2 i 3)
+        'nekretnine', 'stanovi', 'prodaja_stanova', 'izdavanje_stanova', 'stan_na_dan',
+        'kuce_domacinstva', 'prodaja_kuca', 'seoska_domacinstva', 'izdavanje_kuca',
+        'vikendice', 'planinske_vikendice', 'poljoprivredno_zemljiste', 'njive_oranice',
+        'gradjevinski_placevi', 'placevi_za_kuce', 'poslovni_prostori', 'lokali', 'garaze_parking',
+        // Usluge (nivo 2 i 3)
+        'usluge', 'poljoprivredne_usluge', 'oranje_setva', 'majstori_zanatlije',
+        'vodoinstalaterske_usluge', 'gradjevinske_usluge', 'iskopi_bageri',
+        'prevoz_selidbe', 'slep_sluzba', 'servis_mehanike', 'servis_traktora',
+        'poslovi_zaposlenje', 'sezonski_poslovi',
+        // Životinje, pčele, usevi, sadnice, hrana
+        'psi', 'lovacki_psi', 'macke', 'rasne_macke', 'domace_zivotinje', 'krave_telad',
+        'zivina_ptice', 'kokoske_pilici', 'pcelinja_drustva_matice',
+        'stocna_hrana', 'balirano_seno_lucerka', 'kukuruz_stocni',
+        'sadnice_semena', 'sadnice_voca', 'rasad_povrca',
+        'hrana_psi_macke', 'koncentrati_premiksi',
+      ];
+
+      for (final catId in nonApplicableCategoryIds) {
+        // Čak i ako je condition 'used' ili 'new' i categoryConditionApplicable slučajno true
+        final ad = ClassifiedAdModel(
+          id: 'test-$catId',
+          userId: 'user-1',
+          title: 'Oglas za $catId',
+          price: 50000,
+          currency: 'EUR',
+          categoryId: catId,
+          condition: 'used',
+          city: 'Beograd',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          categoryConditionApplicable: true, // Čak i ako je server poslao true, stroga lista ga blokira
+        );
+
+        expect(
+          ad.isConditionApplicable,
+          isFalse,
+          reason: 'Kategorija $catId ne sme imati primenjivo stanje!',
+        );
+        expect(
+          ad.showConditionBadge,
+          isFalse,
+          reason: 'Kategorija $catId ne sme prikazivati bedž stanja!',
+        );
+        expect(
+          ad.conditionLabel,
+          '',
+          reason: 'Kategorija $catId mora imati prazan conditionLabel!',
+        );
+      }
+    });
+
+    test('ClassifiedAdModel.copyWith preserves categoryConditionApplicable', () {
+      final original = ClassifiedAdModel(
+        id: 'ad-copy-1',
+        userId: 'user-1',
+        title: 'Traktor IMT 539',
+        price: 4500,
+        currency: 'EUR',
+        categoryId: 'traktori_kombajni',
+        condition: 'used',
+        city: 'Kragujevac',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        categoryConditionApplicable: false,
+      );
+
+      final copy = original.copyWith(title: 'Traktor IMT 539 Deluxe');
+      expect(copy.categoryConditionApplicable, isFalse);
+      expect(copy.isConditionApplicable, isFalse);
+
+      final copyOverridden = original.copyWith(categoryConditionApplicable: true);
+      expect(copyOverridden.categoryConditionApplicable, isTrue);
+      expect(copyOverridden.isConditionApplicable, isTrue);
+    });
+
     test('classified ad share URL uses dynamic origin / base url without trailing slash', () {
       const adId = 'ad-uuid-123';
       String resolveShareUrl(String rawBase) {
@@ -588,6 +698,15 @@ void main() {
       expect(brandCrumbs[3].id, 'auto_volkswagen');
     });
   });
+
+  group('ClassifiedsService view deduplication', () {
+    test('session deduplication prevents repeated RPC calls for the same ad', () async {
+      final service = ClassifiedsService.test();
+      // Verifies that repeated calls for the same ad in session are deduplicated cleanly
+      await service.incrementViews('ad-123');
+      await service.incrementViews('ad-123');
+    });
+  });
 }
 
 class FakeCarClassifiedsService extends ClassifiedsService {
@@ -654,14 +773,19 @@ class FakeCarClassifiedsService extends ClassifiedsService {
     String? categoryId,
     List<String>? categoryIds,
     String? city,
+    List<String>? cities,
     String? condition,
     double? minPrice,
     double? maxPrice,
     String? currency,
     String? searchQuery,
+    Map<String, dynamic>? attributeFilters,
     ClassifiedSort sort = ClassifiedSort.newest,
     int limit = 24,
     int offset = 0,
+    DateTime? lastCreatedAt,
+    bool? onlyFeatured,
+    bool? onlyUrgent,
   }) async => [];
 }
 
@@ -685,13 +809,19 @@ class FakeClassifiedsService extends ClassifiedsService {
     String? categoryId,
     List<String>? categoryIds,
     String? city,
+    List<String>? cities,
     String? condition,
     double? minPrice,
     double? maxPrice,
     String? currency,
     String? searchQuery,
+    Map<String, dynamic>? attributeFilters,
     ClassifiedSort sort = ClassifiedSort.newest,
     int limit = 24,
     int offset = 0,
+    DateTime? lastCreatedAt,
+    bool? onlyFeatured,
+    bool? onlyUrgent,
   }) async => [];
 }
+

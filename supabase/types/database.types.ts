@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      auth_rate_limits: {
+        Row: {
+          endpoint: string
+          id: number
+          identifier: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          endpoint: string
+          id?: number
+          identifier: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          endpoint?: string
+          id?: number
+          identifier?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       buyer_reviews: {
         Row: {
           buyer_id: string
@@ -99,21 +123,112 @@ export type Database = {
           },
         ]
       }
+      classified_ad_reports: {
+        Row: {
+          ad_id: string
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          ad_id: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          ad_id?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classified_ad_reports_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "classified_ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classified_ad_reports_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "public_classified_ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classified_ad_views: {
+        Row: {
+          ad_id: string
+          last_viewed_at: string
+          viewer_hash: string
+        }
+        Insert: {
+          ad_id: string
+          last_viewed_at?: string
+          viewer_hash: string
+        }
+        Update: {
+          ad_id?: string
+          last_viewed_at?: string
+          viewer_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classified_ad_views_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "classified_ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classified_ad_views_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "public_classified_ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classified_ads: {
         Row: {
+          attributes: Json
+          call_clicks_count: number
           category_id: string
           city: string
           condition: string
           created_at: string
           currency: string
           description: string
+          featured_until: string | null
           id: string
           images: string[]
+          is_featured: boolean
+          is_urgent: boolean
           last_view_at: string | null
           phone: string | null
           phone_public: boolean
           price: number
           price_type: string
+          reports_count: number
+          shares_count: number
           status: string
           title: string
           updated_at: string
@@ -121,19 +236,26 @@ export type Database = {
           views_count: number
         }
         Insert: {
+          attributes?: Json
+          call_clicks_count?: number
           category_id: string
           city: string
           condition?: string
           created_at?: string
           currency?: string
           description?: string
+          featured_until?: string | null
           id?: string
           images?: string[]
+          is_featured?: boolean
+          is_urgent?: boolean
           last_view_at?: string | null
           phone?: string | null
           phone_public?: boolean
           price?: number
           price_type?: string
+          reports_count?: number
+          shares_count?: number
           status?: string
           title: string
           updated_at?: string
@@ -141,19 +263,26 @@ export type Database = {
           views_count?: number
         }
         Update: {
+          attributes?: Json
+          call_clicks_count?: number
           category_id?: string
           city?: string
           condition?: string
           created_at?: string
           currency?: string
           description?: string
+          featured_until?: string | null
           id?: string
           images?: string[]
+          is_featured?: boolean
+          is_urgent?: boolean
           last_view_at?: string | null
           phone?: string | null
           phone_public?: boolean
           price?: number
           price_type?: string
+          reports_count?: number
+          shares_count?: number
           status?: string
           title?: string
           updated_at?: string
@@ -216,6 +345,44 @@ export type Database = {
           {
             foreignKeyName: "classified_categories_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "classified_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classified_category_subscriptions: {
+        Row: {
+          category_id: string
+          created_at: string
+          currency: string | null
+          id: string
+          max_price: number | null
+          search_query: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          max_price?: number | null
+          search_query?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          max_price?: number | null
+          search_query?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classified_category_subscriptions_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "classified_categories"
             referencedColumns: ["id"]
@@ -536,6 +703,7 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          classified_ad_id: string | null
           conversation_id: string | null
           created_at: string | null
           id: string
@@ -549,6 +717,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          classified_ad_id?: string | null
           conversation_id?: string | null
           created_at?: string | null
           id?: string
@@ -562,6 +731,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          classified_ad_id?: string | null
           conversation_id?: string | null
           created_at?: string | null
           id?: string
@@ -574,6 +744,20 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_classified_ad_id_fkey"
+            columns: ["classified_ad_id"]
+            isOneToOne: false
+            referencedRelation: "classified_ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_classified_ad_id_fkey"
+            columns: ["classified_ad_id"]
+            isOneToOne: false
+            referencedRelation: "public_classified_ads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -843,6 +1027,83 @@ export type Database = {
             foreignKeyName: "product_delivery_points_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "products_with_ratings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_order_summary: {
+        Row: {
+          order_count: number
+          product_id: string
+        }
+        Insert: {
+          order_count?: number
+          product_id: string
+        }
+        Update: {
+          order_count?: number
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_order_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "product_listing_autoflags"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_order_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_order_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products_with_ratings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_review_summary: {
+        Row: {
+          avg_rating: number
+          product_id: string
+          review_count: number
+        }
+        Insert: {
+          avg_rating?: number
+          product_id: string
+          review_count?: number
+        }
+        Update: {
+          avg_rating?: number
+          product_id?: string
+          review_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_review_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "product_listing_autoflags"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_review_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_review_summary_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "products_with_ratings"
             referencedColumns: ["id"]
           },
@@ -1682,6 +1943,10 @@ export type Database = {
         Args: { p_reply: string; p_review_id: string }
         Returns: undefined
       }
+      adjust_product_order_summary: {
+        Args: { p_delta: number; p_order_id: string }
+        Returns: undefined
+      }
       admin_moderate_classified_ad: {
         Args: { p_ad_id: string; p_new_status: string }
         Returns: undefined
@@ -1721,12 +1986,45 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
+      check_and_record_auth_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_max_requests?: number
+          p_window_seconds?: number
+        }
+        Returns: boolean
+      }
       check_email_exists: { Args: { p_email: string }; Returns: boolean }
       check_phone_exists: { Args: { p_phone: string }; Returns: boolean }
+      check_push_configuration: {
+        Args: never
+        Returns: {
+          anon_key_present: boolean
+          checked_at: string
+          deliveries_24h: number
+          delivery_success_rate: number
+          edge_config_ok: boolean
+          failed_deliveries_24h: number
+          functions_base_url: string
+          last_delivery_at: string
+          last_notification_at: string
+          notifications_24h: number
+          overall_status: string
+          successful_deliveries_24h: number
+          tokens_created_24h: number
+          total_tokens: number
+          users_with_tokens: number
+        }[]
+      }
+      cleanup_expired_auth_rate_limits: {
+        Args: { p_retention_interval?: string }
+        Returns: number
+      }
       cleanup_push_tokens: {
         Args: { p_keep_per_user?: number; p_max_age?: string }
         Returns: number
       }
+      cleanup_stale_conversation_typing: { Args: never; Returns: undefined }
       create_order_with_items:
         | {
             Args: {
@@ -1762,6 +2060,13 @@ export type Database = {
             Returns: string
           }
       get_buyer_stats_dashboard: { Args: { p_buyer_id: string }; Returns: Json }
+      get_category_ad_counts: {
+        Args: never
+        Returns: {
+          ad_count: number
+          category_id: string
+        }[]
+      }
       get_classified_ad_phone: { Args: { p_ad_id: string }; Returns: string }
       get_conversation_info_with_profile: {
         Args: { p_conversation_id: string }
@@ -1813,6 +2118,7 @@ export type Database = {
         Returns: {
           available_kg: number
           available_now: boolean
+          avg_rating: number
           category: string
           created_at: string
           description: string
@@ -1825,6 +2131,7 @@ export type Database = {
           order_count: number
           pickup_options: string[]
           price_per_kg: number
+          review_count: number
           seller_id: string
         }[]
       }
@@ -1910,6 +2217,10 @@ export type Database = {
         Args: { p_buyer_id: string; p_seller_id: string }
         Returns: Json
       }
+      get_seller_classifieds_stats: {
+        Args: { p_seller_id: string }
+        Returns: Json
+      }
       get_seller_inbox: { Args: { p_seller_id: string }; Returns: Json }
       get_seller_loyalty_stats: { Args: { p_seller_id: string }; Returns: Json }
       get_seller_popular_products: {
@@ -1934,12 +2245,25 @@ export type Database = {
         Returns: Json
       }
       handle_order_retention: { Args: never; Returns: undefined }
+      increment_classified_ad_interaction: {
+        Args: { ad_id: string; p_type: string }
+        Returns: undefined
+      }
       increment_classified_ad_views: {
-        Args: { ad_id: string }
+        Args: { ad_id: string; p_viewer_id?: string }
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
       is_seller_verified: { Args: { p_seller_id: string }; Returns: boolean }
+      moderate_classified_ad: {
+        Args: {
+          p_action: string
+          p_ad_id: string
+          p_note?: string
+          p_report_id: string
+        }
+        Returns: Json
+      }
       normalize_listing_key: { Args: { input_value: string }; Returns: string }
       push_health_summary: {
         Args: never
@@ -1976,6 +2300,10 @@ export type Database = {
           token_count: number
           user_id: string
         }[]
+      }
+      recompute_product_review_summary: {
+        Args: { p_product_id: string }
+        Returns: undefined
       }
       refresh_all_product_stats: { Args: never; Returns: undefined }
       refresh_product_stats: {
@@ -2022,6 +2350,19 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      send_push_notification: {
+        Args: {
+          p_body: string
+          p_conversation_id?: string
+          p_data?: Json
+          p_order_id?: string
+          p_ticket_id?: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: boolean
       }
       set_conversation_user_prefs: {
         Args: {

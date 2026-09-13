@@ -1,17 +1,22 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../constants/serbian_cities.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
+import '../../models/category_attribute_model.dart';
 import '../../models/classified_ad_model.dart';
 import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../services/media/storage_service.dart';
+import '../../utils/classified_attributes_engine.dart';
+import '../../utils/number_input_utils.dart';
+import '../../widgets/app_empty_state.dart';
+import '../../widgets/guest_auth_prompt.dart';
 
 class AddEditClassifiedAdScreen extends StatefulWidget {
   final String? adId;
@@ -38,6 +43,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   bool _phonePublic = true;
   String? _selectedCategoryName;
   bool? _selectedCategoryConditionApplicable;
+  Map<String, dynamic> _attributes = {};
+  bool _isFeatured = false;
+  DateTime? _featuredUntil;
+  bool _isUrgent = false;
 
   final List<String> _existingImages = [];
   final List<Uint8List> _newImageBytes = [];
@@ -79,7 +88,6 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   }
 
   bool get _isConditionApplicable =>
-      _selectedCategoryConditionApplicable ??
       ClassifiedAdModel.isConditionApplicableForCategory(
         categoryId: _selectedCategoryId,
         categoryName: _selectedCategoryName,
@@ -103,6 +111,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     bool? isConditionApplicable,
   }) {
     setState(() {
+      if (_selectedCategoryId != id) {
+        final newAttrs = ClassifiedAttributesEngine.getAttributesForCategory(id)
+            .map((a) => a.key)
+            .toSet();
+        _attributes.removeWhere((k, _) => !newAttrs.contains(k));
+      }
       _selectedCategoryId = id;
       _selectedCategoryName = name;
       _selectedCategoryConditionApplicable = isConditionApplicable;
@@ -139,6 +153,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _phonePublic = ad.phonePublic;
         _existingImages.addAll(ad.images);
         _existingCreatedAt = ad.createdAt;
+        _attributes = Map<String, dynamic>.from(ad.attributes);
+        _isFeatured = ad.isFeatured;
+        _featuredUntil = ad.featuredUntil;
+        _isUrgent = ad.isUrgent;
       }
     } catch (_) {
       if (mounted) {
@@ -512,9 +530,11 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     }
 
     final user = context.read<AppState>().user;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Morate biti prijavljeni.')),
+    if (user == null || user.isGuest) {
+      showGuestAuthPrompt(
+        context,
+        title: 'Potrebna prijava',
+        message: 'Morate biti prijavljeni na nalog kako biste objavili oglas.',
       );
       return;
     }
@@ -538,7 +558,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       }
 
       final priceNum = _priceType == 'fixed' || _priceType == 'negotiable'
-          ? (double.tryParse(_priceController.text.replaceAll(',', '.').trim()) ?? 0.0)
+          ? (NumberInputUtils.parseDecimal(_priceController.text) ?? 0.0)
           : 0.0;
 
       final ad = ClassifiedAdModel(
@@ -556,6 +576,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         phonePublic: _phonePublic,
         status: 'active',
+        attributes: _attributes,
+        isFeatured: _isFeatured,
+        featuredUntil: _featuredUntil,
+        isUrgent: _isUrgent,
         createdAt: _existingCreatedAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -601,11 +625,32 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isTablet = Breakpoints.isTablet(context);
+    final user = context.watch<AppState>().user;
 
     if (_initializing) {
       return Scaffold(
         appBar: AppBar(title: const Text('Učitavanje...')),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (user == null || user.isGuest) {
+      return Scaffold(
+        appBar: AppBar(title: Text(isEdit ? 'Izmeni oglas' : 'Postavi novi oglas')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: AppEmptyState(
+              icon: Icons.account_circle_outlined,
+              title: 'Potrebna prijava za postavljanje oglasa',
+              subtitle:
+                  'Kao gost možete slobodno pregledati oglase i kontaktirati prodavce. Za objavu sopstvenog oglasa potrebno je da se prijavite ili besplatno registrujete.',
+              ctaLabel: 'Prijavi se',
+              ctaIcon: Icons.login,
+              onCtaPressed: () => context.push('/login'),
+            ),
+          ),
+        ),
       );
     }
 
@@ -840,6 +885,22 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     const SizedBox(height: 16),
                   ],
 
+                  // Karakteristike / specifikacije predmeta (za automobile, mašine, nekretnine, telefone...)
+                  () {
+                    final categoryAttributes =
+                        ClassifiedAttributesEngine.getAttributesForCategory(
+                      _selectedCategoryId,
+                    );
+                    if (categoryAttributes.isNotEmpty) {
+                      return _buildAttributesSection(
+                        theme,
+                        colorScheme,
+                        categoryAttributes,
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }(),
+
                   // Grad / Lokacija sa automatskim predlozima
                   Autocomplete<String>(
                     initialValue: TextEditingValue(text: _cityController.text),
@@ -906,12 +967,98 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     controller: _descController,
                     maxLines: 5,
                     maxLength: 2000,
+                    keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
                       labelText: 'Detaljan opis',
                       hintText: 'Opišite stanje, karakteristike, razlog prodaje, zamene itd.',
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Sekcija za promociju oglasa
+                  Card(
+                    elevation: 0,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: (_isFeatured || _isUrgent)
+                            ? (_isFeatured ? const Color(0xFFD97706) : const Color(0xFFDC2626))
+                            : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        width: (_isFeatured || _isUrgent) ? 1.5 : 1.0,
+                      ),
+                    ),
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.campaign_rounded,
+                                size: 20,
+                                color: colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Promocija oglasa',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFD97706),
+                            ),
+                            title: const Text(
+                              'Istakni oglas (Featured)',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: const Text(
+                              'Oglas će se prikazivati na vrhu pretrage i sa zlatnim okvirom.',
+                            ),
+                            value: _isFeatured,
+                            onChanged: (val) {
+                              setState(() {
+                                _isFeatured = val;
+                                if (val && _featuredUntil == null) {
+                                  _featuredUntil = DateTime.now().add(const Duration(days: 30));
+                                } else if (!val) {
+                                  _featuredUntil = null;
+                                }
+                              });
+                            },
+                          ),
+                          const Divider(height: 16),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: const Icon(
+                              Icons.bolt_rounded,
+                              color: Color(0xFFDC2626),
+                            ),
+                            title: const Text(
+                              'Hitna prodaja (Urgent)',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: const Text(
+                              'Privucite kupce bedžom HITNO u uočljivoj crvenoj boji.',
+                            ),
+                            value: _isUrgent,
+                            onChanged: (val) => setState(() => _isUrgent = val),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
                   // Dugme za objavu
                   FilledButton(
@@ -936,6 +1083,149 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttributesSection(
+    ThemeData theme,
+    ColorScheme colorScheme,
+    List<CategoryAttribute> attributes,
+  ) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.tune_rounded, size: 20, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Karakteristike predmeta',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            for (final attr in attributes) ...[
+              if (attr.type == AttributeType.number) ...[
+                TextFormField(
+                  key: ValueKey('attr_${attr.key}'),
+                  initialValue: _attributes[attr.key]?.toString() ?? '',
+                  keyboardType: attr.isDecimal
+                      ? const TextInputType.numberWithOptions(decimal: true)
+                      : TextInputType.number,
+                  inputFormatters: [
+                    if (!attr.isDecimal)
+                      FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  decoration: InputDecoration(
+                    labelText: attr.label,
+                    hintText: attr.hint,
+                    suffixText: attr.unit,
+                    prefixIcon:
+                        attr.icon != null ? Icon(attr.icon, size: 20) : null,
+                  ),
+                  onChanged: (val) {
+                    final n = attr.isDecimal
+                        ? NumberInputUtils.parseDecimal(val)
+                        : NumberInputUtils.parseInteger(val);
+                    if (n != null) {
+                      _attributes[attr.key] = n;
+                    } else {
+                      _attributes.remove(attr.key);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+              ] else if (attr.type == AttributeType.select) ...[
+                DropdownButtonFormField<String>(
+                  key: ValueKey('attr_${attr.key}'),
+                  initialValue: _attributes[attr.key]?.toString(),
+                  decoration: InputDecoration(
+                    labelText: attr.label,
+                    prefixIcon:
+                        attr.icon != null ? Icon(attr.icon, size: 20) : null,
+                  ),
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: null,
+                      child: Text(
+                        'Nije izabrano',
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    ...(attr.options ?? const []).map(
+                      (opt) => DropdownMenuItem(
+                        value: opt.value,
+                        child: Text(opt.label),
+                      ),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    setState(() {
+                      if (val == null || val.isEmpty) {
+                        _attributes.remove(attr.key);
+                      } else {
+                        _attributes[attr.key] = val;
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+              ] else if (attr.type == AttributeType.boolean) ...[
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  secondary:
+                      attr.icon != null ? Icon(attr.icon, size: 20) : null,
+                  title: Text(attr.label),
+                  subtitle: attr.hint != null ? Text(attr.hint!) : null,
+                  value: _attributes[attr.key] == true,
+                  onChanged: (val) {
+                    setState(() {
+                      _attributes[attr.key] = val;
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+              ] else ...[
+                TextFormField(
+                  key: ValueKey('attr_${attr.key}'),
+                  initialValue: _attributes[attr.key]?.toString() ?? '',
+                  decoration: InputDecoration(
+                    labelText: attr.label,
+                    hintText: attr.hint,
+                    suffixText: attr.unit,
+                    prefixIcon:
+                        attr.icon != null ? Icon(attr.icon, size: 20) : null,
+                  ),
+                  onChanged: (val) {
+                    final t = val.trim();
+                    if (t.isNotEmpty) {
+                      _attributes[attr.key] = t;
+                    } else {
+                      _attributes.remove(attr.key);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            ],
+          ],
         ),
       ),
     );
@@ -1005,12 +1295,41 @@ class _CategoryCardPicker extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                category.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.15),
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      category.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.15),
+                    ),
+                  ),
+                  if (category.adCount > 0) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${category.adCount}',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (hasChildren)

@@ -10,11 +10,15 @@ import '../../core/design_system.dart';
 import '../../core/haptic.dart';
 import '../../core/web_seo.dart';
 import '../../models/classified_ad_model.dart';
+import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
+import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../services/communication/chat_service.dart';
 import '../../supabase_config.dart';
+import '../../utils/classified_attributes_engine.dart';
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/classifieds/report_classified_ad_dialog.dart';
 
 class ClassifiedAdDetailScreen extends StatefulWidget {
   final String adId;
@@ -70,10 +74,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     final base = rawBase.replaceAll(RegExp(r'/+$'), '');
     final url = '$base/classifieds/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}\n$url';
+    _service.recordInteraction(ad.id, 'share');
     await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));
   }
 
-  Future<void> _makePhoneCall(String phone) async {
+  Future<void> _makePhoneCall(String phone, {String? adId}) async {
+    if (adId != null) {
+      _service.recordInteraction(adId, 'call');
+    }
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
     final uri = Uri.parse('tel:$cleanPhone');
     if (await canLaunchUrl(uri)) {
@@ -89,7 +97,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
 
   Future<void> _openChat(ClassifiedAdModel ad) async {
     final user = context.read<AppState>().user;
-    if (user == null) {
+    if (user == null || user.isGuest) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Prijavite se da biste poslali poruku.'),
@@ -242,6 +250,15 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   _shareAd(ad);
                 },
               ),
+              if (!isOwner)
+                IconButton(
+                  icon: const Icon(Icons.flag_outlined),
+                  tooltip: 'Prijavi oglas',
+                  onPressed: () {
+                    AppHaptics.light();
+                    ReportClassifiedAdDialog.show(context, ad: ad);
+                  },
+                ),
               if (isOwner)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
@@ -304,6 +321,8 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                                 _buildDescriptionCard(ad, theme, colorScheme),
                                 const SizedBox(height: 20),
                                 _buildSafetyTipsCard(colorScheme, isDark),
+                                const SizedBox(height: 12),
+                                _buildReportButton(context, ad, isOwner, colorScheme),
                               ],
                             ),
                           ),
@@ -357,6 +376,8 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                           _buildSellerCard(ad, theme, colorScheme),
                           const SizedBox(height: 16),
                           _buildSafetyTipsCard(colorScheme, isDark),
+                          const SizedBox(height: 12),
+                          _buildReportButton(context, ad, isOwner, colorScheme),
                           const SizedBox(height: 24),
                         ],
                       ),
@@ -378,7 +399,11 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       spacing: 6,
       children: [
         InkWell(
-          onTap: () => context.go('/'),
+          onTap: () {
+            context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+            context.read<ClassifiedsProvider>().clearFilters();
+            context.go('/');
+          },
           child: Text(
             'Početna',
             style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
@@ -592,9 +617,78 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bedževi stanja i statusa
-          Row(
+          // Bedževi stanja, statusa, isticanja i hitnosti
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              if (ad.isCurrentlyFeatured) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withValues(alpha: 0.35),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star_rounded, size: 13, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'ISTAKNUT OGLAS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (ad.isUrgent) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFDC2626), Color(0xFFEA580C)],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withValues(alpha: 0.35),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.bolt_rounded, size: 13, color: Colors.white),
+                      SizedBox(width: 3),
+                      Text(
+                        'HITNA PRODAJA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (ad.showConditionBadge) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -623,26 +717,40 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
               ],
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: ad.isSold
                       ? Colors.red.shade800.withValues(alpha: 0.12)
-                      : Colors.green.shade800.withValues(alpha: 0.12),
+                      : ad.isRejected
+                          ? Colors.red.shade900.withValues(alpha: 0.15)
+                          : ad.isArchived
+                              ? Colors.grey.shade800.withValues(alpha: 0.15)
+                              : Colors.green.shade800.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  ad.isSold ? 'PRODATO' : 'AKTIVAN OGLAS',
+                  ad.isSold
+                      ? 'PRODATO'
+                      : ad.isRejected
+                          ? 'UKLONJENO (MODERACIJA)'
+                          : ad.isArchived
+                              ? 'ARHIVIRANO'
+                              : 'AKTIVAN OGLAS',
                   style: TextStyle(
-                    color: ad.isSold ? Colors.red.shade800 : Colors.green.shade800,
+                    color: ad.isSold
+                        ? Colors.red.shade800
+                        : ad.isRejected
+                            ? Colors.red.shade900
+                            : ad.isArchived
+                                ? Colors.grey.shade800
+                                : Colors.green.shade800,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const Spacer(),
               Text(
                 ad.timeAgo,
                 style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
@@ -756,6 +864,38 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       );
     }
 
+    if (!isOwner && !ad.isAvailable) {
+      final message = ad.isSold
+          ? 'Ovaj oglas je označen kao prodat.'
+          : ad.isRejected
+              ? 'Ovaj oglas je uklonjen nakon moderacije.'
+              : 'Ovaj oglas više nije aktivan.';
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 20, color: colorScheme.error),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Row(
       children: [
         if (hasPhone) ...[
@@ -763,7 +903,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
             child: OutlinedButton.icon(
               onPressed: () {
                 AppHaptics.medium();
-                _makePhoneCall(ad.phone!);
+                _makePhoneCall(ad.phone!, adId: ad.id);
               },
               icon: const Icon(Icons.phone_outlined),
               label: const Text('Pozovi prodavca'),
@@ -830,6 +970,33 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
           ],
           _buildSpecRow('Mesto / Lokacija', ad.city, colorScheme),
           const Divider(height: 18),
+          if (ad.attributes.isNotEmpty) ...[
+            for (final entry in ad.attributes.entries) ...[
+              () {
+                final val = entry.value;
+                if (val == null) return const SizedBox.shrink();
+                final attr =
+                    ClassifiedAttributesEngine.findAttributeByKey(entry.key);
+                final label = attr?.label ?? entry.key;
+                final formatted = attr != null
+                    ? attr.formatValue(val)
+                    : (val is bool ? (val ? 'Da' : 'Ne') : val.toString());
+                if (formatted.isEmpty) return const SizedBox.shrink();
+
+                return Column(
+                  children: [
+                    _buildSpecRow(
+                      label,
+                      formatted,
+                      colorScheme,
+                      icon: attr?.icon,
+                    ),
+                    const Divider(height: 18),
+                  ],
+                );
+              }(),
+            ],
+          ],
           _buildSpecRow('Datum objave', ad.timeAgo, colorScheme),
           const Divider(height: 18),
           _buildSpecRow('Broj pregleda', '${ad.viewsCount} pregleda', colorScheme),
@@ -838,9 +1005,18 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     );
   }
 
-  Widget _buildSpecRow(String label, String value, ColorScheme colorScheme) {
+  Widget _buildSpecRow(
+    String label,
+    String value,
+    ColorScheme colorScheme, {
+    IconData? icon,
+  }) {
     return Row(
       children: [
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+        ],
         Text(
           label,
           style: TextStyle(
@@ -1021,6 +1197,36 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReportButton(
+    BuildContext context,
+    ClassifiedAdModel ad,
+    bool isOwner,
+    ColorScheme colorScheme,
+  ) {
+    if (isOwner) return const SizedBox.shrink();
+
+    return Center(
+      child: TextButton.icon(
+        onPressed: () {
+          AppHaptics.light();
+          ReportClassifiedAdDialog.show(context, ad: ad);
+        },
+        icon: Icon(
+          Icons.flag_outlined,
+          size: 14,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+        label: Text(
+          'Prijavi nepravilnost ili sumnjiv oglas',
+          style: TextStyle(
+            fontSize: 11.5,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
+        ),
       ),
     );
   }

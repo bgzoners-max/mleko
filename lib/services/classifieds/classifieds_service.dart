@@ -1,12 +1,14 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/app_error.dart';
 import '../../models/classified_ad_model.dart';
 import '../../models/classified_category_model.dart';
+import '../../models/classified_seller_stats_model.dart';
 import '../../utils/search_utils.dart';
+import '../communication/push_service.dart';
+import '../core/logger_service.dart';
 
 enum ClassifiedSort {
   newest,
@@ -40,7 +42,17 @@ class ClassifiedsService {
 
     ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
       final rawChildren = childrenByParent[node.id] ?? [];
-      final nestedChildren = rawChildren.map(buildSubtree).toList();
+      final nestedChildren = rawChildren.map((c) {
+        // Ako je roditelju isConditionApplicable == false, ili je dete na listi neprikladnih,
+        // nasleđuje isConditionApplicable = false (zaštita od zastarelog keša)
+        final effectiveApplicable = node.isConditionApplicable &&
+            ClassifiedAdModel.isConditionApplicableForCategory(categoryId: c.id) &&
+            c.isConditionApplicable;
+        final updatedChild = c.isConditionApplicable != effectiveApplicable
+            ? c.copyWith(isConditionApplicable: effectiveApplicable)
+            : c;
+        return buildSubtree(updatedChild);
+      }).toList();
       nestedChildren.sort(ClassifiedCategoryModel.compareCategories);
       return node.copyWith(subcategories: nestedChildren);
     }
@@ -64,7 +76,10 @@ class ClassifiedsService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_categoriesCacheKey, jsonEncode(rawList));
       } catch (cacheErr) {
-        debugPrint('[ClassifiedsService] Categories cache write failed: $cacheErr');
+        LoggerService.warning(
+          '[ClassifiedsService] Categories cache write failed',
+          extra: {'error': cacheErr.toString()},
+        );
       }
 
       return _buildCategoryTree(rawList);
@@ -87,9 +102,37 @@ class ClassifiedsService {
         return _buildCategoryTree(decoded);
       }
     } catch (e) {
-      debugPrint('[ClassifiedsService] getCachedCategories error: $e');
+      LoggerService.warning(
+        '[ClassifiedsService] getCachedCategories error',
+        extra: {'error': e.toString()},
+      );
     }
     return const [];
+  }
+
+  /// Preuzima broj aktivnih oglasa po kategorijama preko RPC funkcije [get_category_ad_counts].
+  /// Vraća mapu { category_id: count }.
+  Future<Map<String, int>> getCategoryAdCounts() async {
+    try {
+      final res = await _client.rpc('get_category_ad_counts');
+      if (res is List) {
+        final map = <String, int>{};
+        for (final row in res) {
+          if (row is Map && row['category_id'] != null) {
+            final catId = row['category_id'].toString();
+            final count = (row['ad_count'] as num?)?.toInt() ?? 0;
+            map[catId] = count;
+          }
+        }
+        return map;
+      }
+    } catch (e) {
+      LoggerService.warning(
+        '[ClassifiedsService] getCategoryAdCounts error',
+        extra: {'error': e.toString()},
+      );
+    }
+    return const {};
   }
 
   /// Kolone oglasa bez kolone 'phone' (zaštita privatnosti na nivou baze / API-ja).
@@ -109,24 +152,38 @@ class ClassifiedsService {
     phone_public,
     status,
     views_count,
+    attributes,
+    is_featured,
+    featured_until,
+    is_urgent,
+    reports_count,
+    call_clicks_count,
+    shares_count,
     created_at,
     updated_at
   ''';
 
-  /// Preuzima listu aktivnih oglasa uz opciono filtriranje i sortiranje.
+  /// Preuzima listu aktivnih oglasa uz opciono filtriranje, sortiranje i paginaciju.
+  /// Podržava keyset paginaciju preko [lastCreatedAt] za sortiranje po najnovijem (O(1)),
+  /// uz [offset] fallback za ostale vrste sortiranja ili pretrage.
   /// Napomena: iz bezbednosnih razloga, ova metoda nikada ne preuzima brojeve telefona.
   Future<List<ClassifiedAdModel>> getAds({
     String? categoryId,
     List<String>? categoryIds,
     String? city,
+    List<String>? cities,
     String? condition,
     double? minPrice,
     double? maxPrice,
     String? currency,
     String? searchQuery,
+    Map<String, dynamic>? attributeFilters,
+    bool? onlyFeatured,
+    bool? onlyUrgent,
     ClassifiedSort sort = ClassifiedSort.newest,
     int limit = 24,
     int offset = 0,
+    DateTime? lastCreatedAt,
   }) async {
     try {
       var query = _client.from('classified_ads').select('''
@@ -141,9 +198,12 @@ class ClassifiedsService {
         query = query.eq('category_id', categoryId);
       }
 
-      if (city != null && city.isNotEmpty) {
+      if (cities != null && cities.isNotEmpty) {
+        query = query.inFilter('city', cities);
+      } else if (city != null && city.isNotEmpty) {
         query = query.ilike('city', city);
       }
+
 
       if (condition != null && condition.isNotEmpty) {
         query = query.eq('condition', condition);
@@ -161,6 +221,14 @@ class ClassifiedsService {
         query = query.lte('price', maxPrice);
       }
 
+      if (onlyFeatured == true) {
+        query = query.eq('is_featured', true);
+      }
+
+      if (onlyUrgent == true) {
+        query = query.eq('is_urgent', true);
+      }
+
       if (searchQuery != null && searchQuery.trim().isNotEmpty) {
         // Sanitizacija uklanja karaktere koji mogu da probijaju
         // PostgREST `or` sintaksu i ILIKE wildcard-e (*, %, _).
@@ -171,10 +239,39 @@ class ClassifiedsService {
         }
       }
 
+      if (attributeFilters != null && attributeFilters.isNotEmpty) {
+        for (final entry in attributeFilters.entries) {
+          final val = entry.value;
+          if (val == null) continue;
+          final strVal = val.toString().trim();
+          if (strVal.isEmpty) continue;
+
+          if (entry.key.startsWith('min_')) {
+            final actualKey = entry.key.substring(4);
+            query = query.filter('attributes->$actualKey', 'gte', val);
+          } else if (entry.key.startsWith('max_')) {
+            final actualKey = entry.key.substring(4);
+            query = query.filter('attributes->$actualKey', 'lte', val);
+          } else {
+            // JSON containment operator (JSONB @> {"key": value})
+            query = query.contains('attributes', {entry.key: val});
+          }
+        }
+      }
+
+      // Keyset paginacija za sortiranje po najnovijem (eliminiše O(N) skeniranje)
+      final isKeysetApplicable =
+          sort == ClassifiedSort.newest && lastCreatedAt != null;
+      if (isKeysetApplicable) {
+        query = query.lt('created_at', lastCreatedAt.toIso8601String());
+      }
+
       PostgrestTransformBuilder<PostgrestList> transformQuery;
       switch (sort) {
         case ClassifiedSort.newest:
-          transformQuery = query.order('created_at', ascending: false);
+          transformQuery = query
+              .order('is_featured', ascending: false)
+              .order('created_at', ascending: false);
           break;
         case ClassifiedSort.priceAsc:
           transformQuery = query.order('price', ascending: true);
@@ -187,7 +284,10 @@ class ClassifiedsService {
           break;
       }
 
-      final res = await transformQuery.range(offset, offset + limit - 1);
+      final res = isKeysetApplicable
+          ? await transformQuery.limit(limit)
+          : await transformQuery.range(offset, offset + limit - 1);
+
       return (res as List)
           .map((e) => ClassifiedAdModel.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -291,6 +391,31 @@ class ClassifiedsService {
     }
   }
 
+  /// Ažurira status istaknutosti oglasa
+  Future<void> updateAdFeatured(String adId, bool isFeatured, {DateTime? until}) async {
+    try {
+      await _client.from('classified_ads').update({
+        'is_featured': isFeatured,
+        'featured_until': isFeatured ? until?.toIso8601String() : null,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', adId);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
+  /// Ažurira status hitnosti oglasa
+  Future<void> updateAdUrgent(String adId, bool isUrgent) async {
+    try {
+      await _client.from('classified_ads').update({
+        'is_urgent': isUrgent,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', adId);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
   /// Briše oglas
   Future<void> deleteAd(String id) async {
     try {
@@ -302,14 +427,57 @@ class ClassifiedsService {
 
   final Set<String> _viewedAdIdsInSession = {};
 
-  /// Povećava brojač pregleda oglasa uz zaštitu od višestrukog pozivanja u istoj sesiji
+  /// Povećava brojač pregleda oglasa uz zaštitu od višestrukog pozivanja u istoj sesiji i deduplikaciju
   Future<void> incrementViews(String id) async {
     if (_viewedAdIdsInSession.contains(id)) return;
     _viewedAdIdsInSession.add(id);
     try {
-      await _client.rpc('increment_classified_ad_views', params: {'ad_id': id});
+      String? installationId;
+      try {
+        installationId = await PushService.getInstallationId();
+      } catch (_) {
+        // Fallback ako secure storage / prefs nisu dostupni (npr. u testovima ili webu)
+      }
+
+      final params = <String, dynamic>{'ad_id': id};
+      if (installationId != null && installationId.isNotEmpty) {
+        params['p_viewer_id'] = installationId;
+      }
+
+      await _client.rpc('increment_classified_ad_views', params: params);
     } catch (_) {
       // Tihi fallback ako RPC nije dostupan
+    }
+  }
+
+  /// Beleži interakciju kupca sa oglasom (poziv ili deljenje).
+  Future<void> recordInteraction(String adId, String type) async {
+    try {
+      await _client.rpc(
+        'increment_classified_ad_interaction',
+        params: {
+          'ad_id': adId,
+          'p_type': type,
+        },
+      );
+    } catch (_) {
+      // Best-effort telemetrija — ne prekidamo korisnički tok
+    }
+  }
+
+  /// Preuzima agregiranu analitiku i statistiku oglasa za prodavca.
+  Future<ClassifiedSellerStatsModel> getSellerStats(String sellerId) async {
+    try {
+      final res = await _client.rpc(
+        'get_seller_classifieds_stats',
+        params: {'p_seller_id': sellerId},
+      );
+      if (res is Map) {
+        return ClassifiedSellerStatsModel.fromJson(Map<String, dynamic>.from(res));
+      }
+      return const ClassifiedSellerStatsModel();
+    } catch (_) {
+      return const ClassifiedSellerStatsModel();
     }
   }
 }

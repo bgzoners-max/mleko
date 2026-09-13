@@ -39,6 +39,53 @@ class OrderStatusFlowRules {
     }
   }
 
+  /// Proverava da li je tranzicija dozvoljena za specifičnu ulogu korisnika (kupac, prodavac ili sistem).
+  /// Odgovara pravilima definisanim u bazi u enforce_order_status_transition().
+  static bool isAllowedTransitionForRole({
+    required String oldStatus,
+    required String newStatus,
+    required String role, // 'buyer', 'seller', 'system'
+  }) {
+    if (oldStatus == newStatus) {
+      return true;
+    }
+    if (!isAllowedTransition(oldStatus: oldStatus, newStatus: newStatus)) {
+      return false;
+    }
+
+    switch (role) {
+      case 'seller':
+        if (oldStatus == 'sent') {
+          return newStatus == 'accepted' || newStatus == 'rejected';
+        }
+        if (oldStatus == 'accepted') {
+          return newStatus == 'shipped' || newStatus == 'cancelled_by_seller';
+        }
+        if (oldStatus == 'shipped') {
+          return newStatus == 'cancelled_by_seller';
+        }
+        if (newStatus == 'archived') {
+          return _canPartyManuallyArchive(oldStatus);
+        }
+        return false;
+
+      case 'buyer':
+        if (oldStatus == 'shipped') {
+          return newStatus == 'delivered';
+        }
+        if (newStatus == 'archived') {
+          return _canPartyManuallyArchive(oldStatus);
+        }
+        return false;
+
+      case 'system':
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
   static OrderStatusNotificationTemplate? notificationForNewStatus(
       String newStatus) {
     switch (newStatus) {

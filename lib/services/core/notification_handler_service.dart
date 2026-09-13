@@ -78,6 +78,15 @@ class NotificationHandlerService {
       } else {
         router.go('/support');
       }
+    } else if (type == 'classified_ad_moderation') {
+      router.go('/classifieds/my');
+    } else if (notificationTypeIsClassifiedRelated(type)) {
+      final adId = data['classified_ad_id'] as String?;
+      if (adId != null && adId.isNotEmpty) {
+        router.push('/classifieds/ad/$adId');
+      } else {
+        router.go('/classifieds');
+      }
     } else {
       LoggerService.info('NotificationHandler: Unknown notification type',
           extra: {'type': type});

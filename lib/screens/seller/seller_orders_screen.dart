@@ -46,7 +46,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   int _segmentIndex = 0;
   String get _statusFilter => _segmentIndex == 0
       ? OrdersService.statusFilterActiveNonArchived
-      : 'arhivirano';
+      : 'archived';
   bool get _isArchive => _segmentIndex == 1;
 
   @override

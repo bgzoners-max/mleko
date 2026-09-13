@@ -36,7 +36,7 @@ class ProfileDataCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 2),
-            if (user.createdAt != null) ...[
+            if (user.createdAt != null && !user.isGuest) ...[
               Text(
                 'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(user.createdAt!)}',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),

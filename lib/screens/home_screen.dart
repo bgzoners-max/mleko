@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:go_router/go_router.dart';
@@ -14,9 +13,11 @@ import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/classifieds_provider.dart';
 import '../providers/location_provider.dart';
 import '../services/services.dart';
 
+import '../utils/image_precache_utils.dart';
 import '../widgets/sticky_search_header_delegate.dart';
 import '../widgets/home/home_wide_layout.dart';
 import '../widgets/home/home_narrow_top_section.dart';
@@ -46,25 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final Set<String> _preloadedCarouselImages = <String>{};
 
   void _warmupCarouselImages(List<ProductModel> products) {
-    final List<String> urls = [];
-    for (final p in products.take(4)) {
-      if (p.imageUrls.isNotEmpty) {
-        urls.add(p.imageUrls.first);
-        if (p.imageUrls.length > 1) {
-          urls.add(p.imageUrls[1]);
-        }
-      }
-    }
-    if (urls.isEmpty) return;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      for (final url in urls) {
-        if (!mounted) return;
-        if (_preloadedCarouselImages.add(url)) {
-          await precacheImage(CachedNetworkImageProvider(url), context);
-        }
-      }
-    });
+    warmupProductImages(
+      context: context,
+      products: products,
+      preloadedUrls: _preloadedCarouselImages,
+      isMounted: () => mounted,
+      topCountWithSecondary: 4,
+      maxTotalUrls: 8,
+    );
   }
 
   @override
@@ -113,8 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
     final topCategories = context.select<CategoriesProvider, List>((p) =>
         isTwoPaneLayout ? p.topCategories : p.topCategories.take(8).toList());
-    final isSeller =
-        context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
+    final isGuest = context.select<AppState, bool>((s) => s.user == null || s.user!.isGuest);
+    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
     final unreadCount =
         context.select<AppState, int>((s) => s.unreadNotificationCount);
 
@@ -152,35 +142,48 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
-        title: Row(
-          children: [
-            Icon(
-              Icons.eco_outlined,
-              size: 28,
-              color: Theme.of(context).colorScheme.primary,
+        title: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+            context.read<ClassifiedsProvider>().clearFilters();
+            context.go('/');
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.eco_outlined,
+                  size: 28,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  AppConstants.appName,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                ),
+                const SizedBox(width: 8),
+                const BetaBadge(),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              AppConstants.appName,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                  ),
-            ),
-            const SizedBox(width: 8),
-            const BetaBadge(),
-          ],
+          ),
         ),
         actions: [
-          IconButton(
-            icon: Badge(
-              isLabelVisible: unreadCount > 0,
-              label: Text('$unreadCount'),
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.notifications_none_rounded),
+          if (!isGuest)
+            IconButton(
+              icon: Badge(
+                isLabelVisible: unreadCount > 0,
+                label: Text('$unreadCount'),
+                backgroundColor: Colors.red,
+                child: const Icon(Icons.notifications_none_rounded),
+              ),
+              onPressed: () => context.push('/notifications'),
             ),
-            onPressed: () => context.push('/notifications'),
-          ),
           IconButton(
             icon: Badge(
               isLabelVisible: context.watch<CartProvider>().count > 0,

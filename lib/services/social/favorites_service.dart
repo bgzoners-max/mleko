@@ -5,11 +5,16 @@ import '../../models/product_model.dart';
 import '../core/logger_service.dart';
 
 class FavoritesService {
-  static final FavoritesService _instance = FavoritesService._();
-  factory FavoritesService() => _instance;
-  FavoritesService._();
+  static final FavoritesService _instance = FavoritesService._internal();
+  factory FavoritesService({SupabaseClient? client}) {
+    if (client != null) return FavoritesService._(client);
+    return _instance;
+  }
+  FavoritesService._([SupabaseClient? client]) : _customClient = client;
+  FavoritesService._internal() : _customClient = null;
 
-  final _client = Supabase.instance.client;
+  final SupabaseClient? _customClient;
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   bool _isMissingFavoritesTableError(Object e) {
     return e is PostgrestException && e.code == 'PGRST205';

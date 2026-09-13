@@ -17,7 +17,10 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
       final session = Supabase.instance.client.auth.currentSession;
-      context.go(session != null ? '/' : '/login');
+      if (session?.user.isAnonymous == true) {
+        Supabase.instance.client.auth.signOut();
+      }
+      context.go('/');
     });
   }
 

@@ -104,9 +104,10 @@ mixin OrderManagementMixin {
       final name = (product['name'] as String?) ?? '';
       final normalizedUnit =
           unitType == ProductModel.unitG ? ProductModel.unitKg : unitType;
-      final step = (explicitStep != null && explicitStep > 0)
-          ? explicitStep
-          : (minQuantity > 0 ? minQuantity : 1.0);
+      final step = QuantityEngine.resolveStep(
+        orderStep: explicitStep,
+        minQuantity: minQuantity,
+      );
 
       if (!QuantityEngine.isValidQuantity(
         quantity: item.quantityKg,

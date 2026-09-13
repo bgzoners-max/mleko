@@ -7,10 +7,14 @@ import '../../models/app_error.dart';
 
 class ReviewsService {
   static final ReviewsService _instance = ReviewsService._();
-  factory ReviewsService() => _instance;
-  ReviewsService._();
+  factory ReviewsService({SupabaseClient? client}) {
+    if (client != null) return ReviewsService._(client: client);
+    return _instance;
+  }
+  ReviewsService._({SupabaseClient? client}) : _customClient = client;
 
-  final _client = Supabase.instance.client;
+  final SupabaseClient? _customClient;
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   Future<List<ReviewModel>> getReviewsForSeller(String sellerId) async {
     try {
@@ -192,7 +196,7 @@ class ReviewsService {
         .maybeSingle();
     if (order == null) return false;
     final status = order['status'] as String?;
-    if (status != 'delivered' && status != 'arhivirano') return false;
+    if (status != 'delivered' && status != 'archived' && status != 'arhivirano') return false;
 
     try {
       final existing = await _client

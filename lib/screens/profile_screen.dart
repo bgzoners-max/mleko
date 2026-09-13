@@ -11,6 +11,8 @@ import 'notifications_screen.dart';
 import 'conversations_screen.dart';
 import 'seller/becoming_seller_screen.dart';
 import 'seller/seller_reviews_screen.dart';
+import 'classifieds/saved_searches_screen.dart';
+import '../providers/classifieds_provider.dart';
 
 import '../widgets/profile/mini_store_card.dart';
 import '../widgets/profile/buyer_stats_card.dart';
@@ -19,6 +21,7 @@ import '../widgets/profile/seller_gallery_section.dart';
 import '../widgets/profile/profile_data_card.dart';
 import '../widgets/profile/profile_section_header.dart';
 import '../widgets/profile/panel_placeholder.dart';
+import '../widgets/guest_auth_prompt.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -41,22 +44,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    if (user == null) {
+    if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profil')),
+        appBar: AppBar(title: const Text('Prijava')),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.person_outline, size: 64),
-              const SizedBox(height: 16),
-              const Text('Niste prijavljeni.'),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => context.go('/login'),
-                child: const Text('Prijavi se'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_outline_rounded, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'Za pristup profilu, oglasima i porudžbinama potrebno je da se prijavite na svoj nalog ili registrujete.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, height: 1.4),
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.go('/login'),
+                  icon: const Icon(Icons.login),
+                  label: const Text('Prijavi se'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -280,14 +291,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Moji oglasi',
             style: TextStyle(fontWeight: FontWeight.w600)),
         subtitle: const Text('Pregled, izmena i status vaših oglasa'),
-        onTap: () => push('/classifieds/my'),
+        onTap: () {
+          if (user.isGuest) {
+            showGuestAuthPrompt(
+              context,
+              title: 'Moji oglasi',
+              message:
+                  'Kao gost možete slobodno pregledati sve oglase. Da biste upravljali sopstvenim oglasima, potrebno je da se prijavite na nalog.',
+              icon: Icons.campaign_outlined,
+            );
+            return;
+          }
+          push('/classifieds/my');
+        },
+      ),
+      ListTile(
+        visualDensity: VisualDensity.compact,
+        leading: const Icon(Icons.notifications_active_outlined),
+        title: const Text('Praćene kategorije i pretrage',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Obaveštenja o novim oglasima'),
+        selected: isActive('saved-searches'),
+        trailing: () {
+          final count =
+              context.watch<ClassifiedsProvider>().subscriptions.length;
+          if (count == 0) return null;
+          return Badge.count(
+            count: count,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          );
+        }(),
+        onTap: () {
+          if (user.isGuest) {
+            showGuestAuthPrompt(
+              context,
+              title: 'Praćene pretrage',
+              message:
+                  'Da biste sačuvali pretrage i dobijali obaveštenja o novim oglasima, potrebno je da se prijavite na nalog.',
+              icon: Icons.notifications_active_outlined,
+            );
+            return;
+          }
+          isWide
+              ? openPanel('saved-searches', const SavedSearchesScreen())
+              : push('/classifieds/saved-searches');
+        },
       ),
       ListTile(
         visualDensity: VisualDensity.compact,
         leading: const Icon(Icons.add_circle_outline),
         title: const Text('Postavi novi oglas'),
         subtitle: const Text('Besplatna objava oglasa'),
-        onTap: () => push('/classifieds/new'),
+        onTap: () {
+          if (user.isGuest) {
+            showGuestAuthPrompt(
+              context,
+              title: 'Postavljanje oglasa',
+              message:
+                  'Kao gost možete slobodno pregledati sve oglase. Da biste postavili svoj oglas, potrebno je da se prijavite na nalog ili besplatno registrujete.',
+              icon: Icons.add_circle_outline,
+            );
+            return;
+          }
+          push('/classifieds/new');
+        },
       ),
       if (!user.isGuest && !user.isSeller)
         ListTile(

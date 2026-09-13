@@ -76,8 +76,12 @@ void _showLocalNotification({
   // Ako ista notifikacija stigne više puta (npr. zbog više tokena ili FCM retry-a),
   // novi ID će biti identičan prethodnom, pa će OS samo ažurirati postojeću
   // notifikaciju u tray-u umesto da pravi vizuelni duplikat.
-  final notificationId =
-      Object.hash(type, orderId, title, body).remainder(2147483647).abs();
+  final notificationId = PushService.computeNotificationId(
+    type: type,
+    orderId: orderId,
+    title: title,
+    body: body,
+  );
 
   LoggerService.debug(
     'Prikazi lokalnu notifikaciju',
@@ -191,7 +195,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class PushService {
-  final _client = Supabase.instance.client;
+  static final PushService _instance = PushService._();
+  factory PushService({SupabaseClient? client}) {
+    if (client != null) return PushService._(client: client);
+    return _instance;
+  }
+  PushService._({SupabaseClient? client}) : _customClient = client;
+
+  final SupabaseClient? _customClient;
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
+
   static const _installationIdKey = 'mleko_push_installation_id';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const Uuid _uuid = Uuid();
@@ -209,6 +222,33 @@ class PushService {
 
   static bool _localNotificationsInitialized = false;
 
+  /// Deterministički ID za lokalna obaveštenja (deduplikacija u tray-u).
+  static int computeNotificationId({
+    required String type,
+    required String orderId,
+    required String title,
+    required String body,
+  }) {
+    return Object.hash(type, orderId, title, body).remainder(2147483647).abs();
+  }
+
+  @visibleForTesting
+  static int get registrationGeneration => _registrationGeneration;
+
+  @visibleForTesting
+  static String? get registeredUserId => _registeredUserId;
+
+  @visibleForTesting
+  static bool isCurrentRegistration(int generation, String userId) =>
+      _isCurrentRegistration(generation, userId);
+
+  @visibleForTesting
+  Future<void> removeOtherUsersForInstallation(
+    String installationId,
+    String userId,
+  ) =>
+      _removeOtherUsersForInstallation(installationId, userId);
+
   static Future<void> dispose() async {
     await _onTokenRefreshSub?.cancel();
     _onTokenRefreshSub = null;
@@ -217,6 +257,9 @@ class PushService {
     await _onMessageOpenedSub?.cancel();
     _onMessageOpenedSub = null;
   }
+
+  /// Jedinstveni identifikator instalacije na uređaju (koristi se i za rate-limiting/deduplikaciju)
+  static Future<String> getInstallationId() => _getInstallationId();
 
   static Future<String> _getInstallationId() async {
     try {

@@ -181,6 +181,7 @@ class _OrderStatusAuditLogSectionState
         return UiStrings.orderStatusRejected;
       case 'cancelled_by_seller':
         return UiStrings.orderStatusCancelledBySeller;
+      case 'archived':
       case 'arhivirano':
         return UiStrings.orderStatusArchived;
       default:

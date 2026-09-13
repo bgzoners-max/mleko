@@ -49,6 +49,33 @@ class CachedProductList {
 class ProductCacheService {
   static const String _prefix = 'mleko_cache_';
   static const Duration _defaultTTL = Duration(hours: 24);
+  static const int _maxMemoryCacheEntries = 200;
+  static final Map<String, CachedProductList> _memoryCache = {};
+
+  /// Broj trenutnih elemenata u memorijskom kešu (za testove i dijagnostiku)
+  static int get memoryCacheSize => _memoryCache.length;
+
+  /// Čisti isključivo in-memory keš
+  static void clearMemoryCache() => _memoryCache.clear();
+
+  /// Preuzima stavku iz memorijskog keša i pomera je na vrh (MRU).
+  static CachedProductList? _getFromMemoryCache(String key) {
+    final cached = _memoryCache.remove(key);
+    if (cached == null) return null;
+    if (cached.isExpired) return null;
+    _memoryCache[key] = cached;
+    return cached;
+  }
+
+  /// Upisuje stavku u memorijski keš i po potrebi izbacuje najstariju (LRU).
+  static void _putIntoMemoryCache(String key, CachedProductList cached) {
+    _memoryCache.remove(key);
+    _memoryCache[key] = cached;
+    if (_memoryCache.length > _maxMemoryCacheEntries) {
+      final oldestKey = _memoryCache.keys.first;
+      _memoryCache.remove(oldestKey);
+    }
+  }
 
   // Cache keys
   static const String homeProductsKey = '${_prefix}home';
@@ -59,23 +86,31 @@ class ProductCacheService {
       '${_prefix}category_${category.replaceAll(' ', '_')}';
   static String productKey(String productId) => '${_prefix}product_$productId';
 
+  /// Sinhrono čitanje iz memorijskog keša (bez async čitanja iz storage-a)
+  List<ProductModel>? getCachedProductsSync(String key) {
+    final cached = _getFromMemoryCache(key);
+    if (cached == null || cached.isExpired) return null;
+    return cached.products;
+  }
+
   /// Cache proizvode sa default TTL (24h)
   Future<void> cacheProducts(
     String key,
     List<ProductModel> products, {
     Duration ttl = _defaultTTL,
   }) async {
+    final now = DateTime.now();
+    final cachedList = CachedProductList(
+      products: products,
+      cachedAt: now,
+      expiresAt: now.add(ttl),
+    );
+    _putIntoMemoryCache(key, cachedList);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final now = DateTime.now();
-      final cachedList = CachedProductList(
-        products: products,
-        cachedAt: now,
-        expiresAt: now.add(ttl),
-      );
       final json = jsonEncode(cachedList);
       await prefs.setString(key, json);
-      LoggerService.info('Cached products', extra: {
+      LoggerService.debug('Cached products', extra: {
         'key': key,
         'count': products.length,
         'expiresAt': cachedList.expiresAt.toString(),
@@ -85,24 +120,31 @@ class ProductCacheService {
     }
   }
 
-  /// Učitaj cachovanе proizvode
+  /// Učitaj cachovane proizvode
   Future<List<ProductModel>?> getCachedProducts(String key) async {
+    final memCached = getCachedProductsSync(key);
+    if (memCached != null) {
+      return memCached;
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       final json = prefs.getString(key);
       if (json == null) {
-        LoggerService.warning('Cache miss', extra: {'key': key});
+        LoggerService.debug('Cache miss', extra: {'key': key});
         return null;
       }
 
       final cached = CachedProductList.fromJson(jsonDecode(json));
       if (cached.isExpired) {
-        LoggerService.warning('Cache expired', extra: {'key': key});
+        LoggerService.debug('Cache expired', extra: {'key': key});
         await prefs.remove(key);
+        _memoryCache.remove(key);
         return null;
       }
 
-      LoggerService.info('Cache hit', extra: {
+      _putIntoMemoryCache(key, cached);
+
+      LoggerService.debug('Cache hit', extra: {
         'key': key,
         'count': cached.products.length,
         'age': DateTime.now().difference(cached.cachedAt).inMinutes,
@@ -128,13 +170,14 @@ class ProductCacheService {
 
   /// Obriši sve cache (offline mode cleanup)
   Future<void> clearAll() async {
+    _memoryCache.clear();
     try {
       final prefs = await SharedPreferences.getInstance();
       final keys = prefs.getKeys().where((k) => k.startsWith(_prefix)).toList();
       for (final key in keys) {
         await prefs.remove(key);
       }
-      LoggerService.info('Cleared all product cache',
+      LoggerService.debug('Cleared all product cache',
           extra: {'count': keys.length});
     } catch (e, st) {
       LoggerService.error('Failed to clear cache', e, stackTrace: st);
@@ -143,10 +186,11 @@ class ProductCacheService {
 
   /// Obriši određeni cache
   Future<void> clearKey(String key) async {
+    _memoryCache.remove(key);
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(key);
-      LoggerService.info('Cleared cache', extra: {'key': key});
+      LoggerService.debug('Cleared cache', extra: {'key': key});
     } catch (e, st) {
       LoggerService.error('Failed to clear cache key', e, stackTrace: st);
     }
