@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/amazon_theme.dart';
 
 enum MarketMode {
   classifieds,
@@ -22,12 +23,14 @@ class MarketModeSwitcher extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      height: 52,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(4),
+      height: 44,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(26),
+        color: isDark
+            ? const Color(0xFF1E2632)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
@@ -51,12 +54,20 @@ class MarketModeSwitcher extends StatelessWidget {
                     width: tabWidth,
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      color: isDark ? colorScheme.primary : Colors.white,
-                      borderRadius: BorderRadius.circular(22),
+                      color: isClassifieds
+                          ? AmazonColors.darkNavy
+                          : (isDark ? colorScheme.primary : Colors.white),
+                      borderRadius: BorderRadius.circular(19),
+                      border: isClassifieds
+                          ? Border.all(
+                              color: AmazonColors.amber.withValues(alpha: 0.35),
+                              width: 1,
+                            )
+                          : null,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                          blurRadius: 6,
+                          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                          blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -83,25 +94,22 @@ class MarketModeSwitcher extends StatelessWidget {
                               children: [
                                 Icon(
                                   Icons.campaign_outlined,
-                                  size: 19,
+                                  size: 18,
                                   color: isClassifieds
-                                      ? (isDark
-                                          ? colorScheme.onPrimary
-                                          : colorScheme.primary)
+                                      ? AmazonColors.amber
                                       : colorScheme.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Text(
                                   'Mali Oglasi',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13.5,
                                     fontWeight: isClassifieds
-                                        ? FontWeight.w700
+                                        ? FontWeight.w800
                                         : FontWeight.w500,
+                                    letterSpacing: 0.2,
                                     color: isClassifieds
-                                        ? (isDark
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.primary)
+                                        ? Colors.white
                                         : colorScheme.onSurfaceVariant,
                                   ),
                                 ),
@@ -125,21 +133,22 @@ class MarketModeSwitcher extends StatelessWidget {
                               children: [
                                 Icon(
                                   Icons.cottage_outlined,
-                                  size: 19,
+                                  size: 18,
                                   color: !isClassifieds
                                       ? (isDark
                                           ? colorScheme.onPrimary
                                           : colorScheme.primary)
                                       : colorScheme.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Text(
                                   'Pijaca Hrane',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 13.5,
                                     fontWeight: !isClassifieds
                                         ? FontWeight.w700
                                         : FontWeight.w500,
+                                    letterSpacing: 0.2,
                                     color: !isClassifieds
                                         ? (isDark
                                             ? colorScheme.onPrimary

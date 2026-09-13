@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
 
-/// Dropdown meni za izbor sortiranja oglasa (Najnovije, Cena rastuće/opadajuće, Popularno).
+/// Dropdown meni za izbor sortiranja oglasa u Amazon compact stilu.
 class ClassifiedSortDropdown extends StatelessWidget {
   final ClassifiedsProvider classifieds;
 
@@ -14,39 +15,58 @@ class ClassifiedSortDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+          width: 1.0,
         ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 2,
+              offset: const Offset(0, 1),
+            ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<ClassifiedSort>(
           value: classifieds.sort,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-          borderRadius: BorderRadius.circular(12),
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            size: 16,
+            color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          dropdownColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+          ),
           items: const [
             DropdownMenuItem(
               value: ClassifiedSort.newest,
-              child: Text('Najnovije', style: TextStyle(fontSize: 12)),
+              child: Text('Najnovije'),
             ),
             DropdownMenuItem(
               value: ClassifiedSort.priceAsc,
-              child: Text('Cena: najniža', style: TextStyle(fontSize: 12)),
+              child: Text('Cena: najniža'),
             ),
             DropdownMenuItem(
               value: ClassifiedSort.priceDesc,
-              child: Text('Cena: najviša', style: TextStyle(fontSize: 12)),
+              child: Text('Cena: najviša'),
             ),
             DropdownMenuItem(
               value: ClassifiedSort.popular,
-              child: Text('Najpopularnije', style: TextStyle(fontSize: 12)),
+              child: Text('Najpopularnije'),
             ),
           ],
           onChanged: (s) {
@@ -57,3 +77,4 @@ class ClassifiedSortDropdown extends StatelessWidget {
     );
   }
 }
+

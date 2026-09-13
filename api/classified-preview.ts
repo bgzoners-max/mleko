@@ -15,7 +15,7 @@ type ClassifiedRow = {
   condition: string | null;
   images: string[] | null;
   category_id: string | null;
-  classified_categories?: { name: string } | null;
+  classified_categories?: { name: string } | { name: string }[] | null;
 };
 
 type HtmlPayload = {
@@ -89,7 +89,14 @@ function buildDescription(ad: ClassifiedRow | null): string {
   const city = ad.city?.trim() || "";
   const priceInfo = formatPrice(ad.price, ad.currency, ad.price_type);
   const rawDesc = ad.description?.trim() || "";
-  const categoryName = ad.classified_categories?.name?.trim() || "";
+  let categoryName = "";
+  if (ad.classified_categories) {
+    if (Array.isArray(ad.classified_categories)) {
+      categoryName = ad.classified_categories[0]?.name?.trim() || "";
+    } else {
+      categoryName = ad.classified_categories.name?.trim() || "";
+    }
+  }
 
   const parts = [
     priceInfo,
@@ -222,7 +229,7 @@ export async function GET(request: Request): Promise<Response> {
       .eq("id", adId)
       .maybeSingle();
 
-    const ad = error ? null : (data as ClassifiedRow | null);
+    const ad = error ? null : (data as unknown as ClassifiedRow | null);
     const priceFormatted = ad
       ? formatPrice(ad.price, ad.currency, ad.price_type)
       : "";
@@ -242,7 +249,7 @@ export async function GET(request: Request): Promise<Response> {
         name: ad.title,
         description: ad.description || description,
         image: ad.images && ad.images.length > 0 ? ad.images : [imageUrl],
-        category: ad.classified_categories?.name || undefined,
+        category: (Array.isArray(ad.classified_categories) ? ad.classified_categories[0]?.name : ad.classified_categories?.name) || undefined,
         offers: {
           "@type": "Offer",
           priceCurrency: ad.currency || "RSD",

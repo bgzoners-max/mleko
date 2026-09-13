@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../models/classified_category_model.dart';
 
 /// Određuje prepoznatljivu boju za kategoriju oglasa na osnovu naziva.
@@ -47,10 +48,10 @@ Color getClassifiedCategoryColor(String name) {
   if (lower.contains('uslug')) {
     return const Color(0xFF6A1B9A); // Usluge - Ljubičasta
   }
-  return const Color(0xFF1B5E20);
+  return AmazonColors.navNavy;
 }
 
-/// Pravougaona 2-kolonska kartica podkategorije sa ikonicom i imenom
+/// Pravougaona 2-kolonska kartica podkategorije sa ikonicom i imenom (Amazon Compact)
 class SubcategoryTile extends StatelessWidget {
   final ClassifiedCategoryModel category;
   final bool isSelected;
@@ -67,83 +68,83 @@ class SubcategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgColor = isSelected
-        ? colorScheme.primary.withValues(alpha: isDark ? 0.25 : 0.12)
-        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC));
+        ? (isDark
+            ? AmazonColors.navNavy.withValues(alpha: 0.35)
+            : AmazonColors.navNavy.withValues(alpha: 0.08))
+        : (isDark ? AmazonColors.darkCard : AmazonColors.cardWhite);
 
     final borderColor = isSelected
-        ? colorScheme.primary
-        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0));
+        ? AmazonColors.amberDark
+        : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray);
 
     final iconBgColor = isSelected
-        ? colorScheme.primary.withValues(alpha: isDark ? 0.35 : 0.18)
-        : (isDark ? const Color(0xFF0F172A) : Colors.white);
+        ? AmazonColors.amber.withValues(alpha: isDark ? 0.25 : 0.15)
+        : (isDark ? const Color(0xFF131921) : const Color(0xFFF7F8F8));
 
     final iconColor = isSelected
-        ? colorScheme.primary
-        : (isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155));
+        ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+        : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.navNavy);
 
     final textColor = isSelected
-        ? colorScheme.primary
-        : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A));
+        ? (isDark ? AmazonColors.amberLight : AmazonColors.link)
+        : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: borderColor,
-            width: isSelected ? 1.6 : 1.0,
+            width: isSelected ? 1.5 : 1.0,
           ),
           boxShadow: [
             if (!isDark && !isSelected)
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 3,
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 2,
                 offset: const Offset(0, 1),
               ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: Row(
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: category.brandLogoAsset != null ? Colors.white : iconBgColor,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(7),
                 border: Border.all(
                   color: isSelected
-                      ? colorScheme.primary.withValues(alpha: 0.4)
-                      : (isDark ? const Color(0xFF334155) : const Color(0xFFE5E7EB)),
-                  width: 1,
+                      ? AmazonColors.amberDark.withValues(alpha: 0.4)
+                      : (isDark ? AmazonColors.darkBorder : AmazonColors.borderSubtle),
+                  width: 0.8,
                 ),
               ),
               child: category.brandLogoAsset != null
                   ? Padding(
-                      padding: const EdgeInsets.all(4.0),
+                      padding: const EdgeInsets.all(3.5),
                       child: Image.asset(
                         category.brandLogoAsset!,
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.medium,
                         errorBuilder: (_, __, ___) => Icon(
                           category.iconData,
-                          size: 20,
+                          size: 18,
                           color: iconColor,
                         ),
                       ),
                     )
                   : Icon(
                       category.iconData,
-                      size: 20,
+                      size: 18,
                       color: iconColor,
                     ),
             ),
@@ -154,14 +155,14 @@ class SubcategoryTile extends StatelessWidget {
                   Flexible(
                     child: Text(
                       category.name,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        fontSize: 13.5,
-                        height: 1.2,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        fontSize: 12.5,
+                        letterSpacing: -0.1,
                         color: category.adCount == 0 && !isSelected
-                            ? (isDark ? Colors.white60 : Colors.black54)
+                            ? (isDark ? Colors.white54 : AmazonColors.textSecondary)
                             : textColor,
                       ),
                     ),
@@ -169,21 +170,25 @@ class SubcategoryTile extends StatelessWidget {
                   if (category.adCount > 0) ...[
                     const SizedBox(width: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? colorScheme.primary.withValues(alpha: 0.15)
-                            : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                        borderRadius: BorderRadius.circular(10),
+                            ? AmazonColors.amber.withValues(alpha: 0.18)
+                            : (isDark
+                                ? const Color(0xFF2E3A4B)
+                                : const Color(0xFFF0F2F2)),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${category.adCount}',
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: isSelected
-                              ? colorScheme.primary
-                              : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                              ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+                              : (isDark
+                                  ? AmazonColors.darkTextSecondary
+                                  : AmazonColors.textSecondary),
                         ),
                       ),
                     ),
@@ -196,10 +201,10 @@ class SubcategoryTile extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 2),
                 child: Icon(
                   Icons.chevron_right,
-                  size: 16,
+                  size: 15,
                   color: isSelected
-                      ? colorScheme.primary
-                      : (isDark ? Colors.white54 : Colors.black38),
+                      ? AmazonColors.amberDark
+                      : (isDark ? Colors.white54 : AmazonColors.textSecondary),
                 ),
               ),
           ],
@@ -209,7 +214,7 @@ class SubcategoryTile extends StatelessWidget {
   }
 }
 
-/// Grid tile za kategoriju na discovery ekranu - organizovan identično kao na strani malih proizvođača
+/// Grid tile za kategoriju na discovery ekranu u Amazon Marketplace compact stilu
 class CategoryGridTile extends StatelessWidget {
   final ClassifiedCategoryModel category;
   final VoidCallback onTap;
@@ -222,54 +227,73 @@ class CategoryGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final catColor = getClassifiedCategoryColor(category.name);
+
+    final cardBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
+    final borderColor = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
+    final textColor = isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary;
 
     return Semantics(
       button: true,
       label: 'Kategorija ${category.name}',
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: catColor.withValues(alpha: 0.25),
-            width: 1.2,
-          ),
-        ),
-        color: catColor.withValues(alpha: 0.05),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: borderColor,
+                width: 1.0,
+              ),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+              ],
+            ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(7),
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: catColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(12),
+                    color: catColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                    borderRadius: BorderRadius.circular(7),
                   ),
+                  alignment: Alignment.center,
                   child: Icon(
                     category.iconData,
-                    size: 22,
-                    color: catColor,
+                    size: 18,
+                    color: isDark ? catColor.withValues(alpha: 0.9) : catColor,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     category.name,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13.5,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                    maxLines: 2,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                      letterSpacing: -0.1,
+                      color: textColor,
+                    ),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  size: 15,
+                  color: isDark ? Colors.white38 : AmazonColors.textSecondary.withValues(alpha: 0.7),
                 ),
               ],
             ),
@@ -279,3 +303,4 @@ class CategoryGridTile extends StatelessWidget {
     );
   }
 }
+

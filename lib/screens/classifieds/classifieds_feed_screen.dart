@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../constants/serbian_districts.dart';
 import '../../core/responsive.dart';
 import '../../core/web_seo.dart';
@@ -93,11 +94,184 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     });
   }
 
+  Widget _buildAmazonStandaloneHeader(BuildContext context) {
+    final isDesktop = Breakpoints.isDesktop(context);
+
+    return Container(
+      color: AmazonColors.darkNavy,
+      padding: EdgeInsets.symmetric(
+        horizontal: isDesktop ? 24 : 12,
+        vertical: 8,
+      ),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => context.go('/'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'DOMAĆI MARKET',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AmazonColors.amber,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'MALI OGLASI',
+                    style: TextStyle(
+                      color: AmazonColors.darkNavy,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => context.go('/'),
+            icon: const Icon(Icons.storefront_outlined, size: 15, color: Color(0xFF86EFAC)),
+            label: Text(
+              isDesktop ? 'Pređi na Pijacu hrane' : 'Pijaca hrane',
+              style: const TextStyle(
+                color: Color(0xFF86EFAC),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmazonSearchBar(
+    BuildContext context,
+    ClassifiedsProvider classifieds,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      height: 42,
+      decoration: BoxDecoration(
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+          width: 1.2,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 10),
+          Icon(
+            Icons.search,
+            size: 20,
+            color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (val) {
+                final q = val.trim().isEmpty ? null : val.trim();
+                classifieds.search(q);
+              },
+              style: TextStyle(
+                fontSize: 13.5,
+                color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Pretraži male oglase (traktori, mehanizacija, alati, tehnika...)',
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.clear, size: 16),
+              color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: () {
+                _searchController.clear();
+                _onSearchChanged('');
+              },
+            ),
+          InkWell(
+            onTap: () {
+              final q = _searchController.text.trim();
+              classifieds.search(q.isEmpty ? null : q);
+            },
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(7),
+              bottomRight: Radius.circular(7),
+            ),
+            child: Container(
+              width: 44,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: AmazonColors.amberLight,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(7),
+                  bottomRight: Radius.circular(7),
+                ),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.search,
+                  size: 20,
+                  color: AmazonColors.darkNavy,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCityButton(
     BuildContext context,
     ClassifiedsProvider classifieds,
-    ColorScheme colorScheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasSelectedCity = classifieds.selectedCity != null;
     final hasSelectedDistrict = classifieds.selectedDistrict != null;
     final hasSelection = hasSelectedCity || hasSelectedDistrict;
@@ -110,28 +284,41 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       labelText = d?.name ?? classifieds.selectedDistrict!;
     }
 
+    final btnBg = hasSelection
+        ? (isDark ? AmazonColors.amber.withValues(alpha: 0.2) : AmazonColors.amberLight.withValues(alpha: 0.25))
+        : (isDark ? AmazonColors.darkCard : AmazonColors.cardWhite);
+    final btnBorder = hasSelection
+        ? AmazonColors.amberDark
+        : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray);
+    final btnTextColor = hasSelection
+        ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+        : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary);
+    final btnIconColor = hasSelection
+        ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+        : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary);
+
     return SizedBox(
-      height: 40,
+      height: 36,
       child: OutlinedButton.icon(
         onPressed: () => showClassifiedCityPickerSheet(context),
         icon: Icon(
           hasSelectedDistrict ? Icons.map_outlined : Icons.location_on_outlined,
-          size: 16,
-          color: hasSelection ? colorScheme.primary : colorScheme.onSurfaceVariant,
+          size: 15,
+          color: btnIconColor,
         ),
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
+              constraints: const BoxConstraints(maxWidth: 130),
               child: Text(
                 labelText,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: hasSelection ? FontWeight.bold : FontWeight.w500,
-                  color: hasSelection ? colorScheme.primary : colorScheme.onSurface,
+                  fontWeight: hasSelection ? FontWeight.w700 : FontWeight.w500,
+                  color: btnTextColor,
                 ),
               ),
             ),
@@ -145,25 +332,23 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
                   padding: const EdgeInsets.all(2),
-                  child: Icon(Icons.close, size: 14, color: colorScheme.primary),
+                  child: Icon(Icons.close, size: 13, color: btnIconColor),
                 ),
               ),
             ],
           ],
         ),
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           side: BorderSide(
-            color: hasSelection
-                ? colorScheme.primary
-                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: btnBorder,
+            width: hasSelection ? 1.4 : 1.0,
           ),
-          backgroundColor: hasSelection
-              ? colorScheme.primaryContainer.withValues(alpha: 0.25)
-              : colorScheme.surfaceContainerLowest,
+          backgroundColor: btnBg,
+          elevation: 0,
         ),
       ),
     );
@@ -172,7 +357,6 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
   Widget _buildConditionChips(
     BuildContext context,
     ClassifiedsProvider classifieds,
-    ColorScheme colorScheme,
   ) {
     final selected = classifieds.selectedCondition;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -184,26 +368,34 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       IconData? icon,
       Color? activeColor,
     }) {
-      final effectiveColor = activeColor ?? colorScheme.primary;
+      final effectiveColor = activeColor ?? (isDark ? AmazonColors.amberLight : AmazonColors.navNavy);
 
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          duration: const Duration(milliseconds: 150),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
           decoration: BoxDecoration(
             color: isSelected
-                ? effectiveColor.withValues(alpha: isDark ? 0.25 : 0.12)
-                : colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(12),
+                ? effectiveColor.withValues(alpha: isDark ? 0.28 : 0.12)
+                : (isDark ? AmazonColors.darkCard : AmazonColors.cardWhite),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected
                   ? effectiveColor
-                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: isSelected ? 1.5 : 1.0,
+                  : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+              width: isSelected ? 1.4 : 1.0,
             ),
+            boxShadow: [
+              if (!isDark && !isSelected)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -212,16 +404,16 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 Icon(
                   icon,
                   size: 13,
-                  color: isSelected ? effectiveColor : colorScheme.onSurfaceVariant,
+                  color: isSelected ? effectiveColor : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
                 ),
                 const SizedBox(width: 4),
               ],
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? effectiveColor : colorScheme.onSurface,
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? effectiveColor : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
                 ),
               ),
             ],
@@ -254,21 +446,21 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (isRealEstate) ...[
-          // Tip transakcije za nekretnine (Prodaja / Izdavanje / Stan na dan)
+          // Tip transakcije za nekretnine
           buildChipItem(
             isSelected: selectedTx == null,
             onTap: () => classifieds.removeAttributeFilter('transaction_type'),
             label: 'Sve',
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           buildChipItem(
             isSelected: selectedTx == 'prodaja',
             onTap: () => classifieds.setAttributeFilter('transaction_type', 'prodaja'),
             label: 'Prodaja',
             icon: Icons.sell_outlined,
-            activeColor: const Color(0xFF4338CA),
+            activeColor: AmazonColors.navNavy,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           buildChipItem(
             isSelected: selectedTx == 'izdavanje',
             onTap: () => classifieds.setAttributeFilter('transaction_type', 'izdavanje'),
@@ -276,7 +468,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             icon: Icons.vpn_key_outlined,
             activeColor: const Color(0xFF0284C7),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           buildChipItem(
             isSelected: selectedTx == 'na_dan',
             onTap: () => classifieds.setAttributeFilter('transaction_type', 'na_dan'),
@@ -284,42 +476,42 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             icon: Icons.hotel_outlined,
             activeColor: const Color(0xFF0F766E),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Container(
             width: 1,
-            height: 20,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            height: 18,
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ] else if (hasCondition) ...[
           buildChipItem(
             isSelected: selected == null,
             onTap: () => classifieds.selectCondition(null),
             label: 'Sve',
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           buildChipItem(
             isSelected: selected == 'new',
             onTap: () => classifieds.selectCondition('new'),
             label: 'Novo',
             icon: Icons.check_circle_outline,
-            activeColor: const Color(0xFF059669),
+            activeColor: AmazonColors.green,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           buildChipItem(
             isSelected: selected == 'used',
             onTap: () => classifieds.selectCondition('used'),
             label: 'Polovno',
             icon: Icons.inventory_2_outlined,
-            activeColor: const Color(0xFF475569),
+            activeColor: AmazonColors.navNavy,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Container(
             width: 1,
-            height: 20,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            height: 18,
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
 
         // Brzo dugme za filter cene i kvadrature
@@ -328,24 +520,24 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           onTap: () => showClassifiedPriceAndAreaFilterSheet(context, isRealEstate: isRealEstate),
           label: isRealEstate ? 'Cena i m²' : 'Cena',
           icon: Icons.tune_rounded,
-          activeColor: colorScheme.primary,
+          activeColor: AmazonColors.amberDark,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
 
         buildChipItem(
           isSelected: classifieds.onlyFeatured,
           onTap: () => classifieds.setOnlyFeatured(!classifieds.onlyFeatured),
           label: 'Istaknuto',
           icon: Icons.star_rounded,
-          activeColor: const Color(0xFFD97706),
+          activeColor: AmazonColors.amberDark,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
         buildChipItem(
           isSelected: classifieds.onlyUrgent,
           onTap: () => classifieds.setOnlyUrgent(!classifieds.onlyUrgent),
           label: 'Hitno',
           icon: Icons.bolt_rounded,
-          activeColor: const Color(0xFFDC2626),
+          activeColor: AmazonColors.badgeRed,
         ),
       ],
     );
@@ -356,52 +548,62 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ClassifiedsProvider classifieds,
     ColorScheme colorScheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
       child: Wrap(
-        spacing: 6,
-        runSpacing: 6,
+        spacing: 5,
+        runSpacing: 5,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.filter_alt_outlined, size: 14, color: colorScheme.primary),
-              const SizedBox(width: 4),
+              Icon(
+                Icons.filter_alt_outlined,
+                size: 13,
+                color: isDark ? AmazonColors.amberLight : AmazonColors.darkNavy,
+              ),
+              const SizedBox(width: 3),
               Text(
                 'Filteri:',
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
                 ),
               ),
             ],
           ),
           if (classifieds.selectedCity != null)
             InputChip(
-              avatar: const Icon(Icons.location_on, size: 14),
+              avatar: const Icon(Icons.location_on, size: 13),
               label: Text(classifieds.selectedCity!, style: const TextStyle(fontSize: 11)),
               onDeleted: () => classifieds.selectCity(null),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
             ),
           if (classifieds.selectedDistrict != null) ...[
             () {
               final dist = SerbianDistricts.findDistrictById(classifieds.selectedDistrict!);
               final name = dist?.name ?? classifieds.selectedDistrict!;
               return InputChip(
-                avatar: const Icon(Icons.map_outlined, size: 14),
+                avatar: const Icon(Icons.map_outlined, size: 13),
                 label: Text('Okrug: $name', style: const TextStyle(fontSize: 11)),
                 onDeleted: () => classifieds.selectDistrict(null),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
               );
             }(),
           ],
           if (classifieds.minPrice != null || classifieds.maxPrice != null)
             InputChip(
-              avatar: const Icon(Icons.payments_outlined, size: 14),
+              avatar: const Icon(Icons.payments_outlined, size: 13),
               label: Text(
                 'Cena: ${classifieds.minPrice != null ? '${classifieds.minPrice!.toInt()}€' : '0€'} - ${classifieds.maxPrice != null ? '${classifieds.maxPrice!.toInt()}€' : '∞'}',
                 style: const TextStyle(fontSize: 11),
@@ -409,6 +611,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               onDeleted: () => classifieds.setPriceRange(minPrice: null, maxPrice: null),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
             ),
           if (classifieds.selectedCondition != null)
             InputChip(
@@ -416,7 +620,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 classifieds.selectedCondition == 'new'
                     ? Icons.check_circle_outline
                     : Icons.inventory_2_outlined,
-                size: 14,
+                size: 13,
               ),
               label: Text(
                 classifieds.selectedCondition == 'new' ? 'Novo' : 'Polovno',
@@ -425,10 +629,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               onDeleted: () => classifieds.selectCondition(null),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
             ),
           if (classifieds.searchQuery != null && classifieds.searchQuery!.isNotEmpty)
             InputChip(
-              avatar: const Icon(Icons.search, size: 14),
+              avatar: const Icon(Icons.search, size: 13),
               label: Text('„${classifieds.searchQuery}”', style: const TextStyle(fontSize: 11)),
               onDeleted: () {
                 _searchController.clear();
@@ -436,22 +642,28 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               },
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
             ),
           if (classifieds.onlyFeatured)
             InputChip(
-              avatar: const Icon(Icons.star_rounded, size: 14, color: Color(0xFFD97706)),
+              avatar: const Icon(Icons.star_rounded, size: 13, color: AmazonColors.amberDark),
               label: const Text('Istaknuto', style: TextStyle(fontSize: 11)),
               onDeleted: () => classifieds.setOnlyFeatured(false),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
             ),
           if (classifieds.onlyUrgent)
             InputChip(
-              avatar: const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFDC2626)),
+              avatar: const Icon(Icons.bolt_rounded, size: 13, color: AmazonColors.badgeRed),
               label: const Text('Hitno', style: TextStyle(fontSize: 11)),
               onDeleted: () => classifieds.setOnlyUrgent(false),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
             ),
           if (classifieds.selectedAttributes.isNotEmpty) ...[
             for (final entry in classifieds.selectedAttributes.entries) ...[
@@ -464,12 +676,14 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     : entry.value.toString();
                 return InputChip(
                   avatar:
-                      attr?.icon != null ? Icon(attr!.icon, size: 14) : null,
+                      attr?.icon != null ? Icon(attr!.icon, size: 13) : null,
                   label: Text('$label: $formatted',
                       style: const TextStyle(fontSize: 11)),
                   onDeleted: () => classifieds.removeAttributeFilter(entry.key),
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                  side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
                 );
               }(),
             ],
@@ -488,8 +702,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 color: (classifieds.selectedCategoryId != null &&
                         classifieds.isCategorySubscribed(
                             classifieds.selectedCategoryId!))
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
+                    ? AmazonColors.amberDark
+                    : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
               ),
               label: Text(
                 (classifieds.selectedCategoryId != null &&
@@ -501,6 +715,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               ),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
               onPressed: () => handleClassifiedSubscribe(
                 context,
                 classifieds,
@@ -513,13 +729,20 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               _searchController.clear();
               classifieds.clearAllFilters();
             },
-            icon: const Icon(Icons.close, size: 12),
+            icon: const Icon(Icons.close, size: 12, color: AmazonColors.link),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            label: const Text('Poništi sve', style: TextStyle(fontSize: 11)),
+            label: const Text(
+              'Poništi sve',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AmazonColors.link,
+              ),
+            ),
           ),
         ],
       ),
@@ -532,23 +755,29 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ColorScheme colorScheme, {
     required bool isDesktop,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
-      height: 40,
+      height: 34,
       child: Row(
         children: [
           if (isDesktop)
             IconButton(
-              icon: const Icon(Icons.chevron_left, size: 20),
+              icon: Icon(
+                Icons.chevron_left,
+                size: 18,
+                color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+              ),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
               tooltip: 'Prethodne kategorije',
               onPressed: () {
                 if (_categoryChipsScrollController.hasClients) {
-                  final target = (_categoryChipsScrollController.offset - 260)
+                  final target = (_categoryChipsScrollController.offset - 240)
                       .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
                   _categoryChipsScrollController.animateTo(
                     target,
-                    duration: const Duration(milliseconds: 250),
+                    duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                   );
                 }
@@ -573,24 +802,36 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   controller: _categoryChipsScrollController,
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 4 : 12),
+                  padding: EdgeInsets.symmetric(horizontal: isDesktop ? 4 : 8),
                   itemCount: classifieds.categories.length + 1,
                   itemBuilder: (ctx, idx) {
                     if (idx == 0) {
                       final isAll = classifieds.selectedCategoryId == null;
                       return Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: 6),
                         child: FilterChip(
                           selected: isAll,
-                          label: const Text('Sve', style: TextStyle(fontSize: 12)),
-                          backgroundColor: colorScheme.surfaceContainerLow,
-                          selectedColor: colorScheme.primary,
-                          checkmarkColor: colorScheme.onPrimary,
+                          label: const Text('Sve', style: TextStyle(fontSize: 11.5)),
+                          backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                          selectedColor: AmazonColors.navNavy,
+                          labelStyle: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: isAll ? FontWeight.w700 : FontWeight.w500,
+                            color: isAll
+                                ? Colors.white
+                                : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
+                          ),
                           showCheckmark: false,
                           visualDensity: VisualDensity.compact,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: isAll
+                                  ? AmazonColors.navNavy
+                                  : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+                              width: isAll ? 1.4 : 1.0,
+                            ),
                           ),
                           onSelected: (_) => classifieds.selectCategory(null),
                         ),
@@ -600,35 +841,38 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     final activeRoot = classifieds.activeRootCategory;
                     final isSelected = activeRoot?.id == cat.id;
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 6),
                       child: FilterChip(
                         selected: isSelected,
-                        avatar: Icon(cat.iconData,
-                            size: 14,
+                        avatar: Icon(
+                          cat.iconData,
+                          size: 13,
+                          color: isSelected
+                              ? AmazonColors.amberLight
+                              : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.navNavy),
+                        ),
+                        label: Text(
+                          cat.name,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurfaceVariant),
-                        label: Text(cat.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight:
-                                  isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected
-                                  ? colorScheme.onPrimary
-                                  : colorScheme.onSurface,
-                            )),
-                        backgroundColor: colorScheme.surfaceContainerLow,
-                        selectedColor: colorScheme.primary,
-                        checkmarkColor: colorScheme.onPrimary,
+                                ? Colors.white
+                                : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
+                          ),
+                        ),
+                        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                        selectedColor: AmazonColors.navNavy,
                         showCheckmark: false,
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(8),
                           side: BorderSide(
                             color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                ? AmazonColors.navNavy
+                                : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+                            width: isSelected ? 1.4 : 1.0,
                           ),
                         ),
                         onSelected: (sel) =>
@@ -642,17 +886,21 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           ),
           if (isDesktop)
             IconButton(
-              icon: const Icon(Icons.chevron_right, size: 20),
+              icon: Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+              ),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
               tooltip: 'Sledeće kategorije',
               onPressed: () {
                 if (_categoryChipsScrollController.hasClients) {
-                  final target = (_categoryChipsScrollController.offset + 260)
+                  final target = (_categoryChipsScrollController.offset + 240)
                       .clamp(0.0, _categoryChipsScrollController.position.maxScrollExtent);
                   _categoryChipsScrollController.animateTo(
                     target,
-                    duration: const Duration(milliseconds: 250),
+                    duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                   );
                 }
@@ -709,8 +957,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         ? null
         : FloatingActionButton.extended(
             onPressed: () => context.push('/classifieds/new'),
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: AmazonColors.amber,
+            foregroundColor: AmazonColors.darkNavy,
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            icon: const Icon(Icons.add_circle_outline, size: 18),
+            label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
           );
 
     final scrollBody = RefreshIndicator(
@@ -718,6 +970,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       child: CustomScrollView(
         controller: _scrollController,
         slivers: [
+          // Standalone Amazon Header ako nismo na početnoj (embedded)
+          if (!widget.isEmbedded)
+            SliverToBoxAdapter(
+              child: _buildAmazonStandaloneHeader(context),
+            ),
+
           // Opcioni header (MarketModeSwitcher)
           if (widget.headerWidget != null)
             SliverToBoxAdapter(child: widget.headerWidget!),
@@ -776,43 +1034,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                       ),
                     ),
                   ],
-                  // Search bar
-                  TextField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (val) {
-                      final q = val.trim().isEmpty ? null : val.trim();
-                      classifieds.search(q);
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Pretraži oglase, traktore, mehanizaciju, alate, tehniku...',
-                      hintStyle: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                      ),
-                      prefixIcon: Icon(Icons.search, color: colorScheme.primary, size: 22),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () {
-                                _searchController.clear();
-                                _onSearchChanged('');
-                              },
-                            )
-                          : null,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerLowest,
-                    ),
-                  ),
+                  // Amazon Search bar
+                  _buildAmazonSearchBar(context, classifieds),
 
                   // Filteri grad + kategorije + sort (jedan red na desktopu, dva reda na mobilnom)
                   const SizedBox(height: 8),
@@ -820,9 +1043,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     // JEDAN RED NA DESKTOPU: [ SVI GRADOVI ] [ STANJE (ako važi) ] [ <- KATEGORIJE ... -> ] [ NAJNOVIJE v ]
                     Row(
                       children: [
-                        _buildCityButton(context, classifieds, colorScheme),
+                        _buildCityButton(context, classifieds),
                         const SizedBox(width: 8),
-                        _buildConditionChips(context, classifieds, colorScheme),
+                        _buildConditionChips(context, classifieds),
                         const SizedBox(width: 8),
                         if (classifieds.categories.isNotEmpty)
                           Expanded(
@@ -845,7 +1068,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildCityButton(context, classifieds, colorScheme),
+                          child: _buildCityButton(context, classifieds),
                         ),
                         const SizedBox(width: 8),
                         ClassifiedSortDropdown(classifieds: classifieds),
@@ -855,7 +1078,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     // Red 2: Stanje (ako važi) + Promocije (Istaknuto, Hitno)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      child: _buildConditionChips(context, classifieds, colorScheme),
+                      child: _buildConditionChips(context, classifieds),
                     ),
                   ],
 
@@ -875,14 +1098,18 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 16, 12, isDesktop ? 24 : 16, 8),
                   child: Text(
                     'Kategorije',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AmazonColors.darkTextPrimary
+                          : AmazonColors.textPrimary,
                     ),
                   ),
                 ),
               ),
 
-            // Grid kategorija organizovan kao na strani malih proizvođača
+            // Grid kategorija organizovan kao na strani malih proizvođača (Amazon compact 46px)
             if (classifieds.categories.isNotEmpty)
               SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12),
@@ -895,7 +1122,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                             : (Breakpoints.isSmallTablet(context) ? 3 : 2)),
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
-                    mainAxisExtent: 56,
+                    mainAxisExtent: 46,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) => CategoryGridTile(
@@ -919,15 +1146,22 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   children: [
                     Text(
                       'Najnoviji oglasi',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AmazonColors.darkTextPrimary
+                            : AmazonColors.textPrimary,
                       ),
                     ),
                     if (!classifieds.loading && classifieds.ads.isNotEmpty)
                       Text(
                         '${classifieds.ads.length}+ oglasa',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AmazonColors.darkTextSecondary
+                              : AmazonColors.textSecondary,
                         ),
                       ),
                   ],
@@ -994,8 +1228,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   children: [
                     Text(
                       'Oglasi',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AmazonColors.darkTextPrimary
+                            : AmazonColors.textPrimary,
                       ),
                     ),
                     TextButton.icon(
@@ -1007,9 +1245,11 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         classifieds.clearAttributeFilters();
                         classifieds.search(null);
                       },
-                      icon: const Icon(Icons.close, size: 14),
-                      label: const Text('Poništi filtere',
-                          style: TextStyle(fontSize: 12)),
+                      icon: const Icon(Icons.close, size: 14, color: AmazonColors.link),
+                      label: const Text(
+                        'Poništi filtere',
+                        style: TextStyle(fontSize: 12, color: AmazonColors.link),
+                      ),
                     ),
                   ],
                 ),
@@ -1079,9 +1319,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  childAspectRatio: 0.72,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  childAspectRatio: isDesktop ? 0.74 : 0.72,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) => ClassifiedAdCard(ad: classifieds.ads[i]),
@@ -1104,12 +1344,17 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       ),
     );
 
-    final content = Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: Breakpoints.maxContentWidth(context),
+    final canvasColor = AmazonColors.getCanvas(context);
+
+    final content = ColoredBox(
+      color: canvasColor,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.maxContentWidth(context),
+          ),
+          child: scrollBody,
         ),
-        child: scrollBody,
       ),
     );
 
@@ -1129,6 +1374,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     }
 
     return Scaffold(
+      backgroundColor: canvasColor,
       floatingActionButton: fab,
       body: content,
     );
@@ -1140,6 +1386,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
     final crumbs = classifieds.categoryBreadcrumbs;
     if (crumbs.isEmpty) return const SizedBox.shrink();
 
@@ -1174,81 +1421,85 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                children: [
-                  if (parentCategory != null) ...[
-                    InkWell(
-                      onTap: () => classifieds.selectCategory(parentCategory.id),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.arrow_back_ios_new, size: 12, color: colorScheme.primary),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Nazad',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Container(
-                      height: 14,
-                      width: 1,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ],
-                  for (int i = 0; i < crumbs.length; i++) ...[
-                    if (i > 0)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(Icons.chevron_right,
-                            size: 14,
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
-                      ),
-                    if (i == crumbs.length - 1)
-                      Text(
-                        crumbs[i].name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    else
+                  children: [
+                    if (parentCategory != null) ...[
                       InkWell(
-                        onTap: () => classifieds.selectCategory(crumbs[i].id),
+                        onTap: () => classifieds.selectCategory(parentCategory.id),
                         borderRadius: BorderRadius.circular(6),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          child: Text(
-                            crumbs[i].name,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.primary,
-                            ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.arrow_back_ios_new, size: 11, color: AmazonColors.link),
+                              SizedBox(width: 4),
+                              Text(
+                                'Nazad',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AmazonColors.link,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                      Container(
+                        height: 14,
+                        width: 1,
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                      ),
+                    ],
+                    for (int i = 0; i < crumbs.length; i++) ...[
+                      if (i > 0)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(
+                            Icons.chevron_right,
+                            size: 14,
+                            color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                          ),
+                        ),
+                      if (i == crumbs.length - 1)
+                        Text(
+                          crumbs[i].name,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                          ),
+                        )
+                      else
+                        InkWell(
+                          onTap: () => classifieds.selectCategory(crumbs[i].id),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            child: Text(
+                              crumbs[i].name,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: AmazonColors.link,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
           ] else ...[
             Text(
               'Podkategorije: ${crumbs.first.name}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
+                color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -1257,19 +1508,38 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 38,
+                  height: 36,
                   child: ChoiceChip(
                     selected: isAllInActiveParent,
-                    avatar: Icon(activeParent.iconData, size: 15),
+                    avatar: Icon(
+                      activeParent.iconData,
+                      size: 15,
+                      color: isAllInActiveParent
+                          ? AmazonColors.amberLight
+                          : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.navNavy),
+                    ),
                     label: Text(
                       'Svi oglasi u „${activeParent.name}”',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: isAllInActiveParent ? FontWeight.bold : FontWeight.w500,
+                        color: isAllInActiveParent
+                            ? Colors.white
+                            : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    selectedColor: AmazonColors.navNavy,
+                    backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: isAllInActiveParent
+                            ? AmazonColors.navNavy
+                            : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+                        width: isAllInActiveParent ? 1.4 : 1.0,
+                      ),
+                    ),
                     onSelected: (_) => classifieds.selectCategory(activeParent.id),
                   ),
                 ),
@@ -1289,6 +1559,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
     final crumbs = classifieds.categoryBreadcrumbs;
     if (crumbs.isEmpty) return const [];
 
@@ -1324,7 +1595,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         slivers.add(
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 18, isDesktop ? 24 : 14, 8),
+              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 16, isDesktop ? 24 : 14, 6),
               child: Row(
                 children: [
                   InkWell(
@@ -1345,7 +1616,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: isGroupSelected ? colorScheme.primary : colorScheme.primary.withValues(alpha: 0.75),
+                              color: isGroupSelected ? AmazonColors.amber : AmazonColors.amber.withValues(alpha: 0.8),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -1353,10 +1624,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                           Text(
                             group.name.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 13.5,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.8,
-                              color: isGroupSelected ? colorScheme.primary : colorScheme.onSurface,
+                              color: isGroupSelected
+                                  ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+                                  : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
                             ),
                           ),
                         ],
@@ -1372,15 +1645,15 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         classifieds.selectCategory(group.id);
                       }
                     },
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Text(
                         isGroupSelected ? 'Poništi filter' : 'Svi (${group.name})',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11.5,
-                          fontWeight: isGroupSelected ? FontWeight.bold : FontWeight.w600,
-                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                          color: AmazonColors.link,
                         ),
                       ),
                     ),
@@ -1391,14 +1664,14 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           ),
         );
 
-        // 2. Mreža marki automobila za datu državu
+        // 2. Mreža marki automobila za datu državu (Amazon compact 46px)
         slivers.add(
           SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 2),
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridCrossAxisCount,
-                mainAxisExtent: 56,
+                mainAxisExtent: 46,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
               ),
@@ -1432,14 +1705,14 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         slivers.add(
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 22, isDesktop ? 24 : 14, 8),
+              padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 18, isDesktop ? 24 : 14, 6),
               child: Row(
                 children: [
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.75),
+                    decoration: const BoxDecoration(
+                      color: AmazonColors.amber,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1447,10 +1720,10 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   Text(
                     'OSTALO / DODATNE KATEGORIJE',
                     style: TextStyle(
-                      fontSize: 13.5,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.8,
-                      color: colorScheme.onSurface,
+                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                     ),
                   ),
                 ],
@@ -1465,7 +1738,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridCrossAxisCount,
-                mainAxisExtent: 56,
+                mainAxisExtent: 46,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
               ),
@@ -1511,7 +1784,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: gridCrossAxisCount,
-            mainAxisExtent: 56,
+            mainAxisExtent: 46,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
@@ -1546,6 +1819,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     ColorScheme colorScheme,
     List<CategoryAttribute> attributes,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Prikazujemo atribute sa predefinisanim opcijama (select i boolean) za horizontalni brzi filter
     final filterable = attributes
         .where((a) =>
@@ -1555,12 +1830,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     if (filterable.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 38,
+      height: 34,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: filterable.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (ctx, i) {
           final attr = filterable[i];
           final isApplied = classifieds.selectedAttributes.containsKey(attr.key);
@@ -1571,10 +1846,20 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             return FilterChip(
               selected: isTrue,
               label: Text(attr.label, style: const TextStyle(fontSize: 11.5)),
-              avatar: attr.icon != null ? Icon(attr.icon, size: 14) : null,
+              avatar: attr.icon != null ? Icon(attr.icon, size: 13) : null,
               visualDensity: VisualDensity.compact,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              selectedColor: isDark
+                  ? AmazonColors.amber.withValues(alpha: 0.25)
+                  : AmazonColors.amberLight.withValues(alpha: 0.35),
+              side: BorderSide(
+                color: isTrue
+                    ? AmazonColors.amberDark
+                    : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+                width: isTrue ? 1.4 : 1.0,
+              ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(8),
               ),
               onSelected: (sel) {
                 if (sel) {
@@ -1600,6 +1885,13 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               labelText = '${attr.label}: ${opt.label}';
             }
 
+            final activeBg = isDark
+                ? AmazonColors.amber.withValues(alpha: 0.22)
+                : AmazonColors.amberLight.withValues(alpha: 0.35);
+            final inactiveBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
+            final activeBorder = AmazonColors.amberDark;
+            final inactiveBorder = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
+
             return PopupMenuButton<String>(
               tooltip: attr.label,
               initialValue: currentValue?.toString(),
@@ -1615,7 +1907,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   const PopupMenuItem(
                     value: '__clear__',
                     child: Text('Poništi filter',
-                        style: TextStyle(color: Colors.red)),
+                        style: TextStyle(color: AmazonColors.badgeRed)),
                   ),
                 ...options.map(
                   (opt) => PopupMenuItem(
@@ -1625,18 +1917,13 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                 ),
               ],
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isApplied
-                      ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-                      : colorScheme.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(20),
+                  color: isApplied ? activeBg : inactiveBg,
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isApplied
-                        ? colorScheme.primary
-                        : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    width: isApplied ? 1.5 : 1.0,
+                    color: isApplied ? activeBorder : inactiveBorder,
+                    width: isApplied ? 1.4 : 1.0,
                   ),
                 ),
                 child: Row(
@@ -1645,10 +1932,10 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     if (attr.icon != null) ...[
                       Icon(
                         attr.icon,
-                        size: 14,
+                        size: 13,
                         color: isApplied
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
+                            ? AmazonColors.amberDark
+                            : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
                       ),
                       const SizedBox(width: 4),
                     ],
@@ -1656,11 +1943,10 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                       labelText,
                       style: TextStyle(
                         fontSize: 11.5,
-                        fontWeight:
-                            isApplied ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isApplied ? FontWeight.w700 : FontWeight.w500,
                         color: isApplied
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
+                            ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+                            : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
                       ),
                     ),
                     const SizedBox(width: 2),
@@ -1668,8 +1954,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                       Icons.arrow_drop_down,
                       size: 16,
                       color: isApplied
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                          ? AmazonColors.amberDark
+                          : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
                     ),
                   ],
                 ),
