@@ -94,7 +94,7 @@ void main() {
     stdout.writeln('Injected build hash into flutter_bootstrap.js');
   }
 
-  // 6. Post-procesiranje index.html: ubrizgavanje preload taga za main.dart.js
+  // 6. Post-procesiranje index.html: ubrizgavanje preload taga i heša u flutter_bootstrap.js
   final targetIndexHtml = File('${targetPublicDir.path}/index.html');
   if (targetIndexHtml.existsSync()) {
     var content = targetIndexHtml.readAsStringSync();
@@ -106,13 +106,24 @@ void main() {
       '<!-- {{PRELOAD_MAIN_JS}} -->',
       '<link rel="preload" href="main.dart.js?v=$buildHash" as="script">',
     );
+    // Ubrizgaj verzionisani flutter_bootstrap.js da browser nikada ne servira stari keš
+    content = content.replaceAll(
+      '<link rel="preload" href="flutter_bootstrap.js" as="script">',
+      '<link rel="preload" href="flutter_bootstrap.js?v=$buildHash" as="script">',
+    );
+    content = content.replaceAll(
+      '<script src="flutter_bootstrap.js" defer></script>',
+      '<script src="flutter_bootstrap.js?v=$buildHash" defer></script>',
+    );
+    content = content.replaceAll('__BUILD_HASH__', buildHash);
+    content = content.replaceAll('{{BUILD_HASH}}', buildHash);
     // Ukloni eventualne zaostale Date.now() pozive
     content = content.replaceAll(
       RegExp(r"s\.src\s*=\s*'flutter_bootstrap\.js\?v='\s*\+\s*Date\.now\(\);"),
-      "s.src = 'flutter_bootstrap.js';",
+      "s.src = 'flutter_bootstrap.js?v=$buildHash';",
     );
     targetIndexHtml.writeAsStringSync(content);
-    stdout.writeln('Injected preload tag for main.dart.js into index.html');
+    stdout.writeln('Injected preload tags and build hash into index.html');
   }
 
   // 7. Kopiranje konfiguracionih fajlova (vercel.json, package.json itd.)

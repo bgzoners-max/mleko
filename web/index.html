@@ -404,12 +404,18 @@
       }
     });
 
-    // Momentalno čišćenje zastarelog Service Worker-a i lokalnog keša
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        var hadSw = registrations && registrations.length > 0;
-        for (var i = 0; i < registrations.length; i++) {
-          registrations[i].unregister();
+    // Automatsko ciscenje Service Worker-a i lokalnog kesa za svaki novi build
+    (function () {
+      var currentBuild = '__BUILD_HASH__';
+      var lastBuild = localStorage.getItem('dm_build_hash');
+      if (currentBuild !== '__BUILD_HASH__' && lastBuild !== currentBuild) {
+        localStorage.setItem('dm_build_hash', currentBuild);
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            for (var i = 0; i < regs.length; i++) {
+              regs[i].unregister();
+            }
+          });
         }
         if ('caches' in window) {
           caches.keys().then(function (keys) {
@@ -418,12 +424,11 @@
             }
           });
         }
-        if (hadSw && !sessionStorage.getItem('dm_sw_purged_v14')) {
-          sessionStorage.setItem('dm_sw_purged_v14', '1');
+        if (lastBuild) {
           window.location.reload();
         }
-      });
-    }
+      }
+    })();
   </script>
   <script src="flutter_bootstrap.js" defer></script>
 </body>
