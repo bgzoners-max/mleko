@@ -60,14 +60,14 @@ DO $$
 DECLARE
   has_archived_in_check boolean;
 BEGIN
-  SELECT pg_get_constraintdef(oid) ILIKE '%arhivirano%'
+  SELECT pg_get_constraintdef(oid) ILIKE '%archived%'
   INTO has_archived_in_check
   FROM pg_constraint
   WHERE conname = 'orders_status_check'
   LIMIT 1;
 
   IF COALESCE(has_archived_in_check, false) = false THEN
-    RAISE EXCEPTION 'orders_status_check does not include arhivirano';
+    RAISE EXCEPTION 'orders_status_check does not include archived';
   END IF;
 END $$;
 
