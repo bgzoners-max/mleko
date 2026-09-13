@@ -488,48 +488,31 @@ class _FreePerksHighlightBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
-                  ),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.bolt_rounded,
-                        color: Color(0xFF3E2723), size: 13),
-                    SizedBox(width: 3),
-                    Text(
-                      'ZAUVEK BESPLATNO',
-                      style: TextStyle(
-                        color: Color(0xFF3E2723),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ],
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
               ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  '0 dinara provizije • Bez skrivenih troškova',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bolt_rounded,
+                    color: Color(0xFF3E2723), size: 13),
+                SizedBox(width: 3),
+                Text(
+                  'ZAUVEK BESPLATNO',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF3E2723),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           Row(
