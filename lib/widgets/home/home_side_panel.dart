@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../../constants/amazon_theme.dart';
 import '../../core/responsive.dart';
 import '../../models/home_products_data.dart';
 import '../skeleton.dart';
@@ -44,6 +45,7 @@ class _HomeSidePanelState extends State<HomeSidePanel>
   @override
   Widget build(BuildContext context) {
     final isWide = Breakpoints.useTwoPaneLayout(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (isWide) {
       return Column(
@@ -74,16 +76,33 @@ class _HomeSidePanelState extends State<HomeSidePanel>
           initialData: widget.initialData),
       FavoriteFarmsList(tabController: _tabController),
     ];
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+          width: 1.0,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.025),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TabBar(
             controller: _tabController,
             onTap: (_) => HapticFeedback.selectionClick(),
-            labelColor: Theme.of(context).colorScheme.primary,
+            labelColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             unselectedLabelColor:
-                Theme.of(context).colorScheme.onSurfaceVariant,
+                isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+            indicatorColor: AmazonColors.amberDark,
             tabs: const [
               Tab(text: 'Najprodavaniji proizvodi'),
               Tab(text: 'Omiljena gazdinstva')
@@ -116,27 +135,51 @@ class SidePanelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+          width: 1.0,
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.025),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+        ],
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
             child: Row(
               children: [
                 Icon(icon,
-                    size: 18, color: Theme.of(context).colorScheme.primary),
+                    size: 17, color: AmazonColors.link),
                 const SizedBox(width: 8),
-                Text(title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
-          const Divider(height: 16),
+          Divider(
+            height: 14,
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderSubtle,
+          ),
           SizedBox(height: height, child: child),
         ],
       ),
@@ -153,6 +196,8 @@ class TopProductsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return StreamBuilder<HomeProductsData>(
       initialData: initialData,
       stream: homeProductsStream,
@@ -162,12 +207,9 @@ class TopProductsList extends StatelessWidget {
           return const ProductListSkeleton();
         }
         if (snapshot.hasError && !snapshot.hasData) {
-          return Center(
+          return const Center(
               child: Text('Greška pri učitavanju proizvoda.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: Colors.red)));
+                  style: TextStyle(color: Colors.red)));
         }
         final data = snapshot.data;
         final list = data?.products ?? [];
@@ -175,10 +217,10 @@ class TopProductsList extends StatelessWidget {
         if (list.isEmpty) {
           return AppEmptyState(
             icon: Icons.shopping_basket_outlined,
-            title: 'JoÅ¡ nema proizvoda u katalogu',
+            title: 'Još nema proizvoda u katalogu',
             subtitle:
-                'Proverite ponovo kasnije ili pretraÅ¾ite po kategorijama.',
-            ctaLabel: 'PretraÅ¾i proizvode',
+                'Proverite ponovo kasnije ili pretražite po kategorijama.',
+            ctaLabel: 'Pretraži proizvode',
             ctaIcon: Icons.search,
             onCtaPressed: () => context.push('/search'),
           );
@@ -193,26 +235,61 @@ class TopProductsList extends StatelessWidget {
         final top = sorted.take(5).toList();
 
         return ListView.separated(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           itemCount: top.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => Divider(
+            height: 8,
+            color: isDark ? AmazonColors.darkBorder.withValues(alpha: 0.5) : AmazonColors.borderSubtle,
+          ),
           itemBuilder: (context, index) {
             final p = top[index];
             final count = salesCounts[p.id] ?? 0;
             return ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               onTap: () => context.push('/product/${p.id}'),
               leading: p.imageUrls.isNotEmpty
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: AppNetworkImage.icon(
-                        imageUrl: p.imageUrls.first,
-                        width: 40,
-                        height: 40,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                            width: 0.8,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: AppNetworkImage.icon(
+                          imageUrl: p.imageUrls.first,
+                          width: 38,
+                          height: 38,
+                        ),
                       ),
                     )
-                  : const Icon(Icons.shopping_basket),
-              title: Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text('$count prodaja'),
+                  : const Icon(Icons.shopping_basket, size: 28),
+              title: Text(
+                p.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                '$count prodaja',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AmazonColors.link,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+              ),
             );
           },
         );
@@ -220,3 +297,4 @@ class TopProductsList extends StatelessWidget {
     );
   }
 }
+

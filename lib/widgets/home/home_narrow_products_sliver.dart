@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../constants/amazon_theme.dart';
 import '../../core/constants.dart';
 import '../../core/responsive.dart';
 import '../../models/app_error.dart';
@@ -67,9 +68,9 @@ class HomeNarrowProductsSliver extends StatelessWidget {
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 4,
-                crossAxisSpacing: 4,
-                mainAxisExtent: 255,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                mainAxisExtent: 265,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, i) => const ProductCardSkeleton(),
@@ -110,6 +111,8 @@ class HomeNarrowProductsSliver extends StatelessWidget {
           );
         }
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return SliverMainAxisGroup(
           slivers: [
             SliverToBoxAdapter(
@@ -118,16 +121,19 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                   Breakpoints.horizontalPadding(context),
                   sectionSpacing,
                   Breakpoints.horizontalPadding(context),
-                  12,
+                  8,
                 ),
                 child: Text(
                   newProducts.isNotEmpty
                       ? 'Najnoviji proizvodi'
                       : 'Poslednje dodato',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: isDark
+                        ? AmazonColors.darkTextPrimary
+                        : AmazonColors.textPrimary,
+                  ),
                 ),
               ),
             ),
@@ -137,10 +143,10 @@ class HomeNarrowProductsSliver extends StatelessWidget {
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: isTabletLayout ? (isLargeTablet ? 3 : 2) : 2,
-                  mainAxisSpacing: isTabletLayout ? 8 : 4,
-                  crossAxisSpacing: isTabletLayout ? 8 : 4,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
                   mainAxisExtent:
-                      isTabletLayout ? (isLargeTablet ? 348 : 356) : 255,
+                      isTabletLayout ? (isLargeTablet ? 300 : 310) : 265,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {

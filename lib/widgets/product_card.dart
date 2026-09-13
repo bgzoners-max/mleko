@@ -1,12 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'app_network_image.dart';
 import 'package:go_router/go_router.dart';
+
+import '../constants/amazon_theme.dart';
 import '../core/constants.dart';
-import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
+import 'app_network_image.dart';
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;
@@ -39,15 +39,46 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   Widget _buildCard(BuildContext context, bool gridMode) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
+    final borderColor = _isHovered
+        ? AmazonColors.amberDark
+        : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray);
+
     final imageChild = widget.product.imageUrls.isEmpty
-        ? ColoredBox(
-            color: Colors.grey.shade200,
-            child: Icon(Icons.image_not_supported,
-                size: 48, color: Colors.grey.shade400),
+        ? Container(
+            color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+            child: Center(
+              child: Icon(
+                Icons.inventory_2_outlined,
+                size: 32,
+                color: isDark ? Colors.white38 : AmazonColors.textSecondary.withValues(alpha: 0.5),
+              ),
+            ),
           )
         : AppNetworkImage.thumbnail(
             imageUrl: widget.product.imageUrls.first,
             fit: BoxFit.cover,
+            placeholder: Container(
+              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+              child: const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            errorWidget: Container(
+              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+              child: Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  size: 28,
+                  color: isDark ? Colors.white38 : AmazonColors.textSecondary.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
           );
 
     final image = Stack(
@@ -55,51 +86,98 @@ class _ProductCardState extends State<ProductCard> {
       children: [
         Hero(
           tag: 'product_image_${widget.product.id}_0',
-          child: gridMode
-              ? imageChild
-              : AspectRatio(aspectRatio: 16 / 10, child: imageChild),
+          child: AnimatedScale(
+            scale: _isHovered ? 1.03 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            child: gridMode
+                ? imageChild
+                : AspectRatio(aspectRatio: 1.25, child: imageChild),
+          ),
         ),
+        // Subtle top gradient overlay for badge legibility
         Positioned(
-          top: 8,
-          left: 8,
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 36,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.35),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Badges top-left
+        Positioned(
+          top: 6,
+          left: 6,
           child: Wrap(
             spacing: 4,
+            runSpacing: 4,
             children: [
               if (!widget.product.isAvailable)
-                const _Badge(label: 'Nedostupno', color: Colors.grey),
-              if (_isNew) const _Badge(label: 'Novo', color: Colors.green),
+                const _AmazonBadge(
+                  label: 'NEDOSTUPNO',
+                  backgroundColor: AmazonColors.slate,
+                ),
+              if (_isNew)
+                const _AmazonBadge(
+                  label: 'NOVO',
+                  backgroundColor: AmazonColors.green,
+                ),
               if (widget.isPopular)
-                const _Badge(label: 'Popularno', color: Colors.orange),
+                const _AmazonBadge(
+                  label: 'POPULARNO',
+                  backgroundColor: AmazonColors.amber,
+                  textColor: AmazonColors.darkNavy,
+                ),
             ],
           ),
         ),
+        // Favorite button top-right
         if (widget.onFavoriteToggle != null)
           Positioned(
-            top: 4,
-            right: 4,
+            top: 5,
+            right: 5,
             child: Material(
               color: Colors.transparent,
-              child: IconButton(
-                tooltip: widget.isFavorite == true
-                    ? 'Ukloni iz omiljenih'
-                    : 'Dodaj u omiljene',
-                icon: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: Icon(
-                    widget.isFavorite == true
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    key: ValueKey(widget.isFavorite),
-                    color:
-                        widget.isFavorite == true ? Colors.red : Colors.white,
-                    size: 26,
-                  ),
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  shape: BoxShape.circle,
                 ),
-                onPressed: widget.onFavoriteToggle != null
-                    ? () => withHaptic(widget.onFavoriteToggle)
-                    : null,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 17,
+                  tooltip: widget.isFavorite == true
+                      ? 'Ukloni iz omiljenih'
+                      : 'Dodaj u omiljene',
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Icon(
+                      widget.isFavorite == true
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      key: ValueKey(widget.isFavorite),
+                      color: widget.isFavorite == true
+                          ? const Color(0xFFFF4D4F)
+                          : Colors.white,
+                      size: 17,
+                    ),
+                  ),
+                  onPressed: () => withHaptic(widget.onFavoriteToggle),
+                ),
               ),
             ),
           ),
@@ -107,237 +185,224 @@ class _ProductCardState extends State<ProductCard> {
     );
 
     final textContent = Padding(
-      padding: EdgeInsets.all(gridMode ? AppDesign.spaceS : AppDesign.spaceM),
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  widget.product.category.toUpperCase(),
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                        fontSize: 9,
-                      ),
-                ),
-              ),
-            ],
+          // 1. Kategorija (Amazon teal link style)
+          Text(
+            widget.product.category.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w700,
+              color: AmazonColors.link,
+              letterSpacing: 0.4,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 3),
+
+          // 2. Naziv proizvoda + verifikovan nalog
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   widget.product.name,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        height: 1.1,
-                        letterSpacing: -0.2,
-                      ),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                    height: 1.2,
+                    color: isDark
+                        ? AmazonColors.darkTextPrimary
+                        : AmazonColors.textPrimary,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (widget.product.sellerIsVerified) ...[
                 const SizedBox(width: 4),
-                Icon(Icons.verified,
-                    size: 14, color: Theme.of(context).colorScheme.primary),
+                const Icon(
+                  Icons.verified,
+                  size: 13,
+                  color: AmazonColors.link,
+                ),
               ],
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+
+          // 3. Amazon Deal cena (B12704 bold crvena) + Ocena
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(
-                widget.product.priceFormatted,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
+              Expanded(
+                child: Text(
+                  widget.product.priceFormatted,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                    color: isDark ? const Color(0xFFFF6B6B) : AmazonColors.dealRed,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, size: 14, color: Colors.amber),
-                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.star,
+                      size: 12,
+                      color: Color(0xFFFFA41C), // Amazon star gold
+                    ),
+                    const SizedBox(width: 2.5),
                     Text(
-                      widget.avgRating!.toStringAsFixed(1),
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey.shade700,
-                          ),
+                      '${widget.avgRating!.toStringAsFixed(1)} (${widget.reviewCount})',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AmazonColors.darkTextSecondary
+                            : AmazonColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+
+          // 4. Lokacija i minimalna porudžbina
           Row(
             children: [
-              Icon(Icons.location_on_outlined,
-                  size: 12, color: Colors.grey.shade500),
-              const SizedBox(width: 4),
+              Icon(
+                Icons.location_on_outlined,
+                size: 11.5,
+                color: isDark
+                    ? AmazonColors.darkTextSecondary
+                    : AmazonColors.textSecondary,
+              ),
+              const SizedBox(width: 2.5),
               Expanded(
                 child: Text(
                   widget.product.location,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark
+                        ? AmazonColors.darkTextSecondary
+                        : AmazonColors.textSecondary,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _InfoPill(
-                icon: widget.product.isAvailable
-                    ? Icons.check_circle_outline
-                    : Icons.cancel_outlined,
-                label: widget.product.isAvailable ? 'Na stanju' : 'Nedostupno',
-                color: widget.product.isAvailable
-                    ? Colors.green.shade700
-                    : Colors.grey.shade700,
-              ),
-              _InfoPill(
-                icon: Icons.inventory_2_outlined,
-                label: 'Min ${widget.product.minOrderFormatted}',
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ],
-          ),
-          if (!gridMode) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.open_in_new,
-                    size: 14, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 6),
-                Text(
-                  'Klikni za detalje proizvoda',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AmazonColors.darkBorder.withValues(alpha: 0.6)
+                      : const Color(0xFFF0F2F2),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => withHaptic(
-                    () => context.push('/product/${widget.product.id}')),
-                child: const Text('Pogledaj detalje'),
-              ),
-            ),
-          ] else ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.touch_app_outlined,
-                    size: 13, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Dodirni za detalje proizvoda',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                child: Text(
+                  'min ${widget.product.minOrderFormatted}',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? AmazonColors.darkTextSecondary
+                        : AmazonColors.textSecondary,
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          // 5. Ako nije grid (npr. lista), prikaži Amazon dugme
+          if (!gridMode) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 32,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AmazonColors.amberLight,
+                  foregroundColor: AmazonColors.darkNavy,
+                  elevation: 0,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    side: const BorderSide(color: AmazonColors.amberDark, width: 0.8),
+                  ),
+                ),
+                onPressed: () => withHaptic(
+                    () => context.push('/product/${widget.product.id}')),
+                child: const Text(
+                  'Pogledaj detalje',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ),
             ),
           ],
         ],
       ),
     );
 
-    final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
+      transform: Matrix4.translationValues(0, _isHovered ? -2.5 : 0, 0),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: _isHovered
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
-              : Colors.grey.shade200,
-          width: 1.5,
+          color: borderColor,
+          width: _isHovered ? 1.2 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: _isHovered
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: _isHovered ? 16 : 8,
-            offset: Offset(0, _isHovered ? 6 : 2),
+            color: isDark
+                ? Colors.black.withValues(alpha: _isHovered ? 0.35 : 0.12)
+                : Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.025),
+            blurRadius: _isHovered ? 8 : 3,
+            offset: Offset(0, _isHovered ? 3 : 1),
           ),
         ],
       ),
-      child: AnimatedScale(
-        scale: _isHovered ? 1.015 : 1.0,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        child: Card(
-          elevation: 0,
-          margin: EdgeInsets.zero,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Semantics(
-            button: true,
-            enabled: true,
-            label:
-                'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
-            child: InkWell(
-              onTap: () => withHaptic(
-                  () => context.push('/product/${widget.product.id}')),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  if (gridMode) Expanded(child: image) else image,
-                  textContent,
-                ],
-              ),
-            ),
+      clipBehavior: Clip.antiAlias,
+      child: Semantics(
+        button: true,
+        enabled: true,
+        label:
+            'Proizvod ${widget.product.name}. Cena ${widget.product.priceFormatted}.',
+        child: InkWell(
+          onTap: () =>
+              withHaptic(() => context.push('/product/${widget.product.id}')),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              if (gridMode) Expanded(child: image) else image,
+              textContent,
+            ],
           ),
         ),
       ),
     );
-
-    return card;
   }
 
   @override
   Widget build(BuildContext context) {
     final card = LayoutBuilder(
       builder: (context, constraints) {
-        // Ako roditelj daje ograničenu visinu (grid) → grid mod sa Spacer-om
-        // Ako je visina neograničena (lista) → normalni mod
         final gridMode = constraints.maxHeight.isFinite;
         return _buildCard(context, gridMode);
       },
@@ -355,81 +420,42 @@ class _ProductCardState extends State<ProductCard> {
   }
 }
 
-class _InfoPill extends StatelessWidget {
-  final IconData icon;
+class _AmazonBadge extends StatelessWidget {
   final String label;
-  final Color color;
+  final Color backgroundColor;
+  final Color textColor;
 
-  const _InfoPill({
-    required this.icon,
+  const _AmazonBadge({
     required this.label,
-    required this.color,
+    required this.backgroundColor,
+    this.textColor = Colors.white,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _Badge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 0.6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 0.3,
-            ),
-          ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+          letterSpacing: 0.4,
         ),
       ),
     );
   }
 }
+

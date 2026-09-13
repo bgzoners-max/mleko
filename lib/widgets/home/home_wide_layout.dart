@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../constants/amazon_theme.dart';
 import '../../core/constants.dart';
 import '../../core/responsive.dart';
 import '../../models/app_error.dart';
@@ -60,6 +61,8 @@ class HomeWideLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -102,8 +105,8 @@ class HomeWideLayout extends StatelessWidget {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: Breakpoints.isDesktop(context) ? 4 : 2,
-                        mainAxisSpacing: 6,
-                        crossAxisSpacing: 6,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
                         mainAxisExtent: productGridExtent,
                       ),
                       itemCount: 4,
@@ -146,15 +149,18 @@ class HomeWideLayout extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 10),
                           child: Text(
                             newProducts.isNotEmpty
                                 ? 'Najnoviji proizvodi'
                                 : 'Poslednje dodato',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w800),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? AmazonColors.darkTextPrimary
+                                  : AmazonColors.textPrimary,
+                            ),
                           ),
                         ),
                         GridView.builder(
@@ -165,8 +171,8 @@ class HomeWideLayout extends StatelessWidget {
                             crossAxisCount: Breakpoints.isDesktop(context)
                                 ? 4
                                 : Breakpoints.productGridColumns(context),
-                            mainAxisSpacing: 6,
-                            crossAxisSpacing: 6,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
                             mainAxisExtent: productGridExtent,
                           ),
                           itemCount: displayList.take(8).length,
@@ -210,12 +216,71 @@ class HomeWideLayout extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextField(
-                readOnly: true,
+              // Amazon search bar
+              InkWell(
                 onTap: onSearchTap,
-                decoration: const InputDecoration(
-                  hintText: 'Traži proizvode, proizvođače…',
-                  prefixIcon: Icon(Icons.search),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Icon(
+                        Icons.search,
+                        size: 20,
+                        color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Pretražite domaću hranu, proizvode...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        height: 42,
+                        width: 44,
+                        decoration: BoxDecoration(
+                          color: AmazonColors.amberLight,
+                          borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
+                          border: Border(
+                            left: BorderSide(
+                              color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.search,
+                            size: 20,
+                            color: AmazonColors.darkNavy,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               SizedBox(height: sidePanelSpacing),

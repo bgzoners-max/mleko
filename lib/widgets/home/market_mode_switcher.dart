@@ -23,16 +23,17 @@ class MarketModeSwitcher extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      height: 44,
+      height: 42,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF1E2632)
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(22),
+            ? AmazonColors.darkCard
+            : const Color(0xFFDFE3E3),
+        borderRadius: BorderRadius.circular(21),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+          width: 1.0,
         ),
       ),
       child: LayoutBuilder(
@@ -56,19 +57,19 @@ class MarketModeSwitcher extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isClassifieds
                           ? AmazonColors.darkNavy
-                          : (isDark ? colorScheme.primary : Colors.white),
-                      borderRadius: BorderRadius.circular(19),
-                      border: isClassifieds
-                          ? Border.all(
-                              color: AmazonColors.amber.withValues(alpha: 0.35),
-                              width: 1,
-                            )
-                          : null,
+                          : (isDark ? const Color(0xFF232F3E) : Colors.white),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isClassifieds
+                            ? AmazonColors.amber.withValues(alpha: 0.35)
+                            : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1.5),
                         ),
                       ],
                     ),
@@ -132,13 +133,13 @@ class MarketModeSwitcher extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.cottage_outlined,
+                                  Icons.storefront_outlined,
                                   size: 18,
                                   color: !isClassifieds
                                       ? (isDark
-                                          ? colorScheme.onPrimary
-                                          : colorScheme.primary)
-                                      : colorScheme.onSurfaceVariant,
+                                          ? const Color(0xFF86EFAC)
+                                          : const Color(0xFF166534))
+                                      : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -146,14 +147,14 @@ class MarketModeSwitcher extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: !isClassifieds
-                                        ? FontWeight.w700
+                                        ? FontWeight.w800
                                         : FontWeight.w500,
                                     letterSpacing: 0.2,
                                     color: !isClassifieds
                                         ? (isDark
-                                            ? colorScheme.onPrimary
-                                            : colorScheme.primary)
-                                        : colorScheme.onSurfaceVariant,
+                                            ? Colors.white
+                                            : AmazonColors.textPrimary)
+                                        : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
                                   ),
                                 ),
                               ],

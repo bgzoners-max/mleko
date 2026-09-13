@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/amazon_theme.dart';
 import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
@@ -115,15 +116,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final isTabletLayout = isTablet && !isWide;
 
     final outerHorizontalPadding =
-        isWide ? 12.0 : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 10.0));
-    final sectionSpacing =
-        isWide ? 12.0 : (isLargeTablet ? 16.0 : (isSmallTablet ? 14.0 : 12.0));
-    final compactSpacing = isWide ? 8.0 : 6.0;
-    final sidePanelSpacing =
-        isWide ? 12.0 : (isLargeTablet ? 14.0 : (isSmallTablet ? 12.0 : 10.0));
+        isWide ? 14.0 : (isLargeTablet ? 12.0 : (isSmallTablet ? 10.0 : 8.0));
+    final sectionSpacing = isWide ? 10.0 : 8.0;
+    final compactSpacing = 6.0;
+    final sidePanelSpacing = 10.0;
     final productGridExtent = isWide
-        ? 364.0
-        : (isLargeTablet ? 352.0 : (isSmallTablet ? 344.0 : 368.0));
+        ? 285.0
+        : (isLargeTablet ? 295.0 : (isSmallTablet ? 285.0 : 265.0));
 
     final stream = _homeProductsStream;
     if (stream == null) {
@@ -135,13 +134,23 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       extendBodyBehindAppBar: false,
+      backgroundColor: AmazonColors.getCanvas(context),
       appBar: AppBar(
         centerTitle: false,
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(
+          bottom: BorderSide(
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+            width: 1.0,
+          ),
+        ),
         title: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -156,16 +165,18 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(
                   Icons.eco_outlined,
-                  size: 28,
+                  size: 26,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   AppConstants.appName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    letterSpacing: -0.5,
+                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const BetaBadge(),
@@ -179,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Badge(
                 isLabelVisible: unreadCount > 0,
                 label: Text('$unreadCount'),
-                backgroundColor: Colors.red,
+                backgroundColor: AmazonColors.dealRed,
                 child: const Icon(Icons.notifications_none_rounded),
               ),
               onPressed: () => context.push('/notifications'),
@@ -188,6 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Badge(
               isLabelVisible: context.watch<CartProvider>().count > 0,
               label: Text('${context.watch<CartProvider>().count}'),
+              backgroundColor: AmazonColors.amber,
+              textColor: AmazonColors.darkNavy,
               child: const Icon(Icons.shopping_cart_outlined),
             ),
             onPressed: () => context.push('/cart'),
@@ -214,78 +227,109 @@ class _HomeScreenState extends State<HomeScreen> {
                           (s) => s.marketMode) ==
                       MarketMode.classifieds
                   ? const ClassifiedsFeedScreen(isEmbedded: true)
-                  : Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isTwoPaneLayout
-                              ? Breakpoints.dataContentWidth(context)
-                              : Breakpoints.maxContentWidth(context),
-                        ),
-                  child: RefreshIndicator(
-                    onRefresh: _onRefresh,
-                    child: CustomScrollView(
-                      scrollCacheExtent:
-                          const ScrollCacheExtent.pixels(600.0),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        if (!isWide) _buildStickySearch(context),
-                        if (selectedRegion != null)
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                outerHorizontalPadding,
-                                8,
-                                outerHorizontalPadding,
-                                0,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer
-                                      .withValues(alpha: 0.35),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outlineVariant
-                                        .withValues(alpha: 0.4),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on_outlined,
-                                      size: 18,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Prikazujemo proizvode za region: $selectedRegion',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
+                  : ColoredBox(
+                      color: AmazonColors.getCanvas(context),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: isTwoPaneLayout
+                                ? Breakpoints.dataContentWidth(context)
+                                : Breakpoints.maxContentWidth(context),
+                          ),
+                          child: RefreshIndicator(
+                            onRefresh: _onRefresh,
+                            child: CustomScrollView(
+                              scrollCacheExtent:
+                                  const ScrollCacheExtent.pixels(600.0),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              slivers: [
+                                if (!isWide) _buildStickySearch(context),
+                                if (selectedRegion != null)
+                                  SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        outerHorizontalPadding,
+                                        6,
+                                        outerHorizontalPadding,
+                                        0,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? AmazonColors.darkCard
+                                              : AmazonColors.cardWhite,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: isDark
+                                                ? AmazonColors.darkBorder
+                                                : AmazonColors.borderGray,
+                                            width: 1.0,
+                                          ),
+                                          boxShadow: [
+                                            if (!isDark)
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withValues(alpha: 0.02),
+                                                blurRadius: 2,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.location_on_outlined,
+                                              size: 16,
+                                              color: AmazonColors.link,
                                             ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                'Prikaz za region: $selectedRegion',
+                                                style: TextStyle(
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: isDark
+                                                      ? AmazonColors
+                                                          .darkTextPrimary
+                                                      : AmazonColors.textPrimary,
+                                                ),
+                                                maxLines: 1,
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            TextButton(
+                                              style: TextButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 2),
+                                                minimumSize: Size.zero,
+                                                tapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                              ),
+                                              onPressed: () =>
+                                                  _showLocationPicker(context),
+                                              child: const Text(
+                                                'Promeni',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AmazonColors.link,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          _showLocationPicker(context),
-                                      child: const Text('Promeni'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                                  ),
 
                         SliverToBoxAdapter(
                           child: Padding(
@@ -356,6 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            ),
           ],
         ),
       ),
@@ -419,18 +464,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryHeader(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Kategorije',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          'Kategorije hrane',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+          ),
         ),
         TextButton(
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           onPressed: () => context.push('/categories'),
-          child: const Text('Vidi sve'),
+          child: const Text(
+            'Vidi sve',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AmazonColors.link,
+            ),
+          ),
         ),
       ],
     );

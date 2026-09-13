@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../constants/amazon_theme.dart';
 import '../../core/responsive.dart';
 import '../category_icon.dart';
 
@@ -51,6 +52,7 @@ class CategoryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GridView.builder(
       shrinkWrap: true,
@@ -60,7 +62,7 @@ class CategoryGrid extends StatelessWidget {
             isWide ? 4 : (isLargeTablet ? 4 : (isSmallTablet ? 3 : 2)),
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        mainAxisExtent: 56,
+        mainAxisExtent: 46,
       ),
       itemCount: topCategories.length,
       itemBuilder: (context, index) {
@@ -70,55 +72,71 @@ class CategoryGrid extends StatelessWidget {
         return Semantics(
           button: true,
           label: 'Kategorija ${cat.name}',
-          child: Card(
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(
-                color: catColor.withValues(alpha: 0.25),
-                width: 1.2,
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                width: 1.0,
               ),
+              boxShadow: [
+                if (!isDark)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.025),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+              ],
             ),
-            color: catColor.withValues(alpha: 0.05),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => context.push('/categories/${cat.id}', extra: cat),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: catColor.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => context.push('/categories/${cat.id}', extra: cat),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: catColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: buildCategoryIcon(
+                          cat.icon,
+                          size: 17,
+                          color: catColor,
+                        ),
                       ),
-                      child: buildCategoryIcon(
-                        cat.icon,
-                        size: 22,
-                        color: catColor,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          cat.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                            color: isDark
+                                ? AmazonColors.darkTextPrimary
+                                : AmazonColors.textPrimary,
+                            height: 1.15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        cat.name,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13.5,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      Icon(
+                        Icons.chevron_right,
+                        size: 15,
+                        color: isDark
+                            ? AmazonColors.darkTextSecondary.withValues(alpha: 0.6)
+                            : AmazonColors.textSecondary.withValues(alpha: 0.6),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -128,3 +146,4 @@ class CategoryGrid extends StatelessWidget {
     );
   }
 }
+

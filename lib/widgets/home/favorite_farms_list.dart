@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -143,7 +143,7 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('GreÅ¡ka pri uÄitavanju.',
+                  Text('Greška pri učitavanju.',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -151,7 +151,7 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
                       textAlign: TextAlign.center),
                   TextButton(
                       onPressed: _refreshForCurrentUser,
-                      child: const Text('PokuÅ¡aj ponovo')),
+                      child: const Text('Pokušaj ponovo')),
                 ],
               ),
             ),
@@ -171,12 +171,12 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
                   Icon(Icons.people_outline,
                       size: 40, color: Colors.grey.shade400),
                   const SizedBox(height: 8),
-                  Text('JoÅ¡ ne pratite nijedno gazdinstvo.',
+                  Text('Još ne pratite nijedno gazdinstvo.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall),
                   TextButton(
                       onPressed: () => context.push('/search'),
-                      child: const Text('PretraÅ¾i proizvode')),
+                      child: const Text('Pretraži proizvode')),
                 ],
               ),
             ),
