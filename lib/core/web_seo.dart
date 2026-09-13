@@ -1,4 +1,5 @@
 import '../models/classified_ad_model.dart';
+import '../models/classified_category_model.dart';
 import '../models/product_model.dart';
 import 'web_seo_stub.dart' if (dart.library.html) 'web_seo_web.dart' as impl;
 
@@ -107,7 +108,15 @@ void setClassifiedAdSeo(ClassifiedAdModel ad) {
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
       'url': '$publicBaseUrl/classifieds/ad/${ad.id}',
+      'itemCondition': ad.condition == 'new'
+          ? 'https://schema.org/NewCondition'
+          : 'https://schema.org/UsedCondition',
     },
+    if (ad.sellerName != null)
+      'seller': {
+        '@type': 'Person',
+        'name': ad.sellerName,
+      },
   };
 
   setPageMetadata(
@@ -115,9 +124,32 @@ void setClassifiedAdSeo(ClassifiedAdModel ad) {
     description: metaDesc,
     path: '/classifieds/ad/${ad.id}',
     imageUrl: mainImage,
-    type: 'article',
+    type: 'product',
     keywords:
-        '${ad.title}, ${ad.categoryName ?? "oglasi"}, ${ad.city}, mali oglasi, kupovina, prodaja, poljoprivreda oglasi',
+        '${ad.title}, ${ad.categoryName ?? "mali oglasi"}, ${ad.city}, oglasi srbija, besplatni oglasi, prodaja, kupovina',
+    jsonLd: jsonLd,
+  );
+}
+
+/// SEO za pojedinačnu kategoriju Malih Oglasa
+void setClassifiedCategorySeo(ClassifiedCategoryModel category) {
+  final desc =
+      'Pregledajte i besplatno oglasite proizvode u kategoriji ${category.name} na Domaćem Marketu. 0 dinara provizije, besplatno obnavljanje i direktan kontakt.';
+
+  final jsonLd = <String, dynamic>{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    'name': '${category.name} — Mali Oglasi',
+    'description': desc,
+    'url': '$publicBaseUrl/classifieds?category=${category.id}',
+  };
+
+  setPageMetadata(
+    title: '${category.name} | Mali Oglasi | Domaći Market',
+    description: desc,
+    path: '/classifieds?category=${category.id}',
+    keywords:
+        '${category.name}, mali oglasi, besplatni oglasi srbija, oglasi bez provizije, kupovina, prodaja',
     jsonLd: jsonLd,
   );
 }
@@ -240,22 +272,22 @@ void applyRouteSeo(String path) {
   // 2. Javne statičke rute
   if (path == '/') {
     setPageMetadata(
-      title: 'Domaći Market | Kupujte domaće proizvode direktno sa sela',
+      title: 'Domaći Market | Pijaca domaće hrane & Besplatni Mali Oglasi u Srbiji',
       description:
-          'Domaći Market spaja kupce i proverene proizvođače domaće hrane iz cele Srbije. Naručite domaće mleko, sireve, med, meso, zimnicu, voće i povrće.',
+          'Domaći Market spaja ponudu proverene domaće hrane sa sela i 100% besplatne male oglase u Srbiji. Kupujte i oglasite bez provizije: domaći sir, meso, med, traktore, poljoprivredne mašine, automobile, tehniku i nekretnine.',
       path: '/',
       keywords:
-          'domaći market, domaći proizvodi, selo, organska hrana, domaće mleko, sir, med, meso, zimnica, poljoprivredna gazdinstva srbija',
+          'domaći market, mali oglasi, besplatni mali oglasi, oglasi srbija, poljoprivredni oglasi, traktori, automobili, alati, tehnika, nekretnine, domaća hrana, seoska gazdinstva',
     );
   } else if (path == '/classifieds') {
     setPageMetadata(
       title:
-          'Mali Oglasi | Poljoprivreda, Životinje, Mašine i Selo | Domaći Market',
+          'Mali Oglasi | Besplatno postavljanje i obnavljanje oglasa | Domaći Market',
       description:
-          'Besplatni mali oglasi za selo i poljoprivredu u Srbiji. Pronađite domaće životinje, poljoprivrednu mehanizaciju, sadnice, hranu i usluge.',
+          '100% besplatni mali oglasi u Srbiji bez provizije. Pronađite i besplatno oglasite poljoprivrednu mehanizaciju, traktore, automobile, alate, tehniku, nekretnine i domaće životinje.',
       path: '/classifieds',
       keywords:
-          'mali oglasi, poljoprivredni oglasi, domaće životinje, mehanizacija, traktori, sadnice, selo oglasi, srbija',
+          'mali oglasi, besplatni oglasi srbija, poljoprivredni oglasi, traktori, polovni automobili, alati, bela tehnika, nekretnine srbija, domaće životinje, oglasi bez provizije',
     );
   } else if (path == '/categories') {
     setPageMetadata(

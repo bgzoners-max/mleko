@@ -72,7 +72,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         ? SupabaseConfig.shareBaseUrl
         : (kIsWeb ? Uri.base.origin : 'https://domacimarket.rs');
     final base = rawBase.replaceAll(RegExp(r'/+$'), '');
-    final url = '$base/classifieds/ad/${ad.id}';
+    final url = '$base/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}\n$url';
     _service.recordInteraction(ad.id, 'share');
     await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));

@@ -9,10 +9,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
   <!-- Primarni SEO Meta Tagovi (Google preporuke) -->
-  <title>Domaći Market | Kupujte domaće proizvode direktno od proizvođača</title>
-  <meta name="title" content="Domaći Market | Kupujte domaće proizvode direktno od proizvođača">
-  <meta name="description" content="Domaći market povezuje kupce sa proverenim domaćim poljoprivrednim gazdinstvima i proizvođačima. Kupujte sveže domaće mleko, sir, meso, med, voće, povrće i male oglase širom Srbije.">
-  <meta name="keywords" content="domaći proizvodi, domaća hrana, seoska domaćinstva, organska hrana, domaći sir, domaće mleko, med, suhomesnato, sveže voće, domaće povrće, mali oglasi, poljoprivreda, srbija">
+  <title>Domaći Market | Pijaca domaće hrane & Besplatni Mali Oglasi u Srbiji</title>
+  <meta name="title" content="Domaći Market | Pijaca domaće hrane & Besplatni Mali Oglasi u Srbiji">
+  <meta name="description" content="Domaći Market spaja ponudu proverene domaće hrane sa sela i 100% besplatne male oglase u Srbiji. Kupujte i oglasite bez provizije: domaći sir, mleko, meso, med, traktore, poljoprivredne mašine, automobile, tehniku, alate, nekretnine i domaće životinje.">
+  <meta name="keywords" content="domaći market, mali oglasi, besplatni mali oglasi, oglasi srbija, poljoprivredni oglasi, traktori prodaja, polovni automobili srbija, auto delovi, poljoprivredne mašine, domaće životinje, alati, bela tehnika, nekretnine srbija, domaći proizvodi, domaća hrana, seoska gazdinstva, organska hrana, bez provizije, oglasnik">
   <meta name="author" content="Domaći Market">
   
   <!-- Direktive za pretraživače (Googlebot, Bingbot) -->
@@ -30,23 +30,23 @@
   <meta property="og:site_name" content="Domaći Market">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://domacimarket.rs/">
-  <meta property="og:title" content="Domaći Market | Kupujte domaće proizvode direktno od proizvođača">
-  <meta property="og:description" content="Povežite se sa proverenim seoskim gazdinstvima. Sveža domaća hrana, mlečni i suhomesnati proizvodi, med, voće, povrće i oglasnik širom Srbije.">
+  <meta property="og:title" content="Domaći Market | Pijaca domaće hrane & Besplatni Mali Oglasi u Srbiji">
+  <meta property="og:description" content="Domaći Market — Berza autentične seoske hrane i besplatni mali oglasi širom Srbije. Oglasite i pronađite sve: poljoprivredu, traktore, automobile, alate, tehniku i nekretnine bez provizije.">
   <meta property="og:image" content="https://domacimarket.rs/icons/Icon-512.png">
   <meta property="og:image:secure_url" content="https://domacimarket.rs/icons/Icon-512.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
-  <meta property="og:image:alt" content="Domaći Market — Domaća hrana i proizvodi direktno sa sela">
+  <meta property="og:image:alt" content="Domaći Market — Pijaca domaće hrane & Besplatni Mali Oglasi">
   <meta property="og:locale" content="sr_RS">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://domacimarket.rs/">
-  <meta name="twitter:title" content="Domaći Market | Kupujte domaće proizvode direktno od proizvođača">
-  <meta name="twitter:description" content="Povežite se sa proverenim seoskim gazdinstvima. Sveža domaća hrana, mlečni i suhomesnati proizvodi, med, voće, povrće i oglasnik širom Srbije.">
+  <meta name="twitter:title" content="Domaći Market | Pijaca domaće hrane & Besplatni Mali Oglasi u Srbiji">
+  <meta name="twitter:description" content="Domaći Market — Berza autentične seoske hrane i besplatni mali oglasi širom Srbije. Oglasite i pronađite sve: poljoprivredu, traktore, automobile, alate, tehniku i nekretnine bez provizije.">
   <meta name="twitter:image" content="https://domacimarket.rs/icons/Icon-512.png">
-  <meta name="twitter:image:alt" content="Domaći Market">
+  <meta name="twitter:image:alt" content="Domaći Market — Pijaca domaće hrane i Mali Oglasi">
 
   <!-- PWA & Mobile Web App podrška -->
   <meta name="theme-color" content="#1B5E20">
@@ -76,7 +76,7 @@
     "name": "Domaći Market",
     "url": "https://domacimarket.rs/",
     "logo": "https://domacimarket.rs/icons/Icon-512.png",
-    "description": "Nacionalna platforma za povezivanje kupaca i proverenih domaćih proizvođača hrane, gazdinstava i malih oglasnika u Srbiji.",
+    "description": "Nacionalna platforma za povezivanje kupaca sa seoskim gazdinstvima i 100% besplatni oglasnik za sve vrste proizvoda, mehanizacije, vozila, alata i nekretnina u Srbiji.",
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "RS"
@@ -85,7 +85,7 @@
   }
   </script>
 
-  <!-- 2. WebSite sa Sitelinks Searchbox (Google SERP pretraga) -->
+  <!-- 2. WebSite sa Sitelinks Searchbox (Google SERP pretraga za hranu i male oglase) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -97,14 +97,24 @@
       "@id": "https://domacimarket.rs/#organization"
     },
     "inLanguage": "sr-RS",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://domacimarket.rs/search?category={search_term_string}"
+    "potentialAction": [
+      {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://domacimarket.rs/search?category={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
       },
-      "query-input": "required name=search_term_string"
-    }
+      {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://domacimarket.rs/classifieds?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    ]
   }
   </script>
 
@@ -129,8 +139,92 @@
       {
         "@type": "ListItem",
         "position": 3,
-        "name": "Kategorije",
+        "name": "Pijaca hrane",
         "item": "https://domacimarket.rs/categories"
+      }
+    ]
+  }
+  </script>
+
+  <!-- 4. Katalog kategorija Malih Oglasa za Google Rich Results -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Kategorije Malih Oglasa — Domaći Market",
+    "description": "Pregledajte i besplatno oglasite proizvode, vozila, mašine i usluge u Srbiji bez provizije.",
+    "itemListElement": [
+      {
+        "@type": "SiteNavigationElement",
+        "position": 1,
+        "name": "Poljoprivreda i mehanizacija",
+        "url": "https://domacimarket.rs/classifieds?category=poljoprivreda"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 2,
+        "name": "Vozila i auto-moto",
+        "url": "https://domacimarket.rs/classifieds?category=vozila"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 3,
+        "name": "Mašine, alati i zanatstvo",
+        "url": "https://domacimarket.rs/classifieds?category=masine_alati"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 4,
+        "name": "Dom, nameštaj i bašta",
+        "url": "https://domacimarket.rs/classifieds?category=dom_basta"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 5,
+        "name": "Mobilni telefoni i oprema",
+        "url": "https://domacimarket.rs/classifieds?category=telefoni"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 6,
+        "name": "Računari i elektronika",
+        "url": "https://domacimarket.rs/classifieds?category=tehnika"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 7,
+        "name": "Nekretnine",
+        "url": "https://domacimarket.rs/classifieds?category=nekretnine"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 8,
+        "name": "Građevinarstvo i materijali",
+        "url": "https://domacimarket.rs/classifieds?category=gradjevinarstvo"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 9,
+        "name": "Odeća, obuća i aksesoari",
+        "url": "https://domacimarket.rs/classifieds?category=odeca_obuca"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 10,
+        "name": "Sport, lov, ribolov i hobi",
+        "url": "https://domacimarket.rs/classifieds?category=sport_hobi"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 11,
+        "name": "Kućni ljubimci i domaće životinje",
+        "url": "https://domacimarket.rs/classifieds?category=ljubimci"
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 12,
+        "name": "Usluge i poslovi",
+        "url": "https://domacimarket.rs/classifieds?category=usluge"
       }
     ]
   }
@@ -148,11 +242,26 @@
       color: #1A1C1E;
       background-color: #FFFFFF;
       z-index: 0;
+      line-height: 1.6;
     }
     #seo-crawler-content h1 {
       color: #1B5E20;
-      font-size: 24px;
-      margin-bottom: 12px;
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+    #seo-crawler-content h2 {
+      color: #0E4521;
+      font-size: 20px;
+      margin-top: 24px;
+      margin-bottom: 8px;
+      border-bottom: 2px solid #E8F5E9;
+      padding-bottom: 4px;
+    }
+    #seo-crawler-content h3 {
+      color: #2E7D32;
+      font-size: 16px;
+      margin-top: 14px;
+      margin-bottom: 4px;
     }
     #seo-crawler-content nav ul {
       list-style-type: none;
@@ -160,11 +269,24 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
+      margin: 16px 0;
     }
     #seo-crawler-content nav a {
       color: #1B5E20;
       text-decoration: underline;
       font-weight: 600;
+    }
+    #seo-crawler-content ul.categories-list {
+      list-style-type: disc;
+      padding-left: 20px;
+    }
+    #seo-crawler-content ul.categories-list li {
+      margin-bottom: 8px;
+    }
+    #seo-crawler-content a.category-link {
+      color: #1B5E20;
+      font-weight: 700;
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -172,16 +294,16 @@
   <!-- Semantički SEO HTML Fallback za Googlebot, pretraživače i pristupačnost -->
   <div id="seo-crawler-content" aria-label="Informacije o sajtu">
     <header>
-      <h1>Domaći Market — Domaći proizvodi i sveža hrana direktno od proizvođača</h1>
-      <p>Dobrodošli na Domaći Market! Naša platforma omogućava direktno povezivanje kupaca i seoskih poljoprivrednih gazdinstava širom Srbije bez posrednika.</p>
+      <h1>Domaći Market — Pijaca domaće hrane i Besplatni Mali Oglasi u Srbiji</h1>
+      <p>Dobrodošli na Domaći Market! Naša platforma objedinjuje dve moćne celine: direktnu berzu domaće hrane sa seoskih poljoprivrednih gazdinstava i 100% besplatne male oglase za kupovinu i prodaju mehanizacije, vozila, alata, tehnike, nekretnina i svega za život — bez posrednika i bez provizije.</p>
     </header>
 
     <nav aria-label="Glavna navigacija">
       <ul>
         <li><a href="https://domacimarket.rs/">Početna</a></li>
         <li><a href="https://domacimarket.rs/classifieds">Mali Oglasi</a></li>
-        <li><a href="https://domacimarket.rs/categories">Kategorije proizvoda</a></li>
-        <li><a href="https://domacimarket.rs/search">Pretraga ponude</a></li>
+        <li><a href="https://domacimarket.rs/categories">Pijaca domaće hrane</a></li>
+        <li><a href="https://domacimarket.rs/search">Pretraga hrane</a></li>
         <li><a href="https://domacimarket.rs/sellers-map">Mapa gazdinstava</a></li>
         <li><a href="https://domacimarket.rs/about">O nama</a></li>
         <li><a href="https://domacimarket.rs/uslovi-koriscenja">Uslovi korišćenja</a></li>
@@ -190,14 +312,75 @@
     </nav>
 
     <main>
-      <section>
-        <h2>Šta možete pronaći na Domaćem marketu?</h2>
-        <p>Pretražite bogatu ponudu domaćeg sira, kajmaka, mleka, meda, pršute, kobasica, organskog voća, sezonskog povrća, domaće zimnice, sokova i rakije.</p>
+      <!-- CELINA 1: MALI OGLASI -->
+      <section aria-labelledby="classifieds-heading">
+        <h2 id="classifieds-heading">Besplatni Mali Oglasi u Srbiji — 0 dinara provizije</h2>
+        <p>Postavite oglas potpuno besplatno, bez skrivenih troškova i bez limita. Na Domaćem Marketu vraćanje oglasa na vrh pretrage (obnavljanje) košta tačno 0 dinara kad god poželite!</p>
+        
+        <h3>Istražite kategorije malih oglasa:</h3>
+        <ul class="categories-list">
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=poljoprivreda">Poljoprivreda i mehanizacija</a>: 
+            Traktori (IMT, IMR, Belarus, Zetor, Ursus, John Deere), kombajni, priključne mašine, plugovi, sejalice, drljače, tanjirače, sadnice voća, semena, stočna hrana, bale sena, silaža i poljoprivredna oprema.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=vozila">Vozila i auto-moto</a>: 
+            Polovni i novi automobili (Volkswagen Golf i Passat, Audi, BMW, Mercedes-Benz, Opel, Fiat, Peugeot, Renault), auto delovi, gume, felne, motocikli, skuteri, teretna vozila, kombi, traktorske i auto prikolice.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=masine_alati">Mašine, alati i zanatstvo</a>: 
+            Električni i akumulatorski alati (bušilice, brusilice, motorne testere Stihl i Husqvarna), aparati za varenje, kompresori, agregati za struju, radionički stolovi, bravarski i stolarski alati.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=dom_basta">Dom, nameštaj i bašta</a>: 
+            Bela tehnika (frižideri, šporeti, veš mašine, zamrzivači), nameštaj za kuću i dvorište, peći na drva i pelet, kotlovi za grejanje, kosilice, motokultivatori, trimeri i baštenski alati.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=telefoni">Mobilni telefoni i oprema</a>: 
+            Pametni telefoni (Apple iPhone, Samsung Galaxy, Xiaomi, Honor, Motorola), tableti, brzi punjači, maske, zaštitna stakla i dodatna mobilna oprema.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=tehnika">Računari i elektronika</a>: 
+            Laptopovi, desktop konfiguracije, monitori, televizori (Smart TV), audio sistemi, pojačala, zvučnici, sigurnosne kamere i elektronske komponente.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=nekretnine">Nekretnine</a>: 
+            Seoska gazdinstva, imanja, obradiva zemlja, njive, voćnjaci, placevi, seoske kuće, vikendice, kuće i stanovi za prodaju i izdavanje širom Srbije.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=gradjevinarstvo">Građevinarstvo i materijali</a>: 
+            Građevinski materijal, armatura, blokovi, crep, drvena građa, daske, skele, izolacija, stiropor, PVC i aluminijumska stolarija.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=odeca_obuca">Odeća, obuća i aksesoari</a>: 
+            Radna odela, lovačka i ribolovačka oprema, gumene i kožne čizme, muška, ženska i dečija garderoba i obuća.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=sport_hobi">Sport, lov, ribolov i hobi</a>: 
+            Pribor za ribolov (štapovi, mašinice, varalice), oprema za lov, bicikli (MTB, gradski, dečiji), fitnes sprave, kamp oprema i muzički instrumenti.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=ljubimci">Kućni ljubimci i domaće životinje</a>: 
+            Krave, junice, telad, ovce, jagnjad, svinje, prasad, koze, živina (kokoške, ćurke, patke), pčele i rojevi, psi, štenci i hrana za stoku i ljubimce.
+          </li>
+          <li>
+            <a class="category-link" href="https://domacimarket.rs/classifieds?category=usluge">Usluge i poslovi</a>: 
+            Poljoprivredne usluge (oranje, tanjiranje, setva, baliranje, žetva kombajnom), prevoz robe, građevinski i zanatski radovi, automehaničari i popravke.
+          </li>
+        </ul>
       </section>
 
-      <section>
-        <h2>Mali Oglasi</h2>
-        <p>Kupujte i prodajte sve i svašta: mobilni telefoni, računari, tehnika, bela tehnika, automobili, nekretnine, alati, nameštaj, odeća i oprema.</p>
+      <!-- CELINA 2: PIJACA DOMAĆE HRANE -->
+      <section aria-labelledby="food-market-heading">
+        <h2 id="food-market-heading">Pijaca domaće hrane — Direktno sa seoskih gazdinstava</h2>
+        <p>Kupujte autentične proizvode direktno od vrednih domaćina bez marži i preprodavaca:</p>
+        <ul>
+          <li><strong>Domaći sir i kajmak</strong> — punomasni kravlji, kozji i ovčiji sir, sjenički sir, zlatiborski kajmak i sveže mleko.</li>
+          <li><strong>Prirodni domaći med</strong> — bagremov, livadski, lipov i šumski med, propolis, polen i matični mleč.</li>
+          <li><strong>Domaće suvo meso i delikatesi</strong> — domaća pršuta, pečenica, slanina, kobasice, kulen i čvarci.</li>
+          <li><strong>Sezonsko voće i povrće</strong> — domaći paradajz, paprika, krompir, jabuke, šljive, maline, kupine i borovnice.</li>
+          <li><strong>Tradicionalna zimnica</strong> — domaći ajvar (blagi i ljuti), pinđur, turšija, kiseli kupus, džemovi, slatka i sokovi.</li>
+        </ul>
       </section>
     </main>
   </div>
@@ -205,7 +388,10 @@
   <noscript>
     <div style="padding: 20px; font-family: sans-serif; text-align: center;">
       <p>Za puno iskustvo korišćenja Domaćeg Marketa, molimo omogućite JavaScript u vašem veb pregledaču.</p>
-      <p><a href="https://domacimarket.rs/categories">Pogledajte kategorije proizvoda</a> | <a href="https://domacimarket.rs/classifieds">Mali Oglasi</a></p>
+      <p>
+        <a href="https://domacimarket.rs/classifieds">Besplatni Mali Oglasi</a> | 
+        <a href="https://domacimarket.rs/categories">Pijaca domaće hrane</a>
+      </p>
     </div>
   </noscript>
 
@@ -232,13 +418,12 @@
             }
           });
         }
-        if (hadSw && !sessionStorage.getItem('dm_sw_purged_v13')) {
-          sessionStorage.setItem('dm_sw_purged_v13', '1');
+        if (hadSw && !sessionStorage.getItem('dm_sw_purged_v14')) {
+          sessionStorage.setItem('dm_sw_purged_v14', '1');
           window.location.reload();
         }
       });
     }
-
   </script>
   <script src="flutter_bootstrap.js" defer></script>
 </body>

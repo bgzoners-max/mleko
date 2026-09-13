@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- Početna stranica Domaći Market -->
+  <!-- Početna stranica Domaći Market (Pijaca hrane & Mali Oglasi) -->
   <url>
     <loc>https://domacimarket.rs/</loc>
     <changefreq>daily</changefreq>
@@ -12,23 +12,85 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://domacimarket.rs/"/>
   </url>
 
-  <!-- Mali Oglasi (Veliki oglasnik) -->
+  <!-- Mali Oglasi (Glavni oglasnik) -->
   <url>
     <loc>https://domacimarket.rs/classifieds</loc>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>0.95</priority>
     <xhtml:link rel="alternate" hreflang="sr" href="https://domacimarket.rs/classifieds"/>
   </url>
 
-  <!-- Sve kategorije proizvoda -->
+  <!-- Kategorije Malih Oglasa za Google indeksiranje -->
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=poljoprivreda</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=vozila</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=masine_alati</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=dom_basta</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=telefoni</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=tehnika</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=nekretnine</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=gradjevinarstvo</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=odeca_obuca</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=sport_hobi</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=ljubimci</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://domacimarket.rs/classifieds?category=usluge</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Pijaca hrane: Sve kategorije proizvoda -->
   <url>
     <loc>https://domacimarket.rs/categories</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.85</priority>
     <xhtml:link rel="alternate" hreflang="sr" href="https://domacimarket.rs/categories"/>
   </url>
 
-  <!-- Pretraga ponude -->
+  <!-- Pretraga ponude hrane -->
   <url>
     <loc>https://domacimarket.rs/search</loc>
     <changefreq>daily</changefreq>

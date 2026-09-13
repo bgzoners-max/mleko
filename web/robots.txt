@@ -7,6 +7,7 @@ User-agent: *
 Allow: /
 Allow: /classifieds
 Allow: /classifieds/ad/*
+Allow: /ad/*
 Allow: /categories
 Allow: /categories/*
 Allow: /product/*

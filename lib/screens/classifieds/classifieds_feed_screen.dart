@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/serbian_districts.dart';
 import '../../core/responsive.dart';
+import '../../core/web_seo.dart';
 import '../../models/category_attribute_model.dart';
 import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
@@ -22,11 +23,13 @@ import '../../widgets/classifieds/classified_subscription_chip.dart';
 class ClassifiedsFeedScreen extends StatefulWidget {
   final Widget? headerWidget;
   final bool isEmbedded;
+  final String? initialCategoryId;
 
   const ClassifiedsFeedScreen({
     super.key,
     this.headerWidget,
     this.isEmbedded = false,
+    this.initialCategoryId,
   });
 
   @override
@@ -38,15 +41,30 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
   final _scrollController = ScrollController();
   final _categoryChipsScrollController = ScrollController();
   Timer? _debounceTimer;
+  String? _lastSeoCategoryId;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final p = context.read<ClassifiedsProvider>();
-      p.loadCategories();
-      p.loadInitialAds();
+      await p.loadCategories();
+      if (!mounted) return;
+      if (widget.initialCategoryId != null &&
+          widget.initialCategoryId!.isNotEmpty) {
+        p.selectCategory(widget.initialCategoryId);
+        final cat = p.findCategory(widget.initialCategoryId!);
+        if (cat != null) {
+          setClassifiedCategorySeo(cat);
+          _lastSeoCategoryId = cat.id;
+        }
+      } else {
+        if (!widget.isEmbedded) {
+          applyRouteSeo('/classifieds');
+        }
+        p.loadInitialAds();
+      }
     });
   }
 
@@ -651,6 +669,24 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     final colorScheme = theme.colorScheme;
     final classifieds = context.watch<ClassifiedsProvider>();
     final user = context.watch<AppState>().user;
+
+    if (!widget.isEmbedded) {
+      final currentCatId = classifieds.selectedCategoryId;
+      if (currentCatId != _lastSeoCategoryId) {
+        _lastSeoCategoryId = currentCatId;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (currentCatId != null) {
+            final cat = classifieds.findCategory(currentCatId);
+            if (cat != null) {
+              setClassifiedCategorySeo(cat);
+            }
+          } else {
+            applyRouteSeo('/classifieds');
+          }
+        });
+      }
+    }
 
     final crossAxisCount = Breakpoints.productGridColumns(context);
     final isDesktop = Breakpoints.isDesktop(context);
