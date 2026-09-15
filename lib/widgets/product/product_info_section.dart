@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 import '../../models/product_model.dart';
@@ -52,6 +53,7 @@ class ProductInfoSection extends StatelessWidget {
       desktop: 26,
     );
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: EdgeInsets.all(infoPadding),
       child: Column(
@@ -65,16 +67,18 @@ class ProductInfoSection extends StatelessWidget {
             )?.copyWith(
               fontSize: titleSize,
               height: isLargeTablet ? 1.15 : 1.2,
+              color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             product.priceFormatted,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: priceSize,
-                  fontWeight: FontWeight.w700,
-                ),
+            style: TextStyle(
+              color: isDark ? const Color(0xFFFF6B6B) : AmazonColors.dealRed,
+              fontSize: priceSize,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
+            ),
           ),
           const SizedBox(height: 8),
           RatingSummaryBadge(
@@ -116,25 +120,19 @@ class ProductInfoSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .primaryContainer
-                  .withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(12),
+              color: isDark ? AmazonColors.darkCard : const Color(0xFFF7F8F8),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.18),
+                color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
               ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
+                const Icon(
                   Icons.support_agent_outlined,
                   size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: AmazonColors.link,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -173,19 +171,19 @@ class ProductInfoSection extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: () => context.push('/seller/${product.sellerId}'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     child: Row(
                       children: [
                         Icon(Icons.store,
                             size: 20,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 8),
+                            color: AmazonColors.link),
+                        SizedBox(width: 8),
                         Text(
                           'Pogledaj prodajni profil',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                            color: AmazonColors.link,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -225,19 +223,19 @@ class ProductInfoSection extends StatelessWidget {
                         }
                       }
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
                       child: Row(
                         children: [
                           Icon(Icons.chat_outlined,
                               size: 20,
-                              color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
+                              color: AmazonColors.link),
+                          SizedBox(width: 8),
                           Text(
                             'Pošalji poruku prodavcu',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w500,
+                              color: AmazonColors.link,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],

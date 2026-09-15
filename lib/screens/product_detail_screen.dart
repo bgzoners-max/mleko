@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../constants/amazon_theme.dart';
 import '../core/haptic.dart';
 import '../core/profile_display_names.dart';
 import '../core/responsive.dart';
@@ -276,9 +277,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ? (Breakpoints.isDesktop(context) ? 980.0 : 920.0)
         : Breakpoints.maxContentWidth(context);
     _setProductMetadata(null);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: AmazonColors.getCanvas(context),
       appBar: AppBar(
-        title: const Text('Proizvod'),
+        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(
+          bottom: BorderSide(
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+            width: 1.0,
+          ),
+        ),
+        title: Text(
+          'Proizvod',
+          style: TextStyle(
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: IconThemeData(
+          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        ),
         actions: [
           FutureBuilder<ProductModel?>(
             future: _productFuture,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../models/user_model.dart';
 import '../../services/services.dart';
 
@@ -49,19 +50,20 @@ class _ProductSellerBannerState extends State<ProductSellerBanner> {
                 borderRadius: BorderRadius.circular(4),
                 child: Row(
                   children: [
-                    Icon(Icons.store_outlined,
-                        size: 16, color: Theme.of(context).colorScheme.primary),
+                    const Icon(Icons.store_outlined,
+                        size: 16, color: AmazonColors.link),
                     const SizedBox(width: 6),
                     Text(
                       name,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: const TextStyle(
+                        color: AmazonColors.link,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    Icon(Icons.chevron_right,
-                        size: 16, color: Theme.of(context).colorScheme.primary),
+                    const Icon(Icons.chevron_right,
+                        size: 16, color: AmazonColors.link),
                   ],
                 ),
               ),

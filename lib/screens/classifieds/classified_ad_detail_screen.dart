@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../core/design_system.dart';
 import '../../core/haptic.dart';
 import '../../core/web_seo.dart';
@@ -208,14 +209,56 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Oglas...')),
+            backgroundColor: AmazonColors.getCanvas(context),
+            appBar: AppBar(
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+              elevation: 0,
+              scrolledUnderElevation: 1,
+              surfaceTintColor: Colors.transparent,
+              shape: Border(
+                bottom: BorderSide(
+                  color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                  width: 1.0,
+                ),
+              ),
+              title: Text(
+                'Oglas...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                ),
+              ),
+            ),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
 
         if (snap.hasError || snap.data == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Oglas')),
+            backgroundColor: AmazonColors.getCanvas(context),
+            appBar: AppBar(
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+              elevation: 0,
+              scrolledUnderElevation: 1,
+              surfaceTintColor: Colors.transparent,
+              shape: Border(
+                bottom: BorderSide(
+                  color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                  width: 1.0,
+                ),
+              ),
+              title: Text(
+                'Oglas',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                ),
+              ),
+            ),
             body: AppErrorRetry(
               message: 'Oglas nije pronađen',
               detail: 'Oglas je možda obrisan, istekao ili link nije ispravan.',
@@ -234,12 +277,31 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         final isWide = MediaQuery.sizeOf(context).width >= 900;
 
         return Scaffold(
+          backgroundColor: AmazonColors.getCanvas(context),
           appBar: AppBar(
+            backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+            foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+            elevation: 0,
+            scrolledUnderElevation: 1,
+            surfaceTintColor: Colors.transparent,
+            shape: Border(
+              bottom: BorderSide(
+                color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                width: 1.0,
+              ),
+            ),
             title: Text(
               ad.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+              ),
+            ),
+            iconTheme: IconThemeData(
+              color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             ),
             actions: [
               IconButton(
@@ -273,15 +335,15 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
+                      color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
                       border: Border(
                         top: BorderSide(
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
                         ),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
+                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
                           blurRadius: 10,
                           offset: const Offset(0, -4),
                         ),
@@ -418,10 +480,10 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
           Icon(Icons.chevron_right, size: 14, color: colorScheme.onSurfaceVariant),
           Text(
             ad.categoryName!,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: colorScheme.primary,
+              color: AmazonColors.link,
             ),
           ),
         ],
@@ -601,16 +663,16 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(AppDesign.spaceL),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -627,29 +689,27 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
-                    ),
-                    borderRadius: BorderRadius.circular(6),
+                    color: AmazonColors.amber,
+                    borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.amber.withValues(alpha: 0.35),
-                        blurRadius: 4,
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 3,
                       ),
                     ],
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_rounded, size: 13, color: Colors.white),
+                      Icon(Icons.star_rounded, size: 13, color: AmazonColors.textPrimary),
                       SizedBox(width: 4),
                       Text(
                         'ISTAKNUT OGLAS',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.5,
+                          color: AmazonColors.textPrimary,
+                          fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -660,14 +720,12 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFDC2626), Color(0xFFEA580C)],
-                    ),
-                    borderRadius: BorderRadius.circular(6),
+                    color: AmazonColors.badgeRed,
+                    borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withValues(alpha: 0.35),
-                        blurRadius: 4,
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 3,
                       ),
                     ],
                   ),
@@ -680,9 +738,9 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                         'HITNA PRODAJA',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 0.6,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -694,9 +752,9 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: ad.condition == 'new'
-                        ? const Color(0xFF059669)
-                        : Colors.blueGrey.shade800,
-                    borderRadius: BorderRadius.circular(6),
+                        ? AmazonColors.green
+                        : AmazonColors.navNavy.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -709,7 +767,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                         ad.conditionLabel.toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
                         ),
@@ -753,7 +811,10 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
               ),
               Text(
                 ad.timeAgo,
-                style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -765,20 +826,21 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               height: 1.25,
+              color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
 
-          // Istaknuti blok cene (Amazon Style Price Box)
+          // Istaknuti blok cene (Amazon Style Deal Price Box)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: isDark
-                  ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
-                  : colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
+                  ? AmazonColors.darkCanvas
+                  : const Color(0xFFF7F8F8),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
               ),
             ),
             child: Row(
@@ -787,17 +849,18 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   ad.priceFormatted,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : colorScheme.primary,
+                    color: isDark ? const Color(0xFFFF6B6B) : AmazonColors.dealRed,
                     letterSpacing: -0.5,
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.location_on_outlined, size: 16, color: colorScheme.primary),
+                const Icon(Icons.location_on_outlined, size: 16, color: AmazonColors.link),
                 const SizedBox(width: 4),
                 Text(
                   ad.city,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                   ),
                 ),
               ],
@@ -820,6 +883,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     bool hasPhone,
     ColorScheme colorScheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isOwner) {
       return Row(
         children: [
@@ -905,12 +969,24 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                 AppHaptics.medium();
                 _makePhoneCall(ad.phone!, adId: ad.id);
               },
-              icon: const Icon(Icons.phone_outlined),
-              label: const Text('Pozovi prodavca'),
+              icon: Icon(Icons.phone_outlined,
+                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
+              label: Text(
+                'Pozovi prodavca',
+                style: TextStyle(
+                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               style: OutlinedButton.styleFrom(
+                backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                side: BorderSide(
+                  color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                  width: 1.2,
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
@@ -919,17 +995,27 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         ],
         Expanded(
           flex: hasPhone ? 1 : 2,
-          child: FilledButton.icon(
+          child: ElevatedButton.icon(
             onPressed: () {
               AppHaptics.medium();
               _openChat(ad);
             },
-            icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text('Pošalji poruku'),
-            style: FilledButton.styleFrom(
+            icon: const Icon(Icons.chat_bubble_outline, color: AmazonColors.darkNavy),
+            label: const Text(
+              'Pošalji poruku',
+              style: TextStyle(
+                color: AmazonColors.darkNavy,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AmazonColors.amberLight,
+              foregroundColor: AmazonColors.darkNavy,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: AmazonColors.amberDark, width: 0.9),
               ),
             ),
           ),
@@ -943,13 +1029,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppDesign.spaceL),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
         ),
       ),
       child: Column(
@@ -1014,7 +1101,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 16, color: colorScheme.primary),
+          Icon(icon, size: 16, color: AmazonColors.link),
           const SizedBox(width: 8),
         ],
         Text(
@@ -1041,13 +1128,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppDesign.spaceL),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
         ),
       ),
       child: Column(
@@ -1080,13 +1168,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppDesign.spaceL),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
         ),
       ),
       child: Column(
@@ -1160,11 +1249,11 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       padding: const EdgeInsets.all(AppDesign.spaceM),
       decoration: BoxDecoration(
         color: isDark
-            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
-            : colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+            ? AmazonColors.darkCard
+            : const Color(0xFFF7F8F8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
         ),
       ),
       child: Row(

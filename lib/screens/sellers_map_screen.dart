@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/map_tiles.dart';
+import '../core/responsive.dart';
 
 /// Mapa prodavaca – prikazuje prodavce na mapi sa interaktivnim profilima i geolokacijom.
 class SellersMapScreen extends StatefulWidget {
@@ -123,96 +124,101 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Row(
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: Breakpoints.compactModalMaxWidth),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
-                      backgroundImage: imageUrl != null && imageUrl.isNotEmpty
-                          ? CachedNetworkImageProvider(imageUrl)
-                          : null,
-                      child: imageUrl == null || imageUrl.isEmpty
-                          ? Icon(Icons.storefront,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 28)
-                          : null,
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            farmName,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (locationText.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(Icons.location_on_outlined,
-                                    size: 16, color: Colors.grey.shade600),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    locationText,
-                                    style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 13),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
+                          backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                              ? CachedNetworkImageProvider(imageUrl)
+                              : null,
+                          child: imageUrl == null || imageUrl.isEmpty
+                              ? Icon(Icons.storefront,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 28)
+                              : null,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                farmName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (locationText.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on_outlined,
+                                        size: 16, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        locationText,
+                                        style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 13),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ),
-                          ],
-                        ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push('/seller/${seller['id']}');
+                        },
+                        icon: const Icon(Icons.store),
+                        label: const Text('Pogledaj profil i ponudu'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.push('/seller/${seller['id']}');
-                    },
-                    icon: const Icon(Icons.store),
-                    label: const Text('Pogledaj profil i ponudu'),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );

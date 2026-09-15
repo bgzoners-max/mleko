@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../constants/amazon_theme.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
 import 'app_network_image.dart';
@@ -37,10 +38,19 @@ class ProductGridTile extends StatelessWidget {
         final ratingHeight = hasRating ? 24.0 : 0.0;
         final imageHeight = (availableHeight - contentHeight - ratingHeight)
             .clamp(120.0, 220.0);
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final cardBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
+        final borderColor = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
         final addToOrderLabel = isNarrowCard ? 'Dodaj' : 'Dodaj u porudžbinu';
 
         return Card(
           clipBehavior: Clip.antiAlias,
+          color: cardBg,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: borderColor),
+          ),
           child: InkWell(
             onTap: () =>
                 withHaptic(() => context.push('/product/${product.id}')),
@@ -122,15 +132,15 @@ class ProductGridTile extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.star,
-                          size: 14,
-                          color: Colors.amber,
+                          size: 13,
+                          color: Color(0xFFFFA41C),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           avgRating!.toStringAsFixed(1),
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
@@ -155,44 +165,60 @@ class ProductGridTile extends StatelessWidget {
                       children: [
                         Text(
                           product.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AmazonColors.darkTextPrimary
+                                : AmazonColors.textPrimary,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           product.priceFormatted,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color: isDark
+                                ? const Color(0xFFFF6B6B)
+                                : AmazonColors.dealRed,
+                            letterSpacing: -0.3,
+                          ),
                         ),
                         if (onAddToOrder != null) ...[
                           const Spacer(),
-                          FilledButton.tonal(
+                          ElevatedButton(
                             onPressed: onAddToOrder != null
                                 ? () => withHaptic(onAddToOrder!)
                                 : null,
-                            style: FilledButton.styleFrom(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AmazonColors.amberLight,
+                              foregroundColor: AmazonColors.darkNavy,
+                              elevation: 0,
                               padding: const EdgeInsets.symmetric(
                                 vertical: 4,
                                 horizontal: 8,
                               ),
-                              minimumSize: const Size.fromHeight(30),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                side: const BorderSide(
+                                  color: AmazonColors.amberDark,
+                                  width: 0.8,
+                                ),
+                              ),
+                              minimumSize: const Size.fromHeight(28),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               visualDensity: VisualDensity.compact,
-                              textStyle: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                             child: Text(
                               addToOrderLabel,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: AmazonColors.darkNavy,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,

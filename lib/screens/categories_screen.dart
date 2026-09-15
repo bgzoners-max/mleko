@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../constants/amazon_theme.dart';
 import '../core/responsive.dart';
 import '../providers/categories_provider.dart';
 import '../widgets/app_empty_state.dart';
@@ -25,8 +26,32 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      appBar: AppBar(title: const Text('Kategorije')),
+      backgroundColor: AmazonColors.getCanvas(context),
+      appBar: AppBar(
+        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(
+          bottom: BorderSide(
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+            width: 1.0,
+          ),
+        ),
+        title: Text(
+          'Kategorije',
+          style: TextStyle(
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: IconThemeData(
+          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        ),
+      ),
       body: _buildBody(),
     );
   }
@@ -55,6 +80,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final padding = Breakpoints.horizontalPadding(context);
     final isDesktop = Breakpoints.isDesktop(context);
     final isWideDesktop = Breakpoints.isWideDesktop(context);
@@ -104,10 +130,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         const SizedBox(width: 8),
                         Text(
                           section.label,
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                          ),
                         ),
                       ],
                     ),
@@ -121,6 +148,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         final cat = section.categories[index];
                         return Card(
                           clipBehavior: Clip.antiAlias,
+                          elevation: 0,
+                          color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                              width: 1.0,
+                            ),
+                          ),
                           child: InkWell(
                             onTap: () => context.push('/categories/${cat.id}',
                                 extra: cat),
@@ -139,12 +175,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   Text(
                                     cat.name,
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13.5,
+                                      color: isDark
+                                          ? AmazonColors.darkTextPrimary
+                                          : AmazonColors.textPrimary,
+                                    ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),

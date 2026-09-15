@@ -5,11 +5,16 @@ import 'package:flutter/material.dart';
 class Breakpoints {
   Breakpoints._();
 
+  static const double compactPhone = 360;
   static const double phone = 600;
   static const double smallTablet = 768;
   static const double largeTablet = 1024;
   static const double tablet = 1200;
   static const double wideDesktop = 1440;
+
+  /// Maksimalna širina za modalne prozore i sheet-ove na tablet/desktop ekranima
+  static const double modalMaxWidth = 640;
+  static const double compactModalMaxWidth = 480;
 
   /// Vraća skaliran font-size na osnovu device-a
   /// Tablet: +2-3px boost, Desktop: +4-5px boost
@@ -35,6 +40,9 @@ class Breakpoints {
       fontSize: scaleFontSize(baseStyle.fontSize ?? 14, context),
     );
   }
+
+  static bool isCompactPhone(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < compactPhone;
 
   static bool isPhone(BuildContext context) =>
       MediaQuery.sizeOf(context).width < phone;

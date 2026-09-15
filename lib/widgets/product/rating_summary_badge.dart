@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/amazon_theme.dart';
 import '../../core/responsive.dart';
 import '../../models/product_reviews_data.dart';
 
@@ -39,30 +40,33 @@ class RatingSummaryBadge extends StatelessWidget {
         final count = snap.data!.count;
         if (avg == null || count == 0) return const SizedBox.shrink();
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: badgePadding,
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
+              color: isDark ? AmazonColors.darkCard : const Color(0xFFFFF8E7),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade200),
+              border: Border.all(
+                color: isDark ? AmazonColors.darkBorder : const Color(0xFFFBD88B),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.star,
-                    color: Colors.amber.shade700,
+                    color: const Color(0xFFFFA41C), // Amazon gold star
                     size: isLargeTablet ? 22 : 20),
                 const SizedBox(width: 6),
                 Text(
                   avg.toStringAsFixed(1),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber.shade800,
-                        fontSize: isLargeTablet ? 19 : null,
-                      ),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                    fontSize: isLargeTablet ? 18 : 16,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(

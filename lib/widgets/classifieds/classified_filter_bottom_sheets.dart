@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/serbian_cities.dart';
 import '../../constants/serbian_districts.dart';
+import '../../core/responsive.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../utils/number_input_utils.dart';
 
@@ -37,7 +38,10 @@ void showClassifiedCityPickerSheet(BuildContext context) {
             maxChildSize: 0.95,
             expand: false,
             builder: (_, scrollCtl) {
-              return Column(
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
+                  child: Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -144,6 +148,8 @@ void showClassifiedCityPickerSheet(BuildContext context) {
                     ),
                   ),
                 ],
+                  ),
+                ),
               );
             },
           );
@@ -176,11 +182,14 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
-        child: Container(
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -341,7 +350,9 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
     },
   );
 }

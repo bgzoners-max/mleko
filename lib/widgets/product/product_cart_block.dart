@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../../core/haptic.dart';
 import '../../core/responsive.dart';
 import '../../models/product_model.dart';
@@ -94,6 +95,29 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
             : null,
         builder: (onPressed) => ElevatedButton(
           onPressed: widget.product.isAvailable ? onPressed : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.product.isAvailable
+                ? AmazonColors.amberLight
+                : Colors.grey.shade300,
+            foregroundColor: widget.product.isAvailable
+                ? AmazonColors.darkNavy
+                : Colors.grey.shade600,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
+                color: widget.product.isAvailable
+                    ? AmazonColors.amberDark
+                    : Colors.grey.shade400,
+                width: 0.9,
+              ),
+            ),
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 14.5,
+              letterSpacing: 0.2,
+            ),
+          ),
           child: Text(widget.product.isAvailable
               ? 'Dodaj u korpu'
               : 'Trenutno nedostupno'),

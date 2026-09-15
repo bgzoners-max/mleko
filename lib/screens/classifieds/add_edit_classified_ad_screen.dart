@@ -505,11 +505,16 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                   );
                 }
 
-                return Column(
-                  children: [
-                    headerWidget,
-                    Expanded(child: contentWidget),
-                  ],
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
+                    child: Column(
+                      children: [
+                        headerWidget,
+                        Expanded(child: contentWidget),
+                      ],
+                    ),
+                  ),
                 );
               },
             );
@@ -831,9 +836,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                   // Iznos cene i valuta (ako nije besplatno ili poziv)
                   if (_priceType == 'fixed' || _priceType == 'negotiable')
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          flex: 2,
+                          flex: 3,
                           child: TextFormField(
                             controller: _priceController,
                             keyboardType: TextInputType.number,
@@ -851,13 +857,23 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          flex: 1,
+                          flex: 2,
                           child: DropdownButtonFormField<String>(
+                            isExpanded: true,
                             initialValue: _currency,
-                            decoration: const InputDecoration(labelText: 'Valuta'),
+                            decoration: const InputDecoration(
+                              labelText: 'Valuta',
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            ),
                             items: const [
-                              DropdownMenuItem(value: 'RSD', child: Text('RSD (din)')),
-                              DropdownMenuItem(value: 'EUR', child: Text('EUR (€)')),
+                              DropdownMenuItem(
+                                value: 'RSD',
+                                child: Text('RSD (din)', overflow: TextOverflow.ellipsis),
+                              ),
+                              DropdownMenuItem(
+                                value: 'EUR',
+                                child: Text('EUR (€)', overflow: TextOverflow.ellipsis),
+                              ),
                             ],
                             onChanged: (v) => setState(() => _currency = v ?? 'RSD'),
                           ),

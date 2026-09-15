@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/classified_report_model.dart';
 import '../../services/classifieds/classified_reports_service.dart';
+import '../../core/responsive.dart';
 
 class ClassifiedsModerationScreen extends StatefulWidget {
   const ClassifiedsModerationScreen({
@@ -258,19 +259,27 @@ class _ClassifiedsModerationScreenState extends State<ClassifiedsModerationScree
           }).toList(),
         ),
       ),
-      body: Column(
-        children: [
-          // KPI statistike
-          _buildKpiSection(colorScheme),
-
-          // Search & Filter po razlogu
-          _buildFilterBar(colorScheme),
-
-          // Lista prijava
-          Expanded(
-            child: _buildBody(colorScheme),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Breakpoints.maxContentWidth(context),
           ),
-        ],
+          child: Column(
+            children: [
+              // KPI statistike
+              _buildKpiSection(colorScheme),
+
+              // Search & Filter po razlogu
+              _buildFilterBar(colorScheme),
+
+              // Lista prijava
+              Expanded(
+                child: _buildBody(colorScheme),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

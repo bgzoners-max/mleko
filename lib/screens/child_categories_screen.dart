@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../constants/amazon_theme.dart';
 import '../core/responsive.dart';
 import '../core/web_seo.dart';
 import '../models/category.dart';
@@ -174,15 +175,38 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: AmazonColors.getCanvas(context),
       appBar: AppBar(
-        title: Text(widget.parentCategory.name),
+        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        surfaceTintColor: Colors.transparent,
+        shape: Border(
+          bottom: BorderSide(
+            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+            width: 1.0,
+          ),
+        ),
+        title: Text(
+          widget.parentCategory.name,
+          style: TextStyle(
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: IconThemeData(
+          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        ),
       ),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_loadingCategories) {
       return const CategoryGridSkeleton();
     }
@@ -279,15 +303,15 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                             clipBehavior: Clip.antiAlias,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(8),
                               side: BorderSide(
-                                color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                                color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
                                 width: 1,
                               ),
                             ),
-                            color: colorScheme.surfaceContainerLow,
+                            color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(8),
                               onTap: () => context.go(
                                   '/search?category=${Uri.encodeComponent(cat.name)}'),
                               child: Padding(
@@ -304,13 +328,13 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                                     Expanded(
                                       child: Text(
                                         cat.name,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 15,
-                                            ),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13.5,
+                                          color: isDark
+                                              ? AmazonColors.darkTextPrimary
+                                              : AmazonColors.textPrimary,
+                                        ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),

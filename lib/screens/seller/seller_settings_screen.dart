@@ -224,13 +224,15 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
         title: const Text('Podešavanja prodavca'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           onTap: (_) => HapticFeedback.selectionClick(),
           tabs: const [
             Tab(text: 'Lokacija'),
             Tab(text: 'Lična dostava'),
             Tab(text: 'Priča'),
             Tab(text: 'Galerija'),
-            Tab(text: 'Brzi odgovori')
+            Tab(text: 'Brzi odgovori'),
           ],
         ),
       ),

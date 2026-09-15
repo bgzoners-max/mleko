@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/classified_ad_model.dart';
 import '../../models/classified_seller_stats_model.dart';
 import '../../providers/app_state.dart';
+import '../../core/responsive.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
@@ -215,12 +216,21 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () async => _load(),
-            child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 24),
-              itemCount: list.length + 1,
-              itemBuilder: (ctx, i) {
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: Breakpoints.maxContentWidth(context),
+              ),
+              child: RefreshIndicator(
+                onRefresh: () async => _load(),
+                child: ListView.builder(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Breakpoints.isTabletOrLarger(context) ? 16 : 0,
+                    vertical: 8,
+                  ),
+                  itemCount: list.length + 1,
+                  itemBuilder: (ctx, i) {
                 if (i == 0) {
                   if (_statsFuture != null) {
                     return FutureBuilder<ClassifiedSellerStatsModel>(
@@ -490,6 +500,8 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
               ),
             );
           },
+                ),
+              ),
             ),
           );
         },

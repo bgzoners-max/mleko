@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'design_system.dart';
+import 'responsive.dart';
 
 const double _minTouchTarget = 48.0;
 const double _minTouchTargetCompact = 40.0;
@@ -212,6 +213,16 @@ ThemeData _buildBaseTheme({required bool compact}) {
       ),
       contentPadding:
           EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      modalElevation: 4,
+      showDragHandle: true,
+      constraints: BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppDesign.radiusXL)),
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 0,
@@ -445,6 +456,16 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       filled: true,
       contentPadding:
           EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Color(0xFF1E2632),
+      surfaceTintColor: Colors.transparent,
+      modalElevation: 4,
+      showDragHandle: true,
+      constraints: BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppDesign.radiusXL)),
+      ),
     ),
     cardTheme: CardThemeData(
       elevation: 2,
