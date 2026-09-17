@@ -768,7 +768,40 @@ class ChatService {
 
   Future<void> deleteMessage(String messageId) async {
     try {
-      await _client.from('messages').delete().eq('id', messageId);
+      // Security: Proveri da je trenutni korisnik pošiljalac poruke pre brisanja
+      final currentUserId = _client.auth.currentUser?.id;
+      if (currentUserId == null) {
+        throw AppError(
+          message: 'Unauthorized: no authenticated user',
+          userMessage: 'Morate biti prijavljeni da biste obrisali poruku.',
+          type: ErrorType.unauthorized,
+        );
+      }
+      
+      final message = await _client
+          .from('messages')
+          .select('sender_id')
+          .eq('id', messageId)
+          .maybeSingle();
+      
+      if (message == null) {
+        throw AppError(
+          message: 'Message not found: $messageId',
+          userMessage: 'Poruka nije pronađena.',
+          type: ErrorType.notFound,
+        );
+      }
+      
+      final senderId = message['sender_id'] as String?;
+      if (senderId != currentUserId) {
+        throw AppError(
+          message: 'Unauthorized: only sender can delete their message',
+          userMessage: 'Možete obrisati samo svoje poruke.',
+          type: ErrorType.forbidden,
+        );
+      }
+      
+      await _client.from('messages').delete().eq('id', messageId).eq('sender_id', currentUserId);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -779,6 +812,32 @@ class ChatService {
     String currentUserId,
   ) async {
     try {
+      // Security: Proveri da je korisnik član konverzacije pre označavanja kao pročitano
+      final conversation = await _client
+          .from('conversations')
+          .select('buyer_id, seller_id')
+          .eq('id', conversationId)
+          .maybeSingle();
+      
+      if (conversation == null) {
+        throw AppError(
+          message: 'Conversation not found',
+          userMessage: 'Razgovor nije pronađen.',
+          type: ErrorType.notFound,
+        );
+      }
+      
+      final buyerId = conversation['buyer_id'] as String?;
+      final sellerId = conversation['seller_id'] as String?;
+      
+      if (currentUserId != buyerId && currentUserId != sellerId) {
+        throw AppError(
+          message: 'Unauthorized: user is not a member of this conversation',
+          userMessage: 'Nemate pristup ovom razgovoru.',
+          type: ErrorType.forbidden,
+        );
+      }
+      
       await _client
           .from('messages')
           .update({'read_at': DateTime.now().toIso8601String()})

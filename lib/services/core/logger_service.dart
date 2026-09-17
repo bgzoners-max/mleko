@@ -22,6 +22,7 @@ class LogEntry {
 class LoggerService {
   static const _prefix = '[MLEKO]';
   static const _maxLoggedEntries = 500;
+  static bool enableConsoleLogging = true;
 
   // Instanciran sa singleton paternom
   static final _instance = LoggerService._();
@@ -46,7 +47,7 @@ class LoggerService {
   /// Log info poruke
   static void info(String message, {Map<String, dynamic>? extra}) {
     _addEntry('INFO', message);
-    if (kDebugMode) {
+    if (kDebugMode && enableConsoleLogging) {
       final extraStr = extra != null ? ' | Extra: $extra' : '';
       debugPrint('$_prefix [INFO] $message$extraStr');
     }
@@ -55,7 +56,7 @@ class LoggerService {
   /// Log debug poruke
   static void debug(String message, {Map<String, dynamic>? extra}) {
     _addEntry('DEBUG', message);
-    if (kDebugMode) {
+    if (kDebugMode && enableConsoleLogging) {
       final extraStr = extra != null ? ' | Extra: $extra' : '';
       debugPrint('$_prefix [DEBUG] $message$extraStr');
     }
@@ -64,8 +65,10 @@ class LoggerService {
   /// Log warning poruke
   static void warning(String message, {Map<String, dynamic>? extra}) {
     _addEntry('WARNING', message);
-    final extraStr = extra != null ? ' | Extra: $extra' : '';
-    debugPrint('$_prefix [WARNING] $message$extraStr');
+    if (enableConsoleLogging) {
+      final extraStr = extra != null ? ' | Extra: $extra' : '';
+      debugPrint('$_prefix [WARNING] $message$extraStr');
+    }
   }
 
   /// Log greške sa stack trace
@@ -78,7 +81,7 @@ class LoggerService {
     _addEntry('ERROR', message, details: exception.toString());
     final extraStr = extra != null ? ' | Extra: $extra' : '';
 
-    if (kDebugMode) {
+    if (kDebugMode && enableConsoleLogging) {
       debugPrint('$_prefix [ERROR] $message$extraStr');
       debugPrint('$_prefix Exception: $exception');
       if (stackTrace != null) {
@@ -97,7 +100,7 @@ class LoggerService {
   /// Log AppError sa svim detaljima
   static void logAppError(AppError error) {
     final message = 'Type: ${error.type}, Code: ${error.code ?? "N/A"}';
-    if (kDebugMode) {
+    if (kDebugMode && enableConsoleLogging) {
       debugPrint('$_prefix [APP_ERROR] ${error.message}');
       debugPrint('$_prefix User message: ${error.getUserMessage()}');
       debugPrint('$_prefix $message');

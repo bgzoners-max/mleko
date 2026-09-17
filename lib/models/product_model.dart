@@ -78,6 +78,9 @@ class ProductModel {
     this.reviewCount = 0,
   });
 
+  // Sentinel vrednost za copyWith da razlikuje "nije prosleđeno" od "prosleđeno null"
+  static const Object _undefined = Object();
+
   ProductModel copyWith({
     String? id,
     String? sellerId,
@@ -85,7 +88,7 @@ class ProductModel {
     String? name,
     double? pricePerKg,
     double? minOrderKg,
-    double? orderStep,
+    Object? orderStep = _undefined,
     double? availableKg,
     String? unitType,
     String? description,
@@ -98,7 +101,7 @@ class ProductModel {
     List<String>? selectedDeliveryPointIds,
     DateTime? createdAt,
     bool? sellerIsVerified,
-    double? avgRating,
+    Object? avgRating = _undefined,
     int? reviewCount,
   }) {
     return ProductModel(
@@ -108,7 +111,7 @@ class ProductModel {
       name: name ?? this.name,
       pricePerKg: pricePerKg ?? this.pricePerKg,
       minOrderKg: minOrderKg ?? this.minOrderKg,
-      orderStep: orderStep ?? this.orderStep,
+      orderStep: identical(orderStep, _undefined) ? this.orderStep : orderStep as double?,
       availableKg: availableKg ?? this.availableKg,
       unitType: unitType ?? this.unitType,
       description: description ?? this.description,
@@ -122,7 +125,7 @@ class ProductModel {
           selectedDeliveryPointIds ?? this.selectedDeliveryPointIds,
       createdAt: createdAt ?? this.createdAt,
       sellerIsVerified: sellerIsVerified ?? this.sellerIsVerified,
-      avgRating: avgRating ?? this.avgRating,
+      avgRating: identical(avgRating, _undefined) ? this.avgRating : avgRating as double?,
       reviewCount: reviewCount ?? this.reviewCount,
     );
   }

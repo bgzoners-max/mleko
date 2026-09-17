@@ -20,6 +20,7 @@ type HtmlPayload = {
   previewUrl: string;
   canonicalUrl: string;
   imageUrl: string;
+  jsonLd?: Record<string, any>;
 };
 
 const FALLBACK_TITLE = "Domaće, baš kako treba! | domaćimarket.rs";
@@ -102,6 +103,7 @@ function buildHtml({
   previewUrl,
   canonicalUrl,
   imageUrl,
+  jsonLd,
 }: HtmlPayload): string {
   const escapedTitle = escapeHtml(title);
   const escapedDescription = escapeHtml(description);
@@ -110,6 +112,10 @@ function buildHtml({
   const escapedImageUrl = escapeHtml(imageUrl);
   const redirectTarget = canonicalUrl.replaceAll('"', "%22");
 
+  const jsonLdScript = jsonLd
+    ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -117,7 +123,7 @@ function buildHtml({
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapedTitle}</title>
   <meta name="description" content="${escapedDescription}">
-  <meta name="robots" content="noindex,follow">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="${escapedCanonicalUrl}">
 
   <meta property="og:type" content="product">
@@ -125,13 +131,15 @@ function buildHtml({
   <meta property="og:description" content="${escapedDescription}">
   <meta property="og:url" content="${escapedPreviewUrl}">
   <meta property="og:image" content="${escapedImageUrl}">
-  <meta property="og:site_name" content="Domaći market">
+  <meta property="og:site_name" content="Domaći Market">
   <meta property="og:locale" content="sr_RS">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escapedTitle}">
   <meta name="twitter:description" content="${escapedDescription}">
   <meta name="twitter:image" content="${escapedImageUrl}">
+
+  ${jsonLdScript}
 
   <meta http-equiv="refresh" content="0;url=${escapedCanonicalUrl}">
   <script>
@@ -213,12 +221,32 @@ export async function GET(request: Request): Promise<Response> {
     );
     const imageUrl = normalizeImageUrl(rawImageUrl ?? null, origin);
 
+    const jsonLd = product
+      ? {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.name,
+        description: product.description || description,
+        image: product.image_urls && product.image_urls.length > 0
+          ? product.image_urls
+          : [imageUrl],
+        offers: {
+          "@type": "Offer",
+          priceCurrency: "RSD",
+          price: product.price_per_kg != null ? product.price_per_kg : 0,
+          availability: "https://schema.org/InStock",
+          url: canonicalUrl,
+        },
+      }
+      : undefined;
+
     const html = buildHtml({
       title,
       description,
       previewUrl,
       canonicalUrl,
       imageUrl,
+      jsonLd,
     });
 
     return new Response(html, {

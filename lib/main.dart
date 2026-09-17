@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart' as p_provider;
-
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_providers.dart';
 import 'core/router.dart';
@@ -262,6 +262,15 @@ void main() async {
             theme: buildAppTheme(compact: settings.compactMode),
             darkTheme: buildAppDarkTheme(compact: settings.compactMode),
             themeMode: settings.themeMode,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('sr', 'RS'),
+            ],
+            locale: const Locale('sr', 'RS'),
             routerConfig: router,
             scrollBehavior: GlobalScrollBehavior(),
             builder: (context, child) {

@@ -206,18 +206,28 @@ class ClassifiedCategoryModel {
         return Icons.blender;
       case 'blinds':
         return Icons.blinds;
+      case 'brush':
+        return Icons.brush;
       case 'build':
         return Icons.build;
       case 'business':
         return Icons.business;
+      case 'business_center':
+        return Icons.business_center;
       case 'cabin':
         return Icons.cabin;
       case 'cable':
         return Icons.cable;
+      case 'camera_alt':
+        return Icons.camera_alt;
+      case 'campaign':
+        return Icons.campaign;
       case 'car_repair':
         return Icons.car_repair;
       case 'carpenter':
         return Icons.carpenter;
+      case 'celebration':
+        return Icons.celebration;
       case 'chair':
         return Icons.chair;
       case 'checkroom':
@@ -228,12 +238,18 @@ class ClassifiedCategoryModel {
         return Icons.child_friendly;
       case 'clean_hands':
         return Icons.clean_hands;
+      case 'cleaning_services':
+        return Icons.cleaning_services;
       case 'computer':
         return Icons.computer;
+      case 'coffee':
+        return Icons.coffee;
       case 'connected_tv':
         return Icons.connected_tv;
       case 'construction':
         return Icons.construction;
+      case 'content_cut':
+        return Icons.content_cut;
       case 'countertops':
         return Icons.countertops;
       case 'cruelty_free':
@@ -260,12 +276,22 @@ class ClassifiedCategoryModel {
         return Icons.door_front_door;
       case 'door_sliding':
         return Icons.door_sliding;
+      case 'downhill_skiing':
+        return Icons.downhill_skiing;
+      case 'eco':
+        return Icons.eco;
       case 'egg':
         return Icons.egg;
       case 'electric_bike':
         return Icons.electric_bike;
+      case 'electric_scooter':
+        return Icons.electric_scooter;
       case 'electrical_services':
         return Icons.electrical_services;
+      case 'extension':
+        return Icons.extension;
+      case 'face':
+        return Icons.face;
       case 'factory':
         return Icons.factory;
       case 'faucet':
@@ -348,6 +374,8 @@ class ClassifiedCategoryModel {
         return Icons.liquor;
       case 'local_dining':
         return Icons.local_dining;
+      case 'local_florist':
+        return Icons.local_florist;
       case 'local_laundry_service':
         return Icons.local_laundry_service;
       case 'local_shipping':
@@ -380,6 +408,8 @@ class ClassifiedCategoryModel {
         return Icons.outlet;
       case 'paid':
         return Icons.paid;
+      case 'palette':
+        return Icons.palette;
       case 'pedal_bike':
         return Icons.pedal_bike;
       case 'pets':
@@ -404,6 +434,8 @@ class ClassifiedCategoryModel {
         return Icons.public;
       case 'radiator':
         return Icons.hvac;
+      case 'receipt_long':
+        return Icons.receipt_long;
       case 'reorder':
         return Icons.reorder;
       case 'roofing':
@@ -450,6 +482,8 @@ class ClassifiedCategoryModel {
         return Icons.spa;
       case 'speaker':
         return Icons.speaker;
+      case 'sports_basketball':
+        return Icons.sports_basketball;
       case 'sports_esports':
       case 'videogame_asset':
         return Icons.sports_esports;
@@ -461,6 +495,8 @@ class ClassifiedCategoryModel {
         return Icons.sports_soccer;
       case 'sports_tennis':
         return Icons.sports_tennis;
+      case 'skateboarding':
+        return Icons.skateboarding;
       case 'square':
         return Icons.square;
       case 'storage':
@@ -469,8 +505,12 @@ class ClassifiedCategoryModel {
         return Icons.storefront;
       case 'straighten':
         return Icons.straighten;
+      case 'stroller':
+        return Icons.stroller;
       case 'support_agent':
         return Icons.support_agent;
+      case 'surfing':
+        return Icons.surfing;
       case 'table_restaurant':
         return Icons.table_restaurant;
       case 'tablet':
@@ -481,8 +521,14 @@ class ClassifiedCategoryModel {
         return Icons.texture;
       case 'tire_repair':
         return Icons.tire_repair;
+      case 'toys':
+        return Icons.toys;
+      case 'track_changes':
+        return Icons.track_changes;
       case 'transfer_within_a_station':
         return Icons.transfer_within_a_station;
+      case 'translate':
+        return Icons.translate;
       case 'tv':
       case 'tv_gen':
         return Icons.tv;
@@ -568,8 +614,12 @@ class ClassifiedCategoryModel {
     ClassifiedCategoryModel(id: 'nekretnine', name: 'Nekretnine', iconName: 'home_work', sortOrder: 70, isConditionApplicable: false),
     ClassifiedCategoryModel(id: 'gradjevinarstvo', name: 'Građevinarstvo', iconName: 'foundation', sortOrder: 80),
     ClassifiedCategoryModel(id: 'odeca_obuca', name: 'Odeća i obuća', iconName: 'checkroom', sortOrder: 90),
+    ClassifiedCategoryModel(id: 'deca_bebe', name: 'Sve za decu i bebe', iconName: 'child_friendly', sortOrder: 95),
     ClassifiedCategoryModel(id: 'sport_hobi', name: 'Sport i hobi', iconName: 'sports_soccer', sortOrder: 100),
     ClassifiedCategoryModel(id: 'ljubimci', name: 'Ljubimci', iconName: 'pets', sortOrder: 110, isConditionApplicable: false),
     ClassifiedCategoryModel(id: 'usluge', name: 'Usluge', iconName: 'work', sortOrder: 120, isConditionApplicable: false),
+    ClassifiedCategoryModel(id: 'zdravlje_lepota', name: 'Zdravlje i lepota', iconName: 'spa', sortOrder: 130),
+    ClassifiedCategoryModel(id: 'knjige_edukacija', name: 'Knjige i edukacija', iconName: 'menu_book', sortOrder: 140),
+    ClassifiedCategoryModel(id: 'umetnost_rukotvorine', name: 'Umetnost i rukotvorine', iconName: 'palette', sortOrder: 150),
   ];
 }

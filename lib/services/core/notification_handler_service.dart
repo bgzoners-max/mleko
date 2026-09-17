@@ -40,13 +40,17 @@ class NotificationHandlerService {
 
 
   /// Glavna metoda za obradu podataka iz notifikacije (FCM data payload).
+  /// 
+  /// Koristi `go` za glavne ekrane (zamenjuje ceo stack) i `push` za detaljne
+  /// ekrane gde korisnik želi da se vrati nazad (chat, detalji oglasa).
   void handleNotification(Map<String, dynamic> data) {
     LoggerService.debug('NotificationHandler: Handling data', extra: data);
 
     // 1. Podrška za direktno prosleđivanje rute iz Supabase/FCM-a (deep link)
     final route = data['route'] as String?;
     if (route != null && route.isNotEmpty) {
-      router.push(route);
+      // Za deep linkove koristimo go jer pretpostavljamo da je ruta kompletna
+      router.go(route);
       return;
     }
 
@@ -56,35 +60,47 @@ class NotificationHandlerService {
     final conversationId = data['conversation_id'] as String?;
 
     if (notificationTypeIsOrderRelated(type)) {
+      // Glavni ekran - koristi go
       router.go('/orders');
     } else if (type == 'support_ticket_created') {
+      // Glavni ekran - koristi go
       router.go('/admin/tickets');
     } else if (type == 'new_message') {
       if (conversationId != null) {
+        // Detaljni ekran (chat) - koristi push da bi korisnik mogao da se vrati
         router.push('/chat/$conversationId');
       } else {
+        // Glavni ekran - koristi go
         router.go('/conversations');
       }
     } else if (type == 'new_review' && uid != null) {
+      // Glavni ekran - koristi go
       router.go('/seller/$uid/reviews');
     } else if (type == 'new_buyer_review' && uid != null) {
+      // Glavni ekran - koristi go
       router.go('/buyer/$uid/reviews');
     } else if (type == 'new_review' || type == 'new_buyer_review') {
+      // Glavni ekran - koristi go
       router.go('/notifications');
     } else if (type == 'admin_reply') {
       final ticketId = data['ticket_id'] as String?;
       if (ticketId != null) {
-        router.go('/support/ticket/$ticketId');
+        // Detaljni ekran (chat tiket) - koristi push da bi korisnik mogao da se vrati
+        router.push('/support/ticket/$ticketId');
       } else {
+        // Glavni ekran - koristi go
         router.go('/support');
       }
     } else if (type == 'classified_ad_moderation') {
+      // Glavni ekran - koristi go
       router.go('/classifieds/my');
     } else if (notificationTypeIsClassifiedRelated(type)) {
       final adId = data['classified_ad_id'] as String?;
       if (adId != null && adId.isNotEmpty) {
+        // Detaljni ekran (oglas) - koristi push da bi korisnik mogao da se vrati
         router.push('/classifieds/ad/$adId');
       } else {
+        // Glavni ekran - koristi go
         router.go('/classifieds');
       }
     } else {

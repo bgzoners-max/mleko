@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -16,6 +17,11 @@ class CartProvider extends ChangeNotifier {
       _groupedCache;
   final Map<String, Future<List<({ProductModel product, double quantity})>>>
       _bySellerCache = {};
+
+  // Debouncing za _save() da spreči race conditions pri rapid-fire pozivima
+  Timer? _saveDebounceTimer;
+  static const _saveDebounceDelay = Duration(milliseconds: 100);
+  Completer<void>? _saveCompleter; // Za serialization save operacija
 
   int get count =>
       _sellerItems.values.fold(0, (sum, items) => sum + items.length);
@@ -168,14 +174,35 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> _save() async {
     await _initFuture;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await _saveDirect(prefs);
-    } catch (e) {
-      LoggerService.warning('Failed to save cart to storage',
-          extra: {'error': e.toString()});
-      // Continue anyway, this is non-critical
+    
+    // Cancel previous debounce timer
+    _saveDebounceTimer?.cancel();
+    
+    // Create a completer for this save operation
+    final completer = Completer<void>();
+    
+    // If there's already a save in progress, wait for it
+    if (_saveCompleter != null && !_saveCompleter!.isCompleted) {
+      await _saveCompleter!.future;
     }
+    
+    _saveCompleter = completer;
+    
+    // Debounce: wait a bit before actually saving
+    _saveDebounceTimer = Timer(_saveDebounceDelay, () async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await _saveDirect(prefs);
+        completer.complete();
+      } catch (e) {
+        LoggerService.warning('Failed to save cart to storage',
+            extra: {'error': e.toString()});
+        completer.complete(); // Complete even on error to unblock queue
+      }
+    });
+    
+    // Wait for the debounced save to complete
+    await completer.future;
   }
 
   void _invalidateCache([String? sellerId]) {

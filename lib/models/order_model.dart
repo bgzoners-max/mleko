@@ -217,9 +217,12 @@ class OrderModel {
     return '${sellerDeliveryWeekdayLabel(deliveryWeekday!)}, ${formatDeliveryWindow(deliveryTimeFrom!, deliveryTimeTo!)}';
   }
 
+  // Sentinel vrednost za copyWith da razlikuje "nije prosleđeno" od "prosleđeno null"
+  static const Object _undefined = Object();
+
   OrderModel copyWith({
-    String? counterpartyName,
-    bool? isReviewed,
+    Object? counterpartyName = _undefined,
+    Object? isReviewed = _undefined,
   }) {
     return OrderModel(
       id: id,
@@ -249,8 +252,12 @@ class OrderModel {
       deliveryTimeTo: deliveryTimeTo,
       deliveryFeeRsd: deliveryFeeRsd,
       totalAmount: totalAmount,
-      counterpartyName: counterpartyName ?? this.counterpartyName,
-      isReviewed: isReviewed ?? this.isReviewed,
+      counterpartyName: identical(counterpartyName, _undefined) 
+          ? this.counterpartyName 
+          : counterpartyName as String?,
+      isReviewed: identical(isReviewed, _undefined) 
+          ? this.isReviewed 
+          : isReviewed as bool?,
     );
   }
 

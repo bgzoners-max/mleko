@@ -5,11 +5,14 @@ import '../../../models/order_model.dart';
 import '../../../models/product_model.dart';
 import '../../../models/seller_delivery_models.dart';
 import '../../../models/app_error.dart';
+import '../../../utils/order_status_flow_rules.dart';
 import '../../../utils/quantity_engine.dart';
-// for formatRsdAmount if it exists there, but usually it's in a more common place
 
 mixin OrderManagementMixin {
   SupabaseClient get client;
+
+  /// Potreban za server-side validaciju; implementira OrderQueryMixin.
+  Future<OrderModel?> getOrderById(String orderId);
 
   Future<String> createSingleProductOrder({
     required String buyerId,
@@ -171,6 +174,35 @@ mixin OrderManagementMixin {
   }
 
   Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
+    // Client-side validacija tranzicije pre slanja na server
+    final existingOrder = await getOrderById(orderId);
+    if (existingOrder == null) {
+      throw AppError(
+        message: 'Order not found: $orderId',
+        userMessage: 'Porudžbina nije pronađena.',
+        type: ErrorType.notFound,
+      );
+    }
+
+    final userId = client.auth.currentUser?.id;
+    final role = OrderStatusFlowRules.actorRoleForStatusChange(
+      actorUserId: userId,
+      buyerId: existingOrder.buyerId,
+      sellerId: existingOrder.sellerId,
+    );
+
+    if (!OrderStatusFlowRules.isAllowedTransitionForRole(
+      oldStatus: existingOrder.status.dbValue,
+      newStatus: status.dbValue,
+      role: role,
+    )) {
+      throw AppError(
+        message: 'Invalid status transition: ${existingOrder.status.dbValue} -> ${status.dbValue} for role $role',
+        userMessage: 'Ova promena statusa nije dozvoljena.',
+        type: ErrorType.validation,
+      );
+    }
+
     try {
       await client
           .from('orders')
@@ -181,11 +213,43 @@ mixin OrderManagementMixin {
   }
 
   Future<void> cancelOrderBySeller(String orderId, String reason) async {
+    // Provera vlasništva pre otkazivanja
+    final existingOrder = await getOrderById(orderId);
+    if (existingOrder == null) {
+      throw AppError(
+        message: 'Order not found: $orderId',
+        userMessage: 'Porudžbina nije pronađena.',
+        type: ErrorType.notFound,
+      );
+    }
+
+    final userId = client.auth.currentUser?.id;
+    if (userId == null || userId != existingOrder.sellerId) {
+      throw AppError(
+        message: 'Unauthorized: only seller can cancel order',
+        userMessage: 'Nemate dozvolu da otkažete ovu porudžbinu.',
+        type: ErrorType.forbidden,
+      );
+    }
+
+    // Provera da li je dozvoljeno otkazivanje
+    if (!OrderStatusFlowRules.isAllowedTransitionForRole(
+      oldStatus: existingOrder.status.dbValue,
+      newStatus: OrderStatus.cancelledBySeller.dbValue,
+      role: 'seller',
+    )) {
+      throw AppError(
+        message: 'Cannot cancel order in status: ${existingOrder.status.dbValue}',
+        userMessage: 'Porudžbina se ne može otkazati u ovom statusu.',
+        type: ErrorType.validation,
+      );
+    }
+
     try {
       await client.from('orders').update({
         'status': OrderStatus.cancelledBySeller.dbValue,
         'cancellation_reason': reason.trim().isEmpty ? null : reason.trim(),
-      }).eq('id', orderId);
+      }).eq('id', orderId).eq('seller_id', userId);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

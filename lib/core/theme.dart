@@ -6,6 +6,102 @@ import 'responsive.dart';
 const double _minTouchTarget = 48.0;
 const double _minTouchTargetCompact = 40.0;
 
+/// Helper funkcija za kreiranje shared button tema
+ElevatedButtonThemeData _buildElevatedButtonTheme({
+  required Size touch,
+  required double buttonPaddingH,
+  required double buttonPaddingV,
+  required Color backgroundColor,
+  required Color foregroundColor,
+  required double borderRadius,
+  double elevation = 2,
+}) {
+  return ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      minimumSize: touch,
+      padding: EdgeInsets.symmetric(
+          horizontal: buttonPaddingH, vertical: buttonPaddingV),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
+      elevation: elevation,
+      textStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
+      ),
+    ).copyWith(
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return foregroundColor.withValues(alpha: 0.1);
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return foregroundColor.withValues(alpha: 0.05);
+        }
+        return null;
+      }),
+    ),
+  );
+}
+
+TextButtonThemeData _buildTextButtonTheme({
+  required Size touch,
+  required double buttonPaddingH,
+  required double buttonPaddingV,
+  required Color foregroundColor,
+  double borderRadius = 12,
+}) {
+  return TextButtonThemeData(
+    style: TextButton.styleFrom(
+      minimumSize: touch,
+      padding: EdgeInsets.symmetric(
+          horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
+      foregroundColor: foregroundColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
+      textStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+    ),
+  );
+}
+
+OutlinedButtonThemeData _buildOutlinedButtonTheme({
+  required Size touch,
+  required double buttonPaddingH,
+  required double buttonPaddingV,
+  required Color borderColor,
+  required Color foregroundColor,
+  double borderWidth = 1.5,
+  double borderRadius = 16,
+}) {
+  return OutlinedButtonThemeData(
+    style: OutlinedButton.styleFrom(
+      minimumSize: touch,
+      padding: EdgeInsets.symmetric(
+          horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
+      side: BorderSide(color: borderColor, width: borderWidth),
+      foregroundColor: foregroundColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
+      textStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+    ),
+  );
+}
+
+IconButtonThemeData _buildIconButtonTheme({
+  required Size touch,
+  required bool compact,
+}) {
+  return IconButtonThemeData(
+    style: IconButton.styleFrom(
+      minimumSize: touch,
+      padding: EdgeInsets.all(compact ? 4 : 8),
+    ),
+  );
+}
+
 /// Roboto – klasičan, prepoznatljiv i visoko čitljiv font za ceo sistem.
 TextTheme _buildTextTheme(TextTheme base, Brightness brightness) {
   final roboto = GoogleFonts.robotoTextTheme(base);
@@ -106,63 +202,30 @@ ThemeData _buildBaseTheme({required bool compact}) {
       indicatorColor: Colors.white,
       indicatorSize: TabBarIndicatorSize.label,
     ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF1B5E20),
-        foregroundColor: Colors.white,
-        minimumSize: touch,
-        padding: EdgeInsets.symmetric(
-            horizontal: buttonPaddingH, vertical: buttonPaddingV),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        elevation: 2,
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
-        ),
-      ).copyWith(
-        overlayColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.pressed)) {
-            return Colors.white.withValues(alpha: 0.1);
-          }
-          if (states.contains(WidgetState.hovered)) {
-            return Colors.white.withValues(alpha: 0.05);
-          }
-          return null;
-        }),
-      ),
+    elevatedButtonTheme: _buildElevatedButtonTheme(
+      touch: touch,
+      buttonPaddingH: buttonPaddingH,
+      buttonPaddingV: buttonPaddingV,
+      backgroundColor: const Color(0xFF1B5E20),
+      foregroundColor: Colors.white,
+      borderRadius: 18,
     ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        minimumSize: touch,
-        padding: EdgeInsets.symmetric(
-            horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
-        foregroundColor: const Color(0xFF1B5E20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
-      ),
+    textButtonTheme: _buildTextButtonTheme(
+      touch: touch,
+      buttonPaddingH: buttonPaddingH,
+      buttonPaddingV: buttonPaddingV,
+      foregroundColor: const Color(0xFF1B5E20),
     ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        minimumSize: touch,
-        padding: EdgeInsets.symmetric(
-            horizontal: buttonPaddingH - 4, vertical: buttonPaddingV - 4),
-        side: const BorderSide(color: Color(0xFF1B5E20), width: 1.5),
-        foregroundColor: const Color(0xFF1B5E20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
-      ),
+    outlinedButtonTheme: _buildOutlinedButtonTheme(
+      touch: touch,
+      buttonPaddingH: buttonPaddingH,
+      buttonPaddingV: buttonPaddingV,
+      borderColor: const Color(0xFF1B5E20),
+      foregroundColor: const Color(0xFF1B5E20),
     ),
-    iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(
-        minimumSize: touch,
-        padding: EdgeInsets.all(compact ? 4 : 8),
-      ),
+    iconButtonTheme: _buildIconButtonTheme(
+      touch: touch,
+      compact: compact,
     ),
     listTileTheme: ListTileThemeData(
       contentPadding:
@@ -432,24 +495,30 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       backgroundColor: Color(0xFF1A1C19),
       foregroundColor: Color(0xFFE2E3DD),
     ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF99D19C),
-        foregroundColor: const Color(0xFF003916),
-        minimumSize: touch,
-        padding: EdgeInsets.symmetric(
-            horizontal: buttonPaddingH, vertical: buttonPaddingV),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+    elevatedButtonTheme: _buildElevatedButtonTheme(
+      touch: touch,
+      buttonPaddingH: buttonPaddingH,
+      buttonPaddingV: buttonPaddingV,
+      backgroundColor: const Color(0xFF99D19C),
+      foregroundColor: const Color(0xFF003916),
+      borderRadius: 12,
     ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(minimumSize: touch),
+    textButtonTheme: _buildTextButtonTheme(
+      touch: touch,
+      buttonPaddingH: buttonPaddingH,
+      buttonPaddingV: buttonPaddingV,
+      foregroundColor: const Color(0xFF99D19C),
     ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: touch),
+    outlinedButtonTheme: _buildOutlinedButtonTheme(
+      touch: touch,
+      buttonPaddingH: buttonPaddingH,
+      buttonPaddingV: buttonPaddingV,
+      borderColor: const Color(0xFF99D19C),
+      foregroundColor: const Color(0xFF99D19C),
     ),
-    iconButtonTheme: IconButtonThemeData(
-      style: IconButton.styleFrom(minimumSize: touch),
+    iconButtonTheme: _buildIconButtonTheme(
+      touch: touch,
+      compact: compact,
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

@@ -67,20 +67,25 @@ cd mleko
 flutter pub get
 ```
 
-Kopirajte šablon promenljivih okruženja:
-```bash
-cp .env.example .env
-```
-Popunite `SUPABASE_URL` i `SUPABASE_ANON_KEY` kredencijalima iz vašeg Supabase projekta.
+Pokretanje aplikacije se primarno oslanja na `--dart-define` parametre (najbolje za CI i sveže klonove), ili opciono na `.env` fajl (za komforniji lokalni razvoj bez kucanja komandi).
 
-### 3. Pokretanje aplikacije
+**Opcija 1: Korišćenje `--dart-define` (Preporučeno za sveže klonove)**
 ```bash
-# Pokretanje u Chrome pregledaču
-flutter run -d chrome
+# Web
+flutter run -d chrome --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
 
-# Pokretanje na povezanom mobilnom uređaju ili emulatoru
-flutter run
+# Mobilni
+flutter run --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
 ```
+
+**Opcija 2: Korišćenje `.env` fajla (za lokalni razvoj)**
+1. Kopirajte šablon promenljivih okruženja:
+```bash
+cp .env.example assets/.env
+```
+2. Popunite kredencijale u `assets/.env`.
+3. U `pubspec.yaml` otkomentarišite liniju `# - assets/.env` u sekciji `assets:`.
+4. Pokrenite aplikaciju regularno: `flutter run`
 
 ---
 
@@ -99,8 +104,9 @@ npm run supabase:types
 ```
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) automatski izvršava:
-1. `flutter-checks`: Analizu i testove sa nula dozvoljenih upozorenja.
+1. `flutter-checks`: Statičku analizu (uz `--no-fatal-infos --no-fatal-warnings`) i testove sa pokrivenošću od ~26%.
 2. `db-integration-checks`: Podizanje lokalnog Supabase okruženja, primenu migracija i izvršavanje SQL integracionih provera (`supabase/tests/order_status_flow_integration.sql`).
+   > **Napomena**: Folder `supabase/migrations/` predstavlja jedini i kanonski izvor istine za strukturu baze podataka (zastareli snapshot fajlovi šeme su uklonjeni).
 
 ---
 

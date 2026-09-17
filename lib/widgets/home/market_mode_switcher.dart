@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../constants/amazon_theme.dart';
+import '../../core/haptic.dart';
 
 enum MarketMode {
   classifieds,
@@ -18,157 +18,157 @@ class MarketModeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isClassifieds = currentMode == MarketMode.classifieds;
 
-    return Container(
-      height: 42,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AmazonColors.darkCard
-            : const Color(0xFFDFE3E3),
-        borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-          width: 1.0,
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(3.5),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E2620) : const Color(0xFFEDF2ED),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E3A30) : const Color(0xFFDEE5DE),
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: _MarketSegmentPill(
+                isSelected: isClassifieds,
+                icon: Icons.campaign_rounded,
+                title: 'Mali Oglasi',
+                onTap: () => onModeChanged(MarketMode.classifieds),
+              ),
+            ),
+            Expanded(
+              child: _MarketSegmentPill(
+                isSelected: !isClassifieds,
+                icon: Icons.storefront_rounded,
+                title: 'Pijaca Hrane',
+                onTap: () => onModeChanged(MarketMode.foodMarket),
+              ),
+            ),
+          ],
         ),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tabWidth = (constraints.maxWidth - 4) / 2;
-          final isClassifieds = currentMode == MarketMode.classifieds;
+    );
+  }
+}
 
-          return Stack(
-            children: [
-              // 1. Pozadinski klizač - OBAVEZNO IgnorePointer da nikada ne blokira klikove!
-              IgnorePointer(
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOutCubic,
-                  alignment: isClassifieds
-                      ? Alignment.centerLeft
-                      : Alignment.centerRight,
-                  child: Container(
-                    width: tabWidth,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color: isClassifieds
-                          ? AmazonColors.darkNavy
-                          : (isDark ? const Color(0xFF232F3E) : Colors.white),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isClassifieds
-                            ? AmazonColors.amber.withValues(alpha: 0.35)
-                            : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
-                        width: 1,
+class _MarketSegmentPill extends StatefulWidget {
+  final bool isSelected;
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _MarketSegmentPill({
+    required this.isSelected,
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  State<_MarketSegmentPill> createState() => _MarketSegmentPillState();
+}
+
+class _MarketSegmentPillState extends State<_MarketSegmentPill> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = widget.isSelected;
+
+    final Color backgroundColor;
+    final Color textColor;
+    final Color iconColor;
+    final List<BoxShadow> shadows;
+    final Border? border;
+
+    if (isSelected) {
+      backgroundColor = isDark ? const Color(0xFF2C392E) : Colors.white;
+      textColor = isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20);
+      iconColor = isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20);
+      border = Border.all(
+        color: isDark ? const Color(0xFF3E4E40) : const Color(0xFFE2E9E2),
+        width: 0.8,
+      );
+      shadows = [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.07),
+          blurRadius: 5,
+          offset: const Offset(0, 1.5),
+        ),
+      ];
+    } else {
+      backgroundColor = _isHovered
+          ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.035))
+          : Colors.transparent;
+      textColor = _isHovered
+          ? (isDark ? Colors.white : const Color(0xFF2B3A2C))
+          : (isDark ? const Color(0xFFA0ABA0) : const Color(0xFF5F6E5F));
+      iconColor = textColor;
+      border = null;
+      shadows = const [];
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        height: 36,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          border: border,
+          boxShadow: shadows,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              AppHaptics.selection();
+              widget.onTap();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    widget.icon,
+                    size: 18,
+                    color: iconColor,
+                  ),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(
+                      widget.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                        letterSpacing: 0.15,
+                        color: textColor,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1.5),
-                        ),
-                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-
-              // 2. Interaktivna dugmad - Positioned.fill za punu visinu i širinu
-              Positioned.fill(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => onModeChanged(MarketMode.classifieds),
-                          child: Container(
-                            height: double.infinity,
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.campaign_outlined,
-                                  size: 18,
-                                  color: isClassifieds
-                                      ? AmazonColors.amber
-                                      : colorScheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Mali Oglasi',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: isClassifieds
-                                        ? FontWeight.w800
-                                        : FontWeight.w500,
-                                    letterSpacing: 0.2,
-                                    color: isClassifieds
-                                        ? Colors.white
-                                        : colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => onModeChanged(MarketMode.foodMarket),
-                          child: Container(
-                            height: double.infinity,
-                            alignment: Alignment.center,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.storefront_outlined,
-                                  size: 18,
-                                  color: !isClassifieds
-                                      ? (isDark
-                                          ? const Color(0xFF86EFAC)
-                                          : const Color(0xFF166534))
-                                      : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Pijaca Hrane',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: !isClassifieds
-                                        ? FontWeight.w800
-                                        : FontWeight.w500,
-                                    letterSpacing: 0.2,
-                                    color: !isClassifieds
-                                        ? (isDark
-                                            ? Colors.white
-                                            : AmazonColors.textPrimary)
-                                        : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ),
       ),
     );
   }

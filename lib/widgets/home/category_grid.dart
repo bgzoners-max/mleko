@@ -14,40 +14,6 @@ class CategoryGrid extends StatelessWidget {
     required this.isWide,
   });
 
-  Color _getCategoryColor(String name) {
-    final lower = name.toLowerCase();
-    if (lower.contains('mlek') || lower.contains('sir') || lower.contains('kajmak')) {
-      return const Color(0xFF0288D1); // Mlečni proizvodi - Plava
-    }
-    if (lower.contains('med') || lower.contains('pčel')) {
-      return const Color(0xFFE65100); // Med i pčelinji proizvodi - Zlatno narandžasta
-    }
-    if (lower.contains('meso') ||
-        lower.contains('suhomesnato') ||
-        lower.contains('specijalitet') ||
-        lower.contains('slanina') ||
-        lower.contains('čvarci') ||
-        lower.contains('šunka')) {
-      return const Color(0xFFB71C1C); // Suhomesnato - Bordo/Crvena
-    }
-    if (lower.contains('voće') ||
-        lower.contains('povrće') ||
-        lower.contains('bašta') ||
-        lower.contains('zelen')) {
-      return const Color(0xFF2E7D32); // Voće i povrće - Sveže zelena
-    }
-    if (lower.contains('hleb') || lower.contains('peciv') || lower.contains('brašno')) {
-      return const Color(0xFF795548); // Peciva i brašno - Topla pekar siva
-    }
-    if (lower.contains('jaj')) {
-      return const Color(0xFFF57F17); // Jaja - Žuto-zlatna
-    }
-    if (lower.contains('pić') || lower.contains('sok') || lower.contains('vino')) {
-      return const Color(0xFF6A1B9A); // Pića i sokovi - Ljubičasta
-    }
-    return const Color(0xFF1B5E20); // Podrazumevana primarna zelena
-  }
-
   @override
   Widget build(BuildContext context) {
     final isLargeTablet = Breakpoints.isLargeTablet(context);
@@ -67,7 +33,7 @@ class CategoryGrid extends StatelessWidget {
       itemCount: topCategories.length,
       itemBuilder: (context, index) {
         final cat = topCategories[index];
-        final catColor = _getCategoryColor(cat.name);
+        final catColor = getFoodCategoryColor(cat.name);
 
         return Semantics(
           button: true,

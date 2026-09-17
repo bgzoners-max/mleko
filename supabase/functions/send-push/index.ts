@@ -4,9 +4,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
 import type { Database, Json } from "../../types/database.types.ts"
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// Dozvoljeni domeni za CORS (ograniči attack surface)
+const ALLOWED_ORIGINS = [
+  "https://domacimarket.rs",
+  "https://www.domacimarket.rs",
+  "https://naseselo.app",
+  "https://www.naseselo.app",
+  "http://localhost:3000", // Za lokalni development
+  "http://localhost:8080", // Za lokalni development
+]
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin") || ""
+  const isAllowed = ALLOWED_ORIGINS.includes(origin)
+  
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  }
 }
 
 // Cache za FCM access token – izbegava skupu JWT generisanje
@@ -77,7 +93,7 @@ async function getAccessToken(sa: any): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
+    return new Response("ok", { headers: getCorsHeaders(req) })
   }
 
   // S2 Security Fix: Zahtevaj kriptografski verifikovanu 'service_role' autorizaciju.
@@ -87,7 +103,7 @@ Deno.serve(async (req) => {
     console.warn("FCM: Odbijen zahtev - nedostaje Authorization header")
     return new Response(
       JSON.stringify({ error: "Missing or invalid authorization header" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
@@ -111,14 +127,14 @@ Deno.serve(async (req) => {
         console.warn(`FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role'`)
         return new Response(
           JSON.stringify({ error: "Forbidden: service_role required" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
         )
       }
     } catch (verifyErr) {
       console.warn("FCM: Odbijen zahtev - nevalidan JWT potpis:", String(verifyErr))
       return new Response(
         JSON.stringify({ error: "Invalid authorization token signature" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
   } else {
@@ -127,14 +143,14 @@ Deno.serve(async (req) => {
     console.warn("FCM: Odbijen zahtev - token se ne poklapa sa service_role_key a SUPABASE_JWT_SECRET nije konfigurisan.")
     return new Response(
       JSON.stringify({ error: "Unauthorized: Signature verification required" }),
-      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
   if (!authorized) {
     return new Response(
       JSON.stringify({ error: "Forbidden: service_role required" }),
-      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
@@ -180,14 +196,14 @@ Deno.serve(async (req) => {
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid JSON body" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
 
     if (!body) {
       return new Response(
         JSON.stringify({ error: "Request body is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
 
@@ -250,7 +266,7 @@ Deno.serve(async (req) => {
       })
       return new Response(
         JSON.stringify({ error: "user_id required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
 
@@ -290,7 +306,7 @@ Deno.serve(async (req) => {
       })
       return new Response(
         JSON.stringify({ message: "No push tokens", sent: 0, token_count: tokens?.length || 0 }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
 
@@ -308,7 +324,7 @@ Deno.serve(async (req) => {
       })
       return new Response(
         JSON.stringify({ error: "FCM not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
     if (!serviceAccountJson.trimStart().startsWith("{")) {
@@ -469,13 +485,13 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ message: "OK", sent, errors, request_id: requestId }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   } catch (err) {
     console.error(err)
     return new Response(
       JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 })

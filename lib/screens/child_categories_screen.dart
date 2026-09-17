@@ -266,80 +266,88 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: Breakpoints.isDesktop(context)
                           ? 4
-                          : Breakpoints.isLargeTablet(context)
-                              ? 3
-                              : (Breakpoints.isSmallTablet(context) ? 3 : 2),
-                      mainAxisSpacing: Breakpoints.adaptiveDouble(
-                        context,
-                        phone: 6,
-                        smallTabletValue: 8,
-                        largeTabletValue: 10,
-                        desktop: 10,
-                      ),
-                      crossAxisSpacing: Breakpoints.adaptiveDouble(
-                        context,
-                        phone: 6,
-                        smallTabletValue: 8,
-                        largeTabletValue: 10,
-                        desktop: 10,
-                      ),
-                      mainAxisExtent: Breakpoints.adaptiveDouble(
-                        context,
-                        phone: 50,
-                        smallTabletValue: 52,
-                        largeTabletValue: 54,
-                        desktop: 54,
-                      ),
+                          : (Breakpoints.isLargeTablet(context)
+                              ? 4
+                              : (Breakpoints.isSmallTablet(context) ? 3 : 2)),
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      mainAxisExtent: 46,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final cat = _categories[index];
-                        final colorScheme = Theme.of(context).colorScheme;
+                        final catColor = getFoodCategoryColor(
+                            cat.name.isNotEmpty ? cat.name : widget.parentCategory.name);
                         return Semantics(
                           button: true,
-                          label: 'Kategorija ${cat.name}',
-                          child: Card(
-                            margin: EdgeInsets.zero,
-                            clipBehavior: Clip.antiAlias,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
+                          label: 'Potkategorija ${cat.name}',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
                               borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(
+                              border: Border.all(
                                 color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-                                width: 1,
+                                width: 1.0,
                               ),
+                              boxShadow: [
+                                if (!isDark)
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.025),
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
+                              ],
                             ),
-                            color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => context.go(
-                                  '/search?category=${Uri.encodeComponent(cat.name)}'),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
-                                child: Row(
-                                  children: [
-                                    buildCategoryIcon(
-                                      cat.icon,
-                                      size: 24,
-                                      color: colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        cat.name,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13.5,
-                                          color: isDark
-                                              ? AmazonColors.darkTextPrimary
-                                              : AmazonColors.textPrimary,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => context.go(
+                                    '/search?category=${Uri.encodeComponent(cat.name)}'),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 5),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 30,
+                                        height: 30,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: catColor.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(6),
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                                        child: buildCategoryIcon(
+                                          cat.icon,
+                                          size: 17,
+                                          color: catColor,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          cat.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12.5,
+                                            color: isDark
+                                                ? AmazonColors.darkTextPrimary
+                                                : AmazonColors.textPrimary,
+                                            height: 1.15,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 15,
+                                        color: isDark
+                                            ? AmazonColors.darkTextSecondary.withValues(alpha: 0.6)
+                                            : AmazonColors.textSecondary.withValues(alpha: 0.6),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

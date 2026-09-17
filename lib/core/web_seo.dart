@@ -274,29 +274,29 @@ void applyRouteSeo(String path) {
     setPageMetadata(
       title: 'Domaći Market | Pijaca domaće hrane & Besplatni Mali Oglasi u Srbiji',
       description:
-          'Domaći Market spaja ponudu proverene domaće hrane sa sela i 100% besplatne male oglase u Srbiji. Kupujte i oglasite bez provizije: domaći sir, meso, med, traktore, poljoprivredne mašine, automobile, tehniku i nekretnine.',
+          'Domaći Market spaja proverenu domaću hranu sa sela i 100% besplatne male oglase u Srbiji. Kupujte i oglasite bez provizije: domaći sir, mleko, meso, med, traktore, automobile, alate, tehniku, nekretnine, sve za decu i bebe, zdravlje i lepotu, knjige i rukotvorine.',
       path: '/',
       keywords:
-          'domaći market, mali oglasi, besplatni mali oglasi, oglasi srbija, poljoprivredni oglasi, traktori, automobili, alati, tehnika, nekretnine, domaća hrana, seoska gazdinstva',
+          'domaći market, mali oglasi, besplatni mali oglasi, oglasi srbija, poljoprivredni oglasi, traktori prodaja, polovni automobili srbija, auto delovi, poljoprivredne mašine, domaće životinje, alati, bela tehnika, nekretnine srbija, sve za decu, dečija kolica, auto sedišta, igračke, zdravlje i lepota, parfemi, knjige, udžbenici, umetnost, rukotvorine, domaći proizvodi, domaća hrana, seoska gazdinstva, organska hrana, bez provizije, oglasnik',
     );
   } else if (path == '/classifieds') {
     setPageMetadata(
       title:
           'Mali Oglasi | Besplatno postavljanje i obnavljanje oglasa | Domaći Market',
       description:
-          '100% besplatni mali oglasi u Srbiji bez provizije. Pronađite i besplatno oglasite poljoprivrednu mehanizaciju, traktore, automobile, alate, tehniku, nekretnine i domaće životinje.',
+          '100% besplatni mali oglasi u Srbiji bez provizije. Pronađite i besplatno oglasite traktore, poljoprivredne mašine, automobile, alate, belu tehniku, nekretnine, sve za decu, zdravlje i lepotu, knjige, odeću i domaće životinje.',
       path: '/classifieds',
       keywords:
-          'mali oglasi, besplatni oglasi srbija, poljoprivredni oglasi, traktori, polovni automobili, alati, bela tehnika, nekretnine srbija, domaće životinje, oglasi bez provizije',
+          'mali oglasi, besplatni oglasi srbija, poljoprivredni oglasi, traktori, polovni automobili, alati, bela tehnika, nekretnine srbija, domaće životinje, sve za decu, dečija kolica, igračke, zdravlje i lepota, knjige, oglasi bez provizije',
     );
   } else if (path == '/categories') {
     setPageMetadata(
       title: 'Sve Kategorije Domaćih Proizvoda | Domaći Market',
       description:
-          'Istražite sve kategorije domaćih proizvoda: mlečni proizvodi, meso, med i pčelinji proizvodi, voće, povrće, zimnica, napici i domaće rukotvorine.',
+          'Istražite sve kategorije domaćih proizvoda sa sela: mlečni proizvodi, sveže i suvo meso, med i pčelinji proizvodi, voće, povrće, slana i slatka zimnica, sokovi i sirupi, brašno i žitarice, čajevi i domaće rukotvorine.',
       path: '/categories',
       keywords:
-          'kategorije hrane, mlečni proizvodi, med, domaće meso, zimnica, voće, povrće, domaći proizvodi',
+          'kategorije hrane, mlečni proizvodi, med, domaće meso, pršuta, slanina, zimnica, ajvar, džem, voće, povrće, domaći sokovi, brašno, rukotvorine, domaći proizvodi srbija',
     );
   } else if (path == '/search') {
     setPageMetadata(

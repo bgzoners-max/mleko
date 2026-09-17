@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   supabase_flutter: ^2.12.0
   firebase_core: ^4.6.0
@@ -54,7 +56,8 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/.env
+    # - assets/.env # Otkomentarisati za lokalni razvoj ako koristite .env fajl
+    - assets/google_fonts/
     - assets/images/
     - assets/images/categories/
     - assets/images/car_brands/

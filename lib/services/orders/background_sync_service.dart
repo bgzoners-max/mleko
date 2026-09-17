@@ -1,6 +1,6 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/services.dart' show ServicesBinding;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -47,7 +47,8 @@ class BackgroundSyncService {
   @pragma('vm:entry-point')
   static void callbackDispatcher() {
     Workmanager().executeTask((task, inputData) async {
-      WidgetsFlutterBinding.ensureInitialized();
+      // U background isolate-u, ServicesBinding je dovoljan (ne treba WidgetsFlutterBinding)
+      ServicesBinding.instance;
 
       if (task != OrderSyncService.taskName) {
         return true;

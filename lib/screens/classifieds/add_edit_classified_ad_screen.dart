@@ -316,7 +316,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               physics: const NeverScrollableScrollPhysics(),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
-                                mainAxisExtent: 54,
+                                mainAxisExtent: 46,
                                 crossAxisSpacing: 8,
                                 mainAxisSpacing: 8,
                               ),
@@ -409,7 +409,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              mainAxisExtent: 54,
+                              mainAxisExtent: 46,
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 8,
                             ),
@@ -1268,22 +1268,22 @@ class _CategoryCardPicker extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
             width: 1.0,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 color: category.brandLogoAsset != null
                     ? Colors.white
@@ -1316,7 +1316,7 @@ class _CategoryCardPicker extends StatelessWidget {
                   Flexible(
                     child: Text(
                       category.name,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.15),

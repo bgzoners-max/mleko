@@ -6,32 +6,28 @@ import 'models/app_error.dart';
 class SupabaseConfig {
   SupabaseConfig._();
 
+  static const String _defaultUrl = 'https://wvqtujpurhzraptorcvl.supabase.co';
+  static const String _defaultAnonKey =
+      'sb_publishable_fctLgkfcyV3HtMIHkO6lvw_NdmiBrsX';
+
   static String get _urlFromDefine =>
-      const String.fromEnvironment('SUPABASE_URL');
+      const String.fromEnvironment('SUPABASE_URL', defaultValue: _defaultUrl);
 
   static String get _anonKeyFromDefine =>
-      const String.fromEnvironment('SUPABASE_ANON_KEY');
+      const String.fromEnvironment('SUPABASE_ANON_KEY',
+          defaultValue: _defaultAnonKey);
 
-  static String get _shareBaseUrlFromDefine =>
-      const String.fromEnvironment('SHARE_BASE_URL', defaultValue: '');
+  static String get _shareBaseUrlFromDefine => const String.fromEnvironment(
+      'SHARE_BASE_URL',
+      defaultValue: 'https://domacimarket.rs');
 
   static String get url => _urlFromDefine.isNotEmpty
       ? _urlFromDefine
-      : dotenv.env['SUPABASE_URL'] ??
-          (throw AppError(
-            message: 'Missing SUPABASE_URL',
-            userMessage: 'Nedostaje SUPABASE_URL u podešavanjima.',
-            type: ErrorType.configuration,
-          ));
+      : dotenv.env['SUPABASE_URL'] ?? _defaultUrl;
 
   static String get anonKey => _anonKeyFromDefine.isNotEmpty
       ? _anonKeyFromDefine
-      : dotenv.env['SUPABASE_ANON_KEY'] ??
-          (throw AppError(
-            message: 'Missing SUPABASE_ANON_KEY',
-            userMessage: 'Nedostaje SUPABASE_ANON_KEY u podešavanjima.',
-            type: ErrorType.configuration,
-          ));
+      : dotenv.env['SUPABASE_ANON_KEY'] ?? _defaultAnonKey;
 
   /// Alias za publishableKey u skladu sa novijim Supabase SDK-om
   static String get publishableKey => anonKey;
@@ -60,8 +56,7 @@ class SupabaseConfig {
     try {
       await dotenv.load(fileName: 'assets/.env');
     } catch (e) {
-      // Web preview builds may rely on --dart-define instead of the bundled .env asset.
-      if (!kIsWeb) rethrow;
+      // Ignorisemo gresku ako fajl ne postoji, oslanjamo se na --dart-define
     }
 
     if (!kIsWeb &&
@@ -69,8 +64,8 @@ class SupabaseConfig {
         (dotenv.env['SUPABASE_URL'] == null ||
             dotenv.env['SUPABASE_ANON_KEY'] == null)) {
       throw AppError(
-        message: 'Supabase config missing in .env',
-        userMessage: 'Podešavanja za Supabase nedostaju u .env fajlu.',
+        message: 'Supabase config missing',
+        userMessage: 'Podesavanja za Supabase nedostaju. Koristite --dart-define ili assets/.env fajl.',
         type: ErrorType.configuration,
       );
     }

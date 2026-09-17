@@ -87,9 +87,6 @@ void main() {
       RegExp(r'var\s+buster\s*=\s*Date\.now\(\);'),
       'var buster = "$buildHash";',
     );
-    // Ubrizgaj cache-busting query parametar u sve reference na main.dart.js u flutter_bootstrap.js
-    content = content.replaceAll('"main.dart.js"', '"main.dart.js?v=$buildHash"');
-    content = content.replaceAll("'main.dart.js'", "'main.dart.js?v=$buildHash'");
     targetBootstrap.writeAsStringSync(content);
     stdout.writeln('Injected build hash into flutter_bootstrap.js');
   }

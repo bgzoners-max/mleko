@@ -50,7 +50,14 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   AppSettingsProvider() {
+    // Pokrećemo async load ali ne čekamo (fire-and-forget)
+    // Ovo je OK jer settings imaju default vrednosti i _load() će ih ažurirati
     _load();
+  }
+
+  /// Eksplicitno čekanje da se settings učitaju (za kritične operacije)
+  Future<void> ensureLoaded() async {
+    await _load();
   }
 
   /// Ključevi koji ukazuju da je aplikacija već korišćena pre ovog bootstrap-a

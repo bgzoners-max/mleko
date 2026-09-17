@@ -18,5 +18,14 @@ try {
   console.warn("Build hash injection note:", e);
 }
 
-// Učitaj Flutter bez registracije zastarelog Service Worker-a
-_flutter.loader.load();
+// Učitaj Flutter bez registracije zastarelog Service Worker-a i sakrij SEO fallback tek nakon uspešnog pokretanja
+_flutter.loader.load({
+  onEntrypointLoaded: async function (engineInitializer) {
+    const appRunner = await engineInitializer.initializeEngine();
+    await appRunner.runApp();
+    var crawlerDiv = document.getElementById('seo-crawler-content');
+    if (crawlerDiv) {
+      crawlerDiv.style.display = 'none';
+    }
+  }
+});

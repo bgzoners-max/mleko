@@ -39,6 +39,9 @@ Color getClassifiedCategoryColor(String name) {
   if (lower.contains('odeć') || lower.contains('obuć') || lower.contains('garderob')) {
     return const Color(0xFFAD1457); // Odeća i obuća - Bordo / rubin
   }
+  if (lower.contains('dec') || lower.contains('beb') || lower.contains('igrač')) {
+    return const Color(0xFFEF6C00); // Sve za decu i bebe - Topla narandžasta
+  }
   if (lower.contains('sport') || lower.contains('hobi')) {
     return const Color(0xFFD84315); // Sport i hobi - Terakota
   }
@@ -47,6 +50,15 @@ Color getClassifiedCategoryColor(String name) {
   }
   if (lower.contains('uslug')) {
     return const Color(0xFF6A1B9A); // Usluge - Ljubičasta
+  }
+  if (lower.contains('zdravlj') || lower.contains('lepot') || lower.contains('kozmetik')) {
+    return const Color(0xFF00897B); // Zdravlje i lepota - Smaragd / Teal
+  }
+  if (lower.contains('knjig') || lower.contains('edukacij') || lower.contains('literatur')) {
+    return const Color(0xFF3949AB); // Knjige i edukacija - Indigo
+  }
+  if (lower.contains('umetnost') || lower.contains('rukotvor')) {
+    return const Color(0xFF8E24AA); // Umetnost i rukotvorine - Magenta / Art
   }
   return AmazonColors.navNavy;
 }

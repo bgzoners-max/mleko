@@ -671,7 +671,6 @@ class MainShell extends StatelessWidget {
     final destinations = isGuest ? _guestDestinations : _destinations;
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= Breakpoints.phone;
-    final isDesktop = width >= Breakpoints.tablet;
     final selectedDestIndex = isGuest
         ? 0
         : navigationShell.currentIndex.clamp(0, destinations.length - 1);
@@ -685,41 +684,6 @@ class MainShell extends StatelessWidget {
               onDestinationSelected: (i) =>
                   _onDestinationSelected(context, i, isGuest: isGuest),
               labelType: NavigationRailLabelType.all,
-              groupAlignment: -0.9,
-              leading: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.eco_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                    if (isDesktop) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'Domaći market',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
               destinations: destinations.map((d) {
                 return NavigationRailDestination(
                   icon: Icon(d.icon),
