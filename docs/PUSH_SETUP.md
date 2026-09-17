@@ -38,31 +38,59 @@ buildscript {
 }
 ```
 
+## 3b. iOS entitlements (`aps-environment`)
+
+APNs okruženje zavisi od konfiguracije build-a, pa zato postoje **dva** entitlements fajla umesto jednog hardkodovanog:
+
+| Konfiguracija | Fajl | `aps-environment` | Koristi se za |
+| :--- | :--- | :--- | :--- |
+| `Debug`, `Profile` | `ios/Runner/Runner.entitlements` | `development` | lokalni razvoj i `flutter run --profile` na uređaju |
+| `Release` | `ios/Runner/RunnerRelease.entitlements` | `production` | `flutter build ipa`, TestFlight, App Store i Ad Hoc |
+
+`CODE_SIGN_ENTITLEMENTS` je u `ios/Runner.xcodeproj/project.pbxproj` postavljen **po konfiguraciji** (`Release` → `Runner/RunnerRelease.entitlements;`), tako da se vrednost ne oslanja na naknadnu konverziju koju Xcode radi samo pri App Store exportu.
+
+U `ios/Runner/Info.plist` mora stajati `UIBackgroundModes` sa `remote-notification` (već je podešeno) da bi iOS primao pozadinske push poruke.
+
+> **Napomena:** `aps-environment = production` u `Release` konfiguraciji zahteva distribution/Ad Hoc provisioning profil. Za merenje performansi na sopstvenom uređaju koristi `flutter run --profile` (razvojno okruženje), jer `flutter run --release` sada traži produkcijski profil.
+
 ## 4. Edge Function i trigger (već implementirano)
 
-- **Edge Function** `send-push` – prima obaveštenje, šalje FCM
-- **Trigger** – na INSERT u `notifications` poziva Edge Function
-- **Konfiguracija** – tabela `edge_config`:
-  - `functions_base_url` – za lokal: `http://host.docker.internal:54321`, za produkciju: `https://YOUR_REF.supabase.co`
-  - `anon_key` – anon key za autorizaciju poziva
+- **Edge Function** `send-push` – prima obaveštenje, autorizuje se preko `service_role` ključa i šalje FCM v1
+- **Trigger** – na INSERT u `notifications` poziva Edge Function preko `invoke_send_push()`
+- **Konfiguracija tajni i URL-a**:
+  - `service_role_key` – čuva se u **Supabase Vault-u** (koristi se za internu autorizaciju poziva funkcije)
+  - `functions_base_url` – čuva se u Supabase Vault-u (ili kao fallback u `edge_config` tabeli)
 
 ### FCM Service Account (v1 API)
 
-Legacy Server key je ugašen. Koristi Service Account:
-Firebase Console → Project Settings → Service accounts → Generate new private key.
-Preuzeti JSON stavi u secret `FCM_SERVICE_ACCOUNT_JSON`.
+Legacy Server key je ugašen. Koristi se Firebase Service Account:
+1. Firebase Console → Project Settings → Service accounts → Generate new private key.
+2. Preuzeti JSON enkoduj u base64 i postavi u Supabase secret:
+
+```powershell
+$json = [System.IO.File]::ReadAllText("service-account.json")
+$b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($json))
+supabase secrets set "FCM_SERVICE_ACCOUNT_JSON=$b64"
+```
 
 ### Produkcija
 
 1. Pokreni migracije: `supabase db push`
-2. Postavi secret (base64 – vidi FIREBASE_SETUP.md):
-
-3. Ažuriraj config:
+2. Postavi `service_role_key` u **Supabase Vault** (Dashboard → Project Settings → Vault ili preko SQL Editora):
 
 ```sql
+-- Obavezno: kreiraj secret sa service_role ključem
+SELECT vault.create_secret('YOUR_SUPABASE_SERVICE_ROLE_KEY', 'service_role_key');
+
+-- Opciono: kreiraj secret za base URL ili ažuriraj edge_config
+SELECT vault.create_secret('https://YOUR_PROJECT_REF.supabase.co', 'functions_base_url');
+-- ILI:
 UPDATE public.edge_config SET value = 'https://YOUR_PROJECT_REF.supabase.co' WHERE key = 'functions_base_url';
-UPDATE public.edge_config SET value = 'YOUR_ANON_KEY' WHERE key = 'anon_key';
 ```
+
+> [!WARNING]
+> **Nikada ne upisujte tajne (`anon_key` ili `service_role_key`) u tabelu `edge_config`.**
+> Migracija `20260911093000` je očistila plaintext ključeve iz `edge_config` i prebacila čitanje na `vault.decrypted_secrets`. Poziv `send-push` funkcije zahteva isključivo `service_role` autorizaciju.
 
 ## 5. Health check
 

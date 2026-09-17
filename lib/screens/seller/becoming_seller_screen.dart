@@ -60,6 +60,14 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
   }
 
   @override
+  void dispose() {
+    _farmNameController.dispose();
+    _locationController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Postani prodavac')),

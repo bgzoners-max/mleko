@@ -102,11 +102,16 @@ class PushHealthUserIssueModel {
 }
 
 class PushHealthService {
-  final SupabaseClient _client = Supabase.instance.client;
+  final SupabaseClient _client;
+
+  PushHealthService({SupabaseClient? client})
+      : _client = client ?? Supabase.instance.client;
 
   Future<PushHealthDashboardModel> fetchDashboard() async {
     try {
-      final rows = await _client.from('push_health_dashboard').select();
+      final res = await _client.rpc('admin_get_push_health_dashboard');
+      final List<dynamic> rows =
+          res is List ? res : (res == null ? [] : [res]);
       if (rows.isEmpty) {
         throw AppError(
           message: 'Push health dashboard row missing',
@@ -114,21 +119,27 @@ class PushHealthService {
           type: ErrorType.notFound,
         );
       }
-      return PushHealthDashboardModel.fromJson(rows.first);
+      return PushHealthDashboardModel.fromJson(
+        Map<String, dynamic>.from(rows.first as Map),
+      );
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
   }
 
   Future<List<PushHealthUserIssueModel>> fetchUserIssues() async {
-    final rows = await _client
-        .from('push_health_user_issues')
-        .select()
-        .order('latest_notification_at', ascending: false);
-
-    return rows
-        .map<PushHealthUserIssueModel>(PushHealthUserIssueModel.fromJson)
-        .toList(growable: false);
+    try {
+      final res = await _client.rpc('admin_get_push_health_user_issues');
+      final List<dynamic> rows = res is List ? res : [];
+      return rows
+          .map<PushHealthUserIssueModel>((item) =>
+              PushHealthUserIssueModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 }
 

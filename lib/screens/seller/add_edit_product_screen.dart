@@ -424,7 +424,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final defaultStepByUnit = switch (unitType) {
       ProductModel.unitL => 1.0,
       ProductModel.unitG => 0.05,
-      ProductModel.unitPiece => 10.0,
+      ProductModel.unitPiece => 1.0,
       _ => suggestedOrderStepKg(
           category: category, name: name, minOrderKg: minOrderKg),
     };

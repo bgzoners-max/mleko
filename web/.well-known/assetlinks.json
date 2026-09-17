@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.mleko.mleko",
+      "sha256_cert_fingerprints": [
+        "53:40:97:2A:9B:CB:CD:9B:67:A4:6E:E1:63:74:9B:A2:26:4C:81:A5:F5:1A:52:56:C6:46:D8:8F:30:C8:67:A1"
+      ]
+    }
+  }
+]

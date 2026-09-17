@@ -16,7 +16,7 @@
 | ------------------ | -------------------------------------------------------- |
 | `notifications`    | In-app obaveštenja + izvor za push (trigger na INSERT)   |
 | `user_push_tokens` | FCM tokeni po korisniku (više uređaja)                   |
-| `edge_config`      | `functions_base_url`, `anon_key` za poziv Edge Function  |
+| `edge_config`      | `functions_base_url` (non-secret), dok se `service_role_key` čuva u Supabase Vault-u |
 
 ### Triggeri koji ubacuju u `notifications`
 
@@ -35,7 +35,7 @@
 ### Zahtevi
 
 - **pg_net** extension mora biti uključen (Dashboard → Database → Extensions)
-- Za produkciju: `UPDATE edge_config` sa pravim `functions_base_url` i `anon_key`
+- Za produkciju: postavi `service_role_key` u Supabase Vault i podesi `functions_base_url`
 
 ---
 
@@ -82,7 +82,7 @@
 ## 5. Provera liste
 
 - [ ] pg_net uključen
-- [ ] edge_config postavljen (produkcija)
+- [ ] Vault `service_role_key` i `functions_base_url` postavljeni (produkcija)
 - [ ] FCM_SERVICE_ACCOUNT_JSON secret
 - [ ] google-services.json u android/app/
 - [ ] Migracije primenjene (uključujući notify_order_status_change)

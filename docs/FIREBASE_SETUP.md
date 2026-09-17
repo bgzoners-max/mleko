@@ -145,7 +145,7 @@ Edge Function automatski dekoduje base64.
 |------|----------|
 | `google-services.json` | U `android/app/` – konfiguracija za Android |
 | `lib/firebase_options.dart` | Generiše `flutterfire configure` |
-| `FCM_SERVER_KEY` | Supabase secret – za slanje push-a |
+| `FCM_SERVICE_ACCOUNT_JSON` | Supabase secret (base64) – za slanje push-a preko FCM v1 API-ja |
 
 ---
 

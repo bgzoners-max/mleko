@@ -1,13 +1,18 @@
 {
   "scripts": {
     "deploy:all": "flutter build web --release --dart-define=SUPABASE_URL=https://wvqtujpurhzraptorcvl.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_fctLgkfcyV3HtMIHkO6lvw_NdmiBrsX && npm run vercel:deploy",
-    "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart && node -e \"const fs=require('fs'); if(fs.existsSync('web/.well-known/assetlinks.json')){ fs.mkdirSync('build/vercel-deploy/public/.well-known', {recursive:true}); fs.copyFileSync('web/.well-known/assetlinks.json', 'build/vercel-deploy/public/.well-known/assetlinks.json'); }\"",
+    "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart",
     "vercel:deploy": "npm run vercel:prepare && node -e \"const fs=require('fs'),path=require('path'),os=require('os'),{execSync}=require('child_process'); const tmp=path.join(os.tmpdir(),'mleko-vercel-deploy'); fs.rmSync(tmp,{recursive:true,force:true}); fs.cpSync('build/vercel-deploy',tmp,{recursive:true}); execSync('npx vercel link --cwd \\\"' + tmp + '\\\" --yes --scope vrvladas-projects --project mleko', {stdio:'inherit'}); execSync('npx vercel deploy --cwd \\\"' + tmp + '\\\" --prod --yes --scope vrvladas-projects', {stdio:'inherit'});\"",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",
-    "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts"
+    "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts",
+    "type-check": "tsc --noEmit",
+    "validate:assetlinks": "node -e \"const content = require('fs').readFileSync('web/.well-known/assetlinks.json', 'utf8'); const data = JSON.parse(content); if (!Array.isArray(data) || data.length === 0) throw new Error('assetlinks.json must be a non-empty array');\"",
+    "assetlinks:sync": "dart run tool/sync_assetlinks.dart",
+    "secrets:check": "dart run tool/check_no_committed_secrets.dart"
   },
   "devDependencies": {
-    "supabase": "^2.76.15"
+    "supabase": "^2.76.15",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0"

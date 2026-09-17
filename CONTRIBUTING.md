@@ -79,8 +79,8 @@ Verovatno grana nema poslednji `master` — uradi `git fetch` i `git merge origi
 
 ## Supabase (URL i anon ključ)
 
-- U kodu postoji fallback u `lib/supabase_config.dart`.
-- Za build bez hardkodovanih vrednosti koristi `.env.example` kao šablon i:
+- U kodu postoji podrazumevana konfiguracija u `lib/supabase_config.dart`.
+- Za override (npr. sopstveni projekat ili CI/CD):
   - `flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
 
 ## Migracije (solo, drift, bez Docker-a)

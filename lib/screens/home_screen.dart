@@ -151,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 1.0,
           ),
         ),
+        titleSpacing: 10,
         title: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -165,21 +166,25 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(
                   Icons.eco_outlined,
-                  size: 26,
+                  size: 24,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  AppConstants.appName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    letterSpacing: -0.5,
-                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    AppConstants.appName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      letterSpacing: -0.5,
+                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                const BetaBadge(),
+                const SizedBox(width: 6),
+                const BetaBadge(showInfoIcon: false),
               ],
             ),
           ),
@@ -187,29 +192,35 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           if (!isGuest)
             IconButton(
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               icon: Badge(
                 isLabelVisible: unreadCount > 0,
                 label: Text('$unreadCount'),
                 backgroundColor: AmazonColors.dealRed,
-                child: const Icon(Icons.notifications_none_rounded),
+                child: const Icon(Icons.notifications_none_rounded, size: 22),
               ),
               onPressed: () => context.push('/notifications'),
             ),
           IconButton(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: Badge(
               isLabelVisible: context.watch<CartProvider>().count > 0,
               label: Text('${context.watch<CartProvider>().count}'),
               backgroundColor: AmazonColors.amber,
               textColor: AmazonColors.darkNavy,
-              child: const Icon(Icons.shopping_cart_outlined),
+              child: const Icon(Icons.shopping_cart_outlined, size: 22),
             ),
             onPressed: () => context.push('/cart'),
           ),
           IconButton(
-            icon: const Icon(Icons.location_on_outlined),
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: const Icon(Icons.location_on_outlined, size: 22),
             onPressed: () => _showLocationPicker(context),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
       ),
       body: SafeArea(

@@ -14,6 +14,7 @@ import '../widgets/orders/buyer_order_card.dart';
 import '../widgets/orders/by_seller_tab.dart';
 import '../widgets/orders/orders_desktop_sidebar.dart';
 import '../widgets/orders/orders_status_filter_bar.dart';
+import '../widgets/orders/pending_orders_banner.dart';
 import '../widgets/skeleton.dart';
 
 /// Posebna sekcija Porudžbine za kupca – pregledna lista naručenih proizvoda
@@ -395,6 +396,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 ),
                               ),
                               const Divider(height: 1),
+                              const PendingOrdersBanner(),
                               Expanded(
                                 child: _buildOrdersPanel(context, user.id),
                               ),
@@ -441,6 +443,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         ),
                       ),
                     const SizedBox(height: 8),
+                    const PendingOrdersBanner(),
                     Expanded(
                       child: _buildOrdersPanel(context, user.id),
                     ),

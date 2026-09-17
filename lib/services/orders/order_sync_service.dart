@@ -59,6 +59,40 @@ class OrderSyncService {
 
       for (final pending in pendingOrders) {
         try {
+          // Pre-flight provera autentifikacije:
+          // RPC funkcija na bazi (create_order_with_items) strogo zahteva auth.uid() = p_buyer_id.
+          // U background isolate-u, ako restore sesije nije uspeo ili je korisnik izlogovan,
+          // ne šaljemo RPC koji je osuđen na neuspeh (401/Unauthorized), već evidentiramo razlog.
+          final currentUser = _client.auth.currentUser;
+          if (currentUser == null) {
+            const errorMsg =
+                'Sesija nije pronađena u pozadini. Otvorite aplikaciju da bi porudžbina bila poslata.';
+            await _queueService.recordOrderFailure(pending.id, error: errorMsg);
+            failedCount++;
+            LoggerService.warning(
+              'Order sync pre-flight failed: unauthenticated session in isolate',
+              extra: {'pendingOrderId': pending.id, 'source': source},
+            );
+            continue;
+          }
+
+          if (currentUser.id != pending.buyerId) {
+            final errorMsg =
+                'Prijavljeni nalog ne odgovara kupcu ove porudžbine.';
+            await _queueService.recordOrderFailure(pending.id, error: errorMsg);
+            failedCount++;
+            LoggerService.warning(
+              'Order sync pre-flight failed: buyer mismatch',
+              extra: {
+                'pendingOrderId': pending.id,
+                'currentUserId': currentUser.id,
+                'buyerId': pending.buyerId,
+                'source': source,
+              },
+            );
+            continue;
+          }
+
           final duplicateOrderId = await _findDuplicateOrderId(pending);
           if (duplicateOrderId != null) {
             await _queueService.markAsSynced(pending.id);
@@ -99,6 +133,10 @@ class OrderSyncService {
               extra: {'pendingOrderId': pending.id});
         } catch (e, st) {
           failedCount++;
+          final errorMsg = e is AppError
+              ? (e.userMessage ?? e.message)
+              : e.toString();
+          await _queueService.recordOrderFailure(pending.id, error: errorMsg);
           LoggerService.error('Failed to sync pending order ${pending.id}', e,
               stackTrace: st);
         }

@@ -69,7 +69,9 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
     var isActive = existing?.isActive ?? true;
     final formKey = GlobalKey<FormState>();
 
-    final saved = await showDialog<bool>(
+    bool? saved;
+    try {
+      saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -170,11 +172,12 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
         ),
       ),
     );
-
-    cityController.dispose();
-    labelController.dispose();
-    addressController.dispose();
-    notesController.dispose();
+    } finally {
+      cityController.dispose();
+      labelController.dispose();
+      addressController.dispose();
+      notesController.dispose();
+    }
 
     if (saved == true) {
       await _load();
@@ -208,7 +211,9 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
     var timeTo = _parseTime(existing?.timeTo ?? '12:00');
     var isActive = existing?.isActive ?? true;
 
-    final saved = await showDialog<bool>(
+    bool? saved;
+    try {
+      saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -356,10 +361,11 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
         ),
       ),
     );
-
-    feeController.dispose();
-    minOrderController.dispose();
-    maxOrdersController.dispose();
+    } finally {
+      feeController.dispose();
+      minOrderController.dispose();
+      maxOrdersController.dispose();
+    }
 
     if (saved == true) {
       await _load();

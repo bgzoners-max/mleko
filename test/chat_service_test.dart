@@ -192,4 +192,71 @@ void main() {
       );
     });
   });
+
+  group('Chat Image Signed URLs & Privacy', () {
+    test('extractChatImagePath parses signed, public, and relative chat image URLs', () {
+      expect(
+        ChatService.extractChatImagePath(
+          'https://xyz.supabase.co/storage/v1/object/sign/chat-images/user1/conv1/photo.jpg?token=secret123',
+        ),
+        equals('user1/conv1/photo.jpg'),
+      );
+
+      expect(
+        ChatService.extractChatImagePath(
+          'https://xyz.supabase.co/storage/v1/object/public/chat-images/user1/conv1/photo.jpg',
+        ),
+        equals('user1/conv1/photo.jpg'),
+      );
+
+      expect(
+        ChatService.extractChatImagePath('chat-images/user1/conv1/photo.jpg'),
+        equals('user1/conv1/photo.jpg'),
+      );
+
+      expect(
+        ChatService.extractChatImagePath('user1/conv1/photo.jpg'),
+        equals('user1/conv1/photo.jpg'),
+      );
+
+      expect(
+        ChatService.extractChatImagePath(''),
+        isNull,
+      );
+    });
+
+    test('getSignedChatImageUrl returns cached signed URL and avoids redundant network calls', () async {
+      ChatService.clearSignedUrlCache();
+
+      var signCalls = 0;
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/storage/v1/object/sign/chat-images/user1/conv1/photo.jpg') &&
+            req.method == 'POST') {
+          signCalls++;
+          return http.Response(
+            jsonEncode({'signedURL': '/object/sign/chat-images/user1/conv1/photo.jpg?token=abc'}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient(
+        'https://fake-project.supabase.co',
+        'fake-key',
+        httpClient: mockClient,
+      );
+
+      final service = ChatService(client: supabase);
+      final url1 = await service.getSignedChatImageUrl('user1/conv1/photo.jpg');
+      expect(url1, contains('token=abc'));
+      expect(signCalls, equals(1));
+
+      // Drugi poziv za istu putanju mora vratiti keširan URL bez novog poziva
+      final url2 = await service.getSignedChatImageUrl('user1/conv1/photo.jpg');
+      expect(url2, equals(url1));
+      expect(signCalls, equals(1));
+    });
+  });
 }

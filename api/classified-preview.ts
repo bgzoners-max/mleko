@@ -127,8 +127,15 @@ function buildHtml({
   const escapedImageUrl = escapeHtml(imageUrl);
   const redirectTarget = canonicalUrl.replaceAll('"', "%22");
 
-  const jsonLdScript = jsonLd
-    ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`
+  const safeJson = jsonLd
+    ? JSON.stringify(jsonLd)
+        .replace(/</g, "\\u003c")
+        .replace(/>/g, "\\u003e")
+        .replace(/&/g, "\\u0026")
+    : "";
+
+  const jsonLdScript = safeJson
+    ? `<script type="application/ld+json">${safeJson}</script>`
     : "";
 
   return `<!DOCTYPE html>

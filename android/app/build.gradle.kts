@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,9 +9,40 @@ plugins {
     id("com.google.firebase.crashlytics")
 }
 
+// ---------------------------------------------------------------------------
+// Potpisivanje release builda
+//
+// Podaci se citaju iz android/key.properties (u .gitignore-u). Ako fajl ne
+// postoji, release se privremeno potpisuje debug kljucem kako bi lokalni
+// `flutter run --release` radio; za distribuciju je obavezan pravi keystore,
+// a build se moze zakljucati sa -PrequireReleaseSigning=true (npr. u CI-ju).
+// Uputstvo: docs/ANDROID_RELEASE_SIGNING.md
+// ---------------------------------------------------------------------------
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+
+if (hasReleaseKeystore) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+    val requiredKeys = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    val missing = requiredKeys.filter { keystoreProperties.getProperty(it).isNullOrBlank() }
+    if (missing.isNotEmpty()) {
+        throw GradleException(
+            "android/key.properties ne sadrzi obavezne kljuceve: " +
+                missing.joinToString(", ") +
+                ". Uputstvo: docs/ANDROID_RELEASE_SIGNING.md"
+        )
+    }
+}
+
+val requireReleaseSigning = providers.gradleProperty("requireReleaseSigning")
+    .map { it.equals("true", ignoreCase = true) }
+    .getOrElse(false)
+
 android {
     namespace = "com.mleko.mleko"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler 13.x traži Android SDK 37; flutter.compileSdkVersion je 36.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,21 +57,41 @@ android {
 
     defaultConfig {
         multiDexEnabled = true
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.mleko.mleko"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion  // Google Maps zahteva min 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            } else if (requireReleaseSigning) {
+                throw GradleException(
+                    "Release build zahteva android/key.properties sa pravim keystore-om. " +
+                        "Uputstvo: docs/ANDROID_RELEASE_SIGNING.md"
+                )
+            } else {
+                logger.warn(
+                    "UPOZORENJE: android/key.properties ne postoji - release build se " +
+                        "potpisuje DEBUG kljucem i ne moze na Google Play. " +
+                        "Uputstvo: docs/ANDROID_RELEASE_SIGNING.md"
+                )
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 }

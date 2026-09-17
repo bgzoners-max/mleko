@@ -1,9 +1,12 @@
 import 'dart:math' show min;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/message_model.dart';
 import '../../models/message_reaction_model.dart';
+import '../../services/communication/chat_service.dart';
+import '../product/full_screen_image_viewer.dart';
 import 'chat_reaction_chip.dart';
 
 class ChatMessageBubble extends StatelessWidget {
@@ -64,18 +67,8 @@ class ChatMessageBubble extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
+                        child: ChatImageAttachment(
                           imageUrl: message.imageUrl!,
-                          width: 200,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            width: 200,
-                            height: 150,
-                            color: Colors.black12,
-                            child: const Center(
-                                child: CircularProgressIndicator()),
-                          ),
-                          errorWidget: (_, __, ___) => const Icon(Icons.error),
                         ),
                       ),
                     ),
@@ -147,6 +140,143 @@ class ChatMessageBubble extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class ChatImageAttachment extends StatefulWidget {
+  final String imageUrl;
+
+  const ChatImageAttachment({super.key, required this.imageUrl});
+
+  @override
+  State<ChatImageAttachment> createState() => _ChatImageAttachmentState();
+}
+
+class _ChatImageAttachmentState extends State<ChatImageAttachment> {
+  String? _resolvedUrl;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveUrl();
+  }
+
+  @override
+  void didUpdateWidget(ChatImageAttachment oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl) {
+      _resolveUrl();
+    }
+  }
+
+  Future<void> _resolveUrl({bool forceRefresh = false}) async {
+    // Ako URL već sadrži potpisani token i nije tražen forceRefresh, prikaži odmah
+    if (!forceRefresh && widget.imageUrl.contains('token=')) {
+      if (mounted) {
+        setState(() {
+          _resolvedUrl = widget.imageUrl;
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final chatService = context.read<ChatService>();
+      final signed = await chatService.getSignedChatImageUrl(widget.imageUrl);
+      if (mounted) {
+        setState(() {
+          _resolvedUrl = signed;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _resolvedUrl = widget.imageUrl;
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  void _openFullScreen(String url) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FullScreenImageViewer(
+          productId: 'chat',
+          imageUrls: [url],
+          initialIndex: 0,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading && _resolvedUrl == null) {
+      return Container(
+        width: 200,
+        height: 150,
+        decoration: BoxDecoration(
+          color: Colors.black12,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    final url = _resolvedUrl ?? widget.imageUrl;
+    return GestureDetector(
+      onTap: () => _openFullScreen(url),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: 200,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          width: 200,
+          height: 150,
+          decoration: BoxDecoration(
+            color: Colors.black12,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+        errorWidget: (context, errorUrl, error) => InkWell(
+          onTap: () {
+            setState(() {
+              _loading = true;
+              _resolvedUrl = null;
+            });
+            _resolveUrl(forceRefresh: true);
+          },
+          child: Container(
+            width: 200,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.refresh_rounded, color: Colors.grey, size: 28),
+                SizedBox(height: 4),
+                Text(
+                  'Učitaj ponovo',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

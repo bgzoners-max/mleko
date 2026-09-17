@@ -47,6 +47,9 @@ class _HomeSidePanelState extends State<HomeSidePanel>
     final isWide = Breakpoints.useTwoPaneLayout(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.4);
+    final cardHeight = (236.0 * textScale).roundToDouble();
+
     if (isWide) {
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -54,17 +57,17 @@ class _HomeSidePanelState extends State<HomeSidePanel>
           SidePanelCard(
             title: 'Najprodavaniji proizvodi',
             icon: Icons.trending_up,
-            height: 236,
+            height: cardHeight,
             child: TopProductsList(
                 homeProductsStream: widget.homeProductsStream,
                 initialData: widget.initialData),
           ),
           const SizedBox(height: 12),
-          const SidePanelCard(
+          SidePanelCard(
             title: 'Omiljena gazdinstva',
             icon: Icons.favorite_border,
-            height: 236,
-            child: FavoriteFarmsList(),
+            height: cardHeight,
+            child: const FavoriteFarmsList(),
           ),
         ],
       );
@@ -98,6 +101,10 @@ class _HomeSidePanelState extends State<HomeSidePanel>
         children: [
           TabBar(
             controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            padding: EdgeInsets.zero,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
             onTap: (_) => HapticFeedback.selectionClick(),
             labelColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             unselectedLabelColor:
@@ -109,7 +116,7 @@ class _HomeSidePanelState extends State<HomeSidePanel>
             ],
           ),
           SizedBox(
-              height: 236,
+              height: cardHeight,
               child: IndexedStack(
                   index: _tabController.index,
                   sizing: StackFit.expand,

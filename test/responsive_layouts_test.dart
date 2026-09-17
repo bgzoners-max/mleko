@@ -5,9 +5,13 @@ import 'package:mleko/core/theme.dart';
 import 'package:mleko/providers/app_settings_provider.dart';
 import 'package:mleko/providers/app_state.dart';
 import 'package:mleko/screens/seller/seller_settings_screen.dart';
+import 'package:mleko/models/category.dart';
 import 'package:mleko/services/auth/auth_service.dart';
 import 'package:mleko/services/auth/users_service.dart';
 import 'package:mleko/services/orders/orders_service.dart';
+import 'package:mleko/widgets/beta_announcement_banner.dart';
+import 'package:mleko/widgets/home/category_grid.dart';
+import 'package:mleko/widgets/home/market_mode_switcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -235,6 +239,139 @@ void main() {
       final tabBar = tester.widget<TabBar>(find.byType(TabBar));
       expect(tabBar.isScrollable, isTrue);
       expect(tabBar.tabAlignment, equals(TabAlignment.start));
+    });
+  });
+
+  group('Font Scaling Responsiveness Tests', () {
+    testWidgets('CategoryGrid renders 2-line labels without overflow under 1.5x font scale',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final categories = [
+        const Category(id: '1', name: 'Mlečni proizvodi', icon: 'milk'),
+        const Category(id: '2', name: 'Suvomesnati proizvodi', icon: 'meat'),
+        const Category(id: '3', name: 'Voće i povrće', icon: 'vegetables'),
+        const Category(id: '4', name: 'Med i pčelinji proizvodi', icon: 'honey'),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(360, 640),
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: CategoryGrid(
+                  topCategories: categories,
+                  isWide: false,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Mlečni proizvodi'), findsOneWidget);
+      expect(find.text('Suvomesnati proizvodi'), findsOneWidget);
+    });
+
+    testWidgets('MarketModeSwitcher adapts without overflow under 1.5x font scale',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(360, 640),
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Scaffold(
+              body: MarketModeSwitcher(
+                currentMode: MarketMode.foodMarket,
+                onModeChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Mali Oglasi'), findsOneWidget);
+      expect(find.text('Pijaca Hrane'), findsOneWidget);
+    });
+
+    testWidgets('AppBar title with BetaBadge does not overflow under 1.5x font scale on 360dp phone',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(360, 640),
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Scaffold(
+              appBar: AppBar(
+                titleSpacing: 10,
+                title: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.eco_outlined, size: 24),
+                    SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Domaći market',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    BetaBadge(showInfoIcon: false),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    icon: const Icon(Icons.notifications_none_rounded),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    icon: const Icon(Icons.shopping_cart_outlined),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    icon: const Icon(Icons.location_on_outlined),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Domaći market'), findsOneWidget);
     });
   });
 }

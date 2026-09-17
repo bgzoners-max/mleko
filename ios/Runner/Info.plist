@@ -52,5 +52,16 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Lokacija se koristi da automatski izaberemo tvoj region i prikažemo prodavce u tvom okruženju.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pristup galeriji je potreban radi odabira slika proizvoda, oglasa i profilne fotografije.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Pristup kameri je potreban radi direktnog fotografisanja proizvoda, oglasa i profilne fotografije.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Pristup mikrofonu je potreban prilikom snimanja video zapisa za ponudu.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

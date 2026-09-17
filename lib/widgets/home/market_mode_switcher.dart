@@ -125,7 +125,9 @@ class _MarketSegmentPillState extends State<_MarketSegmentPill> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        height: 36,
+        constraints: BoxConstraints(
+          minHeight: (36.0 * MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.35)).roundToDouble(),
+        ),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(20),
@@ -141,7 +143,7 @@ class _MarketSegmentPillState extends State<_MarketSegmentPill> {
               widget.onTap();
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

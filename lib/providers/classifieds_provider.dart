@@ -86,7 +86,10 @@ class ClassifiedsProvider extends ChangeNotifier {
         _categories = cached;
         notifyListeners();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      LoggerService.debug('getCachedCategories error',
+          extra: {'error': e.toString(), 'stackTrace': st.toString()});
+    }
 
     // 2. Učitavanje i sinhronizacija sa bazom
     try {
@@ -333,8 +336,10 @@ class ClassifiedsProvider extends ChangeNotifier {
       if (requestId != _requestSeq) return; // filter se promenio – odbaci
       _ads = [..._ads, ...nextItems];
       _hasMore = nextItems.length >= _pageSize;
-    } catch (_) {
-      // Ne rušimo postojeću listu
+    } catch (e, st) {
+      // Ne rušimo postojeću listu, ali beležimo grešku
+      LoggerService.warning('loadMoreAds error',
+          extra: {'error': e.toString(), 'stackTrace': st.toString()});
     } finally {
       _loadingMore = false;
       if (requestId == _requestSeq) {

@@ -22,6 +22,7 @@ Future<void> main() async {
     'manifest.json',
     'robots.txt',
     'sitemap.xml',
+    '.well-known/assetlinks.json',
   ];
 
   for (final relativePath in filesToCopy) {

@@ -55,9 +55,9 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
     setState(() => _statsLoading = true);
     try {
       final results = await Future.wait([
-        _db.from('profiles').count(CountOption.exact).eq('is_guest', false),
-        _db.from('profiles').count(CountOption.exact).eq('role', 'seller').eq('is_guest', false),
-        _db.from('profiles').count(CountOption.exact).eq('role', 'buyer').eq('is_guest', false),
+        _db.from('public_profiles').count(CountOption.exact).eq('is_guest', false),
+        _db.from('public_profiles').count(CountOption.exact).eq('role', 'seller').eq('is_guest', false),
+        _db.from('public_profiles').count(CountOption.exact).eq('role', 'buyer').eq('is_guest', false),
         _db.from('waitlist').count(CountOption.exact),
         _db.from('orders').count(CountOption.exact),
         _db.from('orders').count(CountOption.exact).eq('status', 'pending'),
@@ -351,7 +351,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
 
   Future<void> _showUserList(String role, String title) async {
     final res = await _db
-        .from('profiles')
+        .from('public_profiles')
         .select('id, display_name, farm_name, email, city, created_at')
         .eq('role', role)
         .eq('is_guest', false)

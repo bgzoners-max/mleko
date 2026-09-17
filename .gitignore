@@ -54,6 +54,10 @@ service-account*.json
 fix_categories.ps1
 fix_one.ps1
 insert_demo.ps1
+# Android release signing (nikad ne commitovati)
+android/key.properties
+*.jks
+*.keystore
 
 # Lokalne rezervne kopije (veliki fajlovi; vidi backups/README.md)
 backups/*.bundle

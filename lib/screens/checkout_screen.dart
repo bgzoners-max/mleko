@@ -129,6 +129,17 @@ class _CheckoutFormState extends State<_CheckoutForm> {
     }
   }
 
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    _noteController.dispose();
+    _cityController.dispose();
+    _addressController.dispose();
+    _postalCodeController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
   DeliveryMethod _deliveryMethod = DeliveryMethod.courier;
   bool _sending = false;
   String? _error;

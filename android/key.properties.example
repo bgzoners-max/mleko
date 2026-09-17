@@ -1,0 +1,15 @@
+# Šablon za release potpisivanje Androida.
+#
+# 1. Kopiraj ovaj fajl kao `android/key.properties` (taj fajl je u .gitignore).
+# 2. Popuni vrednosti iz svog keystore-a.
+# 3. Detaljno uputstvo: docs/ANDROID_RELEASE_SIGNING.md
+#
+# NAPOMENA: `storeFile` se razrešava relativno u odnosu na `android/app/`
+# (tako radi Gradle `file()`), pa je podrazumevano mesto keystore-a:
+#   android/app/upload-keystore.jks
+# Može i apsolutna putanja (npr. C:/keys/mleko-upload.jks) ili putanja van repoa.
+
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+storeFile=upload-keystore.jks

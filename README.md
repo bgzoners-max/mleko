@@ -67,9 +67,10 @@ cd mleko
 flutter pub get
 ```
 
-Pokretanje aplikacije se primarno oslanja na `--dart-define` parametre (najbolje za CI i sveže klonove), ili opciono na `.env` fajl (za komforniji lokalni razvoj bez kucanja komandi).
+Aplikacija funkcioniše odmah „out-of-the-box” za lokalni razvoj sa podrazumevanom Supabase konfiguracijom (`lib/supabase_config.dart`).
 
-**Opcija 1: Korišćenje `--dart-define` (Preporučeno za sveže klonove)**
+Ukoliko želiš da koristiš sopstvenu ili staging Supabase instancu (npr. u CI/CD ili produkciji), koristi `--dart-define` parametre:
+
 ```bash
 # Web
 flutter run -d chrome --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
@@ -77,15 +78,6 @@ flutter run -d chrome --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABAS
 # Mobilni
 flutter run --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
 ```
-
-**Opcija 2: Korišćenje `.env` fajla (za lokalni razvoj)**
-1. Kopirajte šablon promenljivih okruženja:
-```bash
-cp .env.example assets/.env
-```
-2. Popunite kredencijale u `assets/.env`.
-3. U `pubspec.yaml` otkomentarišite liniju `# - assets/.env` u sekciji `assets:`.
-4. Pokrenite aplikaciju regularno: `flutter run`
 
 ---
 
@@ -124,6 +116,7 @@ Za detaljnije tehničke specifikacije pogledajte prateću dokumentaciju u repozi
 | **[docs/LOGIKA_PORUDZBINE.md](docs/LOGIKA_PORUDZBINE.md)** | Detaljan tok kreiranja porudžbina, validacija i bezbednosni triggeri. |
 | **[docs/ERROR_HANDLING_GUIDE.md](docs/ERROR_HANDLING_GUIDE.md)** | Standardizovani obrasci rukovanja greškama i mrežnim prekidima. |
 | **[docs/OFFLINE_MODE_GUIDE.md](docs/OFFLINE_MODE_GUIDE.md)** | Keširanje podataka, offline režim rada i sinhronizacija. |
+| **[docs/ANDROID_RELEASE_SIGNING.md](docs/ANDROID_RELEASE_SIGNING.md)** | Potpisivanje Android release builda, keystore i Digital Asset Links (App Links). |
 | **[docs/archive/README.md](docs/archive/README.md)** | Arhivirani izveštaji o završenim fazama razvoja (Faza 3, Faza 4, UI/UX auditi). |
 
 ---

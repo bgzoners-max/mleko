@@ -579,6 +579,15 @@ class PushService {
 
   Future<String?> _safeGetToken() async {
     try {
+      if (!kIsWeb && Platform.isIOS) {
+        String? apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        int apnsRetries = 0;
+        while (apnsToken == null && apnsRetries < 5) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+          apnsRetries++;
+        }
+      }
       return await FirebaseMessaging.instance.getToken();
     } catch (e) {
       LoggerService.warning('PushService: Failed to fetch token',

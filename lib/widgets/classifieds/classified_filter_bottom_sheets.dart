@@ -354,5 +354,10 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
     ),
   );
     },
-  );
+  ).whenComplete(() {
+    minPriceController.dispose();
+    maxPriceController.dispose();
+    minAreaController.dispose();
+    maxAreaController.dispose();
+  });
 }

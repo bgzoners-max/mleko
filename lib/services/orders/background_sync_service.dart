@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
-import 'package:flutter/services.dart' show ServicesBinding;
+import 'package:flutter/widgets.dart' show WidgetsFlutterBinding;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -47,8 +47,10 @@ class BackgroundSyncService {
   @pragma('vm:entry-point')
   static void callbackDispatcher() {
     Workmanager().executeTask((task, inputData) async {
-      // U background isolate-u, ServicesBinding je dovoljan (ne treba WidgetsFlutterBinding)
-      ServicesBinding.instance;
+      // U background isolate-u obezbeđujemo WidgetsFlutterBinding
+      // kako bi svi MethodChannel dodaci (shared_preferences, flutter_secure_storage)
+      // imali garantovanu platformsku komunikaciju.
+      WidgetsFlutterBinding.ensureInitialized();
 
       if (task != OrderSyncService.taskName) {
         return true;
@@ -57,14 +59,34 @@ class BackgroundSyncService {
       try {
         await _ensureSupabaseInitialized();
 
+        final queueService = OrderQueueService();
+        final pendingBefore =
+            await queueService.getPendingOrders(onlyUnsynced: true);
+        if (pendingBefore.isEmpty) {
+          LoggerService.debug('Background sync: no pending orders');
+          return true;
+        }
+
         final syncService = OrderSyncService(
-          queueService: OrderQueueService(),
+          queueService: queueService,
           ordersService: OrdersService(),
         );
-        await syncService.syncPendingOrders(
+        final syncedCount = await syncService.syncPendingOrders(
           skipConnectivityCheck: true,
           source: 'background',
         );
+
+        // Ako je postojala porudžbina za slanje, ali nijedna nije uspešno sinhronizovana,
+        // vraćamo false kako bi Workmanager prepoznao neuspeh i aktivirao retry politiku.
+        final remainingPending =
+            await queueService.getPendingOrders(onlyUnsynced: true);
+        if (remainingPending.isNotEmpty && syncedCount == 0) {
+          LoggerService.warning(
+            'Background sync: 0 orders synced out of ${pendingBefore.length} pending. Requesting retry from Workmanager.',
+          );
+          return false;
+        }
+
         return true;
       } catch (e, st) {
         LoggerService.error('Background sync task failed', e, stackTrace: st);
@@ -75,7 +97,12 @@ class BackgroundSyncService {
 
   static Future<void> _ensureSupabaseInitialized() async {
     try {
-      Supabase.instance.client;
+      final client = Supabase.instance.client;
+      if (client.auth.currentSession?.isExpired == true) {
+        try {
+          await client.auth.refreshSession();
+        } catch (_) {}
+      }
       return;
     } catch (_) {
       // Supabase is not initialized in this isolate.
@@ -87,5 +114,15 @@ class BackgroundSyncService {
       url: SupabaseConfig.url,
       publishableKey: SupabaseConfig.publishableKey,
     );
+
+    try {
+      final client = Supabase.instance.client;
+      if (client.auth.currentSession?.isExpired == true) {
+        await client.auth.refreshSession();
+      }
+    } catch (e) {
+      LoggerService.warning('Failed to refresh session in background sync',
+          extra: {'error': e.toString()});
+    }
   }
 }

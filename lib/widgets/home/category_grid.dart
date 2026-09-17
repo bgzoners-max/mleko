@@ -16,9 +16,20 @@ class CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScaler = MediaQuery.textScalerOf(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final scaledFontSize = textScaler.scale(12.0);
+    final double cardHeight;
+    if (scaledFontSize >= 16.5) {
+      cardHeight = 62.0;
+    } else if (scaledFontSize >= 13.5) {
+      cardHeight = 52.0;
+    } else {
+      cardHeight = 46.0;
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -28,7 +39,7 @@ class CategoryGrid extends StatelessWidget {
             isWide ? 4 : (isLargeTablet ? 4 : (isSmallTablet ? 3 : 2)),
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        mainAxisExtent: 46,
+        mainAxisExtent: cardHeight,
       ),
       itemCount: topCategories.length,
       itemBuilder: (context, index) {
@@ -61,12 +72,12 @@ class CategoryGrid extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => context.push('/categories/${cat.id}', extra: cat),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                   child: Row(
                     children: [
                       Container(
-                        width: 30,
-                        height: 30,
+                        width: 28,
+                        height: 28,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: catColor.withValues(alpha: 0.12),
@@ -74,33 +85,34 @@ class CategoryGrid extends StatelessWidget {
                         ),
                         child: buildCategoryIcon(
                           cat.icon,
-                          size: 17,
+                          size: 16,
                           color: catColor,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           cat.name,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            fontSize: 12.5,
+                            fontSize: 12.0,
                             color: isDark
                                 ? AmazonColors.darkTextPrimary
                                 : AmazonColors.textPrimary,
                             height: 1.15,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Icon(
-                        Icons.chevron_right,
-                        size: 15,
-                        color: isDark
-                            ? AmazonColors.darkTextSecondary.withValues(alpha: 0.6)
-                            : AmazonColors.textSecondary.withValues(alpha: 0.6),
-                      ),
+                      if (scaledFontSize < 16.0)
+                        Icon(
+                          Icons.chevron_right,
+                          size: 14,
+                          color: isDark
+                              ? AmazonColors.darkTextSecondary.withValues(alpha: 0.6)
+                              : AmazonColors.textSecondary.withValues(alpha: 0.6),
+                        ),
                     ],
                   ),
                 ),

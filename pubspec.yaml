@@ -16,17 +16,17 @@ dependencies:
   firebase_core: ^4.6.0
   firebase_messaging: ^16.1.3
   firebase_crashlytics: ^5.3.0
-  flutter_local_notifications: ^21.0.0
-  permission_handler: ^12.0.3
+  flutter_local_notifications: ^22.3.1
+  permission_handler: ^13.0.2
   geolocator: ^14.0.2
 
   # Connectivity
   connectivity_plus: ^7.1.0
 
   # UI & navigation
-  go_router: ^17.2.0
+  go_router: ^18.0.1
   provider: ^6.1.1
-  cached_network_image: ^3.3.1
+  cached_network_image: ^4.0.0
   image_picker: ^1.2.0
   carousel_slider: ^5.0.0
   cupertino_icons: ^1.0.8
@@ -35,12 +35,11 @@ dependencies:
   intl: ^0.20.2
   uuid: ^4.5.0
   url_launcher: ^6.2.4
-  share_plus: ^12.0.2
-  shimmer: ^3.0.0
+  share_plus: ^13.3.0
+  shimmer: ^4.0.0
   shared_preferences: ^2.2.2
-  flutter_secure_storage: ^9.2.4
-  workmanager: ^0.9.0+3
-  flutter_dotenv: ^6.0.0
+  flutter_secure_storage: ^11.2.0
+  workmanager: ^0.10.10
   flutter_map: ^8.2.2
   latlong2: ^0.9.0
   google_fonts: ^8.0.2
@@ -56,7 +55,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    # - assets/.env # Otkomentarisati za lokalni razvoj ako koristite .env fajl
     - assets/google_fonts/
     - assets/images/
     - assets/images/categories/

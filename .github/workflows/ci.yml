@@ -24,6 +24,8 @@ jobs:
 
       - name: Enforce service import rules
         run: dart run tool/check_service_imports.dart
+      - name: Guard against committed keystores/secrets
+        run: dart run tool/check_no_committed_secrets.dart
 
       - name: Scan SECURITY DEFINER migrations (heuristic)
         run: dart run tool/scan_security_definer_migrations.dart
@@ -39,6 +41,9 @@ jobs:
 
       - name: Check code coverage threshold
         run: dart run tool/check_coverage.dart --min-coverage=26.0
+
+      - name: Validate Digital Asset Links (assetlinks.json)
+        run: node -e "const content = require('fs').readFileSync('web/.well-known/assetlinks.json', 'utf8'); const data = JSON.parse(content); if (!Array.isArray(data) || data.length === 0) throw new Error('assetlinks.json must be a non-empty array');"
 
       - name: Flutter build web (smoke test)
         run: |
@@ -67,6 +72,20 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
+
+      - name: TypeScript type-check (Vercel edge functions)
+        run: npm run type-check
+
+      - name: Validate Digital Asset Links (assetlinks.json)
+        run: npm run validate:assetlinks
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check Supabase edge functions
+        run: deno check supabase/functions/send-push/index.ts
 
       - name: Install PostgreSQL client
         run: |

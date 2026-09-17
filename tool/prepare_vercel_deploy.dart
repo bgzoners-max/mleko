@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 void main() {
@@ -72,6 +73,42 @@ void main() {
     target: Directory('${deployDir.path}/api'),
     shouldInclude: (_) => true,
   );
+
+  // 4b. Validacija i osiguranje .well-known direktorijuma (npr. Digital Asset Links)
+  final wellKnownSource = Directory('web/.well-known');
+  if (wellKnownSource.existsSync()) {
+    final assetLinks = File('${wellKnownSource.path}/assetlinks.json');
+    if (assetLinks.existsSync()) {
+      final content = assetLinks.readAsStringSync().trim();
+      if (content.isEmpty) {
+        stderr.writeln('ERROR: web/.well-known/assetlinks.json is empty!');
+        exitCode = 1;
+        return;
+      }
+      try {
+        final parsed = jsonDecode(content);
+        if (parsed is! List || parsed.isEmpty) {
+          stderr.writeln(
+              'ERROR: web/.well-known/assetlinks.json must be a non-empty JSON array.');
+          exitCode = 1;
+          return;
+        }
+      } catch (e) {
+        stderr.writeln(
+            'ERROR: web/.well-known/assetlinks.json is not valid JSON: $e');
+        exitCode = 1;
+        return;
+      }
+    }
+
+    final wellKnownTarget = Directory('${targetPublicDir.path}/.well-known');
+    _copyDirectoryWithFilter(
+      source: wellKnownSource,
+      target: wellKnownTarget,
+      shouldInclude: (_) => true,
+    );
+    stdout.writeln('Validated and synchronized .well-known assets to public/.well-known');
+  }
 
   // 5. Post-procesiranje flutter_bootstrap.js: ubrizgavanje determinističkog heša
   final targetBootstrap = File('${targetPublicDir.path}/flutter_bootstrap.js');

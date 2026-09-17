@@ -35,6 +35,9 @@ class PendingOrder {
   final List<String> pickupOptions;
   final DateTime createdAt;
   final DateTime? synced; // null = still pending, DateTime = synced
+  final int retryCount;
+  final String? lastError;
+  final DateTime? lastAttemptAt;
 
   const PendingOrder({
     required this.id,
@@ -64,9 +67,52 @@ class PendingOrder {
     required this.pickupOptions,
     required this.createdAt,
     this.synced,
+    this.retryCount = 0,
+    this.lastError,
+    this.lastAttemptAt,
   });
 
   bool get isPending => synced == null;
+
+  PendingOrder copyWith({
+    DateTime? synced,
+    int? retryCount,
+    String? lastError,
+    DateTime? lastAttemptAt,
+  }) {
+    return PendingOrder(
+      id: id,
+      buyerId: buyerId,
+      sellerId: sellerId,
+      productId: productId,
+      productName: productName,
+      quantityKg: quantityKg,
+      unitType: unitType,
+      note: note,
+      buyerCity: buyerCity,
+      buyerAddress: buyerAddress,
+      buyerPostalCode: buyerPostalCode,
+      buyerPhone: buyerPhone,
+      deliveryMethod: deliveryMethod,
+      deliveryCity: deliveryCity,
+      deliveryPointId: deliveryPointId,
+      deliverySlotId: deliverySlotId,
+      deliveryPointLabel: deliveryPointLabel,
+      deliveryAddress: deliveryAddress,
+      deliveryWeekday: deliveryWeekday,
+      deliveryTimeFrom: deliveryTimeFrom,
+      deliveryTimeTo: deliveryTimeTo,
+      deliveryFeeRsd: deliveryFeeRsd,
+      minOrderAmountRsd: minOrderAmountRsd,
+      preferCall: preferCall,
+      pickupOptions: pickupOptions,
+      createdAt: createdAt,
+      synced: synced ?? this.synced,
+      retryCount: retryCount ?? this.retryCount,
+      lastError: lastError ?? this.lastError,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -96,6 +142,9 @@ class PendingOrder {
         'pickup_options': pickupOptions,
         'created_at': createdAt.toIso8601String(),
         'synced': synced?.toIso8601String(),
+        'retry_count': retryCount,
+        'last_error': lastError,
+        'last_attempt_at': lastAttemptAt?.toIso8601String(),
       };
 
   factory PendingOrder.fromJson(Map<String, dynamic> json) => PendingOrder(
@@ -131,6 +180,11 @@ class PendingOrder {
         synced: json['synced'] != null
             ? DateTime.parse(json['synced'] as String)
             : null,
+        retryCount: (json['retry_count'] as num?)?.toInt() ?? 0,
+        lastError: json['last_error'] as String?,
+        lastAttemptAt: json['last_attempt_at'] != null
+            ? DateTime.tryParse(json['last_attempt_at'] as String)
+            : null,
       );
 }
 
@@ -138,6 +192,26 @@ class PendingOrder {
 class OrderQueueService {
   static const _storageKey = 'mleko_pending_orders';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+
+  static final List<void Function()> _listeners = [];
+
+  static void addListener(void Function() listener) {
+    _listeners.add(listener);
+  }
+
+  static void removeListener(void Function() listener) {
+    _listeners.remove(listener);
+  }
+
+  static void _notifyListeners() {
+    for (final listener in List.of(_listeners)) {
+      try {
+        listener();
+      } catch (e) {
+        LoggerService.warning('Error in OrderQueueService listener: $e');
+      }
+    }
+  }
 
   // Serializuje sve write operacije da spreči race condition na SharedPreferences.
   // Sve mutacije (add/mark/remove/clean) idu u red i izvršavaju se jedna po jedna.
@@ -165,6 +239,12 @@ class OrderQueueService {
     }
   }
 
+  /// Preuzmi broj pending porudžbina
+  Future<int> getPendingCount({bool onlyUnsynced = true}) async {
+    final orders = await getPendingOrders(onlyUnsynced: onlyUnsynced);
+    return orders.length;
+  }
+
   /// Dodaj porudžbinu u queue (bez slanja na server)
   Future<void> addPendingOrder(PendingOrder order) {
     return _serialized(() async {
@@ -180,6 +260,7 @@ class OrderQueueService {
 
         orders.add(order);
         await _saveOrders(prefs, orders);
+        _notifyListeners();
         LoggerService.info('Added pending order to queue',
             extra: {'orderId': order.id});
       } catch (e) {
@@ -207,41 +288,51 @@ class OrderQueueService {
         }
 
         final order = orders[index];
-        orders[index] = PendingOrder(
-          id: order.id,
-          buyerId: order.buyerId,
-          sellerId: order.sellerId,
-          productId: order.productId,
-          productName: order.productName,
-          quantityKg: order.quantityKg,
-          unitType: order.unitType,
-          note: order.note,
-          buyerCity: order.buyerCity,
-          buyerAddress: order.buyerAddress,
-          buyerPostalCode: order.buyerPostalCode,
-          buyerPhone: order.buyerPhone,
-          deliveryMethod: order.deliveryMethod,
-          deliveryCity: order.deliveryCity,
-          deliveryPointId: order.deliveryPointId,
-          deliverySlotId: order.deliverySlotId,
-          deliveryPointLabel: order.deliveryPointLabel,
-          deliveryAddress: order.deliveryAddress,
-          deliveryWeekday: order.deliveryWeekday,
-          deliveryTimeFrom: order.deliveryTimeFrom,
-          deliveryTimeTo: order.deliveryTimeTo,
-          deliveryFeeRsd: order.deliveryFeeRsd,
-          minOrderAmountRsd: order.minOrderAmountRsd,
-          preferCall: order.preferCall,
-          pickupOptions: order.pickupOptions,
-          createdAt: order.createdAt,
+        orders[index] = order.copyWith(
           synced: DateTime.now(),
         );
 
         await _saveOrders(prefs, orders);
+        _notifyListeners();
         LoggerService.info('Marked order as synced',
             extra: {'orderId': orderId});
       } catch (e, st) {
         LoggerService.error('Failed to mark order as synced', e,
+            stackTrace: st);
+      }
+    });
+  }
+
+  /// Evidentira neuspešan pokušaj sinhronizacije i ažurira brojač grešaka
+  Future<void> recordOrderFailure(String orderId, {required String error}) {
+    return _serialized(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final orders = await _loadOrders(prefs);
+
+        final index = orders.indexWhere((o) => o.id == orderId);
+        if (index == -1) {
+          LoggerService.warning('Order not found for failure recording',
+              extra: {'orderId': orderId});
+          return;
+        }
+
+        final order = orders[index];
+        orders[index] = order.copyWith(
+          retryCount: order.retryCount + 1,
+          lastError: error,
+          lastAttemptAt: DateTime.now(),
+        );
+
+        await _saveOrders(prefs, orders);
+        _notifyListeners();
+        LoggerService.info('Recorded sync failure for order', extra: {
+          'orderId': orderId,
+          'retryCount': orders[index].retryCount,
+          'error': error,
+        });
+      } catch (e, st) {
+        LoggerService.error('Failed to record order sync failure', e,
             stackTrace: st);
       }
     });
@@ -255,6 +346,7 @@ class OrderQueueService {
         final orders = await _loadOrders(prefs);
         orders.removeWhere((o) => o.id == orderId);
         await _saveOrders(prefs, orders);
+        _notifyListeners();
         LoggerService.info('Removed pending order',
             extra: {'orderId': orderId});
       } catch (e, st) {
@@ -272,6 +364,7 @@ class OrderQueueService {
         final orders = await _loadOrders(prefs);
         final pending = orders.where((o) => o.isPending).toList();
         await _saveOrders(prefs, pending);
+        _notifyListeners();
         LoggerService.info('Cleaned synced orders from queue');
       } catch (e, st) {
         LoggerService.error('Failed to clean synced orders', e, stackTrace: st);
