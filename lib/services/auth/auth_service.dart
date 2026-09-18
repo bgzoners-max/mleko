@@ -17,7 +17,7 @@ class AuthService {
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   String get _authRedirectTo =>
-      kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
+      kIsWeb ? '${Uri.base.origin}/auth/confirmed' : 'io.naseselo.app://auth-callback';
 
   User? get currentSupabaseUser {
     try {
@@ -162,7 +162,8 @@ class AuthService {
     try {
       await _client.auth.resetPasswordForEmail(
         email,
-        redirectTo: _authRedirectTo,
+        redirectTo:
+            kIsWeb ? '${Uri.base.origin}/login' : _authRedirectTo,
       );
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);

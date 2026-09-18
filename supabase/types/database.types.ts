@@ -1947,6 +1947,54 @@ export type Database = {
         Args: { p_delta: number; p_order_id: string }
         Returns: undefined
       }
+      admin_get_push_health_dashboard: {
+        Args: never
+        Returns: {
+          anon_key_present: boolean | null
+          checked_at: string | null
+          deliveries_24h: number | null
+          delivery_backlog_minutes: number | null
+          edge_config_ok: boolean | null
+          failed_deliveries_24h: number | null
+          functions_base_url: string | null
+          health: string | null
+          last_delivery_at: string | null
+          last_notification_at: string | null
+          notifications_24h: number | null
+          success_rate_pct: number | null
+          successful_deliveries_24h: number | null
+          tokens_created_24h: number | null
+          total_tokens: number | null
+          users_with_tokens: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "push_health_dashboard"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_push_health_user_issues: {
+        Args: never
+        Returns: {
+          checked_at: string | null
+          health: string | null
+          latest_delivery_at: string | null
+          latest_delivery_error_count: number | null
+          latest_delivery_status: string | null
+          latest_notification_at: string | null
+          latest_token_at: string | null
+          notifications_7d: number | null
+          token_count: number | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "push_health_user_issues"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_moderate_classified_ad: {
         Args: { p_ad_id: string; p_new_status: string }
         Returns: undefined

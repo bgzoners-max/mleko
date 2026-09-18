@@ -82,4 +82,57 @@ void main() {
     expect(find.text('Pijaca domaće hrane'), findsOneWidget);
     expect(find.text('Mali oglasi za sve'), findsOneWidget);
   });
+
+  testWidgets('LoginScreen renders cleanly without overflows with 2.0x accessibility font scale',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final auth = AuthService();
+    final appState = AppState(
+      ordersService: OrdersService(),
+      authService: auth,
+    );
+    final appSettings = AppSettingsProvider();
+
+    final errorList = <FlutterErrorDetails>[];
+    final originalOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      errorList.add(details);
+    };
+
+    try {
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AppState>.value(value: appState),
+            ChangeNotifierProvider<AppSettingsProvider>.value(value: appSettings),
+          ],
+          child: const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(390, 844),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: Scaffold(body: LoginScreen()),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    } finally {
+      FlutterError.onError = originalOnError;
+    }
+
+    // Verify AutofillGroup is present
+    expect(find.byType(AutofillGroup), findsOneWidget);
+
+    // Verify critical elements are accessible
+    expect(find.text('Dobrodošli nazad'), findsOneWidget);
+    expect(find.widgetWithText(ElevatedButton, 'Prijavi se'), findsOneWidget);
+
+    // No exception thrown / no RenderFlex overflow
+    expect(errorList, isEmpty);
+  });
 }

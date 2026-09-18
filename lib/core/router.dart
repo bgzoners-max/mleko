@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -107,7 +108,7 @@ GoRouter createRouter(AppState appState) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     refreshListenable: appState,
-    initialLocation: '/splash',
+    initialLocation: kIsWeb ? '/' : '/splash',
     redirect: (context, state) {
       final loc = state.uri.path;
       if (appState.isLoading) return null;

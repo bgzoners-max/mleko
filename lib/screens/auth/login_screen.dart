@@ -51,15 +51,15 @@ class LoginScreen extends StatelessWidget {
             Expanded(
               child: Row(
                 children: [
-                  // Levi panel: Prezentacija platforme, besplatnog oglašavanja i obe celine
+                  // Levi panel: Prezentacija platforme (Glassmorphism Showcase)
                   Expanded(
                     flex: 7,
                     child: Container(
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Color(0xFF03190B), // Duboka smaragdno-crna
-                            Color(0xFF072C15), // Duboka šumska zelena
+                            Color(0xFF021B0B), // Najdublja smaragdna
+                            Color(0xFF072C15), // Šumska zelena
                             Color(0xFF0E4521), // Topla priroda
                           ],
                           begin: Alignment.topLeft,
@@ -68,13 +68,13 @@ class LoginScreen extends StatelessWidget {
                       ),
                       child: Stack(
                         children: [
-                          // Ambijentalni sjaj 1 (smaragdni gornji levi)
+                          // Ambijentalni sjaj 1 (gornji levi)
                           Positioned(
-                            top: -80,
-                            left: -80,
+                            top: -90,
+                            left: -90,
                             child: Container(
-                              width: 360,
-                              height: 360,
+                              width: 380,
+                              height: 380,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
@@ -86,13 +86,13 @@ class LoginScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Ambijentalni sjaj 2 (topli zlatni donji desni)
+                          // Ambijentalni sjaj 2 (donji desni)
                           Positioned(
-                            bottom: 30,
-                            right: -60,
+                            bottom: 20,
+                            right: -70,
                             child: Container(
-                              width: 380,
-                              height: 380,
+                              width: 400,
+                              height: 400,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: RadialGradient(
@@ -108,7 +108,7 @@ class LoginScreen extends StatelessWidget {
                           const Center(
                             child: SingleChildScrollView(
                               padding: EdgeInsets.symmetric(
-                                  horizontal: 32, vertical: 24),
+                                  horizontal: 36, vertical: 28),
                               child: MarketingContent(isDesktop: true),
                             ),
                           ),
@@ -116,7 +116,8 @@ class LoginScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Desni panel: Forma za prijavu u modernoj izdignutoj kartici
+
+                  // Desni panel: Forma za prijavu u fokusiranoj kartici
                   Expanded(
                     flex: 5,
                     child: Container(
@@ -131,7 +132,7 @@ class LoginScreen extends StatelessWidget {
                                 horizontal: 24, vertical: 24),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 28, vertical: 28),
+                                  horizontal: 32, vertical: 32),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.surface,
                                 borderRadius: BorderRadius.circular(24),
@@ -143,7 +144,7 @@ class LoginScreen extends StatelessWidget {
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black
-                                        .withAlpha(isDark ? 55 : 16),
+                                        .withAlpha(isDark ? 55 : 14),
                                     blurRadius: 28,
                                     offset: const Offset(0, 10),
                                   ),
@@ -172,8 +173,8 @@ class LoginScreen extends StatelessWidget {
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
-                                  const SizedBox(height: 24),
-                                  _LoginForm(),
+                                  const SizedBox(height: 26),
+                                  const _LoginForm(),
                                 ],
                               ),
                             ),
@@ -190,70 +191,75 @@ class LoginScreen extends StatelessWidget {
       );
     }
 
-    // Mobilni i tablet prikaz
+    // Mobilni i tablet prikaz (Mobile First)
     return Scaffold(
       backgroundColor: isDark
           ? theme.scaffoldBackgroundColor
           : const Color(0xFFF9F6F0),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const BetaAnnouncementBanner(),
-            const _MobileHeroSection(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 22),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark ? Colors.white12 : const Color(0xFFE2EBE2),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const BetaAnnouncementBanner(),
+              const _MobileHeroSection(),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 22, vertical: 24),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color:
+                            isDark ? Colors.white12 : const Color(0xFFE2EBE2),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(isDark ? 45 : 12),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(isDark ? 45 : 12),
-                        blurRadius: 20,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Dobrodošli nazad',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurface,
-                          letterSpacing: -0.4,
-                          fontSize: 20,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Dobrodošli nazad',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -0.4,
+                            fontSize: 21,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Prijavite se na svoj nalog',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontSize: 13,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Prijavite se na svoj nalog',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      _LoginForm(),
-                    ],
+                        const SizedBox(height: 22),
+                        const _LoginForm(),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const _MobileShowcaseSection(),
-            const SizedBox(height: 32),
-          ],
+              const _MobileShowcaseSection(),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -276,7 +282,7 @@ class MarketingContent extends StatelessWidget {
           children: [
             Image.asset(
               'assets/images/header_logo.png',
-              height: 40,
+              height: 42,
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 12),
@@ -290,7 +296,7 @@ class MarketingContent extends StatelessWidget {
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.4,
-                      fontSize: 19,
+                      fontSize: 20,
                     ),
                   ),
                   Text(
@@ -305,7 +311,7 @@ class MarketingContent extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
               decoration: BoxDecoration(
                 color: Colors.white.withAlpha(24),
                 borderRadius: BorderRadius.circular(20),
@@ -342,8 +348,8 @@ class MarketingContent extends StatelessWidget {
           style: theme.textTheme.titleLarge?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w900,
-            fontSize: 22,
-            height: 1.2,
+            fontSize: 23,
+            height: 1.22,
             letterSpacing: -0.5,
           ),
         ),
@@ -353,18 +359,17 @@ class MarketingContent extends StatelessWidget {
           style: TextStyle(
             color: Colors.white.withAlpha(225),
             fontSize: 13,
-            height: 1.35,
+            height: 1.38,
             fontWeight: FontWeight.w400,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // GLAVNI VIP BANER: 100% BESPLATNO POSTAVLJANJE I OBNAVLJANJE
         const _FreePerksHighlightBar(),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // Celina 1 & 2: Pijaca domaće hrane i Mali oglasi
-        // Na desktopu: JEDNA PORED DRUGE (Side-by-side u Row-u sa Expanded)
         LayoutBuilder(
           builder: (context, constraints) {
             final sideBySide = constraints.maxWidth >= 480;
@@ -439,7 +444,7 @@ class MarketingContent extends StatelessWidget {
             }
           },
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
         // Bedževi poverenja na dnu
         const Wrap(
@@ -469,10 +474,10 @@ class _FreePerksHighlightBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(24),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFF81C784).withAlpha(110),
           width: 1.2,
@@ -528,7 +533,7 @@ class _FreePerksHighlightBar extends StatelessWidget {
               ),
               Container(
                 width: 1,
-                height: 34,
+                height: 32,
                 margin: const EdgeInsets.symmetric(horizontal: 10),
                 color: Colors.white.withAlpha(40),
               ),
@@ -582,7 +587,7 @@ class _FreePerkColumn extends StatelessWidget {
             children: [
               Text(
                 title,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
@@ -594,7 +599,7 @@ class _FreePerkColumn extends StatelessWidget {
               const SizedBox(height: 1),
               Text(
                 description,
-                maxLines: 2,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white.withAlpha(190),
@@ -638,12 +643,12 @@ class _ShowcasePillarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(20),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white.withAlpha(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.white.withAlpha(46),
+          color: Colors.white.withAlpha(48),
           width: 1,
         ),
       ),
@@ -718,7 +723,7 @@ class _ShowcasePillarCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 10),
           // Category chips
           Wrap(
             spacing: 4,
@@ -726,7 +731,7 @@ class _ShowcasePillarCard extends StatelessWidget {
             children: chips
                 .map((c) => Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6.5, vertical: 2),
+                          horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(24),
                         borderRadius: BorderRadius.circular(8),
@@ -746,10 +751,10 @@ class _ShowcasePillarCard extends StatelessWidget {
                     ))
                 .toList(),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 9),
           ...bullets.map(
             (b) => Padding(
-              padding: const EdgeInsets.only(bottom: 3.5),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -777,7 +782,7 @@ class _ShowcasePillarCard extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
@@ -786,7 +791,7 @@ class _ShowcasePillarCard extends StatelessWidget {
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.white.withAlpha(32),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
@@ -847,25 +852,25 @@ class _MobileHeroSection extends StatelessWidget {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color(0xFF03190B),
-            Color(0xFF083315),
-            Color(0xFF0E521E),
+            Color(0xFF021B0B),
+            Color(0xFF072C15),
+            Color(0xFF0E4521),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       child: Column(
         children: [
           Row(
             children: [
               Image.asset(
                 'assets/images/header_logo.png',
-                height: 34,
+                height: 36,
                 fit: BoxFit.contain,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -875,7 +880,7 @@ class _MobileHeroSection extends StatelessWidget {
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,
-                        fontSize: 16,
+                        fontSize: 16.5,
                       ),
                     ),
                     Text(
@@ -1125,7 +1130,7 @@ class _MobileShowcaseCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E241F) : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1182,23 +1187,27 @@ class _MobileShowcaseCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeColor.withAlpha(isDark ? 40 : 20),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: badgeColor.withAlpha(80),
-                    width: 0.8,
+              Flexible(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withAlpha(isDark ? 40 : 20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: badgeColor.withAlpha(80),
+                      width: 0.8,
+                    ),
                   ),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    color: badgeColor,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w800,
+                  child: Text(
+                    badgeText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: badgeColor,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
@@ -1212,7 +1221,7 @@ class _MobileShowcaseCard extends StatelessWidget {
             children: chips
                 .map((c) => Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6.5, vertical: 2),
+                          horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
                         color: isDark
                             ? Colors.white.withAlpha(15)
@@ -1320,12 +1329,16 @@ class _MobileTrustBadge extends StatelessWidget {
         children: [
           Icon(icon, color: const Color(0xFF2E7D32), size: 13),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isDark ? Colors.white70 : Colors.black87,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -1335,6 +1348,8 @@ class _MobileTrustBadge extends StatelessWidget {
 }
 
 class _LoginForm extends StatefulWidget {
+  const _LoginForm();
+
   @override
   State<_LoginForm> createState() => _LoginFormState();
 }
@@ -1478,270 +1493,288 @@ class _LoginFormState extends State<_LoginForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isAppLoading = context.watch<AppState>().isLoading;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextField(
-          controller: _email,
-          enabled: !_isLockedOut,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: 'Email',
-            hintText: 'primer@email.com',
-            prefixIcon: const Icon(Icons.email_outlined),
-            filled: true,
-            fillColor:
-                isDark ? const Color(0xFF1E241F) : const Color(0xFFF6F8F6),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                  color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+    return AutofillGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _email,
+            enabled: !_isLockedOut && !isAppLoading,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.email, AutofillHints.username],
+            decoration: InputDecoration(
+              labelText: 'Email',
+              hintText: 'primer@email.com',
+              prefixIcon: const Icon(Icons.email_outlined),
+              filled: true,
+              fillColor:
+                  isDark ? const Color(0xFF1E241F) : const Color(0xFFF6F8F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide:
+                    const BorderSide(color: Color(0xFF1B5E20), width: 1.8),
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                  color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1B5E20), width: 1.8),
-            ),
+            onSubmitted: (_) => _isLockedOut || isAppLoading ? null : _submit(),
           ),
-          onSubmitted: (_) => _isLockedOut ? null : _submit(),
-        ),
-        const SizedBox(height: 18),
-        TextField(
-          controller: _password,
-          enabled: !_isLockedOut,
-          obscureText: _obscure,
-          decoration: InputDecoration(
-            labelText: 'Lozinka',
-            prefixIcon: const Icon(Icons.lock_outline),
-            filled: true,
-            fillColor:
-                isDark ? const Color(0xFF1E241F) : const Color(0xFFF6F8F6),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                  color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _password,
+            enabled: !_isLockedOut && !isAppLoading,
+            obscureText: _obscure,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
+            decoration: InputDecoration(
+              labelText: 'Lozinka',
+              prefixIcon: const Icon(Icons.lock_outline),
+              filled: true,
+              fillColor:
+                  isDark ? const Color(0xFF1E241F) : const Color(0xFFF6F8F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                    color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide:
+                    const BorderSide(color: Color(0xFF1B5E20), width: 1.8),
+              ),
+              suffixIcon: IconButton(
+                tooltip: _obscure ? 'Prikaži lozinku' : 'Sakrij lozinku',
+                icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                onPressed: _isLockedOut || isAppLoading
+                    ? null
+                    : () => setState(() => _obscure = !_obscure),
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                  color: isDark ? Colors.white24 : const Color(0xFFD6DFD6)),
+            onSubmitted: (_) => _isLockedOut || isAppLoading ? null : _submit(),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                          color: Colors.red, fontSize: 13, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide:
-                  const BorderSide(color: Color(0xFF1B5E20), width: 1.8),
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-              onPressed: _isLockedOut
+          ],
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _isLockedOut || isAppLoading
                   ? null
-                  : () => setState(() => _obscure = !_obscure),
+                  : () {
+                      if (_email.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Unesite email za reset lozinke')),
+                        );
+                        return;
+                      }
+                      context
+                          .read<AppState>()
+                          .authService
+                          .sendPasswordReset(_email.text.trim());
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Link za reset je poslat na email')),
+                      );
+                    },
+              child: Text(
+                'Zaboravljena lozinka?',
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                ),
+              ),
             ),
           ),
-          onSubmitted: (_) => _isLockedOut ? null : _submit(),
-        ),
-        if (_error != null) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+          ElevatedButton(
+            onPressed: (_isLockedOut || isAppLoading) ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1B5E20),
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(50),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _error!,
+            child: isAppLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    _isLockedOut
+                        ? 'Pokušajte ponovo za $_lockoutSeconds s'
+                        : 'Prijavi se',
                     style: const TextStyle(
-                        color: Colors.red, fontSize: 13, height: 1.3),
+                        fontWeight: FontWeight.w800, fontSize: 15),
+                  ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              const Expanded(child: Divider()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'ili',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant.withAlpha(160),
                   ),
                 ),
-              ],
+              ),
+              const Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Dva privlačna tastera za izbor režima kao gost
+          Row(
+            children: [
+              Expanded(
+                child: _GuestQuickCard(
+                  icon: Icons.cottage_rounded,
+                  title: 'Pijaca hrane',
+                  subtitle: 'Domaće sa sela',
+                  color: const Color(0xFF2E7D32),
+                  isLoading: _guestLoading,
+                  onTap: () => _guestWithMode(MarketMode.foodMarket),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _GuestQuickCard(
+                  icon: Icons.campaign_rounded,
+                  title: 'Mali oglasi',
+                  subtitle: 'Besplatno',
+                  color: const Color(0xFFE65100),
+                  isLoading: _guestLoading,
+                  onTap: () => _guestWithMode(MarketMode.classifieds),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: _guestLoading ? null : _guest,
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: _guestLoading
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text(
+                      'Pregledaj sajt bez prijave →',
+                      style: TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('Nemaš nalog?',
+                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+              TextButton(
+                onPressed: () => context.push('/register'),
+                child: const Text('Registruj se',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1B5E20))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withAlpha(179),
+                  fontSize: 11,
+                ),
+                children: [
+                  const TextSpan(text: 'Nastavkom prijave prihvatate naše '),
+                  TextSpan(
+                    text: 'Uslove korišćenja',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => context.push('/uslovi-koriscenja'),
+                  ),
+                  const TextSpan(text: ' i '),
+                  TextSpan(
+                    text: 'Politiku privatnosti',
+                    style: TextStyle(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => context.push('/politika-privatnosti'),
+                  ),
+                  const TextSpan(text: '.'),
+                ],
+              ),
             ),
           ),
         ],
-        const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: _isLockedOut
-                ? null
-                : () {
-                    if (_email.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Unesite email za reset lozinke')),
-                      );
-                      return;
-                    }
-                    context
-                        .read<AppState>()
-                        .authService
-                        .sendPasswordReset(_email.text.trim());
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Link za reset je poslat na email')),
-                    );
-                  },
-            child: Text(
-              'Zaboravljena lozinka?',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13.5,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        ElevatedButton(
-          onPressed: _isLockedOut ? null : _submit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1B5E20),
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(50),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          child: Text(
-            _isLockedOut
-                ? 'Pokušajte ponovo za $_lockoutSeconds s'
-                : 'Prijavi se',
-            style: const TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 15),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                'ili istraži bez prijave',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurfaceVariant.withAlpha(160),
-                ),
-              ),
-            ),
-            const Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Dva privlačna tastera za izbor režima kao gost
-        Row(
-          children: [
-            Expanded(
-              child: _GuestQuickCard(
-                icon: Icons.cottage_rounded,
-                title: 'Pijaca hrane',
-                subtitle: 'Domaće sa sela',
-                color: const Color(0xFF2E7D32),
-                isLoading: _guestLoading,
-                onTap: () => _guestWithMode(MarketMode.foodMarket),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _GuestQuickCard(
-                icon: Icons.campaign_rounded,
-                title: 'Mali oglasi',
-                subtitle: 'Besplatno',
-                color: const Color(0xFFE65100),
-                isLoading: _guestLoading,
-                onTap: () => _guestWithMode(MarketMode.classifieds),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: TextButton(
-            onPressed: _guestLoading ? null : _guest,
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurfaceVariant,
-              visualDensity: VisualDensity.compact,
-            ),
-            child: _guestLoading
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text(
-                    'Pregledaj sajt bez prijave →',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text('Nemaš nalog?',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-            TextButton(
-              onPressed: () => context.push('/register'),
-              child: const Text('Registruj se',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1B5E20))),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withAlpha(179),
-                fontSize: 11,
-              ),
-              children: [
-                const TextSpan(text: 'Nastavkom prijave prihvatate naše '),
-                TextSpan(
-                  text: 'Uslove korišćenja',
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () => context.push('/uslovi-koriscenja'),
-                ),
-                const TextSpan(text: ' i '),
-                TextSpan(
-                  text: 'Politiku privatnosti',
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () => context.push('/politika-privatnosti'),
-                ),
-                const TextSpan(text: '.'),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

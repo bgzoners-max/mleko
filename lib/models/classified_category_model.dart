@@ -180,6 +180,8 @@ class ClassifiedCategoryModel {
 
   IconData get iconData {
     switch (iconName) {
+      case 'accessible':
+        return Icons.accessible;
       case 'agriculture':
         return Icons.agriculture;
       case 'air':
@@ -328,6 +330,8 @@ class ClassifiedCategoryModel {
         return Icons.headset;
       case 'healing':
         return Icons.healing;
+      case 'health_and_safety':
+        return Icons.health_and_safety;
       case 'heat_pump':
         return Icons.heat_pump;
       case 'highlight':

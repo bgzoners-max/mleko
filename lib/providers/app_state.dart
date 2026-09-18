@@ -99,13 +99,38 @@ class AppState extends ChangeNotifier {
         await ImageCacheService().clearAllCaches();
         if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
       } else {
-        if (_pendingEmailVerification &&
+        final isWebSignupCallback = kIsWeb &&
+            (Uri.base.fragment.contains('type=signup') ||
+                Uri.base.queryParameters['type'] == 'signup' ||
+                Uri.base.fragment.contains('type=email_change') ||
+                Uri.base.path.contains('/auth/confirmed'));
+
+        if ((_pendingEmailVerification || isWebSignupCallback) &&
             authState.event == AuthChangeEvent.signedIn) {
           _justConfirmedEmail = true;
           _pendingEmailVerification = false;
         }
 
-        final resolvedUser = await _auth.getCurrentUser();
+        UserModel? resolvedUser;
+        try {
+          resolvedUser = await _auth.getCurrentUser();
+        } catch (e) {
+          LoggerService.warning(
+            'Failed to load full user profile on auth change',
+            extra: {'error': e.toString()},
+          );
+          if (sessionUserId != null) {
+            final sessionUser = authState.session?.user;
+            resolvedUser = UserModel(
+              id: sessionUserId,
+              email: sessionUser?.email,
+              displayName:
+                  sessionUser?.userMetadata?['display_name'] as String?,
+              isGuest: false,
+            );
+          }
+        }
+
         if (!_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
           return;
         }
