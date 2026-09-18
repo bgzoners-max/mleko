@@ -76,6 +76,18 @@ class AppState extends ChangeNotifier {
   }
 
   void _initAuth() {
+    final initialSupabaseUser = _auth.currentSupabaseUser;
+    if (initialSupabaseUser != null && !initialSupabaseUser.isAnonymous) {
+      _user = UserModel(
+        id: initialSupabaseUser.id,
+        email: initialSupabaseUser.email,
+        displayName:
+            initialSupabaseUser.userMetadata?['display_name'] as String?,
+        isGuest: false,
+      );
+      _authChecked = true;
+    }
+
     _authSubscription =
         _auth.authStateChanges.listen((AuthState authState) async {
       final authVersion = ++_authEventVersion;
