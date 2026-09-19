@@ -57,8 +57,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   late ClassifiedsService _service;
 
   bool _isPickingImages = false;
+  int _incomingCount = 0;
   double? _imageProcessingProgress;
   String? _imageProcessingStatus;
+  String? _uploadStatusText;
 
   bool _loading = false;
   bool _initializing = false;
@@ -189,6 +191,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     final remainingSlots = 8 - totalCurrent;
     setState(() {
       _isPickingImages = true;
+      _incomingCount = 1;
       _imageProcessingProgress = null;
       _imageProcessingStatus = 'Izaberite sliku...';
     });
@@ -220,40 +223,63 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
       if (picked.isEmpty) return;
 
+      if (picked.length > remainingSlots && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Izabrano je ${picked.length} slika. Dodato je prvih $remainingSlots (maksimalno 8 slika).',
+            ),
+          ),
+        );
+      }
+
       final filesToProcess = picked.take(remainingSlots).toList();
       final totalFiles = filesToProcess.length;
 
-      for (var i = 0; i < totalFiles; i++) {
-        final file = filesToProcess[i];
-        if (mounted) {
-          setState(() {
-            _imageProcessingProgress = (i + 0.25) / totalFiles;
-            _imageProcessingStatus = totalFiles > 1
-                ? 'Učitavanje slike ${i + 1}/$totalFiles...'
-                : 'Učitavanje slike...';
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _incomingCount = totalFiles;
+          _imageProcessingProgress = 0.3;
+          _imageProcessingStatus = totalFiles > 1
+              ? 'Učitavanje $totalFiles slika paralelno...'
+              : 'Učitavanje slike...';
+        });
+      }
 
-        final bytes = await file.readAsBytes();
-        final sizeErr = checkFileSize(bytes);
+      // Paralelno učitavanje svih izabranih fajlova u memoriju
+      final readFutures = filesToProcess.map((f) => f.readAsBytes()).toList();
+      final allBytes = await Future.wait(readFutures);
+
+      final validBytes = <Uint8List>[];
+      var oversizedCount = 0;
+
+      for (final rawBytes in allBytes) {
+        final sizeErr = checkFileSize(rawBytes);
         if (sizeErr != null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(sizeErr),
-                backgroundColor: Colors.red.shade700,
-              ),
-            );
-          }
-          continue;
+          oversizedCount++;
+        } else {
+          validBytes.add(Uint8List.fromList(rawBytes));
         }
+      }
 
-        if (mounted) {
-          setState(() {
-            _newImageBytes.add(Uint8List.fromList(bytes));
-            _imageProcessingProgress = (i + 1.0) / totalFiles;
-          });
-        }
+      if (oversizedCount > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              oversizedCount == 1
+                  ? 'Jedna slika je preskočena jer prelazi limit od 10 MB.'
+                  : '$oversizedCount slike su preskočene jer prelaze limit od 10 MB.',
+            ),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _newImageBytes.addAll(validBytes);
+          _imageProcessingProgress = 1.0;
+        });
       }
     } catch (e) {
       debugPrint('Greška pri izboru slika: $e');
@@ -269,6 +295,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       if (mounted) {
         setState(() {
           _isPickingImages = false;
+          _incomingCount = 0;
           _imageProcessingProgress = null;
           _imageProcessingStatus = null;
         });
@@ -632,22 +659,51 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       return;
     }
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _uploadStatusText = _newImageBytes.isNotEmpty
+          ? 'Otpremanje ${_newImageBytes.length} slika paralelno...'
+          : 'Čuvanje oglasa...';
+    });
 
     final newlyUploadedUrls = <String>[];
 
     try {
       final uploadedUrls = List<String>.from(_existingImages);
 
-      // Upload novih slika
-      for (var i = 0; i < _newImageBytes.length; i++) {
-        final url = await _storageService.uploadProductImage(
-          user.id,
-          _newImageBytes[i],
-          uploadedUrls.length + i,
-        );
-        newlyUploadedUrls.add(url);
-        uploadedUrls.add(url);
+      // Paralelni upload novih slika u Supabase Storage
+      if (_newImageBytes.isNotEmpty) {
+        final totalUploads = _newImageBytes.length;
+        var completedCount = 0;
+
+        final uploadFutures = _newImageBytes.asMap().entries.map((entry) async {
+          final index = entry.key;
+          final bytes = entry.value;
+          final url = await _storageService.uploadProductImage(
+            user.id,
+            bytes,
+            uploadedUrls.length + index,
+          );
+          completedCount++;
+          if (mounted) {
+            setState(() {
+              _uploadStatusText = 'Otpremanje slika: $completedCount/$totalUploads...';
+            });
+          }
+          return MapEntry(index, url);
+        }).toList();
+
+        final uploadedEntries = await Future.wait(uploadFutures);
+        // Održavamo tačan redosled slika
+        uploadedEntries.sort((a, b) => a.key.compareTo(b.key));
+        final sortedUrls = uploadedEntries.map((e) => e.value).toList();
+
+        newlyUploadedUrls.addAll(sortedUrls);
+        uploadedUrls.addAll(sortedUrls);
+      }
+
+      if (mounted) {
+        setState(() => _uploadStatusText = 'Čuvanje oglasa...');
       }
 
       final priceNum = _priceType == 'fixed' || _priceType == 'negotiable'
@@ -709,7 +765,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _uploadStatusText = null;
+        });
+      }
     }
   }
 
@@ -765,9 +826,28 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Sekcija: Fotografije
+                  Row(
+                    children: [
+                      Text(
+                        'Fotografije oglasa (do 8 slika)',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '– možete izabrati više odjednom',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(
-                    'Fotografije oglasa (do 8 slika)',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    'Kliknite "Dodaj" i držite Ctrl ili Shift za izbor više slika istovremeno.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
@@ -899,60 +979,63 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                           );
                         }),
                         if (_isPickingImages)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: colorScheme.primary.withValues(alpha: 0.5),
-                                  width: 1.5,
+                          for (var k = 0; k < (_incomingCount > 0 ? _incomingCount : 1); k++)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: colorScheme.primary.withValues(alpha: 0.5),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Spacer(),
+                                    Icon(
+                                      Icons.photo_library_outlined,
+                                      color: colorScheme.primary,
+                                      size: 26,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      child: Text(
+                                        _incomingCount > 1
+                                            ? 'Slika ${k + 1}/$_incomingCount'
+                                            : (_imageProcessingStatus ?? 'Učitavanje...'),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(3),
+                                        child: LinearProgressIndicator(
+                                          value: _imageProcessingProgress,
+                                          minHeight: 4,
+                                          backgroundColor: colorScheme.surfaceContainerHighest,
+                                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Spacer(),
-                                  Icon(
-                                    Icons.photo_library_outlined,
-                                    color: colorScheme.primary,
-                                    size: 26,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: Text(
-                                      _imageProcessingStatus ?? 'Učitavanje...',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(3),
-                                      child: LinearProgressIndicator(
-                                        value: _imageProcessingProgress,
-                                        minHeight: 4,
-                                        backgroundColor: colorScheme.surfaceContainerHighest,
-                                        valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
-                          ),
                       ],
                     ),
                   ),
@@ -1261,10 +1344,26 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: _loading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              ),
+                              if (_uploadStatusText != null) ...[
+                                const SizedBox(width: 12),
+                                Text(
+                                  _uploadStatusText!,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ],
                           )
                         : Text(
                             isEdit ? 'Sačuvaj izmene' : 'Objavi oglas',

@@ -18,9 +18,9 @@ void main() {
       expect(error, contains('10 MB'));
     });
 
-    testWidgets('renders incoming image slot with small LinearProgressIndicator below icon', (tester) async {
-      const progressValue = 0.65;
-      const statusText = 'Učitavanje slike 1/2...';
+    testWidgets('renders multiple incoming image slots with LinearProgressIndicator below each icon', (tester) async {
+      const incomingCount = 3;
+      const progressValue = 0.5;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -30,44 +30,46 @@ void main() {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Spacer(),
-                        const Icon(
-                          Icons.photo_library_outlined,
-                          color: Colors.green,
-                          size: 26,
-                        ),
-                        const SizedBox(height: 4),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            statusText,
-                            style: TextStyle(fontSize: 10),
+                  for (var k = 0; k < incomingCount; k++)
+                    Container(
+                      key: ValueKey('incoming_$k'),
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Spacer(),
+                          const Icon(
+                            Icons.photo_library_outlined,
+                            color: Colors.green,
+                            size: 26,
                           ),
-                        ),
-                        const Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: const LinearProgressIndicator(
-                              value: progressValue,
-                              minHeight: 4,
+                          const SizedBox(height: 4),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              'Slika ${k + 1}/$incomingCount',
+                              style: const TextStyle(fontSize: 10),
                             ),
                           ),
-                        ),
-                      ],
+                          const Spacer(),
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.all(Radius.circular(3)),
+                              child: LinearProgressIndicator(
+                                value: progressValue,
+                                minHeight: 4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -75,15 +77,13 @@ void main() {
         ),
       );
 
-      expect(find.text(statusText), findsOneWidget);
-      expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
+      expect(find.text('Slika 1/3'), findsOneWidget);
+      expect(find.text('Slika 2/3'), findsOneWidget);
+      expect(find.text('Slika 3/3'), findsOneWidget);
+      expect(find.byIcon(Icons.photo_library_outlined), findsNWidgets(3));
 
       final progressFinder = find.byType(LinearProgressIndicator);
-      expect(progressFinder, findsOneWidget);
-
-      final progressWidget = tester.widget<LinearProgressIndicator>(progressFinder);
-      expect(progressWidget.value, equals(progressValue));
-      expect(progressWidget.minHeight, equals(4.0));
+      expect(progressFinder, findsNWidgets(3));
     });
   });
 }

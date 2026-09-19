@@ -220,9 +220,12 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         limit: remaining,
       );
       if (files.isEmpty || !mounted) return;
+      final filesToProcess = files.take(remaining).toList();
+      final readFutures = filesToProcess.map((f) => f.readAsBytes()).toList();
+      final allBytes = await Future.wait(readFutures);
+
       final newBytes = <Uint8List>[];
-      for (final f in files.take(remaining)) {
-        final bytes = await f.readAsBytes();
+      for (final bytes in allBytes) {
         final sizeError = checkFileSize(bytes);
         if (sizeError != null) {
           if (mounted) _showErrorDialog(sizeError);
@@ -348,10 +351,21 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     });
     List<String> imageUrls = List.from(_imageUrls);
     try {
-      for (var i = 0; i < _newImageBytes.length; i++) {
-        final url = await _storageService.uploadProductImage(
-            user.id, _newImageBytes[i], imageUrls.length + i);
-        imageUrls.add(url);
+      if (_newImageBytes.isNotEmpty) {
+        final uploadFutures = _newImageBytes.asMap().entries.map((entry) async {
+          final index = entry.key;
+          final bytes = entry.value;
+          final url = await _storageService.uploadProductImage(
+            user.id,
+            bytes,
+            imageUrls.length + index,
+          );
+          return MapEntry(index, url);
+        }).toList();
+
+        final uploadedEntries = await Future.wait(uploadFutures);
+        uploadedEntries.sort((a, b) => a.key.compareTo(b.key));
+        imageUrls.addAll(uploadedEntries.map((e) => e.value));
       }
       imageUrls = imageUrls.take(AppConstants.maxProductImages).toList();
     } catch (e) {
