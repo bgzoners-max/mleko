@@ -246,20 +246,46 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         });
       }
 
-      // Paralelno učitavanje svih izabranih fajlova u memoriju
-      final readFutures = filesToProcess.map((f) => f.readAsBytes()).toList();
+      // Paralelno učitavanje svih izabranih fajlova u memoriju sa pojedinačnim try-catch
+      final readFutures = filesToProcess.map((f) async {
+        try {
+          final bytes = await f.readAsBytes();
+          return bytes;
+        } catch (err) {
+          debugPrint('Greška pri čitanju fajla ${f.name}: $err');
+          return null;
+        }
+      }).toList();
       final allBytes = await Future.wait(readFutures);
 
       final validBytes = <Uint8List>[];
       var oversizedCount = 0;
+      var failedReadCount = 0;
 
       for (final rawBytes in allBytes) {
+        if (rawBytes == null) {
+          failedReadCount++;
+          continue;
+        }
         final sizeErr = checkFileSize(rawBytes);
         if (sizeErr != null) {
           oversizedCount++;
         } else {
           validBytes.add(Uint8List.fromList(rawBytes));
         }
+      }
+
+      if (failedReadCount > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              failedReadCount == 1
+                  ? 'Jedna slika nije mogla biti učitana sa diska.'
+                  : '$failedReadCount slike nisu mogle biti učitane sa diska.',
+            ),
+            backgroundColor: Colors.orange.shade800,
+          ),
+        );
       }
 
       if (oversizedCount > 0 && mounted) {
@@ -275,7 +301,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         );
       }
 
-      if (mounted) {
+      if (mounted && validBytes.isNotEmpty) {
         setState(() {
           _newImageBytes.addAll(validBytes);
           _imageProcessingProgress = 1.0;
@@ -284,9 +310,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     } catch (e) {
       debugPrint('Greška pri izboru slika: $e');
       if (mounted) {
+        final errorMsg = e.toString().contains('Blob') || e.toString().contains('load')
+            ? 'Pretraživač nije uspeo da učita fajl. Pokušajte sa JPG ili PNG formatom.'
+            : friendlyError(e);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Greška pri izboru slike: ${friendlyError(e)}'),
+            content: Text('Greška pri izboru slike: $errorMsg'),
             backgroundColor: Colors.red.shade700,
           ),
         );

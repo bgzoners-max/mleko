@@ -221,11 +221,19 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       );
       if (files.isEmpty || !mounted) return;
       final filesToProcess = files.take(remaining).toList();
-      final readFutures = filesToProcess.map((f) => f.readAsBytes()).toList();
+      final readFutures = filesToProcess.map((f) async {
+        try {
+          return await f.readAsBytes();
+        } catch (err) {
+          debugPrint('Greška pri čitanju fajla ${f.name}: $err');
+          return null;
+        }
+      }).toList();
       final allBytes = await Future.wait(readFutures);
 
       final newBytes = <Uint8List>[];
       for (final bytes in allBytes) {
+        if (bytes == null) continue;
         final sizeError = checkFileSize(bytes);
         if (sizeError != null) {
           if (mounted) _showErrorDialog(sizeError);
@@ -233,7 +241,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         }
         newBytes.add(Uint8List.fromList(bytes));
       }
-      if (mounted) setState(() => _newImageBytes.addAll(newBytes));
+      if (mounted && newBytes.isNotEmpty) setState(() => _newImageBytes.addAll(newBytes));
     } catch (e) {
       if (mounted) _showErrorDialog('Greška pri izboru slika.');
     }
