@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -54,6 +55,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   final _imagePicker = ImagePicker();
   final _storageService = StorageService();
   late ClassifiedsService _service;
+
+  bool _isPickingImages = false;
+  double? _imageProcessingProgress;
+  String? _imageProcessingStatus;
 
   bool _loading = false;
   bool _initializing = false;
@@ -173,23 +178,101 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   Future<void> _pickImages() async {
     final totalCurrent = _existingImages.length + _newImageBytes.length;
     if (totalCurrent >= 8) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maksimalno možete dodati 8 slika.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Maksimalno možete dodati 8 slika.')),
+        );
+      }
       return;
     }
 
     final remainingSlots = 8 - totalCurrent;
-    final picked = await _imagePicker.pickMultiImage(
-      maxWidth: 1200,
-      imageQuality: 85,
-      limit: remainingSlots,
-    );
-    if (picked.isEmpty) return;
+    setState(() {
+      _isPickingImages = true;
+      _imageProcessingProgress = null;
+      _imageProcessingStatus = 'Izaberite sliku...';
+    });
 
-    for (final file in picked.take(remainingSlots)) {
-      final bytes = await file.readAsBytes();
-      setState(() => _newImageBytes.add(bytes));
+    try {
+      List<XFile> picked = [];
+      try {
+        // Na Web-u se zaobilazi ImageResizer (canvas) koji izaziva blokadu kod nekih MIME tipova
+        picked = await _imagePicker.pickMultiImage(
+          maxWidth: kIsWeb ? null : 1200,
+          imageQuality: kIsWeb ? null : 85,
+        );
+      } catch (e) {
+        debugPrint('pickMultiImage greška, pokušavam fallback na pickImage: $e');
+        try {
+          final single = await _imagePicker.pickImage(
+            source: ImageSource.gallery,
+            maxWidth: kIsWeb ? null : 1200,
+            imageQuality: kIsWeb ? null : 85,
+          );
+          if (single != null) {
+            picked = [single];
+          }
+        } catch (e2) {
+          debugPrint('Fallback na pojedinačnu sliku takođe nije uspeo: $e2');
+          rethrow;
+        }
+      }
+
+      if (picked.isEmpty) return;
+
+      final filesToProcess = picked.take(remainingSlots).toList();
+      final totalFiles = filesToProcess.length;
+
+      for (var i = 0; i < totalFiles; i++) {
+        final file = filesToProcess[i];
+        if (mounted) {
+          setState(() {
+            _imageProcessingProgress = (i + 0.25) / totalFiles;
+            _imageProcessingStatus = totalFiles > 1
+                ? 'Učitavanje slike ${i + 1}/$totalFiles...'
+                : 'Učitavanje slike...';
+          });
+        }
+
+        final bytes = await file.readAsBytes();
+        final sizeErr = checkFileSize(bytes);
+        if (sizeErr != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(sizeErr),
+                backgroundColor: Colors.red.shade700,
+              ),
+            );
+          }
+          continue;
+        }
+
+        if (mounted) {
+          setState(() {
+            _newImageBytes.add(Uint8List.fromList(bytes));
+            _imageProcessingProgress = (i + 1.0) / totalFiles;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Greška pri izboru slika: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Greška pri izboru slike: ${friendlyError(e)}'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickingImages = false;
+          _imageProcessingProgress = null;
+          _imageProcessingStatus = null;
+        });
+      }
     }
   }
 
@@ -693,7 +776,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                       scrollDirection: Axis.horizontal,
                       children: [
                         InkWell(
-                          onTap: _pickImages,
+                          onTap: _isPickingImages ? null : _pickImages,
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
                             width: 100,
@@ -784,6 +867,16 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                                     width: 100,
                                     height: 100,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: colorScheme.surfaceContainerHighest,
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 28,
+                                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 Positioned(
@@ -805,6 +898,61 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                             ),
                           );
                         }),
+                        if (_isPickingImages)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: colorScheme.primary.withValues(alpha: 0.5),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Spacer(),
+                                  Icon(
+                                    Icons.photo_library_outlined,
+                                    color: colorScheme.primary,
+                                    size: 26,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      _imageProcessingStatus ?? 'Učitavanje...',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(3),
+                                      child: LinearProgressIndicator(
+                                        value: _imageProcessingProgress,
+                                        minHeight: 4,
+                                        backgroundColor: colorScheme.surfaceContainerHighest,
+                                        valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),

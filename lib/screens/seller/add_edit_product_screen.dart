@@ -215,8 +215,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     try {
       final remaining = AppConstants.maxProductImages - _totalImages;
       final files = await _imagePicker.pickMultiImage(
-        imageQuality: 85,
-        maxWidth: 1200,
+        imageQuality: kIsWeb ? null : 85,
+        maxWidth: kIsWeb ? null : 1200,
         limit: remaining,
       );
       if (files.isEmpty || !mounted) return;
