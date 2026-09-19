@@ -3,8 +3,23 @@ import 'package:mleko/utils/image_url_utils.dart';
 
 void main() {
   group('ImageUrlUtils', () {
+    setUp(() {
+      ImageUrlUtils.serverTransformsEnabled = true;
+    });
+
+    tearDown(() {
+      ImageUrlUtils.serverTransformsEnabled = false;
+    });
+
     const validSupabaseUrl =
         'https://xyz.supabase.co/storage/v1/object/public/products/item123.jpg';
+
+    test('returns null when serverTransformsEnabled is false', () {
+      ImageUrlUtils.serverTransformsEnabled = false;
+      expect(ImageUrlUtils.thumbnailUrl(validSupabaseUrl), isNull);
+      expect(ImageUrlUtils.iconUrl(validSupabaseUrl), isNull);
+      expect(ImageUrlUtils.detailUrl(validSupabaseUrl), isNull);
+    });
 
     test('thumbnailUrl converts object/public to render/image/public with default width 400 and quality 80', () {
       final thumb = ImageUrlUtils.thumbnailUrl(validSupabaseUrl);

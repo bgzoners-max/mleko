@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -178,10 +179,14 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       return;
     }
 
-    final picked = await _imagePicker.pickMultiImage();
+    final remainingSlots = 8 - totalCurrent;
+    final picked = await _imagePicker.pickMultiImage(
+      maxWidth: 1200,
+      imageQuality: 85,
+      limit: remainingSlots,
+    );
     if (picked.isEmpty) return;
 
-    final remainingSlots = 8 - totalCurrent;
     for (final file in picked.take(remainingSlots)) {
       final bytes = await file.readAsBytes();
       setState(() => _newImageBytes.add(bytes));
@@ -717,11 +722,35 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    entry.value,
+                                  child: CachedNetworkImage(
+                                    imageUrl: entry.value,
                                     width: 100,
                                     height: 100,
                                     fit: BoxFit.cover,
+                                    memCacheWidth: 200,
+                                    memCacheHeight: 200,
+                                    placeholder: (context, url) => Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: colorScheme.surfaceContainerHighest,
+                                      child: const Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: colorScheme.surfaceContainerHighest,
+                                      child: Icon(
+                                        Icons.broken_image_outlined,
+                                        size: 28,
+                                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 Positioned(

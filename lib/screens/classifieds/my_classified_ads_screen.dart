@@ -281,6 +281,8 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                                   width: 72,
                                   height: 72,
                                   fit: BoxFit.cover,
+                                  memCacheWidth: 150,
+                                  memCacheHeight: 150,
                                   placeholder: (c, url) => Container(
                                     width: 72,
                                     height: 72,

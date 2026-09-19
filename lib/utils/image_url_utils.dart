@@ -4,10 +4,13 @@
 /// (`/storage/v1/render/image/public/...?width=...&quality=...`) umesto
 /// preuzimanja originalnih fajlova pune rezolucije na svaki uređaj.
 class ImageUrlUtils {
-  /// Kill-switch: ako server-side transformacija nije dostupna (ili bucket je
-  /// privatan), postavi na `false` da bi sve slike opet išle u originalnoj
-  /// rezoluciji bez promene ostatka koda.
-  static const bool kServerTransformsEnabled = true;
+  /// Podrazumevano isključeno radi kompatibilnosti sa Supabase Free tier-om
+  /// (sprečava 400/404 greške kada Image Transformation nije uključen na projektu).
+  /// Može se uključiti ako je projekat nadograđen na Supabase Pro plan.
+  static bool serverTransformsEnabled = false;
+
+  static bool get kServerTransformsEnabled => serverTransformsEnabled;
+  static set kServerTransformsEnabled(bool val) => serverTransformsEnabled = val;
 
   static const String _objectPublicPath = '/storage/v1/object/public/';
   static const String _renderImagePath = '/storage/v1/render/image/public/';

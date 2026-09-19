@@ -188,6 +188,15 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
   bool _useServerTransform = true;
 
   @override
+  void didUpdateWidget(AppNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl ||
+        oldWidget.serverTransformedUrl != widget.serverTransformedUrl) {
+      _useServerTransform = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final serverUrl = widget.serverTransformedUrl;
     final resolvedUrl =
