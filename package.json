@@ -5,6 +5,7 @@
     "vercel:deploy": "npm run vercel:prepare && node -e \"const fs=require('fs'),path=require('path'),os=require('os'),{execSync}=require('child_process'); const tmp=path.join(os.tmpdir(),'mleko-vercel-deploy'); fs.rmSync(tmp,{recursive:true,force:true}); fs.cpSync('build/vercel-deploy',tmp,{recursive:true}); execSync('npx vercel link --cwd \\\"' + tmp + '\\\" --yes --scope vrvladas-projects --project mleko', {stdio:'inherit'}); execSync('npx vercel deploy --cwd \\\"' + tmp + '\\\" --prod --yes --scope vrvladas-projects', {stdio:'inherit'});\"",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",
     "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts",
+    "supabase:link:prod": "supabase link --project-ref wvqtujpurhzraptorcvl",
     "type-check": "tsc --noEmit",
     "validate:assetlinks": "node -e \"const content = require('fs').readFileSync('web/.well-known/assetlinks.json', 'utf8'); const data = JSON.parse(content); if (!Array.isArray(data) || data.length === 0) throw new Error('assetlinks.json must be a non-empty array');\"",
     "assetlinks:sync": "dart run tool/sync_assetlinks.dart",
