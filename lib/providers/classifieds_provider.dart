@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../constants/serbian_districts.dart';
@@ -111,8 +112,8 @@ class ClassifiedsProvider extends ChangeNotifier {
       }
     }
 
-    // 3. Učitavanje brojača oglasa i roll-up sabiranje kroz stablo
-    await loadCategoryAdCounts();
+    // 3. Učitavanje brojača oglasa u pozadini (asinhrono bez blokiranja prikaza)
+    unawaited(loadCategoryAdCounts());
   }
 
   /// Rekurzivno izračunava i dodeljuje adCount kroz celo stablo kategorija.

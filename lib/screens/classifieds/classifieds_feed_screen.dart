@@ -50,10 +50,10 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final p = context.read<ClassifiedsProvider>();
-      await p.loadCategories();
-      if (!mounted) return;
       if (widget.initialCategoryId != null &&
           widget.initialCategoryId!.isNotEmpty) {
+        await p.loadCategories();
+        if (!mounted) return;
         p.selectCategory(widget.initialCategoryId);
         final cat = p.findCategory(widget.initialCategoryId!);
         if (cat != null) {
@@ -64,6 +64,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         if (!widget.isEmbedded) {
           applyRouteSeo('/classifieds');
         }
+        // Pokrećemo kategorije i oglase paralelno u istoj milisekundi
+        p.loadCategories();
         p.loadInitialAds();
       }
     });
