@@ -19,6 +19,7 @@ import '../../services/communication/chat_service.dart';
 import '../../supabase_config.dart';
 import '../../utils/classified_attributes_engine.dart';
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/app_network_image.dart';
 import '../../widgets/classifieds/report_classified_ad_dialog.dart';
 
 class ClassifiedAdDetailScreen extends StatefulWidget {
@@ -155,7 +156,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                         minScale: 0.8,
                         maxScale: 3.5,
                         child: Center(
-                          child: CachedNetworkImage(
+                          child: AppNetworkImage(
                             imageUrl: images[idx],
                             fit: BoxFit.contain,
                           ),
@@ -535,16 +536,16 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   itemBuilder: (ctx, i) {
                     return InkWell(
                       onTap: () => _openImageLightbox(ad.images, i),
-                      child: CachedNetworkImage(
+                      child: AppNetworkImage(
                         imageUrl: ad.images[i],
                         fit: BoxFit.cover,
-                        placeholder: (c, url) => Container(
+                        placeholder: Container(
                           color: colorScheme.surfaceContainerHighest,
                           child: const Center(
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
-                        errorWidget: (c, url, err) => Container(
+                        errorWidget: Container(
                           color: colorScheme.surfaceContainerHighest,
                           child: const Icon(Icons.broken_image, size: 60),
                         ),
@@ -636,7 +637,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: CachedNetworkImage(
+                      child: AppNetworkImage.thumbnail(
                         imageUrl: ad.images[idx],
                         fit: BoxFit.cover,
                       ),

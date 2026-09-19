@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,10 +13,12 @@ import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
+import '../../services/media/image_compression_service.dart';
 import '../../services/media/storage_service.dart';
 import '../../utils/classified_attributes_engine.dart';
 import '../../utils/number_input_utils.dart';
 import '../../widgets/app_empty_state.dart';
+import '../../widgets/app_network_image.dart';
 import '../../widgets/guest_auth_prompt.dart';
 
 class AddEditClassifiedAdScreen extends StatefulWidget {
@@ -258,11 +259,13 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       }).toList();
       final allBytes = await Future.wait(readFutures);
 
+      final compressionService = ImageCompressionService();
       final validBytes = <Uint8List>[];
       var oversizedCount = 0;
       var failedReadCount = 0;
 
-      for (final rawBytes in allBytes) {
+      for (var i = 0; i < allBytes.length; i++) {
+        final rawBytes = allBytes[i];
         if (rawBytes == null) {
           failedReadCount++;
           continue;
@@ -270,9 +273,23 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         final sizeErr = checkFileSize(rawBytes);
         if (sizeErr != null) {
           oversizedCount++;
-        } else {
-          validBytes.add(Uint8List.fromList(rawBytes));
+          continue;
         }
+
+        if (mounted) {
+          setState(() {
+            _imageProcessingStatus = totalFiles > 1
+                ? 'Optimizacija slike ${i + 1}/$totalFiles...'
+                : 'Optimizacija slike...';
+            _imageProcessingProgress = 0.5 + (0.45 * ((i + 1) / totalFiles));
+          });
+        }
+
+        // Normalizujemo i kompresujemo u čisti JPEG format
+        final normalizedBytes = await compressionService.compressImage(
+          Uint8List.fromList(rawBytes),
+        );
+        validBytes.add(normalizedBytes);
       }
 
       if (failedReadCount > 0 && mounted) {
@@ -914,14 +931,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
+                                  child: AppNetworkImage.thumbnail(
                                     imageUrl: entry.value,
                                     width: 100,
                                     height: 100,
                                     fit: BoxFit.cover,
-                                    memCacheWidth: 200,
-                                    memCacheHeight: 200,
-                                    placeholder: (context, url) => Container(
+                                    placeholder: Container(
                                       width: 100,
                                       height: 100,
                                       color: colorScheme.surfaceContainerHighest,
@@ -933,7 +948,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                                         ),
                                       ),
                                     ),
-                                    errorWidget: (context, url, error) => Container(
+                                    errorWidget: Container(
                                       width: 100,
                                       height: 100,
                                       color: colorScheme.surfaceContainerHighest,

@@ -18,6 +18,7 @@ import '../../models/category.dart';
 import '../../models/product_model.dart';
 import '../../models/seller_delivery_models.dart';
 import '../../providers/app_state.dart';
+import '../../services/media/image_compression_service.dart';
 import '../../services/services.dart';
 import '../../widgets/cupertino_category_picker.dart';
 
@@ -231,6 +232,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       }).toList();
       final allBytes = await Future.wait(readFutures);
 
+      final compressionService = ImageCompressionService();
       final newBytes = <Uint8List>[];
       for (final bytes in allBytes) {
         if (bytes == null) continue;
@@ -239,7 +241,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           if (mounted) _showErrorDialog(sizeError);
           return;
         }
-        newBytes.add(Uint8List.fromList(bytes));
+        final normalized = await compressionService.compressImage(Uint8List.fromList(bytes));
+        newBytes.add(normalized);
       }
       if (mounted && newBytes.isNotEmpty) setState(() => _newImageBytes.addAll(newBytes));
     } catch (e) {

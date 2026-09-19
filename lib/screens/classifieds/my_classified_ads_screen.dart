@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +9,7 @@ import '../../core/responsive.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/app_network_image.dart';
 import '../../widgets/classifieds/seller_analytics_summary_card.dart';
 
 class MyClassifiedAdsScreen extends StatefulWidget {
@@ -276,19 +276,17 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: ad.images.isNotEmpty
-                              ? CachedNetworkImage(
+                              ? AppNetworkImage.thumbnail(
                                   imageUrl: ad.images.first,
                                   width: 72,
                                   height: 72,
                                   fit: BoxFit.cover,
-                                  memCacheWidth: 150,
-                                  memCacheHeight: 150,
-                                  placeholder: (c, url) => Container(
+                                  placeholder: Container(
                                     width: 72,
                                     height: 72,
                                     color: colorScheme.surfaceContainerHighest,
                                   ),
-                                  errorWidget: (c, url, err) => Container(
+                                  errorWidget: Container(
                                     width: 72,
                                     height: 72,
                                     color: colorScheme.surfaceContainerHighest,
