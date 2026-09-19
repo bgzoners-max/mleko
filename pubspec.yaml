@@ -28,7 +28,6 @@ dependencies:
   provider: ^6.1.1
   cached_network_image: ^4.0.0
   image_picker: ^1.2.0
-  carousel_slider: ^5.0.0
   cupertino_icons: ^1.0.8
 
   # Utils

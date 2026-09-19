@@ -11,7 +11,7 @@
     "secrets:check": "dart run tool/check_no_committed_secrets.dart"
   },
   "devDependencies": {
-    "supabase": "^2.76.15",
+    "supabase": "^2.117.0",
     "typescript": "^5.8.2"
   },
   "dependencies": {

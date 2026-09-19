@@ -1,4 +1,10 @@
 /// Supabase konfiguracija sa podrazumevanim vrednostima i podrškom za --dart-define override.
+///
+/// Kanonski (jedini) javni domen brenda je `https://domacimarket.rs` — na njega je
+/// aliasovan produkcijski Vercel deploy. `shareBaseUrl` služi za generisanje share/deep
+/// linkova i mora uvek da odgovara tom domenu (ili produkcijskom domenu po okruženju).
+/// `.env` fajl u korenu je ZASTAREO i NIJE izvor konfiguracije — aplikacija isključivo
+/// čita vrednosti iz `--dart-define` (ovde `String.fromEnvironment`) ili ove подrazumevane.
 class SupabaseConfig {
   SupabaseConfig._();
 
