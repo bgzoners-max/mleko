@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -207,8 +208,8 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
-      memCacheWidth: widget.memCacheWidth,
-      memCacheHeight: widget.memCacheHeight,
+      memCacheWidth: kIsWeb ? null : widget.memCacheWidth,
+      memCacheHeight: kIsWeb ? null : widget.memCacheHeight,
       fadeInDuration: widget.fadeInDuration ?? const Duration(milliseconds: 500),
       fadeInCurve: Curves.easeInCubic,
       placeholder: (_, __) =>

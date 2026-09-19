@@ -45,7 +45,10 @@ class _ProductCardState extends State<ProductCard> {
         ? AmazonColors.amberDark
         : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray);
 
-    final imageChild = widget.product.imageUrls.isEmpty
+    final hasValidImage = widget.product.imageUrls.isNotEmpty &&
+        !widget.product.imageUrls.first.contains('placehold.co');
+
+    final imageChild = !hasValidImage
         ? Container(
             color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
             child: Center(
@@ -91,7 +94,7 @@ class _ProductCardState extends State<ProductCard> {
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
             child: gridMode
-                ? imageChild
+                ? SizedBox.expand(child: imageChild)
                 : AspectRatio(aspectRatio: 1.25, child: imageChild),
           ),
         ),
