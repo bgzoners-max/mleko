@@ -42,6 +42,8 @@ Aplikacija tretira **`order_status`** i **`order_status_changed`** kao porudžbi
 
 Definisani su u migracijama (`orders_status_check`) i u `lib/utils/order_status_flow_rules.dart` / `lib/models/order_model.dart`. Izmene moraju ići kroz migraciju + ažuriranje pravila u aplikaciji.
 
+> **Parity guard:** `test/order_status_sql_parity_test.dart` automatski čita najnoviju migraciju koja definiše `enforce_order_status_transition()` i upoređuje dozvoljene tranzicije sa Dart pravilima. Ako se SQL i Dart raziđu, test (i CI) pada — nije dovoljno izmeniti samo jednu stranu.
+
 ### RLS na `orders`
 
 - Jedna **UPDATE** politika za učesnike + `(SELECT auth.uid())` u izrazima: migracija **`20260322180000_orders_rls_consolidate_auth_select.sql`** (zamenjuje odvojene prodavčeve/kupčeve politike i `20260322140200_*`).
