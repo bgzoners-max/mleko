@@ -60,6 +60,15 @@ npx supabase link --project-ref <STAGING_PROJECT_REF>
 npx supabase db push
 ```
 
+> **Važna napomena za Edge Functions na Stagingu:**
+> Stare migracije sadrže hardkodovan `functions_base_url` za produkciju. Na novoj staging bazi, u Supabase SQL Editoru pokrenite:
+> ```sql
+> UPDATE public.edge_config 
+> SET value = 'https://<STAGING_PROJECT_REF>.supabase.co' 
+> WHERE key = 'functions_base_url';
+> ```
+
+
 ### Povratak na produkciju u lokalnom CLI-ju
 Kada želiš ponovo da povežeš CLI sa produkcijom:
 ```bash
