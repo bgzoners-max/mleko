@@ -96,7 +96,7 @@ npm run supabase:types
 ```
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) automatski izvršava:
-1. `flutter-checks`: Statičku analizu (uz `--no-fatal-infos --no-fatal-warnings`) i testove sa pokrivenošću od ~26%.
+1. `flutter-checks`: Statičku analizu (uz `--no-fatal-infos`) i testove sa pokrivenošću od ~31%.
 2. `db-integration-checks`: Podizanje lokalnog Supabase okruženja, primenu migracija i izvršavanje SQL integracionih provera (`supabase/tests/order_status_flow_integration.sql`).
    > **Napomena**: Folder `supabase/migrations/` predstavlja jedini i kanonski izvor istine za strukturu baze podataka (zastareli snapshot fajlovi šeme su uklonjeni).
 

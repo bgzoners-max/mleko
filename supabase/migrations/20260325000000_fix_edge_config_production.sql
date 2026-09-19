@@ -1,3 +1,11 @@
+-- ============================================================================
+-- NOTE: Ovo je JEDNOKRATNI podatkovni „data fix" (ne šema!) koji podešava
+-- edge_config za produkciju. `anon_key` u Supabase-uz je PUBLIKOVAN ključ (ide
+-- direktno u web klijent), pa njegovo prisustvo u repozitorijumu NIJE curenje
+-- tajne — ali je održavanje čistije ako se buduće promene konfiguracije rade
+-- kroz Dashboard/seed umesto kroz migraciju koja se izvršava i lokalno.
+-- Migraciju NE BRISATI (Supabase prati primenjene migracije po nazivu fajla).
+-- ============================================================================
 -- Updateuj Edge Config za produkciju - ispravka push notifikacija
 UPDATE public.edge_config
 SET value = 'https://wvqtujpurhzraptorcvl.supabase.co'

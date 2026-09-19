@@ -45,26 +45,49 @@ class ImageCompressionService {
     }
   }
 
-  /// Kompresuje listu slika sa opcionalnim callback-om za napredak.
+  /// Kompresuje listu slika sa ograničenom konkurentnošću i opcionalnim callback-om
+  /// za napredak (redni broj po završetku, ne po pokretanju). Orderi rezultata su
+  /// očuvani u odnosu na ulazni niz.
+  ///
+  /// `maxConcurrency` po zadatoj vrednosti pokreće najviše toliko `compute` isolate-a
+  /// istovremeno kako se na mobilnim uređajima ne bi preopteretio CPU/memorija.
   Future<List<Uint8List>> compressMultiple(
     List<Uint8List> images, {
     int maxWidth = defaultMaxWidth,
     int maxHeight = defaultMaxHeight,
     int quality = defaultQuality,
+    int maxConcurrency = 3,
     void Function(int current, int total)? onProgress,
   }) async {
-    final results = <Uint8List>[];
-    for (var i = 0; i < images.length; i++) {
-      onProgress?.call(i + 1, images.length);
-      final compressed = await compressImage(
-        images[i],
-        maxWidth: maxWidth,
-        maxHeight: maxHeight,
-        quality: quality,
-      );
-      results.add(compressed);
+    final results = <Uint8List?>[];
+    results.length = images.length;
+    var processed = 0;
+
+    var nextIndex = 0;
+    Future<void> worker() async {
+      while (true) {
+        final index = nextIndex;
+        if (index >= images.length) return;
+        nextIndex++;
+        final compressed = await compressImage(
+          images[index],
+          maxWidth: maxWidth,
+          maxHeight: maxHeight,
+          quality: quality,
+        );
+        results[index] = compressed;
+        processed++;
+        onProgress?.call(processed, images.length);
+      }
     }
-    return results;
+
+    final workerCount = images.isEmpty
+        ? 0
+        : (maxConcurrency < 1 ? 1 : maxConcurrency).clamp(1, images.length);
+    await Future.wait(
+      List.generate(workerCount, (_) => worker()),
+    );
+    return results.cast<Uint8List>();
   }
 
   static Uint8List _processImageParams(_ImageProcessParams params) {

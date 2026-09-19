@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "deploy:all": "flutter build web --release --dart-define=SUPABASE_URL=https://wvqtujpurhzraptorcvl.supabase.co --dart-define=SUPABASE_ANON_KEY=sb_publishable_fctLgkfcyV3HtMIHkO6lvw_NdmiBrsX && npm run vercel:deploy",
+    "deploy:all": "flutter build web --release && npm run vercel:deploy",
     "vercel:prepare": "dart run tool/prepare_vercel_deploy.dart",
     "vercel:deploy": "npm run vercel:prepare && node -e \"const fs=require('fs'),path=require('path'),os=require('os'),{execSync}=require('child_process'); const tmp=path.join(os.tmpdir(),'mleko-vercel-deploy'); fs.rmSync(tmp,{recursive:true,force:true}); fs.cpSync('build/vercel-deploy',tmp,{recursive:true}); execSync('npx vercel link --cwd \\\"' + tmp + '\\\" --yes --scope vrvladas-projects --project mleko', {stdio:'inherit'}); execSync('npx vercel deploy --cwd \\\"' + tmp + '\\\" --prod --yes --scope vrvladas-projects', {stdio:'inherit'});\"",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",

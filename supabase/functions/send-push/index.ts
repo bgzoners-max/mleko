@@ -33,6 +33,42 @@ interface TokenCache {
 
 const tokenCache = new Map<string, TokenCache>() // Key: project_id
 
+// ─── Logging ───────────────────────────────────────────────────────────────
+// Centralizovano logovanje sa nivom (env LOG_LEVEL: debug|info|warn|error).
+// Podrazumevano "info". U produkciji se PII (user_id, sadržaj poruke) NE loguje
+// sirovo — koriste se kratki, deterministički prefiksi radi debugging-a.
+const LOG_LEVEL = (Deno.env.get("LOG_LEVEL") ?? "info").toLowerCase()
+const LOG_LEVELS = ["debug", "info", "warn", "error"] as const
+type LogLevel = (typeof LOG_LEVELS)[number]
+
+function logLevelEnabled(level: LogLevel): boolean {
+  const current = LOG_LEVELS.indexOf(LOG_LEVEL as LogLevel) >= 0
+    ? (LOG_LEVEL as LogLevel)
+    : "info"
+  return LOG_LEVELS.indexOf(level) >= LOG_LEVELS.indexOf(current)
+}
+
+/// Skraćen, ne-reverzibilan prikaz identifikatora za logove (bez curenja punog UUID).
+function shortId(id: string | undefined | null): string {
+  if (!id) return "(nepoznato)"
+  return `${id.slice(0, 8)}…`
+}
+
+/// Skraćuje sadržaj poruke radi logovanja (ne menja stvarni payload).
+function redactText(text: string | undefined | null, maxLen = 30): string {
+  if (!text) return ""
+  const trimmed = (text || "").trim()
+  return trimmed.length <= maxLen ? trimmed : `${trimmed.slice(0, maxLen)}…`
+}
+
+function log(level: LogLevel, message: string, data?: unknown) {
+  if (!logLevelEnabled(level)) return
+  const line = data === undefined ? message : `${message} ${JSON.stringify(data)}`
+  if (level === "error") console.error(line)
+  else if (level === "warn") console.warn(line)
+  else console.log(line)
+}
+
 function getLockscreenBody(input: string, maxLen = 88): string {
   const trimmed = (input || "").replace(/\s+/g, " ").trim()
   if (trimmed.length <= maxLen) return trimmed
@@ -47,12 +83,12 @@ async function getAccessToken(sa: any): Promise<string> {
   // Prvo proveri cache
   const cached = tokenCache.get(projectId)
   if (cached && Date.now() < cached.expiresAt) {
-    console.log(`FCM: Korišćen cached token za ${projectId}`)
+    log("debug", "FCM: Korišćen cached token za", { projectId })
     return cached.token
   }
 
   // Generisanje novog token-a ako cache nije validan
-  console.log(`FCM: Generiši novi token za ${projectId}`)
+  log("debug", "FCM: Generiši novi token za", { projectId })
   
   // Fix literal \n in private key
   const privateKey = sa.private_key.includes('\n') 
@@ -87,7 +123,7 @@ async function getAccessToken(sa: any): Promise<string> {
   const expiresAt = Date.now() + (expiresIn - 300) * 1000
   tokenCache.set(projectId, { token: accessToken, expiresAt })
 
-  console.log(`FCM: Token cache-ovan, važi još ${Math.round((expiresAt - Date.now()) / 60000)} minuta`)
+  log("debug", "FCM: Token cache-ovan", { expiresInMin: Math.round((expiresAt - Date.now()) / 60000) })
   return accessToken
 }
 
@@ -100,7 +136,7 @@ Deno.serve(async (req) => {
   // Javni anon ključ ili obični korisnički JWT ne smeju imati pristup slanju push-a.
   const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization")
   if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
-    console.warn("FCM: Odbijen zahtev - nedostaje Authorization header")
+    log("warn", "FCM: Odbijen zahtev - nedostaje Authorization header")
     return new Response(
       JSON.stringify({ error: "Missing or invalid authorization header" }),
       { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
@@ -124,14 +160,14 @@ Deno.serve(async (req) => {
       if (payload.role === "service_role") {
         authorized = true
       } else {
-        console.warn(`FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role'`)
+        log("warn", `FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role'`)
         return new Response(
           JSON.stringify({ error: "Forbidden: service_role required" }),
           { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
         )
       }
     } catch (verifyErr) {
-      console.warn("FCM: Odbijen zahtev - nevalidan JWT potpis:", String(verifyErr))
+      log("warn", "FCM: Odbijen zahtev - nevalidan JWT potpis:", String(verifyErr))
       return new Response(
         JSON.stringify({ error: "Invalid authorization token signature" }),
         { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
@@ -140,7 +176,7 @@ Deno.serve(async (req) => {
   } else {
     // 3. Ako SUPABASE_JWT_SECRET nije ubačen u runtime environment, token se MORA poklapati
     // sa expectedServiceKey vrednošću (odbacujemo neproverene nepotpisane tokene).
-    console.warn("FCM: Odbijen zahtev - token se ne poklapa sa service_role_key a SUPABASE_JWT_SECRET nije konfigurisan.")
+    log("warn", "FCM: Odbijen zahtev - token se ne poklapa sa service_role_key a SUPABASE_JWT_SECRET nije konfigurisan.")
     return new Response(
       JSON.stringify({ error: "Unauthorized: Signature verification required" }),
       { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
@@ -186,7 +222,7 @@ Deno.serve(async (req) => {
           payload: (params.payload ?? {}) as Json,
         })
       } catch (logErr) {
-        console.error("FCM: upis push_delivery_logs nije uspeo", String(logErr))
+        log("error", "FCM: upis push_delivery_logs nije uspeo", String(logErr))
       }
     }
 
@@ -213,7 +249,7 @@ Deno.serve(async (req) => {
     let fcmData: Record<string, string> = {}
     let type: string = ""
 
-    console.log("FCM: Primljena zahteva:", {
+    log("debug", "FCM: Primljena zahteva:", {
       has_record: !!body.record,
       keys: Object.keys(body).slice(0, 10),
     })
@@ -250,15 +286,14 @@ Deno.serve(async (req) => {
       else title = title || "Obaveštenje";
     }
 
-    console.log("FCM: Procesuirana notifikacija:", {
-      user_id,
-      title,
-      bodyText: bodyText.slice(0, 50),
+    log("debug", "FCM: Procesuirana notifikacija:", {
+      user_id: shortId(user_id),
+      title: redactText(title),
       type: fcmData.type,
     })
 
     if (!user_id) {
-      console.error("FCM: Nedostaje user_id")
+      log("error", "FCM: Nedostaje user_id")
       await writeDeliveryLog({
         status: "invalid_request",
         errors: ["user_id required"],
@@ -285,15 +320,15 @@ Deno.serve(async (req) => {
     
     const tokens = Array.from(uniqueTokensMap.entries()).map(([token, platform]) => ({ token, platform }));
 
-    console.log("FCM: Pretraga tokena:", {
-      user_id,
+    log("debug", "FCM: Pretraga tokena:", {
+      user_id: shortId(user_id),
       total_found: allTokens?.length || 0,
       unique_count: tokens.length,
       error: error?.message,
     })
 
     if (error || !tokens?.length) {
-      console.warn(`FCM: Nema tokena za korisnika ${user_id}`)
+      log("warn", `FCM: Nema tokena za korisnika ${shortId(user_id)}`)
       await writeDeliveryLog({
         userId: user_id,
         title,
@@ -312,7 +347,7 @@ Deno.serve(async (req) => {
 
     let serviceAccountJson = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON")
     if (!serviceAccountJson) {
-      console.error("FCM_SERVICE_ACCOUNT_JSON not set")
+      log("error", "FCM_SERVICE_ACCOUNT_JSON not set")
       await writeDeliveryLog({
         userId: user_id,
         title,
@@ -409,7 +444,8 @@ Deno.serve(async (req) => {
           return { success: true, token: row.token }
         } else {
           const errBody = await res.text()
-          const errMsg = `token[${row.token.slice(0, 15)}] ${res.status}: ${errBody.slice(0, 200)}`
+          // Ne loguj pun token — samo kratki, ne-reverzibilni prefiks.
+          const errMsg = `token[${row.token.slice(0, 8)}…] ${res.status}: ${errBody.slice(0, 200)}`
 
           // Označi invalid token za brisanje
           let errorCode: string | undefined
@@ -423,7 +459,7 @@ Deno.serve(async (req) => {
           // Ako je 401, invalidiraj access token cache
           // Sledeći zahtjev će generiusti novi token
           if (res.status === 401) {
-            console.warn(`FCM: Unauthorized (401) - cache token je istekao, briši cache`)
+            log("warn", "FCM: Unauthorized (401) - cache token je istekao, briši cache")
             tokenCache.delete(projectId)
           }
 
@@ -438,7 +474,7 @@ Deno.serve(async (req) => {
     // Slanje u batch-evima (max 100 istovremeno)
     for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
       const batch = tokens.slice(i, i + BATCH_SIZE)
-      console.log(`FCM: Slanje batch-a (${i + 1}-${Math.min(i + BATCH_SIZE, tokens.length)} od ${tokens.length})`)
+      log("debug", `FCM: Slanje batch-a (${i + 1}-${Math.min(i + BATCH_SIZE, tokens.length)} od ${tokens.length})`)
 
       // Promise.all() čini sve requste u batch-u istovremeno
       const results = await Promise.all(batch.map(sendSingleMessage))
@@ -452,19 +488,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log(`FCM: Batch gotov - poslano: ${results.filter((r) => r.success).length}/${batch.length}`)
+      log("info", `FCM: Batch gotov - poslano: ${results.filter((r) => r.success).length}/${batch.length}`)
     }
 
     // Obriši sve invalid tokene u chunk-ovima od max 50 kako ne bismo prebili PostgREST URL limit (HTTP 414)
     if (invalidTokens.length > 0) {
-      console.log(`FCM: Brisanje ${invalidTokens.length} invalid tokena u chunk-ovima`)
+      log("info", `FCM: Brisanje ${invalidTokens.length} invalid tokena u chunk-ovima`)
       const DELETE_CHUNK_SIZE = 50
       for (let i = 0; i < invalidTokens.length; i += DELETE_CHUNK_SIZE) {
         const chunk = invalidTokens.slice(i, i + DELETE_CHUNK_SIZE)
         try {
           await supabase.from("user_push_tokens").delete().in("token", chunk)
         } catch (delErr) {
-          console.error("FCM: Greška pri brisanju chunk-a tokena:", String(delErr))
+          log("error", "FCM: Greška pri brisanju chunk-a tokena:", String(delErr))
         }
       }
     }
@@ -488,7 +524,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   } catch (err) {
-    console.error(err)
+    log("error", "FCM: Neuhvaćena greška", String(err))
     return new Response(
       JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }

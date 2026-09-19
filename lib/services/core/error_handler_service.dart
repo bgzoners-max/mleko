@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../../models/app_error.dart';
 import 'logger_service.dart';
+import 'retry_utils.dart';
 
 typedef OnErrorCallback = void Function(AppError error);
 typedef OnRecoverCallback = Future<void> Function();
@@ -56,40 +57,36 @@ class ErrorHandlerService {
     }
   }
 
-  /// Bezbedno izvršavanje operacije sa retry logikom
+  /// Bezbedno izvršavanje operacije sa retry logikom.
+  ///
+  /// Delegira ka kanonskoj `withRetry` low-level logici (eksponencijalni backoff
+  /// + jitter, bez ponavljanja neprolaznih grešaka), a ovde samo dodaje logovanje
+  /// i centralno `handleError` kada su svi pokušaji iscrpljeni.
   Future<T> executeWithRetry<T>(
     String label,
     Future<T> Function() operation, {
     int maxRetries = 3,
-    Duration delayBetweenRetries = const Duration(seconds: 1),
+    Duration delayBetweenRetries = const Duration(milliseconds: 250),
     bool Function(AppError)? shouldRetry,
-  }) async {
-    int attempt = 0;
-
-    while (true) {
-      try {
-        attempt++;
-        LoggerService.debug('Pokušaj $attempt/$maxRetries: $label');
-        return await operation();
-      } catch (e, st) {
-        final error = AppError.from(e, stackTrace: st);
-
-        // Proveri da li trebalo retry-ati
-        if (attempt < maxRetries &&
-            (shouldRetry?.call(error) ?? error.isRetryable)) {
-          LoggerService.warning(
-            'Retry nakon greške (attempt $attempt)',
-            extra: {'error': error.message},
-          );
-          await Future.delayed(delayBetweenRetries * attempt);
-          continue;
+  }) {
+    return withRetry<T>(
+      () async {
+        LoggerService.debug('Retry pokušaj: $label');
+        return operation();
+      },
+      maxAttempts: maxRetries,
+      baseDelay: delayBetweenRetries,
+      shouldRetry: (raw) {
+        if (shouldRetry != null) {
+          return shouldRetry(AppError.from(raw));
         }
-
-        // Sve retry pokušaje je iscrpljivano
-        await handleError(e, stackTrace: st, context: label);
-        rethrow;
-      }
-    }
+        if (raw is AppError) return raw.isRetryable;
+        return defaultRetryPredicate(raw);
+      },
+    ).catchError((Object e, StackTrace st) {
+      return handleError(e, stackTrace: st, context: label)
+          .then((_) => throw e);
+    });
   }
 
   /// Bezbedno izvršavanje bez throwanja - vraća Result

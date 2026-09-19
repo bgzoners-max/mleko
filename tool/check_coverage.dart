@@ -84,7 +84,8 @@ void main(List<String> args) {
 
   stdout.writeln('\nCoverage by folder:');
   final sortedDirs = dirStats.entries.toList()
-    ..sort((a, b) => ((b.value.hit / b.value.found) - (a.value.hit / a.value.found)).toInt());
+    ..sort((a, b) =>
+        (b.value.hit / b.value.found).compareTo(a.value.hit / a.value.found));
   for (final entry in sortedDirs) {
     final pct = (entry.value.hit / entry.value.found) * 100;
     stdout.writeln('  ${pct.toStringAsFixed(1).padLeft(5)}% : ${entry.key} (${entry.value.hit}/${entry.value.found})');

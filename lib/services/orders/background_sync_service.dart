@@ -108,8 +108,6 @@ class BackgroundSyncService {
       // Supabase is not initialized in this isolate.
     }
 
-    await SupabaseConfig.load();
-
     await Supabase.initialize(
       url: SupabaseConfig.url,
       publishableKey: SupabaseConfig.publishableKey,

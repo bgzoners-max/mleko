@@ -86,9 +86,14 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
   void _onSyncChanged() {
     final manager = _syncManager;
     if (manager == null) return;
+    // Uhvati prethodnu vrednost SINHRONO, pre nego što se _wasSyncing ažurira,
+    // jer se frame callback (koji čita stanje) izvršava tek posle ovog poziva.
+    final wasSyncing = _wasSyncing;
+    _wasSyncing = manager.isSyncing;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (!_wasSyncing && manager.isSyncing) {
+      if (!wasSyncing && manager.isSyncing) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
@@ -108,7 +113,7 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
             duration: Duration(minutes: 2),
           ),
         );
-      } else if (_wasSyncing && !manager.isSyncing) {
+      } else if (wasSyncing && !manager.isSyncing) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         if (manager.syncedCount > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -125,7 +130,6 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
         }
       }
     });
-    _wasSyncing = manager.isSyncing;
   }
 
   @override
@@ -185,7 +189,6 @@ void main() async {
 
   await initializeDateFormatting('sr', null);
 
-  await SupabaseConfig.load();
   await Supabase.initialize(
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.publishableKey,
@@ -218,15 +221,23 @@ void main() async {
   final classifiedsProvider = ClassifiedsProvider();
   final router = createRouter(appState);
 
-  // Sinhronizacija omiljenih, korpe, praćenja oglasa i korisničkog ID-a za monitoring sa statusom prijave
+  // Sinhronizacija omiljenih, korpe, praćenja oglasa i korisničkog ID-a za monitoring sa statusom prijave.
+  // Guard protiv redundantnih mrežnih poziva: AppState notificira na svaku promenu stanja
+  // (unread count, loading, sync status...), pa reagujemo SAMO kada se identitet prijavljenog
+  // korisnika zaista promeni (prijava/odjava/promena naloga).
+  String? lastSyncedUserId;
   appState.addListener(() {
     final user = appState.user;
-    if (user != null && !user.isGuest) {
-      favoritesProvider.load(user.id);
+    final userId = (user != null && !user.isGuest) ? user.id : null;
+    if (userId == lastSyncedUserId) return;
+    lastSyncedUserId = userId;
+
+    if (userId != null) {
+      favoritesProvider.load(userId);
       classifiedsProvider.loadSubscriptions();
-      CrashReportingService.setUserIdentifier(user.id);
+      CrashReportingService.setUserIdentifier(userId);
       if (cartProvider.count > 0) {
-        cartProvider.claimGuestCart(user.id);
+        cartProvider.claimGuestCart(userId);
       }
     } else {
       favoritesProvider.clear();

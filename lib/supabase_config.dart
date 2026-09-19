@@ -28,7 +28,4 @@ class SupabaseConfig {
 
   /// Provera da li je konfiguracija prisutna.
   static bool get isConfigured => url.isNotEmpty && anonKey.isNotEmpty;
-
-  /// Zadržano radi kompatibilnosti postojećih poziva u main.dart i background servisima.
-  static Future<void> load() async {}
 }

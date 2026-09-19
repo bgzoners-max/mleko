@@ -5,6 +5,7 @@ import '../../models/message_model.dart';
 import '../../models/message_reaction_model.dart';
 import '../../models/app_error.dart';
 import '../core/logger_service.dart';
+import 'chat_room_manager.dart';
 
 /// Broj poruka u jednoj stranici (najnovijih).
 const _kMsgPageSize = 50;
@@ -291,85 +292,10 @@ class ChatService {
     }
   }
 
-  final Map<String, _ConversationRoomSubscription> _conversationRooms = {};
+  final ChatRoomManager _roomManager = ChatRoomManager();
 
   /// Broj trenutno aktivnih deljenih soba za razgovore (za dijagnostiku i testove)
-  int get activeConversationRoomCount => _conversationRooms.length;
-
-  _ConversationRoomSubscription _getOrCreateConversationRoom(String conversationId) {
-    var room = _conversationRooms[conversationId];
-    if (room == null) {
-      final channel = _client.channel('conversation-$conversationId');
-      room = _ConversationRoomSubscription(channel);
-      final currentRoom = room;
-
-      channel
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'messages',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'conversation_id',
-              value: conversationId,
-            ),
-            callback: (payload) {
-              for (final cb in List.of(currentRoom.onMessageCallbacks)) {
-                cb(payload);
-              }
-            },
-          )
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'conversation_typing',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'conversation_id',
-              value: conversationId,
-            ),
-            callback: (payload) {
-              for (final cb in List.of(currentRoom.onTypingCallbacks)) {
-                cb(payload);
-              }
-            },
-          )
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'message_reactions',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'conversation_id',
-              value: conversationId,
-            ),
-            callback: (payload) {
-              for (final cb in List.of(currentRoom.onReactionCallbacks)) {
-                cb(payload);
-              }
-            },
-          )
-          .subscribe();
-
-      _conversationRooms[conversationId] = room;
-    }
-    return room;
-  }
-
-  void _releaseConversationRoom(String conversationId) {
-    final room = _conversationRooms[conversationId];
-    if (room == null) return;
-    room.refCount--;
-    if (room.refCount <= 0) {
-      _conversationRooms.remove(conversationId);
-      try {
-        _client.removeChannel(room.channel);
-      } catch (e) {
-        LoggerService.warning('Failed to remove conversation room channel',
-            extra: {'conversationId': conversationId, 'error': e.toString()});
-      }
-    }
-  }
+  int get activeConversationRoomCount => _roomManager.activeRoomCount;
 
   /// Prati poruke u razgovoru inkrementalno:
   /// - Pri otvaranju / retry-u radi pun fetch najnovijih poruka.
@@ -451,7 +377,7 @@ class ChatService {
 
     fullFetch();
 
-    final room = _getOrCreateConversationRoom(conversationId);
+    final room = _roomManager.getOrCreateRoom(_client, conversationId);
     room.refCount++;
     room.onMessageCallbacks.add(onMessageEvent);
 
@@ -460,7 +386,7 @@ class ChatService {
     controller.onCancel = () {
       refreshSub?.cancel();
       room.onMessageCallbacks.remove(onMessageEvent);
-      _releaseConversationRoom(conversationId);
+      _roomManager.releaseRoom(_client, conversationId);
       if (!controller.isClosed) {
         controller.close();
       }
@@ -524,7 +450,7 @@ class ChatService {
 
     fullFetch();
 
-    final room = _getOrCreateConversationRoom(conversationId);
+    final room = _roomManager.getOrCreateRoom(_client, conversationId);
     room.refCount++;
     room.onTypingCallbacks.add(onTypingEvent);
 
@@ -537,7 +463,7 @@ class ChatService {
     controller.onCancel = () {
       cleanupTimer?.cancel();
       room.onTypingCallbacks.remove(onTypingEvent);
-      _releaseConversationRoom(conversationId);
+      _roomManager.releaseRoom(_client, conversationId);
       if (!controller.isClosed) {
         controller.close();
       }
@@ -626,14 +552,14 @@ class ChatService {
 
     refetch();
 
-    final room = _getOrCreateConversationRoom(conversationId);
+    final room = _roomManager.getOrCreateRoom(_client, conversationId);
     room.refCount++;
     void onEvent(PostgresChangePayload _) => refetch();
     room.onReactionCallbacks.add(onEvent);
 
     controller.onCancel = () {
       room.onReactionCallbacks.remove(onEvent);
-      _releaseConversationRoom(conversationId);
+      _roomManager.releaseRoom(_client, conversationId);
       if (!controller.isClosed) {
         controller.close();
       }
@@ -960,14 +886,4 @@ class ChatService {
       throw AppError.from(e, stackTrace: st);
     }
   }
-}
-
-class _ConversationRoomSubscription {
-  final RealtimeChannel channel;
-  int refCount = 0;
-  final Set<void Function(PostgresChangePayload payload)> onMessageCallbacks = {};
-  final Set<void Function(PostgresChangePayload payload)> onTypingCallbacks = {};
-  final Set<void Function(PostgresChangePayload payload)> onReactionCallbacks = {};
-
-  _ConversationRoomSubscription(this.channel);
 }
