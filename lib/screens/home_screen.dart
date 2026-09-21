@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 1.0,
           ),
         ),
-        titleSpacing: 10,
+        titleSpacing: 8,
         title: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
@@ -161,20 +161,21 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.eco_outlined,
-                  size: 24,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.eco_outlined,
+                    size: 22,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
                     AppConstants.appName,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 18,
@@ -182,17 +183,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                const BetaBadge(showInfoIcon: false),
-              ],
+                  const SizedBox(width: 6),
+                  const BetaBadge(showInfoIcon: false),
+                ],
+              ),
             ),
           ),
         ),
         actions: [
           if (!isGuest)
             IconButton(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               icon: Badge(
                 isLabelVisible: unreadCount > 0,
@@ -203,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => context.push('/notifications'),
             ),
           IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: Badge(
               isLabelVisible: context.watch<CartProvider>().count > 0,
@@ -215,12 +216,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => context.push('/cart'),
           ),
           IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             icon: const Icon(Icons.location_on_outlined, size: 22),
             onPressed: () => _showLocationPicker(context),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(

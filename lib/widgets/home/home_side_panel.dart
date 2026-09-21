@@ -104,7 +104,7 @@ class _HomeSidePanelState extends State<HomeSidePanel>
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             padding: EdgeInsets.zero,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 10),
             onTap: (_) => HapticFeedback.selectionClick(),
             labelColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             unselectedLabelColor:

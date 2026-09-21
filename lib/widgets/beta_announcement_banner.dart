@@ -154,7 +154,7 @@ class BetaAnnouncementBanner extends StatelessWidget {
 class BetaBadge extends StatelessWidget {
   final bool showInfoIcon;
 
-  const BetaBadge({super.key, this.showInfoIcon = true});
+  const BetaBadge({super.key, this.showInfoIcon = false});
 
   @override
   Widget build(BuildContext context) {

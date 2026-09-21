@@ -24,11 +24,11 @@ class CategoryGrid extends StatelessWidget {
     final scaledFontSize = textScaler.scale(12.0);
     final double cardHeight;
     if (scaledFontSize >= 16.5) {
-      cardHeight = 62.0;
+      cardHeight = 64.0;
     } else if (scaledFontSize >= 13.5) {
-      cardHeight = 52.0;
+      cardHeight = 54.0;
     } else {
-      cardHeight = 46.0;
+      cardHeight = 50.0;
     }
 
     return GridView.builder(
