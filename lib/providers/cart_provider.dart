@@ -10,8 +10,11 @@ import 'package:mleko/services/services.dart';
 class CartProvider extends ChangeNotifier {
   final Map<String, Map<String, double>> _sellerItems = {};
   final ProductsService _productsService;
-  static const _storageKey = 'mleko_seller_drafts';
+  static const _legacyDraftsStorageKey = 'mleko_seller_drafts';
   static const _legacyStorageKey = 'mleko_cart';
+
+  static String storageKeyFor(String? userId) =>
+      userId != null && userId.isNotEmpty ? 'mleko_cart_$userId' : 'mleko_cart_guest';
 
   Future<Map<String, List<({ProductModel product, double quantity})>>>?
       _groupedCache;
@@ -41,14 +44,73 @@ class CartProvider extends ChangeNotifier {
   bool _hasMigratedFromGuest = false;
   bool get hasMigratedFromGuest => _hasMigratedFromGuest;
 
-  Future<void> claimGuestCart(String userId) async {
+  /// Postavlja aktivnog korisnika i bezbedno izoluje korpu po nalogu.
+  /// Ako je prethodni nalog bio gost, spaja gostujuće stavke u korpu korisnika.
+  /// Ako se nalog menja (Korisnik A -> Korisnik B), korpe se NE mešaju.
+  Future<void> setUser(String? userId) async {
+    await _initFuture;
     if (_currentUserId == userId) return;
-    _currentUserId = userId;
-    if (count > 0) {
-      _hasMigratedFromGuest = true;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Ako je prethodni korisnik bio gost (_currentUserId == null), a novi je prijavljeni korisnik:
+    if (_currentUserId == null && userId != null && userId.isNotEmpty) {
+      final guestItems = Map<String, Map<String, double>>.from(
+        _sellerItems.map((k, v) => MapEntry(k, Map<String, double>.from(v))),
+      );
+      _currentUserId = userId;
+      await prefs.setString('mleko_cart_user_id', userId);
+
+      final userKey = storageKeyFor(userId);
+      final userItems = _loadFromStorage(prefs, userKey);
+
+      var hasClaimed = false;
+      if (guestItems.isNotEmpty) {
+        for (final sEntry in guestItems.entries) {
+          final sellerMap = userItems.putIfAbsent(sEntry.key, () => {});
+          for (final pEntry in sEntry.value.entries) {
+            sellerMap[pEntry.key] = pEntry.value;
+            hasClaimed = true;
+          }
+        }
+        await prefs.remove(storageKeyFor(null));
+      }
+
+      _sellerItems.clear();
+      _sellerItems.addAll(userItems);
+      _hasMigratedFromGuest = hasClaimed;
+
+      await _saveDirect(prefs);
+      _invalidateCache();
+      notifyListeners();
+      return;
     }
-    await _save();
+
+    // 2. Ako prelazimo sa ulogovanog korisnika na drugog korisnika ili gosta:
+    if (_currentUserId != null) {
+      await _saveDirect(prefs);
+    }
+
+    _currentUserId = userId;
+    _hasMigratedFromGuest = false;
+
+    if (userId != null && userId.isNotEmpty) {
+      await prefs.setString('mleko_cart_user_id', userId);
+    } else {
+      await prefs.remove('mleko_cart_user_id');
+    }
+
+    final newKey = storageKeyFor(userId);
+    final loaded = _loadFromStorage(prefs, newKey);
+    _sellerItems.clear();
+    _sellerItems.addAll(loaded);
+
+    _invalidateCache();
     notifyListeners();
+  }
+
+  Future<void> claimGuestCart(String userId) async {
+    await setUser(userId);
   }
 
   void dismissGuestCartBanner() {
@@ -59,9 +121,17 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> clearForLogout() async {
+    await _initFuture;
+    final prefs = await SharedPreferences.getInstance();
+    // Sačuvaj korpu odjavljenog korisnika pod njegovim ključem
+    if (_currentUserId != null) {
+      await _saveDirect(prefs);
+    }
     _currentUserId = null;
     _hasMigratedFromGuest = false;
-    await _save();
+    _sellerItems.clear();
+    await prefs.remove('mleko_cart_user_id');
+    _invalidateCache();
     notifyListeners();
   }
 
@@ -73,6 +143,30 @@ class CartProvider extends ChangeNotifier {
     _initFuture = _load();
   }
 
+  Map<String, Map<String, double>> _loadFromStorage(
+    SharedPreferences prefs,
+    String key,
+  ) {
+    final stored = prefs.getString(key);
+    if (stored == null || stored.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(stored) as Map<String, dynamic>;
+      final loaded = <String, Map<String, double>>{};
+      for (final sellerEntry in decoded.entries) {
+        final products = sellerEntry.value as Map<String, dynamic>;
+        final parsed = <String, double>{};
+        for (final productEntry in products.entries) {
+          final qty = (productEntry.value as num?)?.toDouble();
+          if (qty != null && qty > 0) parsed[productEntry.key] = qty;
+        }
+        if (parsed.isNotEmpty) loaded[sellerEntry.key] = parsed;
+      }
+      return loaded;
+    } catch (_) {
+      return {};
+    }
+  }
+
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -80,40 +174,42 @@ class CartProvider extends ChangeNotifier {
       if (savedUserId != null && savedUserId.isNotEmpty) {
         _currentUserId ??= savedUserId;
       }
-      final stored = prefs.getString(_storageKey);
-      if (stored != null && stored.isNotEmpty) {
-        final decoded = jsonDecode(stored) as Map<String, dynamic>;
-        final loaded = <String, Map<String, double>>{};
-        for (final sellerEntry in decoded.entries) {
-          final products = sellerEntry.value as Map<String, dynamic>;
-          final parsed = <String, double>{};
-          for (final productEntry in products.entries) {
-            final qty = (productEntry.value as num?)?.toDouble();
-            if (qty != null && qty > 0) parsed[productEntry.key] = qty;
-          }
-          if (parsed.isNotEmpty) loaded[sellerEntry.key] = parsed;
-        }
 
-        // Spoji sa eventualnim stavkama koje su već unete u memoriju
-        for (final entry in _sellerItems.entries) {
-          final sellerMap = loaded.putIfAbsent(entry.key, () => {});
-          for (final pEntry in entry.value.entries) {
-            sellerMap[pEntry.key] = pEntry.value;
+      // 1. Migracija starog mleko_seller_drafts ključa ako postoji
+      if (prefs.containsKey(_legacyDraftsStorageKey)) {
+        final legacyDrafts = _loadFromStorage(prefs, _legacyDraftsStorageKey);
+        if (legacyDrafts.isNotEmpty) {
+          final targetKey = storageKeyFor(_currentUserId);
+          if (!prefs.containsKey(targetKey)) {
+            await prefs.setString(targetKey, jsonEncode(legacyDrafts));
           }
         }
-        _sellerItems.clear();
-        _sellerItems.addAll(loaded);
-
-        _invalidateCache();
-        notifyListeners();
-        return;
+        await prefs.remove(_legacyDraftsStorageKey);
       }
 
+      // 2. Migracija najstarijeg flat formata mleko_cart
       await _migrateLegacyData(prefs);
+
+      // 3. Učitavanje korpe za trenutnog korisnika / gosta
+      final key = storageKeyFor(_currentUserId);
+      final loaded = _loadFromStorage(prefs, key);
+
+      // Spoji sa eventualnim stavkama koje su već unete u memoriju pre završetka _load()
+      for (final entry in _sellerItems.entries) {
+        final sellerMap = loaded.putIfAbsent(entry.key, () => {});
+        for (final pEntry in entry.value.entries) {
+          sellerMap[pEntry.key] = pEntry.value;
+        }
+      }
+      _sellerItems.clear();
+      _sellerItems.addAll(loaded);
+
+      _invalidateCache();
+      notifyListeners();
     } catch (e) {
       LoggerService.warning('Failed to load cart from storage',
           extra: {'error': e.toString()});
-      // Continue with empty cart, this is non-critical
+      // Nastavi sa praznom korpom u slučaju greške
     }
   }
 
@@ -159,8 +255,9 @@ class CartProvider extends ChangeNotifier {
 
   Future<void> _saveDirect(SharedPreferences prefs) async {
     try {
-      await prefs.setString(_storageKey, jsonEncode(_sellerItems));
-      if (_currentUserId != null) {
+      final key = storageKeyFor(_currentUserId);
+      await prefs.setString(key, jsonEncode(_sellerItems));
+      if (_currentUserId != null && _currentUserId!.isNotEmpty) {
         await prefs.setString('mleko_cart_user_id', _currentUserId!);
       } else {
         await prefs.remove('mleko_cart_user_id');
@@ -172,37 +269,46 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _save() async {
-    await _initFuture;
-    
-    // Cancel previous debounce timer
+  void _scheduleSave() {
     _saveDebounceTimer?.cancel();
-    
-    // Create a completer for this save operation
-    final completer = Completer<void>();
-    
-    // If there's already a save in progress, wait for it
-    if (_saveCompleter != null && !_saveCompleter!.isCompleted) {
-      await _saveCompleter!.future;
-    }
-    
-    _saveCompleter = completer;
-    
-    // Debounce: wait a bit before actually saving
+    _saveCompleter ??= Completer<void>();
+
     _saveDebounceTimer = Timer(_saveDebounceDelay, () async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await _saveDirect(prefs);
-        completer.complete();
-      } catch (e) {
-        LoggerService.warning('Failed to save cart to storage',
-            extra: {'error': e.toString()});
-        completer.complete(); // Complete even on error to unblock queue
-      }
+      await _executeSave();
     });
-    
-    // Wait for the debounced save to complete
-    await completer.future;
+  }
+
+  Future<void> _executeSave() async {
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = null;
+    final completer = _saveCompleter;
+    _saveCompleter = null;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await _saveDirect(prefs);
+    } catch (e) {
+      LoggerService.warning('Failed to save cart to storage',
+          extra: {'error': e.toString()});
+    } finally {
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
+  }
+
+  /// Forsira trenutno upisivanje svih zaostalih promena u [SharedPreferences].
+  Future<void> flush() async {
+    await _initFuture;
+    if (_saveDebounceTimer != null || _saveCompleter != null) {
+      await _executeSave();
+    }
+  }
+
+  @override
+  void dispose() {
+    _saveDebounceTimer?.cancel();
+    super.dispose();
   }
 
   void _invalidateCache([String? sellerId]) {
@@ -224,9 +330,9 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     sellerDraft[productId] = (sellerDraft[productId] ?? 0) + quantity;
-    await _save();
     _invalidateCache(sellerId);
     notifyListeners();
+    _scheduleSave();
   }
 
   Future<void> setQuantityForSeller({
@@ -242,9 +348,9 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     sellerDraft[productId] = quantity;
-    await _save();
     _invalidateCache(sellerId);
     notifyListeners();
+    _scheduleSave();
   }
 
   Future<void> removeFromSeller({
@@ -256,17 +362,17 @@ class CartProvider extends ChangeNotifier {
     if (sellerDraft == null) return;
     sellerDraft.remove(productId);
     if (sellerDraft.isEmpty) _sellerItems.remove(sellerId);
-    await _save();
     _invalidateCache(sellerId);
     notifyListeners();
+    _scheduleSave();
   }
 
   Future<void> clearSeller(String sellerId) async {
     await _initFuture;
     _sellerItems.remove(sellerId);
-    await _save();
     _invalidateCache(sellerId);
     notifyListeners();
+    _scheduleSave();
   }
 
   /// Ubacuje stavke porudžbine u korpu za datog prodavca (npr. „Ponovi porudžbinu”).
@@ -286,17 +392,17 @@ class CartProvider extends ChangeNotifier {
       }
     }
     if (sellerDraft.isNotEmpty) _sellerItems[sellerId] = sellerDraft;
-    await _save();
     _invalidateCache(sellerId);
     notifyListeners();
+    _scheduleSave();
   }
 
   Future<void> clear() async {
     await _initFuture;
     _sellerItems.clear();
-    await _save();
     _invalidateCache();
     notifyListeners();
+    _scheduleSave();
   }
 
   /// Backward-compatible wrappers (pozivi bez sellerId).

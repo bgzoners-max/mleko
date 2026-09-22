@@ -50,6 +50,8 @@ app.*.map.json
 *firebase-adminsdk*.json
 service-account*.json
 *.env
+config/*.json
+!config/*.json.example
 .claude/
 fix_categories.ps1
 fix_one.ps1

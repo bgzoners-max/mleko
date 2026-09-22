@@ -34,7 +34,7 @@ class ProductGridTile extends StatelessWidget {
         final availableHeight =
             constraints.maxHeight.isFinite ? constraints.maxHeight : 320.0;
         final contentHeight =
-            onAddToOrder != null ? (isNarrowCard ? 104.0 : 112.0) : 72.0;
+            onAddToOrder != null ? (isNarrowCard ? 124.0 : 132.0) : 72.0;
         final ratingHeight = hasRating ? 24.0 : 0.0;
         final imageHeight = (availableHeight - contentHeight - ratingHeight)
             .clamp(120.0, 220.0);
@@ -110,6 +110,9 @@ class ProductGridTile extends StatelessWidget {
                                   ? Colors.red
                                   : Colors.white,
                               size: 24,
+                              semanticLabel: isFavorite == true
+                                  ? 'Ukloni iz omiljenih'
+                                  : 'Dodaj u omiljene',
                             ),
                             onPressed: onFavoriteToggle != null
                                 ? () => withHaptic(onFavoriteToggle!)
@@ -208,9 +211,8 @@ class ProductGridTile extends StatelessWidget {
                                   width: 0.8,
                                 ),
                               ),
-                              minimumSize: const Size.fromHeight(28),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
+                              minimumSize: const Size.fromHeight(48),
+                              visualDensity: VisualDensity.standard,
                             ),
                             child: Text(
                               addToOrderLabel,

@@ -1,6 +1,7 @@
 // Shared SEO/HTML helpers for the Vercel preview Edge functions.
-// Both `product-preview` and `classified-preview` used to duplicate these
-// ~120 lines; keeping them here so escaping/CSP/OG changes happen once.
+// Both `product-preview` and `classified-preview` use these utilities.
+
+declare const process: any;
 
 export type HtmlPayload = {
   title: string;
@@ -9,22 +10,93 @@ export type HtmlPayload = {
   canonicalUrl: string;
   imageUrl: string;
   jsonLd?: Record<string, any>;
+  /** Open Graph `og:type` value (defaults to 'product', use 'website' for classifieds). */
+  ogType?: "product" | "website" | string;
   /** Open Graph `og:site_name` value. */
   ogSiteName?: string;
   /** Optional heading rendered above the redirect note (classified uses this). */
   bodyHeading?: string;
   /** Short sentence shown before the fallback link. */
-  redirectNote: string;
+  redirectNote?: string;
   /** Visible text of the fallback link. */
-  linkLabel: string;
+  linkLabel?: string;
 };
 
 export function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
 }
 
-export function resolvePublicBaseUrl(origin: string): string {
-  return normalizeBaseUrl(origin);
+const DEFAULT_CANONICAL_ORIGIN = "https://domacimarket.rs";
+
+const WHITELISTED_ORIGINS = new Set([
+  "https://domacimarket.rs",
+  "https://www.domacimarket.rs",
+  "https://staging.domacimarket.rs",
+]);
+
+/**
+ * Određuje autoritativni javni bazni URL.
+ *
+ * 1. Ako je definisan `SHARE_BASE_URL` ili `STAGING_BASE_URL` u environment-u, uvek koristi njega.
+ * 2. Ako je request origin na listi dozvoljenih (whitelisted) ili localhost za razvoj, koristi ga.
+ * 3. Za sve ostale hostove (*.vercel.app preview deployment-i, nepoznati hostovi), vraća
+ *    kanonski produkcijski domen kako bi se izbegao duplicate content i cache poisoning.
+ */
+export function resolvePublicBaseUrl(origin?: string): string {
+  const envUrl = typeof process !== "undefined"
+    ? (process.env.SHARE_BASE_URL || process.env.STAGING_BASE_URL)
+    : undefined;
+
+  if (envUrl && typeof envUrl === "string" && envUrl.trim().length > 0) {
+    return normalizeBaseUrl(envUrl.trim());
+  }
+
+  if (origin) {
+    const cleanOrigin = normalizeBaseUrl(origin);
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin)) {
+      return cleanOrigin;
+    }
+    if (WHITELISTED_ORIGINS.has(cleanOrigin)) {
+      return cleanOrigin;
+    }
+  }
+
+  return DEFAULT_CANONICAL_ORIGIN;
+}
+
+const BOT_USER_AGENTS = [
+  "googlebot",
+  "bingbot",
+  "yandexbot",
+  "duckduckbot",
+  "baiduspider",
+  "facebookexternalhit",
+  "facebot",
+  "twitterbot",
+  "rogerbot",
+  "linkedinbot",
+  "embedly",
+  "quora link preview",
+  "showyoubot",
+  "outbrain",
+  "pinterest",
+  "slackbot",
+  "vkshare",
+  "w3c_validator",
+  "whatsapp",
+  "viber",
+  "telegrambot",
+  "discordbot",
+  "applebot",
+];
+
+/**
+ * Proverava da li je User-Agent web scraper / socijalni bot ili crawler.
+ */
+export function isBot(userAgent: string | null | undefined): boolean {
+  if (!userAgent) return false;
+  const lower = userAgent.toLowerCase();
+  return BOT_USER_AGENTS.some((bot) => lower.includes(bot));
 }
 
 export function escapeHtml(value: string): string {
@@ -38,20 +110,20 @@ export function escapeHtml(value: string): string {
 
 export function normalizeImageUrl(
   imageUrl: string | null | undefined,
-  origin: string,
+  baseUrl: string,
 ): string {
-  const fallback = `${origin}/icons/Icon-512.png`;
+  const fallback = `${baseUrl}/icons/Icon-512.png`;
   if (!imageUrl || typeof imageUrl !== "string") return fallback;
 
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
 
-  const cleanOrigin = origin.replace(/\/+$/, "");
+  const cleanBase = baseUrl.replace(/\/+$/, "");
   if (imageUrl.startsWith("/")) {
-    return `${cleanOrigin}${imageUrl}`;
+    return `${cleanBase}${imageUrl}`;
   }
-  return `${cleanOrigin}/${imageUrl}`;
+  return `${cleanBase}/${imageUrl}`;
 }
 
 function sanitizeJsonLd(jsonLd: Record<string, any>): string {
@@ -68,21 +140,22 @@ export function buildHtml({
   canonicalUrl,
   imageUrl,
   jsonLd,
+  ogType = "product",
   ogSiteName = "Domaći Market",
   bodyHeading,
-  redirectNote,
-  linkLabel,
+  redirectNote = "Preusmeravanje...",
+  linkLabel = "klikni ovde",
 }: HtmlPayload): string {
   const escapedTitle = escapeHtml(title);
   const escapedDescription = escapeHtml(description);
   const escapedPreviewUrl = escapeHtml(previewUrl);
   const escapedCanonicalUrl = escapeHtml(canonicalUrl);
   const escapedImageUrl = escapeHtml(imageUrl);
+  const escapedOgType = escapeHtml(ogType);
   const escapedOgSiteName = escapeHtml(ogSiteName);
   const escapedRedirectNote = escapeHtml(redirectNote);
   const escapedLinkLabel = escapeHtml(linkLabel);
   const escapedBodyHeading = bodyHeading ? escapeHtml(bodyHeading) : "";
-  const redirectTarget = canonicalUrl.replaceAll('"', "%22");
 
   const jsonLdScript = jsonLd
     ? `<script type="application/ld+json">${sanitizeJsonLd(jsonLd)}</script>`
@@ -98,7 +171,7 @@ export function buildHtml({
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="${escapedCanonicalUrl}">
 
-  <meta property="og:type" content="product">
+  <meta property="og:type" content="${escapedOgType}">
   <meta property="og:title" content="${escapedTitle}">
   <meta property="og:description" content="${escapedDescription}">
   <meta property="og:url" content="${escapedPreviewUrl}">
@@ -112,11 +185,6 @@ export function buildHtml({
   <meta name="twitter:image" content="${escapedImageUrl}">
 
   ${jsonLdScript}
-
-  <meta http-equiv="refresh" content="0;url=${escapedCanonicalUrl}">
-  <script>
-    window.location.replace("${redirectTarget}");
-  </script>
 </head>
 <body>
   <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">

@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { createClient } from "@supabase/supabase-js";
 import {
   buildHtml,
+  isBot,
   normalizeBaseUrl,
   normalizeImageUrl,
   resolvePublicBaseUrl,
@@ -19,6 +20,7 @@ type ClassifiedRow = {
   price_type: string | null;
   city: string | null;
   condition: string | null;
+  status: string | null;
   images: string[] | null;
   category_id: string | null;
   classified_categories?: { name: string } | { name: string }[] | null;
@@ -88,7 +90,20 @@ export async function GET(request: Request): Promise<Response> {
     const encodedAdId = encodeURIComponent(adId);
     const canonicalUrl = `${publicBaseUrl}/classifieds/ad/${encodedAdId}`;
     const previewUrl = `${publicBaseUrl}/ad/${encodedAdId}`;
-    const fallbackImageUrl = `${origin}/icons/Icon-512.png`;
+
+    // Za stvarne posetioce u browseru (ne botove) odmah vraćamo HTTP 302 na kanonski URL
+    const userAgent = request.headers.get("user-agent");
+    if (!isBot(userAgent)) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: canonicalUrl,
+          "Cache-Control": "public, max-age=0, s-maxage=60",
+        },
+      });
+    }
+
+    const fallbackImageUrl = `${publicBaseUrl}/icons/Icon-512.png`;
 
     const supabaseUrl = typeof process !== "undefined"
       ? process.env.SUPABASE_URL
@@ -104,6 +119,7 @@ export async function GET(request: Request): Promise<Response> {
         previewUrl,
         canonicalUrl,
         imageUrl: fallbackImageUrl,
+        ogType: "website",
         ogSiteName: "Domaći Market — Mali Oglasi",
         bodyHeading: FALLBACK_TITLE,
         redirectNote: "Preusmeravanje na oglas...",
@@ -127,7 +143,7 @@ export async function GET(request: Request): Promise<Response> {
     const { data, error } = await supabase
       .from("classified_ads")
       .select(
-        "id, title, description, price, currency, price_type, city, condition, images, category_id, classified_categories:category_id(name)",
+        "id, title, description, price, currency, price_type, city, condition, status, images, category_id, classified_categories:category_id(name)",
       )
       .eq("id", adId)
       .maybeSingle();
@@ -143,7 +159,11 @@ export async function GET(request: Request): Promise<Response> {
     const description = buildDescription(ad);
 
     const rawImageUrl = ad?.images?.find((url) => url && url.trim().length > 0);
-    const imageUrl = normalizeImageUrl(rawImageUrl ?? null, origin);
+    const imageUrl = normalizeImageUrl(rawImageUrl ?? null, publicBaseUrl);
+
+    const availability = (ad?.status === "sold" || ad?.status === "archived")
+      ? "https://schema.org/OutOfStock"
+      : "https://schema.org/InStock";
 
     const jsonLd = ad
       ? {
@@ -152,12 +172,14 @@ export async function GET(request: Request): Promise<Response> {
         name: ad.title,
         description: ad.description || description,
         image: ad.images && ad.images.length > 0 ? ad.images : [imageUrl],
-        category: (Array.isArray(ad.classified_categories) ? ad.classified_categories[0]?.name : ad.classified_categories?.name) || undefined,
+        category: (Array.isArray(ad.classified_categories)
+          ? ad.classified_categories[0]?.name
+          : ad.classified_categories?.name) || undefined,
         offers: {
           "@type": "Offer",
           priceCurrency: ad.currency || "RSD",
           price: ad.price != null ? ad.price : 0,
-          availability: "https://schema.org/InStock",
+          availability,
           url: canonicalUrl,
           itemCondition: ad.condition === "new"
             ? "https://schema.org/NewCondition"
@@ -173,6 +195,7 @@ export async function GET(request: Request): Promise<Response> {
       canonicalUrl,
       imageUrl,
       jsonLd,
+      ogType: "website",
       ogSiteName: "Domaći Market — Mali Oglasi",
       bodyHeading: title,
       redirectNote: "Preusmeravanje na oglas...",
@@ -183,19 +206,22 @@ export async function GET(request: Request): Promise<Response> {
       status: ad ? 200 : 404,
       headers: {
         "content-type": "text/html; charset=utf-8",
-        "cache-control":
-          "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+        "cache-control": ad
+          ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+          : "no-cache, no-store, must-revalidate",
       },
     });
   } catch (err) {
     console.error("Classified Preview Edge Function Error:", err);
+    const fallbackBaseUrl = resolvePublicBaseUrl();
     return new Response(
       buildHtml({
         title: FALLBACK_TITLE,
         description: FALLBACK_DESCRIPTION,
         previewUrl: request.url,
         canonicalUrl: request.url,
-        imageUrl: `${new URL(request.url).origin}/icons/Icon-512.png`,
+        imageUrl: `${fallbackBaseUrl}/icons/Icon-512.png`,
+        ogType: "website",
         ogSiteName: "Domaći Market — Mali Oglasi",
         bodyHeading: FALLBACK_TITLE,
         redirectNote: "Preusmeravanje na oglas...",

@@ -13,6 +13,8 @@ import '../../widgets/app_empty_state.dart';
 import '../../widgets/product_grid_tile.dart';
 import '../../widgets/skeleton.dart';
 import '../../utils/quantity_engine.dart';
+import '../../services/core/analytics_service.dart';
+import 'dart:async';
 
 class SellerProductGrid extends StatefulWidget {
   final String sellerId;
@@ -257,6 +259,7 @@ class _SellerAddToOrderSheetState extends State<SellerAddToOrderSheet> {
                 productId: p.id,
                 quantity: _quantity,
               );
+              unawaited(AnalyticsService().logAddToCart(p, _quantity));
               Navigator.of(context).pop();
               widget.onAdded();
             }),

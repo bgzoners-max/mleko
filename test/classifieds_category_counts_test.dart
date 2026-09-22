@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/classified_category_model.dart';
 import 'package:mleko/providers/classifieds_provider.dart';
@@ -124,5 +125,66 @@ void main() {
       // vozila: 0 direct + 10 (automobili) + 4 (motocikli) = 14
       expect(vozila.adCount, 14);
     });
+
+    test('isRoot, copyWith, and toJson operations', () {
+      const root = ClassifiedCategoryModel(
+        id: 'tehnika',
+        name: 'Tehnika',
+        iconName: 'laptop',
+      );
+      expect(root.isRoot, isTrue);
+
+      const child = ClassifiedCategoryModel(
+        id: 'laptopovi',
+        name: 'Laptopovi',
+        iconName: 'laptop',
+        parentId: 'tehnika',
+        adCount: 12,
+      );
+      expect(child.isRoot, isFalse);
+
+      final copied = child.copyWith(
+        adCount: 20,
+        isConditionApplicable: false,
+      );
+      expect(copied.adCount, 20);
+      expect(copied.isConditionApplicable, isFalse);
+      expect(copied.id, 'laptopovi');
+
+      final json = copied.toJson();
+      expect(json['id'], 'laptopovi');
+      expect(json['parent_id'], 'tehnika');
+      expect(json['ad_count'], 20);
+      expect(json['is_condition_applicable'], isFalse);
+    });
+
+    test('iconData resolves known and fallback icons', () {
+      const known = ClassifiedCategoryModel(
+        id: 'c1',
+        name: 'Test',
+        iconName: 'agriculture',
+      );
+      expect(known.iconData, Icons.agriculture);
+
+      const unknown = ClassifiedCategoryModel(
+        id: 'c2',
+        name: 'Test',
+        iconName: 'completely_unknown_icon_name',
+      );
+      expect(unknown.iconData, Icons.category);
+    });
+
+    test('fallbackCategories is populated with standard root categories', () {
+      expect(ClassifiedCategoryModel.fallbackCategories, isNotEmpty);
+      expect(
+        ClassifiedCategoryModel.fallbackCategories.any((c) => c.id == 'poljoprivreda'),
+        isTrue,
+      );
+      expect(
+        ClassifiedCategoryModel.fallbackCategories.any((c) => c.id == 'vozila'),
+        isTrue,
+      );
+    });
   });
 }
+

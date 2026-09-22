@@ -14,11 +14,7 @@ Future<void> _enterAsGuestWithMode(
     BuildContext context, MarketMode mode) async {
   final appState = context.read<AppState>();
   context.read<AppSettingsProvider>().setMarketMode(mode);
-  if (appState.authService.currentSupabaseUser?.isAnonymous == true) {
-    try {
-      await appState.authService.signOut();
-    } catch (_) {}
-  }
+  await appState.authService.ensureCleanSession();
   if (context.mounted) {
     try {
       context.go('/');

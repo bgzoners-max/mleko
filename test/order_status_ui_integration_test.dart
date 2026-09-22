@@ -102,4 +102,37 @@ void main() {
         find.text('Greška pri učitavanju istorije statusa.'), findsOneWidget);
     expect(find.text('Pokušaj ponovo'), findsOneWidget);
   });
+
+  test('OrderStatusAuditLogModel.fromJson parses valid json and handles fallback date', () {
+    final json = {
+      'id': 'log_123',
+      'order_id': 'ord_456',
+      'old_status': 'pending',
+      'new_status': 'accepted',
+      'changed_by_role': 'seller',
+      'changed_by_user_id': 'u_789',
+      'changed_at': '2026-03-01T10:00:00Z',
+    };
+    final model = OrderStatusAuditLogModel.fromJson(json);
+    expect(model.id, 'log_123');
+    expect(model.orderId, 'ord_456');
+    expect(model.oldStatus, 'pending');
+    expect(model.newStatus, 'accepted');
+    expect(model.changedByRole, 'seller');
+    expect(model.changedByUserId, 'u_789');
+    expect(model.changedAt.toIso8601String(), contains('2026-03-01'));
+
+    final fallback = OrderStatusAuditLogModel.fromJson({
+      'id': 'log_fall',
+      'order_id': 'ord_fall',
+      'old_status': 'accepted',
+      'new_status': 'shipped',
+      'changed_by_role': 'system',
+      'changed_at': null,
+    });
+    expect(fallback.id, 'log_fall');
+    expect(fallback.changedByUserId, isNull);
+    expect(fallback.changedAt, isNotNull);
+  });
 }
+

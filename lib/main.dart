@@ -189,6 +189,8 @@ void main() async {
 
   await initializeDateFormatting('sr', null);
 
+  SupabaseConfig.validateConfig();
+
   await Supabase.initialize(
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.publishableKey,
@@ -236,9 +238,7 @@ void main() async {
       favoritesProvider.load(userId);
       classifiedsProvider.loadSubscriptions();
       CrashReportingService.setUserIdentifier(userId);
-      if (cartProvider.count > 0) {
-        cartProvider.claimGuestCart(userId);
-      }
+      cartProvider.setUser(userId);
     } else {
       favoritesProvider.clear();
       classifiedsProvider.clearSubscriptions();

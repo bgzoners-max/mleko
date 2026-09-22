@@ -19,9 +19,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Create dummy .env for build
-        run: mkdir -p assets && touch assets/.env
-
       - name: Build web
         run: |
           flutter build web --release \

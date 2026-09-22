@@ -24,14 +24,13 @@ jobs:
 
       - name: Enforce service import rules
         run: dart run tool/check_service_imports.dart
+      - name: Enforce cyrillic-free code
+        run: dart run tool/check_cyrillic_strings.dart
       - name: Guard against committed keystores/secrets
         run: dart run tool/check_no_committed_secrets.dart
 
       - name: Scan SECURITY DEFINER migrations (heuristic)
         run: dart run tool/scan_security_definer_migrations.dart
-
-      - name: Create dummy .env for analyzer
-        run: mkdir -p assets && touch assets/.env
 
       - name: Flutter analyze
         run: flutter analyze --no-fatal-infos
@@ -41,6 +40,16 @@ jobs:
 
       - name: Check code coverage threshold
         run: dart run tool/check_coverage.dart --min-coverage=30.0
+
+      - name: Generate and verify STATUS.md
+        shell: bash
+        run: |
+          dart run tool/generate_status.dart
+          if ! git diff --quiet -- STATUS.md; then
+            echo "::error file=STATUS.md::STATUS.md is out of date. Please run 'dart run tool/generate_status.dart' and commit the changes."
+            git diff -- STATUS.md
+            exit 1
+          fi
 
       - name: Validate Digital Asset Links (assetlinks.json)
         run: node -e "const content = require('fs').readFileSync('web/.well-known/assetlinks.json', 'utf8'); const data = JSON.parse(content); if (!Array.isArray(data) || data.length === 0) throw new Error('assetlinks.json must be a non-empty array');"
@@ -102,16 +111,21 @@ jobs:
       - name: Run order status flow integration SQL
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/order_status_flow_integration.sql
 
+      - name: Run create order RPC parity & security integration SQL
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/create_order_rpc_integration.sql
+
       - name: Regenerate local Supabase types
         run: npm run supabase:types:local
 
-      - name: Verify generated types are committed
+      - name: Verify generated types match migrations exactly
         shell: bash
         run: |
           if ! git diff --quiet -- supabase/types/database.types.ts; then
-            echo "::warning file=supabase/types/database.types.ts::Supabase generated types differ from local schema. Run 'npm run supabase:types' to sync with hosted database."
+            echo "::error file=supabase/types/database.types.ts::Schema drift detected! Generated types from migrations differ from committed database.types.ts. Run 'npm run supabase:types:local' after updating migrations."
             echo "Detected diff in supabase/types/database.types.ts:"
             git --no-pager diff --stat -- supabase/types/database.types.ts
+            git --no-pager diff -- supabase/types/database.types.ts
+            exit 1
           fi
 
       - name: Stop local Supabase stack

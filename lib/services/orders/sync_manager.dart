@@ -78,10 +78,14 @@ class SyncManager extends ChangeNotifier {
       _syncedCount = await _orderSyncService.syncPendingOrders(
         connectivity: _connectivity,
       );
+      if (_syncedCount > 0) {
+        _connectivity.reportNetworkSuccess();
+      }
       LoggerService.info('Foreground sync completed',
           extra: {'syncedCount': _syncedCount});
     } catch (e, st) {
       _syncError = e.toString();
+      _connectivity.reportNetworkFailure(e);
       LoggerService.error('Sync failed', e, stackTrace: st);
     } finally {
       await refreshPendingOrders();

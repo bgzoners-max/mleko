@@ -35,12 +35,12 @@ mixin ProductSearchMixin {
   }) async {
     final safeSearch = sanitizeProductSearchInput(searchQuery);
 
-    List rows;
+    final List<dynamic> rawRows;
 
     if (safeSearch != null) {
       final params = <String, dynamic>{
         'p_query': safeSearch,
-        'p_limit': limit,
+        'p_limit': limit + 1,
         'p_offset': offset,
       };
       if (category != null && category.isNotEmpty) {
@@ -55,8 +55,9 @@ mixin ProductSearchMixin {
       if (excludeSellerId != null && excludeSellerId.isNotEmpty) {
         params['p_exclude_seller_id'] = excludeSellerId;
       }
-      rows = await withRetry(
-          () => client.rpc('search_products_fts', params: params)) as List;
+      final dynamic response = await withRetry(
+          () => client.rpc('search_products_fts', params: params));
+      rawRows = response is List ? response : const <dynamic>[];
     } else {
       const table = 'products_with_ratings';
       var query = client.from(table).select();
@@ -91,12 +92,17 @@ mixin ProductSearchMixin {
       if (sort == ProductSort.ratingDesc) {
         ordered = ordered.order('created_at', ascending: false);
       }
-      rows = await withRetry(() => ordered.range(offset, offset + limit - 1))
-          as List;
+      rawRows =
+          await withRetry(() => ordered.range(offset, offset + limit));
     }
 
+    final rows = rawRows
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+
     final products = rows
-        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+        .map((e) => ProductModel.fromJson(e))
         .toList();
     final salesCounts = <String, int>{};
     final ratings = <String, ({double avg, int count})>{};
@@ -111,6 +117,11 @@ mixin ProductSearchMixin {
         }
       }
     }
+    final hasMore = products.length > limit;
+    if (hasMore) {
+      products.removeLast();
+    }
+
     if (safeSearch != null && offset == 0 && products.isNotEmpty) {
       unawaited(ProductCacheService().cacheProducts(
         ProductCacheService.searchKey(safeSearch),
@@ -120,7 +131,7 @@ mixin ProductSearchMixin {
 
     return (
       items: products,
-      hasMore: products.length >= limit,
+      hasMore: hasMore,
       salesCounts: salesCounts,
       ratings: ratings
     );
@@ -184,7 +195,7 @@ mixin ProductSearchMixin {
     }
 
     final end =
-        (offset + limit) > filtered.length ? filtered.length : (offset + limit);
+        (offset + limit + 1) > filtered.length ? filtered.length : (offset + limit + 1);
     final page = filtered.sublist(offset, end);
 
     LoggerService.debug('Local cache search completed', extra: {
@@ -196,9 +207,14 @@ mixin ProductSearchMixin {
       'limit': limit,
     });
 
+    final hasMore = page.length > limit;
+    if (hasMore) {
+      page.removeLast();
+    }
+
     return (
       items: page,
-      hasMore: end < filtered.length,
+      hasMore: hasMore,
       salesCounts: <String, int>{},
     );
   }

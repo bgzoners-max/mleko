@@ -17,3 +17,4 @@ linter:
     cancel_subscriptions: true
     close_sinks: true
     prefer_final_locals: true
+    unawaited_futures: true

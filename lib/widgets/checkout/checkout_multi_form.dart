@@ -11,6 +11,8 @@ import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../../utils/quantity_engine.dart';
 import 'package:mleko/services/services.dart';
+import '../../services/core/analytics_service.dart';
+import 'dart:async';
 import '../offline_indicator.dart';
 import 'checkout_address_form.dart';
 import 'checkout_bottom_nav.dart';
@@ -57,6 +59,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
   void initState() {
     super.initState();
     _items = List.from(widget.items);
+    unawaited(AnalyticsService().logBeginCheckout(_items.length, _totalAmount));
     final user = context.read<AppState>().user;
     if (user != null) {
       if (user.city != null && user.city!.isNotEmpty) {
@@ -510,6 +513,11 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
           if (!mounted) return false;
           final cart = context.read<CartProvider>();
           await cart.clearSeller(widget.sellerId);
+          unawaited(AnalyticsService().logPurchase(
+            transactionId: orderId,
+            value: _totalAmount,
+            itemCount: _items.length,
+          ));
           return true; // Online
         } else {
           for (final item in _items) {

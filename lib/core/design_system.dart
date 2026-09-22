@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Centralizovan dizajn sistem sa tokenima za razmake, radijuse i veličine.
-/// Pomaže u održavanju vizuelne konzistentnosti i izbegavanju hardkodovanih vrednosti.
+export '../constants/amazon_theme.dart' show AmazonColors;
+
+/// Centralizovan dizajn sistem sa tokenima za razmake, radijuse, veličine i boje.
+/// Služi kao jedinstven izvor istine (SSOT) za UI konzistentnost.
 class AppDesign {
   AppDesign._();
 

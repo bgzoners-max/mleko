@@ -76,5 +76,60 @@ void main() {
       );
       expect(customAttr.isDecimal, isFalse);
     });
+
+    test('getAttributesForCategory resolves correct schemas and respects exclusions', () {
+      expect(ClassifiedAttributesEngine.getAttributesForCategory(null), isEmpty);
+      expect(ClassifiedAttributesEngine.getAttributesForCategory(''), isEmpty);
+
+      // Cars
+      final cars = ClassifiedAttributesEngine.getAttributesForCategory('automobili');
+      expect(cars, equals(ClassifiedAttributesEngine.carAttributes));
+
+      // Car parts excluded
+      final carParts = ClassifiedAttributesEngine.getAttributesForCategory('auto_delovi');
+      expect(carParts, isEmpty);
+
+      // Tractors
+      final tractors = ClassifiedAttributesEngine.getAttributesForCategory('traktori');
+      expect(tractors, equals(ClassifiedAttributesEngine.tractorAttributes));
+
+      // Real estate: apartments
+      final apartments = ClassifiedAttributesEngine.getAttributesForCategory('stanovi');
+      expect(apartments, equals(ClassifiedAttributesEngine.realEstateApartmentAttributes));
+
+      // Real estate: houses
+      final houses = ClassifiedAttributesEngine.getAttributesForCategory('kuce');
+      expect(houses, equals(ClassifiedAttributesEngine.realEstateHouseAttributes));
+
+      // Real estate: land
+      final land = ClassifiedAttributesEngine.getAttributesForCategory('poljoprivredno_zemljiste');
+      expect(land, equals(ClassifiedAttributesEngine.realEstateLandAttributes));
+
+      // Phones
+      final phones = ClassifiedAttributesEngine.getAttributesForCategory('pametni_telefoni');
+      expect(phones, equals(ClassifiedAttributesEngine.phoneAttributes));
+
+      // Phone accessories excluded
+      final phoneCases = ClassifiedAttributesEngine.getAttributesForCategory('telefoni_maske');
+      expect(phoneCases, isEmpty);
+
+      // Unmatched category
+      final other = ClassifiedAttributesEngine.getAttributesForCategory('knjige');
+      expect(other, isEmpty);
+    });
+
+    test('findAttributeByKey finds defined attributes or returns null', () {
+      final fuel = ClassifiedAttributesEngine.findAttributeByKey('fuel');
+      expect(fuel, isNotNull);
+      expect(fuel?.key, 'fuel');
+
+      final operatingHours = ClassifiedAttributesEngine.findAttributeByKey('operating_hours');
+      expect(operatingHours, isNotNull);
+      expect(operatingHours?.key, 'operating_hours');
+
+      final notFound = ClassifiedAttributesEngine.findAttributeByKey('non_existent_key');
+      expect(notFound, isNull);
+    });
   });
 }
+

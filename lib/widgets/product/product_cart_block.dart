@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/services.dart';
+import '../../services/core/analytics_service.dart';
 import '../bounce_tap_button.dart';
 import 'seller_inline_cart_section.dart';
 
@@ -52,6 +53,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
     if (!mounted) return;
 
     if (result.isSuccess) {
+      unawaited(AnalyticsService().logAddToCart(widget.product, widget.product.minOrderKg));
       final isWideLayout = MediaQuery.of(context).size.width >= 800;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

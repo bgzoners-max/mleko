@@ -121,7 +121,7 @@ class ErrorHandlerService {
     final count = _errorCounts[key]!;
     if (count >= 5) {
       LoggerService.warning(
-        'Česta greška: $key ($count) u poslednjих 10s',
+        'Česta greška: $key ($count) u poslednjih 10s',
       );
       _errorCounts[key] = 0; // Resetuj brojač kako ne bi spamovao log
     }

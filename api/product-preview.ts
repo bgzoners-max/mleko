@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { createClient } from "@supabase/supabase-js";
 import {
   buildHtml,
+  isBot,
   normalizeBaseUrl,
   normalizeImageUrl,
   resolvePublicBaseUrl,
@@ -18,6 +19,7 @@ type ProductRow = {
   price_per_kg: number | null;
   unit_type: string | null;
   image_urls: string[] | null;
+  available_now: boolean | null;
 };
 
 const FALLBACK_TITLE = "Domaće, baš kako treba! | domaćimarket.rs";
@@ -29,13 +31,16 @@ function formatPrice(
   unitType: string | null,
 ): string | null {
   if (pricePerKg == null) return null;
+  const rounded = Math.round(pricePerKg);
   switch (unitType) {
     case "L":
-      return `${Math.round(pricePerKg)} RSD/L`;
+      return `${rounded} RSD/L`;
     case "kom":
-      return `${Math.round(pricePerKg)} RSD/kom`;
+      return `${rounded} RSD/kom`;
+    case "kg":
+      return `${rounded} RSD/kg`;
     default:
-      return `${Math.round(pricePerKg)} RSD/kg`;
+      return `${rounded} RSD`;
   }
 }
 
@@ -73,7 +78,20 @@ export async function GET(request: Request): Promise<Response> {
     const encodedProductId = encodeURIComponent(productId);
     const canonicalUrl = `${publicBaseUrl}/product/${encodedProductId}`;
     const previewUrl = `${publicBaseUrl}/p/${encodedProductId}`;
-    const fallbackImageUrl = `${origin}/icons/Icon-512.png`;
+
+    // Za stvarne korisnike u browseru odmah vraćamo HTTP 302 na kanonski URL
+    const userAgent = request.headers.get("user-agent");
+    if (!isBot(userAgent)) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: canonicalUrl,
+          "Cache-Control": "public, max-age=0, s-maxage=60",
+        },
+      });
+    }
+
+    const fallbackImageUrl = `${publicBaseUrl}/icons/Icon-512.png`;
 
     const supabaseUrl = typeof process !== "undefined"
       ? process.env.SUPABASE_URL
@@ -89,6 +107,7 @@ export async function GET(request: Request): Promise<Response> {
         previewUrl,
         canonicalUrl,
         imageUrl: fallbackImageUrl,
+        ogType: "product",
         redirectNote: "Preusmeravanje na proizvod...",
         linkLabel: "klikni ovde",
       });
@@ -110,7 +129,7 @@ export async function GET(request: Request): Promise<Response> {
     const { data, error } = await supabase
       .from("products")
       .select(
-        "id, name, description, location, price_per_kg, unit_type, image_urls",
+        "id, name, description, location, price_per_kg, unit_type, image_urls, available_now",
       )
       .eq("id", productId)
       .maybeSingle();
@@ -124,7 +143,11 @@ export async function GET(request: Request): Promise<Response> {
     const rawImageUrl = product?.image_urls?.find((url) =>
       url && url.trim().length > 0
     );
-    const imageUrl = normalizeImageUrl(rawImageUrl ?? null, origin);
+    const imageUrl = normalizeImageUrl(rawImageUrl ?? null, publicBaseUrl);
+
+    const availability = product?.available_now === false
+      ? "https://schema.org/OutOfStock"
+      : "https://schema.org/InStock";
 
     const jsonLd = product
       ? {
@@ -139,7 +162,7 @@ export async function GET(request: Request): Promise<Response> {
           "@type": "Offer",
           priceCurrency: "RSD",
           price: product.price_per_kg != null ? product.price_per_kg : 0,
-          availability: "https://schema.org/InStock",
+          availability,
           url: canonicalUrl,
         },
       }
@@ -152,6 +175,7 @@ export async function GET(request: Request): Promise<Response> {
       canonicalUrl,
       imageUrl,
       jsonLd,
+      ogType: "product",
       redirectNote: "Preusmeravanje na proizvod...",
       linkLabel: "klikni ovde",
     });
@@ -160,19 +184,22 @@ export async function GET(request: Request): Promise<Response> {
       status: product ? 200 : 404,
       headers: {
         "content-type": "text/html; charset=utf-8",
-        "cache-control":
-          "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+        "cache-control": product
+          ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+          : "no-cache, no-store, must-revalidate",
       },
     });
   } catch (err) {
     console.error("Edge Function Error:", err);
+    const fallbackBaseUrl = resolvePublicBaseUrl();
     return new Response(
       buildHtml({
         title: FALLBACK_TITLE,
         description: FALLBACK_DESCRIPTION,
         previewUrl: request.url,
         canonicalUrl: request.url,
-        imageUrl: `${new URL(request.url).origin}/icons/Icon-512.png`,
+        imageUrl: `${fallbackBaseUrl}/icons/Icon-512.png`,
+        ogType: "product",
         redirectNote: "Preusmeravanje na proizvod...",
         linkLabel: "klikni ovde",
       }),

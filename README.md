@@ -67,16 +67,30 @@ cd mleko
 flutter pub get
 ```
 
-Aplikacija funkcioniše odmah „out-of-the-box” za lokalni razvoj sa podrazumevanom Supabase konfiguracijom (`lib/supabase_config.dart`).
+Iz bezbednosnih razloga i sprečavanja slučajnog pisanja u produkcionu bazu, debug pokretanje zahteva eksplicitno navođenje okruženja (`APP_ENV=local|staging|prod`) ili konfiguracionog fajla.
 
-Ukoliko želiš da koristiš sopstvenu ili staging Supabase instancu (npr. u CI/CD ili produkciji), koristi `--dart-define` parametre:
+Za lokalni razvoj (podrazumevani lokalni Supabase na `http://127.0.0.1:54321`):
+```bash
+# Direktno preko parametra:
+flutter run --dart-define=APP_ENV=local
 
+# Ili preko konfiguracionog fajla (preporučeno):
+cp config/local.json.example config/local.json
+flutter run --dart-define-from-file=config/local.json
+```
+
+Za povezivanje na staging ili sopstveni Supabase projekat:
 ```bash
 # Web
-flutter run -d chrome --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
+flutter run -d chrome --dart-define=APP_ENV=staging --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
 
 # Mobilni
-flutter run --dart-define=SUPABASE_URL="TvojUrl" --dart-define=SUPABASE_ANON_KEY="TvojKljuc"
+flutter run --dart-define-from-file=config/staging.json
+```
+
+Za pokretanje debug režima protiv produkcije (zahteva eksplicitnu nameru):
+```bash
+flutter run --dart-define=APP_ENV=prod
 ```
 
 ---

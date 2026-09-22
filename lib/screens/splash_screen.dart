@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 import '../providers/app_state.dart';
+import '../services/auth/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,19 +16,20 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session?.user.isAnonymous == true) {
-        Supabase.instance.client.auth.signOut();
-      }
-      final appState = context.read<AppState>();
-      if (appState.justConfirmedEmail) {
-        context.go('/auth/confirmed');
-      } else {
-        context.go('/');
-      }
-    });
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    final authService = AuthService();
+    await authService.ensureCleanSession();
+
+    if (!mounted) return;
+    final appState = context.read<AppState>();
+    if (appState.justConfirmedEmail) {
+      context.go('/auth/confirmed');
+    } else {
+      context.go('/');
+    }
   }
 
   @override

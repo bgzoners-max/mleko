@@ -10,12 +10,14 @@ class LogEntry {
   final String level;
   final String message;
   final String? details;
+  final Map<String, dynamic>? extra;
 
   const LogEntry({
     required this.timestamp,
     required this.level,
     required this.message,
     this.details,
+    this.extra,
   });
 }
 
@@ -32,7 +34,12 @@ class LoggerService {
   static final Queue<LogEntry> _logEntries = Queue<LogEntry>();
   static List<LogEntry> get recentLogs => List.unmodifiable(_logEntries);
 
-  static void _addEntry(String level, String message, {String? details}) {
+  static void _addEntry(
+    String level,
+    String message, {
+    String? details,
+    Map<String, dynamic>? extra,
+  }) {
     if (_logEntries.length >= _maxLoggedEntries) {
       _logEntries.removeFirst();
     }
@@ -41,12 +48,13 @@ class LoggerService {
       level: level,
       message: message,
       details: details,
+      extra: extra != null ? Map<String, dynamic>.unmodifiable(extra) : null,
     ));
   }
 
   /// Log info poruke
   static void info(String message, {Map<String, dynamic>? extra}) {
-    _addEntry('INFO', message);
+    _addEntry('INFO', message, extra: extra);
     if (kDebugMode && enableConsoleLogging) {
       final extraStr = extra != null ? ' | Extra: $extra' : '';
       debugPrint('$_prefix [INFO] $message$extraStr');
@@ -55,7 +63,7 @@ class LoggerService {
 
   /// Log debug poruke
   static void debug(String message, {Map<String, dynamic>? extra}) {
-    _addEntry('DEBUG', message);
+    _addEntry('DEBUG', message, extra: extra);
     if (kDebugMode && enableConsoleLogging) {
       final extraStr = extra != null ? ' | Extra: $extra' : '';
       debugPrint('$_prefix [DEBUG] $message$extraStr');
@@ -64,8 +72,8 @@ class LoggerService {
 
   /// Log warning poruke
   static void warning(String message, {Map<String, dynamic>? extra}) {
-    _addEntry('WARNING', message);
-    if (enableConsoleLogging) {
+    _addEntry('WARNING', message, extra: extra);
+    if (kDebugMode && enableConsoleLogging) {
       final extraStr = extra != null ? ' | Extra: $extra' : '';
       debugPrint('$_prefix [WARNING] $message$extraStr');
     }
@@ -78,7 +86,7 @@ class LoggerService {
     StackTrace? stackTrace,
     Map<String, dynamic>? extra,
   }) {
-    _addEntry('ERROR', message, details: exception.toString());
+    _addEntry('ERROR', message, details: exception.toString(), extra: extra);
     final extraStr = extra != null ? ' | Extra: $extra' : '';
 
     if (kDebugMode && enableConsoleLogging) {

@@ -35,6 +35,16 @@ class AuthService {
     }
   }
 
+  /// Proverava trenutnu sesiju i bezbedno odjavljuje zaostale anonimne naloge.
+  Future<void> ensureCleanSession() async {
+    try {
+      final user = _client.auth.currentUser;
+      if (user != null && user.isAnonymous) {
+        await _client.auth.signOut();
+      }
+    } catch (_) {}
+  }
+
   Future<UserModel?> getCurrentUser() async {
     try {
       final u = _client.auth.currentUser;

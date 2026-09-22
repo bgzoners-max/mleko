@@ -248,7 +248,7 @@ class ProductCacheService {
     }
   }
 
-  /// Список svih cache ključeva i njihove starosti
+  /// Spisak svih cache ključeva i njihove starosti
   Future<Map<String, Duration>> getAllCacheStats() async {
     try {
       final prefs = await SharedPreferences.getInstance();

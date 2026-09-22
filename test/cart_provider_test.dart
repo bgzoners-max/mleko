@@ -77,19 +77,38 @@ void main() {
 
       await addFuture;
       await provider.loadFuture;
+      await provider.flush();
 
       // Both the stored item from seller-1 AND the newly added item from seller-2 must exist!
       expect(provider.getQuantityForSeller('seller-1', 'product-1'), 2.0);
       expect(provider.getQuantityForSeller('seller-2', 'product-2'), 3.0);
       expect(provider.count, 2);
 
-      // Verify that storage also saved both
+      // Verify that storage also saved both under namespaced key
       final prefs = await SharedPreferences.getInstance();
-      final savedJson = prefs.getString('mleko_seller_drafts');
+      final savedJson = prefs.getString(CartProvider.storageKeyFor(null));
       expect(savedJson, isNotNull);
       final decoded = jsonDecode(savedJson!) as Map<String, dynamic>;
       expect(decoded['seller-1']?['product-1'], 2.0);
       expect(decoded['seller-2']?['product-2'], 3.0);
+    });
+
+    test('mutations are non-blocking write-behind and flush writes to storage', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService();
+      final provider = CartProvider(productsService: service);
+
+      // Mutation is instant
+      await provider.addForSeller(sellerId: 's1', productId: 'p1', quantity: 2.0);
+      expect(provider.getQuantityForSeller('s1', 'p1'), 2.0);
+
+      // Before flush, memory has it; flush persists it
+      await provider.flush();
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(CartProvider.storageKeyFor(null));
+      expect(saved, contains('p1'));
+
+      provider.dispose();
     });
 
     test('mutations wait for _initFuture and update correctly', () async {
@@ -133,7 +152,7 @@ void main() {
 
       // Verify persistent storage updated to new JSON format
       final prefs = await SharedPreferences.getInstance();
-      final storedJson = prefs.getString('mleko_seller_drafts');
+      final storedJson = prefs.getString(CartProvider.storageKeyFor(null));
       expect(storedJson, isNotNull);
       final decoded = jsonDecode(storedJson!) as Map<String, dynamic>;
       expect(decoded['seller-A']?['p1'], equals(2.5));
@@ -165,7 +184,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('mleko_cart'), isNull);
       expect(prefs.getStringList('mleko_cart_ids'), isNull);
-      expect(prefs.getString('mleko_seller_drafts'), isNotNull);
+      expect(prefs.getString(CartProvider.storageKeyFor(null)), isNotNull);
     });
 
     test('gracefully ignores deleted/unknown product IDs during migration', () async {
@@ -212,6 +231,7 @@ void main() {
       await provider.clearForLogout();
       expect(provider.currentUserId, isNull);
       expect(provider.hasMigratedFromGuest, isFalse);
+      expect(provider.isEmpty, isTrue);
       expect(prefs.getString('mleko_cart_user_id'), isNull);
     });
 
@@ -225,6 +245,71 @@ void main() {
       await provider.claimGuestCart('user-empty');
       expect(provider.hasMigratedFromGuest, isFalse);
       expect(provider.currentUserId, equals('user-empty'));
+    });
+
+    test('Cart does NOT leak to a new user after logout', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService();
+      final provider = CartProvider(productsService: service);
+      await provider.loadFuture;
+
+      // Korisnik A se prijavi i doda artikle
+      await provider.setUser('user-A');
+      await provider.addForSeller(sellerId: 's1', productId: 'p1', quantity: 2.0);
+      expect(provider.count, 1);
+      expect(provider.currentUserId, 'user-A');
+
+      // Korisnik A se odjavi
+      await provider.clearForLogout();
+      expect(provider.isEmpty, isTrue);
+      expect(provider.currentUserId, isNull);
+
+      // Korisnik B se prijavi na istom uređaju
+      await provider.setUser('user-B');
+      // Korpa korisnika B MORA biti prazna, a ne nasleđena od Korisnika A!
+      expect(provider.isEmpty, isTrue);
+      expect(provider.count, 0);
+      expect(provider.hasMigratedFromGuest, isFalse);
+
+      // Korisnik B doda svoj artikal
+      await provider.addForSeller(sellerId: 's2', productId: 'p2', quantity: 5.0);
+      expect(provider.count, 1);
+
+      // Korisnik B se odjavi, a Korisnik A se ponovo prijavi
+      await provider.clearForLogout();
+      expect(provider.isEmpty, isTrue);
+
+      await provider.setUser('user-A');
+      // Korpa Korisnika A je sačuvana i ponovo učitana!
+      expect(provider.count, 1);
+      expect(provider.getQuantityForSeller('s1', 'p1'), 2.0);
+      expect(provider.containsInSeller('s2', 'p2'), isFalse);
+    });
+
+    test('Guest cart is claimed by logging-in user, but does not overwrite other user carts', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService();
+      final provider = CartProvider(productsService: service);
+      await provider.loadFuture;
+
+      // Gost doda artikal
+      await provider.addForSeller(sellerId: 's-guest', productId: 'p-guest', quantity: 1.0);
+      expect(provider.count, 1);
+      expect(provider.currentUserId, isNull);
+
+      // Gost se prijavi kao User-C
+      await provider.setUser('user-C');
+      expect(provider.count, 1);
+      expect(provider.getQuantityForSeller('s-guest', 'p-guest'), 1.0);
+      expect(provider.hasMigratedFromGuest, isTrue);
+
+      // Logout
+      await provider.clearForLogout();
+      expect(provider.isEmpty, isTrue);
+
+      // Gostujući ključ u storage-u je očišćen
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(CartProvider.storageKeyFor(null)), isNull);
     });
   });
 }

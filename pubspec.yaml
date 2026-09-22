@@ -43,6 +43,7 @@ dependencies:
   latlong2: ^0.9.0
   google_fonts: ^8.0.2
   image: ^4.10.1
+  firebase_analytics: ^12.6.0
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +54,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     - assets/google_fonts/

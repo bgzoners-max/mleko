@@ -450,44 +450,6 @@ export type Database = {
           },
         ]
       }
-      conversation_user_settings: {
-        Row: {
-          conversation_id: string
-          created_at: string
-          hidden_at: string | null
-          id: string
-          is_favorite: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          created_at?: string
-          hidden_at?: string | null
-          id?: string
-          is_favorite?: boolean
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          created_at?: string
-          hidden_at?: string | null
-          id?: string
-          is_favorite?: boolean
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_user_settings_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       conversations: {
         Row: {
           buyer_id: string
@@ -646,24 +608,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      message_retention_notice_log: {
-        Row: {
-          created_at: string
-          user_id: string
-          week_start: string
-        }
-        Insert: {
-          created_at?: string
-          user_id: string
-          week_start: string
-        }
-        Update: {
-          created_at?: string
-          user_id?: string
-          week_start?: string
-        }
-        Relationships: []
       }
       messages: {
         Row: {
@@ -1109,52 +1053,6 @@ export type Database = {
           },
         ]
       }
-      product_stats: {
-        Row: {
-          avg_rating: number
-          order_count: number
-          product_id: string
-          review_count: number
-          updated_at: string
-        }
-        Insert: {
-          avg_rating?: number
-          order_count?: number
-          product_id: string
-          review_count?: number
-          updated_at?: string
-        }
-        Update: {
-          avg_rating?: number
-          order_count?: number
-          product_id?: string
-          review_count?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_stats_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "product_listing_autoflags"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "product_stats_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_stats_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products_with_ratings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
           available_kg: number | null
@@ -1342,48 +1240,6 @@ export type Database = {
           status?: string
           title?: string | null
           token_count?: number
-          type?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      push_logs: {
-        Row: {
-          body: string | null
-          created_at: string
-          error: string | null
-          id: number
-          platform: string | null
-          status: number | null
-          success: boolean
-          title: string | null
-          token: string | null
-          type: string | null
-          user_id: string | null
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          error?: string | null
-          id?: number
-          platform?: string | null
-          status?: number | null
-          success: boolean
-          title?: string | null
-          token?: string | null
-          type?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          error?: string | null
-          id?: number
-          platform?: string | null
-          status?: number | null
-          success?: boolean
-          title?: string | null
-          token?: string | null
           type?: string | null
           user_id?: string | null
         }
@@ -2020,7 +1876,6 @@ export type Database = {
           unit_type: string
         }[]
       }
-      auto_archive_stale_orders_5_days: { Args: never; Returns: undefined }
       build_order_notification_body: {
         Args: {
           p_fallback_product_name?: string
@@ -2073,40 +1928,23 @@ export type Database = {
         Returns: number
       }
       cleanup_stale_conversation_typing: { Args: never; Returns: undefined }
-      create_order_with_items:
-        | {
-            Args: {
-              p_buyer_address?: string
-              p_buyer_city?: string
-              p_buyer_id: string
-              p_buyer_phone: string
-              p_buyer_postal_code?: string
-              p_delivery_fee_rsd?: number
-              p_delivery_method?: string
-              p_delivery_point_id?: string
-              p_delivery_slot_id?: string
-              p_items: Json
-              p_note?: string
-              p_seller_id: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_buyer_address?: string
-              p_buyer_city?: string
-              p_buyer_id: string
-              p_buyer_phone: string
-              p_delivery_fee_rsd?: number
-              p_delivery_method?: string
-              p_delivery_point_id?: string
-              p_delivery_slot_id?: string
-              p_items: Json
-              p_note?: string
-              p_seller_id: string
-            }
-            Returns: string
-          }
+      create_order_with_items: {
+        Args: {
+          p_buyer_address?: string
+          p_buyer_city?: string
+          p_buyer_id: string
+          p_buyer_phone: string
+          p_buyer_postal_code?: string
+          p_delivery_fee_rsd?: number
+          p_delivery_method?: string
+          p_delivery_point_id?: string
+          p_delivery_slot_id?: string
+          p_items: Json
+          p_note?: string
+          p_seller_id: string
+        }
+        Returns: string
+      }
       get_buyer_stats_dashboard: { Args: { p_buyer_id: string }; Returns: Json }
       get_category_ad_counts: {
         Args: never
@@ -2353,12 +2191,6 @@ export type Database = {
         Args: { p_product_id: string }
         Returns: undefined
       }
-      refresh_all_product_stats: { Args: never; Returns: undefined }
-      refresh_product_stats: {
-        Args: { p_product_id: string }
-        Returns: undefined
-      }
-      run_message_retention_maintenance: { Args: never; Returns: Json }
       search_products_fts: {
         Args: {
           p_available_now?: boolean

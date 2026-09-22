@@ -43,6 +43,8 @@ Aplikacija tretira **`order_status`** i **`order_status_changed`** kao porudžbi
 Definisani su u migracijama (`orders_status_check`) i u `lib/utils/order_status_flow_rules.dart` / `lib/models/order_model.dart`. Izmene moraju ići kroz migraciju + ažuriranje pravila u aplikaciji.
 
 > **Parity guard:** `test/order_status_sql_parity_test.dart` automatski čita najnoviju migraciju koja definiše `enforce_order_status_transition()` i upoređuje dozvoljene tranzicije sa Dart pravilima. Ako se SQL i Dart raziđu, test (i CI) pada — nije dovoljno izmeniti samo jednu stranu.
+>
+> **RPC Parity & Drift guard:** `test/create_order_rpc_parity_test.dart` automatski proverava da se svi parametri koje `OrderManagementMixin` šalje funkciji `create_order_with_items` (uključujući `p_buyer_postal_code`) 100% poklapaju sa SQL definicijom u najnovijoj migraciji. U CI pipeline-u (`.github/workflows/ci.yml`), `supabase/tests/create_order_rpc_integration.sql` i proveravanje tipova (`database.types.ts`) garantuju nulti drift šeme.
 
 ### RLS na `orders`
 

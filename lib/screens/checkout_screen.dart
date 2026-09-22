@@ -18,6 +18,8 @@ import '../widgets/app_error_retry.dart';
 import '../widgets/checkout/checkout_product_summary_card.dart';
 import '../widgets/checkout/checkout_single_buyer_form.dart';
 import '../widgets/skeleton.dart';
+import '../services/core/analytics_service.dart';
+import 'dart:async';
 
 class CheckoutScreen extends StatefulWidget {
   final String productId;
@@ -111,6 +113,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       text: initial
           .toStringAsFixed(initial.truncateToDouble() == initial ? 0 : 1),
     );
+    unawaited(AnalyticsService().logBeginCheckout(1, widget.product.pricePerKg * initial));
     final user = context.read<AppState>().user;
     if (user != null) {
       if (user.city != null && user.city!.isNotEmpty) {
@@ -263,6 +266,11 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         await chatService.getOrCreateConversation(
             user.id, widget.product.sellerId,
             orderId: orderId);
+        unawaited(AnalyticsService().logPurchase(
+          transactionId: orderId,
+          value: qty * widget.product.pricePerKg,
+          itemCount: 1,
+        ));
         AppHaptics.success();
         if (!mounted) return;
         await context.read<CartProvider>().removeFromSeller(

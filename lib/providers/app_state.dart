@@ -94,11 +94,7 @@ class AppState extends ChangeNotifier {
       final sessionUserId = authState.session?.user.id;
 
       if (authState.session == null || authState.session?.user.isAnonymous == true) {
-        if (authState.session?.user.isAnonymous == true) {
-          try {
-            await _auth.signOut();
-          } catch (_) {}
-        }
+        await _auth.ensureCleanSession();
         await PushService.clearRegistrationState();
         if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
         _user = null;
