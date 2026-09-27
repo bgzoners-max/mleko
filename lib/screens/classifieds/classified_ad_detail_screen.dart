@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -11,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/design_system.dart';
 import '../../core/haptic.dart';
 import '../../core/web_seo.dart';
+import '../../models/app_error.dart';
 import '../../models/classified_ad_model.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
@@ -40,6 +42,8 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   int _currentImageIndex = 0;
 
   bool _viewIncremented = false;
+  String? _revealedPhone;
+  bool _isLoadingPhone = false;
 
   @override
   void initState() {
@@ -61,6 +65,9 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     if (!_viewIncremented) {
       final ad = await future;
       if (ad != null && mounted) {
+        if (_revealedPhone == null && ad.phone != null && ad.phone!.isNotEmpty) {
+          setState(() => _revealedPhone = ad.phone);
+        }
         final userId = context.read<AppState>().user?.id;
         if (userId == null || userId != ad.userId) {
           unawaited(_service.incrementViews(widget.adId));
@@ -96,6 +103,140 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         );
       }
     }
+  }
+
+  Future<void> _revealPhone(ClassifiedAdModel ad) async {
+    setState(() => _isLoadingPhone = true);
+    try {
+      final phone = await _service.getAdPhone(ad.id);
+      if (!mounted) return;
+      if (phone != null && phone.trim().isNotEmpty) {
+        setState(() {
+          _revealedPhone = phone;
+          _isLoadingPhone = false;
+        });
+        unawaited(AppHaptics.medium());
+        _showPhoneActionSheet(phone, ad.id);
+      } else {
+        setState(() => _isLoadingPhone = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Broj telefona nije dostupan za ovaj oglas.'),
+          ),
+        );
+      }
+    } on AppError catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingPhone = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.userMessage ?? 'Nije moguće učitati broj telefona.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingPhone = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nije moguće učitati broj telefona.'),
+        ),
+      );
+    }
+  }
+
+  void _showPhoneActionSheet(String phone, String adId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Text(
+                  'Kontakt prodavca',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                SelectableText(
+                  phone,
+                  style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(ctx).colorScheme.primary,
+                        letterSpacing: 0.5,
+                      ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(ClipboardData(text: phone));
+                          if (!ctx.mounted) return;
+                          Navigator.of(ctx).pop();
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Broj telefona je kopiran.'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 18),
+                        label: const Text('Kopiraj'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          _makePhoneCall(phone, adId: adId);
+                        },
+                        icon: const Icon(Icons.phone_rounded, size: 18),
+                        label: const Text('Pozovi'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _openChat(ClassifiedAdModel ad) async {
@@ -274,7 +415,9 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
 
         final userId = context.watch<AppState>().user?.id;
         final isOwner = userId != null && userId == ad.userId;
-        final hasPhone = ad.phone != null && ad.phone!.isNotEmpty;
+        final currentPhone = _revealedPhone ?? ad.phone;
+        final hasPhone = ad.phonePublic ||
+            (currentPhone != null && currentPhone.isNotEmpty);
 
         final isWide = MediaQuery.sizeOf(context).width >= 900;
 
@@ -962,19 +1105,40 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       );
     }
 
+    final currentPhone = _revealedPhone ?? ad.phone;
+    final isPhoneRevealed = currentPhone != null && currentPhone.trim().isNotEmpty;
+
     return Row(
       children: [
         if (hasPhone) ...[
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () {
-                AppHaptics.medium();
-                _makePhoneCall(ad.phone!, adId: ad.id);
-              },
-              icon: Icon(Icons.phone_outlined,
-                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
+              onPressed: _isLoadingPhone
+                  ? null
+                  : () {
+                      AppHaptics.medium();
+                      if (isPhoneRevealed) {
+                        _showPhoneActionSheet(currentPhone, ad.id);
+                      } else {
+                        _revealPhone(ad);
+                      }
+                    },
+              icon: _isLoadingPhone
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      isPhoneRevealed ? Icons.phone_in_talk_rounded : Icons.phone_outlined,
+                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                    ),
               label: Text(
-                'Pozovi prodavca',
+                _isLoadingPhone
+                    ? 'Učitavanje...'
+                    : (isPhoneRevealed ? currentPhone : 'Prikaži broj'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                   fontWeight: FontWeight.w700,

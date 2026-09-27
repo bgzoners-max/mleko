@@ -305,12 +305,28 @@ class ClassifiedsService {
         params: {'p_ad_id': adId},
       );
       return phoneRes as String?;
-    } catch (_) {
+    } catch (e, st) {
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('prekoračen') ||
+          msg.contains('p0001') ||
+          msg.contains('limit')) {
+        throw AppError(
+          message: 'Phone reveal rate limit reached',
+          userMessage:
+              'Dostigli ste limit za pregled brojeva telefona. Pokušajte ponovo kasnije.',
+          type: ErrorType.network,
+          stackTrace: st,
+        );
+      }
       return null;
     }
   }
 
-  /// Učitava detalje pojedinačnog oglasa (uključujući bezbedno preuzimanje telefona za ovlašćena lica)
+  /// Učitava detalje pojedinačnog oglasa.
+  /// Zaštita od botova i automatskih scrapera (Click-to-Reveal):
+  /// Ne preuzimamo automatski broj telefona pri učitavanju stranice za posetioce.
+  /// Broj se automatski dohvata isključivo ako je ulogovani korisnik vlasnik oglasa
+  /// (potrebno za formu izmene oglasa), dok posetioci broj otkrivaju na klik preko [getAdPhone].
   Future<ClassifiedAdModel?> getAd(String id) async {
     try {
       final res = await _client.from('classified_ads').select('''
@@ -321,7 +337,13 @@ class ClassifiedsService {
 
       if (res == null) return null;
 
-      final phone = await getAdPhone(id);
+      final currentUid = _client.auth.currentUser?.id;
+      final ownerId = res['user_id'] as String?;
+      String? phone;
+      if (currentUid != null && currentUid == ownerId) {
+        phone = await getAdPhone(id);
+      }
+
       final adData = Map<String, dynamic>.from(res);
       adData['phone'] = phone;
 
