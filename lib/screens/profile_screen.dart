@@ -398,7 +398,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ListTile(
           visualDensity: VisualDensity.compact,
           leading: const Icon(Icons.storefront_outlined),
-          title: const Text('Postani prodavac'),
+          title: const Text('Postani prodavac / Otvori gazdinstvo'),
+          subtitle: const Text('Organizovana prodaja domaće hrane i isporuke'),
           selected: isActive('becoming-seller'),
           onTap: () => isWide
               ? openPanel('becoming-seller', const BecomingSellerScreen())
@@ -407,8 +408,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ] else ...[
         ListTile(
           visualDensity: VisualDensity.compact,
-          leading: const Icon(Icons.info_outline),
-          title: const Text('Registruj se za prodaju'),
+          leading: const Icon(Icons.person_add_outlined),
+          title: const Text('Registruj se'),
+          subtitle: const Text('Kupuj hranu, postavljaj oglase i otvori gazdinstvo'),
           onTap: () => push('/register'),
         ),
       ],

@@ -294,7 +294,7 @@ class BetaInfoDialog extends StatelessWidget {
                   iconColor: Colors.green,
                   title: 'Šta već možete da koristite:',
                   body:
-                      '• Registracija i prijava: Možete slobodno kreirati nalog kao kupac ili domaći proizvođač.\n'
+                      '• Registracija i prijava: Jedinstveni nalog za kupovinu i prodaju domaće hrane i malih oglasa.\n'
                       '• Istraživanje ponude: Pregled sveže domaće hrane i raznovrsnih malih oglasa.\n'
                       '• Oglasi i proizvodi: Postavljanje, izmena i upravljanje vašom ponudom.\n'
                       '• Pretraga i filteri: Filtriranje po gradovima, regionima i kategorijama.',

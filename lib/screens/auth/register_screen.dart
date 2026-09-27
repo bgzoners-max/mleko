@@ -223,7 +223,6 @@ class _RegisterFormState extends State<_RegisterForm> {
   bool _obscure = true;
   bool _termsAccepted = false;
   bool _privacyAccepted = false;
-  bool _isSeller = false;
 
   // inline field errors
   String? _emailError;
@@ -359,13 +358,6 @@ class _RegisterFormState extends State<_RegisterForm> {
       setState(() => _submitError = 'Broj telefona je obavezan.');
       return;
     }
-    if (_isSeller &&
-        (_cityCtrl.text.trim().isEmpty || _nameCtrl.text.trim().isEmpty)) {
-      setState(() =>
-          _submitError = 'Za prodavca su obavezni ime i mesto/gazdinstvo.');
-      return;
-    }
-
     context.read<AppState>().setLoading(true);
     try {
       await context.read<AppState>().authService.registerWithEmail(
@@ -376,9 +368,7 @@ class _RegisterFormState extends State<_RegisterForm> {
             phone:
                 _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
             city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-            isSeller: _isSeller,
-            farmName: _isSeller ? _nameCtrl.text.trim() : null,
-            location: _isSeller ? _cityCtrl.text.trim() : null,
+            isSeller: false,
           );
       if (mounted) {
         context.read<AppState>().markPendingEmailVerification();
@@ -469,18 +459,37 @@ class _RegisterFormState extends State<_RegisterForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 16),
-        Text('Tip naloga', style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 8),
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: false, label: Text('Kupac')),
-            ButtonSegment(value: true, label: Text('Prodavac')),
-          ],
-          selected: {_isSeller},
-          onSelectionChanged: (s) => setState(() => _isSeller = s.first),
+        Container(
+          margin: const EdgeInsets.only(top: 8, bottom: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer.withAlpha(45),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withAlpha(35),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.all_inclusive_rounded,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Jedinstveni nalog: možete slobodno kupovati hranu, objavljivati male oglase ili u bilo kom trenutku otvoriti profil gazdinstva.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
 
         // Email
         TextField(
@@ -526,8 +535,9 @@ class _RegisterFormState extends State<_RegisterForm> {
         // Name
         TextField(
           controller: _nameCtrl,
-          decoration: InputDecoration(
-            labelText: _isSeller ? 'Ime / Naziv gazdinstva *' : 'Ime (opciono)',
+          decoration: const InputDecoration(
+            labelText: 'Ime i prezime (opciono)',
+            hintText: 'npr. Petar Petrović',
           ),
         ),
         const SizedBox(height: 12),
@@ -560,8 +570,9 @@ class _RegisterFormState extends State<_RegisterForm> {
         // City
         TextField(
           controller: _cityCtrl,
-          decoration: InputDecoration(
-            labelText: _isSeller ? 'Mesto / Region *' : 'Grad (opciono)',
+          decoration: const InputDecoration(
+            labelText: 'Grad / Mesto (opciono)',
+            hintText: 'npr. Čačak, Valjevo...',
           ),
         ),
         const SizedBox(height: 16),
