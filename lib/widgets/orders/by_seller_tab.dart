@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -142,7 +144,7 @@ class _BySellerTabState extends State<BySellerTab> {
               'Porudžbina dodata u korpu. Možete izmeniti količine u korpi.'),
         ),
       );
-      context.push('/checkout-seller/${stats.sellerId}');
+      unawaited(context.push('/checkout-seller/${stats.sellerId}'));
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

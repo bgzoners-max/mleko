@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -259,7 +261,7 @@ class _OrderInboxCardState extends State<OrderInboxCard> {
                               widget.user.id,
                               orderId: o.orderId,
                             );
-                            if (context.mounted) context.push('/chat/$convId');
+                            if (context.mounted) unawaited(context.push('/chat/$convId'));
                           } catch (e, stack) {
                             if (context.mounted) {
                               LoggerService.error(

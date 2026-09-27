@@ -334,10 +334,10 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingTimer?.cancel();
     if (_isTyping) {
       _isTyping = false;
-      _chatService.setTyping(
+      unawaited(_chatService.setTyping(
           conversationId: widget.conversationId,
           userId: user.id,
-          isTyping: false);
+          isTyping: false));
     }
     setState(() => _sending = true);
     try {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -95,7 +97,7 @@ class SellerOrderDraftBar extends StatelessWidget {
                       try {
                         final convId = await context.read<ChatService>()
                             .getOrCreateConversation(user.id, sellerId);
-                        if (context.mounted) context.push('/chat/$convId');
+                        if (context.mounted) unawaited(context.push('/chat/$convId'));
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

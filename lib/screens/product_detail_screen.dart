@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart'
     show kIsWeb, consolidateHttpClientResponseBytes;
@@ -71,8 +72,8 @@ Future<void> _shareProduct(BuildContext context, ProductModel product) async {
       ),
     );
   } catch (e, st) {
-    ErrorHandlerService().handleError(e,
-        stackTrace: st, context: 'Share product image fallback');
+    unawaited(ErrorHandlerService().handleError(e,
+        stackTrace: st, context: 'Share product image fallback'));
     // Fallback ako preuzimanje slike ne uspe (npr. loš internet)
     await SharePlus.instance.share(
       ShareParams(text: text, subject: product.name),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show PlatformDispatcher, PointerDeviceKind;
 
 import 'package:firebase_core/firebase_core.dart';
@@ -248,7 +249,7 @@ void main() async {
   });
 
   // Notification handling
-  NotificationHandlerService(router: router, appState: appState).initialize();
+  unawaited(NotificationHandlerService(router: router, appState: appState).initialize());
 
   runApp(
     AppProviders(

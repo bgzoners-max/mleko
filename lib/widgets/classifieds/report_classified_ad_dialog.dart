@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +24,7 @@ class ReportClassifiedAdDialog extends StatefulWidget {
     final user = appState.user;
 
     if (user == null || user.isGuest) {
-      AppHaptics.light();
+      unawaited(AppHaptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Prijavite se da biste prijavili nepravilnost u oglasu.'),
@@ -36,7 +38,7 @@ class ReportClassifiedAdDialog extends StatefulWidget {
     }
 
     if (user.id == ad.userId) {
-      AppHaptics.light();
+      unawaited(AppHaptics.light());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ne možete prijaviti sopstveni oglas.')),
       );
@@ -98,7 +100,7 @@ class _ReportClassifiedAdDialogState extends State<ReportClassifiedAdDialog> {
 
   Future<void> _submit() async {
     setState(() => _loading = true);
-    AppHaptics.medium();
+    unawaited(AppHaptics.medium());
 
     try {
       final reportsService = context.read<ClassifiedReportsService>();
@@ -110,7 +112,7 @@ class _ReportClassifiedAdDialogState extends State<ReportClassifiedAdDialog> {
 
       if (mounted) {
         Navigator.pop(context, true);
-        AppHaptics.success();
+        unawaited(AppHaptics.success());
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(

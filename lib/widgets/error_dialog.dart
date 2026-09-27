@@ -50,7 +50,7 @@ class ErrorDialog extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Detaljи',
+                      'Detalji',
                       style: Theme.of(context).textTheme.labelSmall,
                     ),
                     const SizedBox(height: 8),

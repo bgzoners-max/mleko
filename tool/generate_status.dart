@@ -48,5 +48,5 @@ void main() {
   sb.writeln('Ovaj fajl je auto-generisan.');
 
   statusFile.writeAsStringSync(sb.toString());
-  print('STATUS.md uspešno generisan.');
+  stdout.writeln('STATUS.md uspešno generisan.');
 }

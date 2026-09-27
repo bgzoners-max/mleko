@@ -13,7 +13,7 @@ import '../../widgets/beta_announcement_banner.dart';
 Future<void> _enterAsGuestWithMode(
     BuildContext context, MarketMode mode) async {
   final appState = context.read<AppState>();
-  context.read<AppSettingsProvider>().setMarketMode(mode);
+  unawaited(context.read<AppSettingsProvider>().setMarketMode(mode));
   await appState.authService.ensureCleanSession();
   if (context.mounted) {
     try {
@@ -1441,7 +1441,7 @@ class _LoginFormState extends State<_LoginForm> {
   }
 
   Future<void> _guestWithMode(MarketMode mode) async {
-    context.read<AppSettingsProvider>().setMarketMode(mode);
+    unawaited(context.read<AppSettingsProvider>().setMarketMode(mode));
     await _guest();
   }
 

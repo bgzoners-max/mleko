@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -52,7 +54,7 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
     final item = _currentItems[index];
     final sellerId = widget.sellerId;
 
-    AppHaptics.light();
+    unawaited(AppHaptics.light());
     await context.read<CartProvider>().removeFromSeller(
           sellerId: sellerId,
           productId: item.product.id,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -251,7 +253,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
       child: InkWell(
         onTap: () async {
           await context.push('/admin/tickets/${ticket.id}');
-          _load();
+          unawaited(_load());
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -360,7 +362,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
     final users = res as List<dynamic>;
 
     if (!mounted) return;
-    showModalBottomSheet(
+    unawaited(showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -429,7 +431,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Future<void> _showWaitlist() async {
@@ -441,7 +443,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
     final entries = res as List<dynamic>;
 
     if (!mounted) return;
-    showModalBottomSheet(
+    unawaited(showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -505,7 +507,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

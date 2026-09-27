@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -95,7 +97,7 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
           _categories = list;
           _loadingCategories = false;
         });
-        _loadInitialProducts(list);
+        unawaited(_loadInitialProducts(list));
       }
     } catch (e) {
       if (mounted) {

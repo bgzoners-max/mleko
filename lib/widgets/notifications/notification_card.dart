@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +49,7 @@ class NotificationCard extends StatelessWidget {
       }
     } else if (n.type == 'new_message') {
       if (n.conversationId != null) {
-        context.push('/chat/${n.conversationId}');
+        unawaited(context.push('/chat/${n.conversationId}'));
       } else {
         context.go('/conversations');
       }
@@ -58,7 +60,7 @@ class NotificationCard extends StatelessWidget {
     } else if (notificationTypeIsClassifiedRelated(n.type) ||
         n.classifiedAdId != null) {
       if (n.classifiedAdId != null) {
-        context.push('/classifieds/ad/${n.classifiedAdId}');
+        unawaited(context.push('/classifieds/ad/${n.classifiedAdId}'));
       } else {
         context.go('/classifieds');
       }

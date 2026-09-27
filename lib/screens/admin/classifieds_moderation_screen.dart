@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/classified_report_model.dart';
@@ -150,7 +152,7 @@ class _ClassifiedsModerationScreenState extends State<ClassifiedsModerationScree
                 : Colors.green.shade700,
           ),
         );
-        _loadReports();
+        unawaited(_loadReports());
       } else {
         throw Exception('Server nije potvrdio moderatorsku akciju.');
       }

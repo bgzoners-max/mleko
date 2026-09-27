@@ -271,7 +271,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           value: qty * widget.product.pricePerKg,
           itemCount: 1,
         ));
-        AppHaptics.success();
+        unawaited(AppHaptics.success());
         if (!mounted) return;
         await context.read<CartProvider>().removeFromSeller(
               sellerId: widget.product.sellerId,

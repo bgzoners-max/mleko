@@ -101,7 +101,7 @@ class AppState extends ChangeNotifier {
         _unreadNotificationCount = 0;
         _unreadDebounceTimer?.cancel();
         _unreadDebounceTimer = null;
-        _notifChannel?.unsubscribe();
+        unawaited(_notifChannel?.unsubscribe());
         _notifChannel = null;
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
@@ -162,7 +162,7 @@ class AppState extends ChangeNotifier {
           _unreadNotificationCount = 0;
           _unreadDebounceTimer?.cancel();
           _unreadDebounceTimer = null;
-          _notifChannel?.unsubscribe();
+          unawaited(_notifChannel?.unsubscribe());
           _notifChannel = null;
         }
       }

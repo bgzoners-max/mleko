@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -61,7 +63,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       if (ad != null && mounted) {
         final userId = context.read<AppState>().user?.id;
         if (userId == null || userId != ad.userId) {
-          _service.incrementViews(widget.adId);
+          unawaited(_service.incrementViews(widget.adId));
         }
         _viewIncremented = true;
       }
@@ -75,13 +77,13 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     final base = rawBase.replaceAll(RegExp(r'/+$'), '');
     final url = '$base/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}\n$url';
-    _service.recordInteraction(ad.id, 'share');
+    unawaited(_service.recordInteraction(ad.id, 'share'));
     await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));
   }
 
   Future<void> _makePhoneCall(String phone, {String? adId}) async {
     if (adId != null) {
-      _service.recordInteraction(adId, 'call');
+      unawaited(_service.recordInteraction(adId, 'call'));
     }
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
     final uri = Uri.parse('tel:$cleanPhone');
@@ -122,7 +124,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
       final chatService = context.read<ChatService>();
       final convId = await chatService.getOrCreateConversation(user.id, ad.userId);
       if (mounted) {
-        context.push('/chat/$convId');
+        unawaited(context.push('/chat/$convId'));
       }
     } catch (e) {
       if (mounted) {
@@ -907,7 +909,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   ? null
                   : () async {
                       await _service.markAsSold(ad.id);
-                      _load();
+                      unawaited(_load());
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Oglas je označen kao prodat.')),

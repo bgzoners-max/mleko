@@ -563,7 +563,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
     if (!mounted) return;
 
     if (result.isSuccess) {
-      AppHaptics.success();
+      unawaited(AppHaptics.success());
       context.go('/orders');
     } else {
       setState(() {

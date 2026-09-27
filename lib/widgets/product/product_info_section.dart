@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -205,14 +207,14 @@ class ProductInfoSection extends StatelessWidget {
                   child: InkWell(
                     onTap: () async {
                       if (user == null || user.isGuest) {
-                        context.push('/login');
+                        unawaited(context.push('/login'));
                         return;
                       }
                       try {
                         final convId = await context
                             .read<ChatService>()
                             .getOrCreateConversation(user.id, product.sellerId);
-                        if (context.mounted) context.push('/chat/$convId');
+                        if (context.mounted) unawaited(context.push('/chat/$convId'));
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(

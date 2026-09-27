@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +17,7 @@ Future<void> handleClassifiedSubscribe(
   String? searchQuery,
   double? maxPrice,
 }) async {
-  AppHaptics.selection();
+  unawaited(AppHaptics.selection());
   final user = context.read<AppState>().user;
   if (user == null || user.isGuest) {
     ScaffoldMessenger.of(context).showSnackBar(

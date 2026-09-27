@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -247,7 +249,7 @@ class _ContactBuyerButtonState extends State<_ContactBuyerButton> {
         widget.buyerId,
         currentUser.id,
       );
-      if (mounted) context.push('/chat/$convId');
+      if (mounted) unawaited(context.push('/chat/$convId'));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +34,7 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
     ClassifiedsProvider classifieds,
     ClassifiedSubscriptionModel sub,
   ) async {
-    AppHaptics.selection();
+    unawaited(AppHaptics.selection());
     final name = sub.categoryName ?? 'ovu pretragu';
     final confirmed = await showDialog<bool>(
       context: context,

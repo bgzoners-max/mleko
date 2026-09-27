@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -111,9 +113,9 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 );
                 if (ok == true) {
-                  AppHaptics.light();
+                  unawaited(AppHaptics.light());
                   await cart.clear();
-                  _loadData();
+                  unawaited(_loadData());
                 }
               },
               child: const Text('Isprazni'),

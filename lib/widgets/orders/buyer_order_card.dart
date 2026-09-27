@@ -400,7 +400,7 @@ class BuyerOrderCard extends StatelessWidget {
                         o.sellerId,
                         orderId: o.id,
                       );
-                      if (context.mounted) context.push('/chat/$convId');
+                      if (context.mounted) unawaited(context.push('/chat/$convId'));
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(

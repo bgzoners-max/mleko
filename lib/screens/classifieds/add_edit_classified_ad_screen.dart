@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -697,11 +699,11 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) {
-      showGuestAuthPrompt(
+      unawaited(showGuestAuthPrompt(
         context,
         title: 'Potrebna prijava',
         message: 'Morate biti prijavljeni na nalog kako biste objavili oglas.',
-      );
+      ));
       return;
     }
 
@@ -786,7 +788,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       }
 
       if (mounted) {
-        context.read<ClassifiedsProvider>().loadInitialAds();
+        unawaited(context.read<ClassifiedsProvider>().loadInitialAds());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(isEdit ? 'Oglas uspešno ažuriran.' : 'Oglas uspešno objavljen!'),

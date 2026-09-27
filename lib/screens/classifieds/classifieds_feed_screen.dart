@@ -65,8 +65,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           applyRouteSeo('/classifieds');
         }
         // Pokrećemo kategorije i oglase paralelno u istoj milisekundi
-        p.loadCategories();
-        p.loadInitialAds();
+        unawaited(p.loadCategories());
+        unawaited(p.loadInitialAds());
       }
     });
   }

@@ -107,7 +107,7 @@ void main() {
         isActive: false,
       );
 
-      final point = SellerDeliveryPointModel(
+      final point = const SellerDeliveryPointModel(
         id: 'point_1',
         sellerId: 'seller_123',
         city: 'Beograd',

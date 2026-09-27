@@ -159,8 +159,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       ],
     );
     if (!mounted) return;
-    if (result == 'favorite') _toggleFavorite(conv);
-    if (result == 'hide') _hideConversation(conv);
+    if (result == 'favorite') unawaited(_toggleFavorite(conv));
+    if (result == 'hide') unawaited(_hideConversation(conv));
   }
 
   void _showMobileSheet(BuildContext context, ConversationModel conv) {

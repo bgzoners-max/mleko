@@ -236,7 +236,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 if (ok == true && context.mounted) {
                   await _service.deleteAllNotifications(user.id);
                   if (context.mounted) {
-                    _loadAndMarkRead();
+                    unawaited(_loadAndMarkRead());
                     ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Obaveštenja obrisana.')));
                   }

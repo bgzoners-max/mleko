@@ -1,7 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../../models/product_model.dart';
-import '../../../models/order_model.dart';
-import '../../../models/cart_item_model.dart';
 
 class AnalyticsService {
   static final AnalyticsService _instance = AnalyticsService._internal();

@@ -468,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (chosen != null && context.mounted) {
       if (chosen.isEmpty) {
-        loc.clearRegion();
+        unawaited(loc.clearRegion());
       } else {
         await loc.setRegion(chosen);
       }

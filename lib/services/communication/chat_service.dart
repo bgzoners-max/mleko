@@ -146,7 +146,7 @@ class ChatService {
             !Set.of(lastConvIds).containsAll(convIds);
         if (idsChanged && channel != null) {
           lastConvIds = convIds;
-          _client.removeChannel(channel!);
+          unawaited(_client.removeChannel(channel!));
           channel = _subscribeConversations(userId, convIds, refetch);
           channel!.subscribe();
         } else {
