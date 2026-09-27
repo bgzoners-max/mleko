@@ -26,6 +26,7 @@ import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
 import '../widgets/home/market_mode_switcher.dart';
 import '../widgets/beta_announcement_banner.dart';
+import '../widgets/theme_toggle_switch.dart';
 import 'classifieds/classifieds_feed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -221,7 +222,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.location_on_outlined, size: 22),
             onPressed: () => _showLocationPicker(context),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
+          const Center(child: ThemeToggleSwitch()),
+          const SizedBox(width: 6),
         ],
       ),
       body: SafeArea(

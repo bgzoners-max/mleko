@@ -168,6 +168,13 @@ class AppSettingsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> toggleTheme(BuildContext context) async {
+    final isDark = _themeMode == ThemeMode.dark ||
+        (_themeMode == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    await setThemeMode(isDark ? ThemeMode.light : ThemeMode.dark);
+  }
+
   Future<void> setAnimationsEnabled(bool value) async {
     if (_animationsEnabled == value) return;
     _animationsEnabled = value;

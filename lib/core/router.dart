@@ -54,6 +54,7 @@ import '../providers/app_state.dart';
 import '../providers/classifieds_provider.dart';
 import 'responsive.dart';
 import 'web_seo.dart';
+import '../widgets/theme_toggle_switch.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -685,6 +686,10 @@ class MainShell extends StatelessWidget {
               onDestinationSelected: (i) =>
                   _onDestinationSelected(context, i, isGuest: isGuest),
               labelType: NavigationRailLabelType.all,
+              trailing: const Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: ThemeToggleSwitch(),
+              ),
               destinations: destinations.map((d) {
                 return NavigationRailDestination(
                   icon: Icon(d.icon),
