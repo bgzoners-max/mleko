@@ -33,7 +33,7 @@ class ThemeToggleSwitch extends StatelessWidget {
             isDark ? Icons.light_mode_rounded : Icons.dark_mode_outlined,
             key: ValueKey<bool>(isDark),
             size: 22,
-            color: isDark ? Colors.amber.shade400 : Colors.grey.shade800,
+            color: isDark ? const Color(0xFFFEBD69) : Colors.grey.shade800,
           ),
         ),
         tooltip: tooltipText,
@@ -66,21 +66,24 @@ class ThemeToggleSwitch extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: isDark
-                    ? const Color(0xFF1E293B)
-                    : const Color(0xFFE2E8F0),
+                // U tamnoj temi prekidač je svetle boje kako bi bio jasno uočljiv na tamnoj pozadini
+                color: const Color(0xFFE2E8F0),
                 border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF334155)
-                      : const Color(0xFFCBD5E1),
+                  color: const Color(0xFFCBD5E1),
                   width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
+                  if (isDark)
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      blurRadius: 2,
+                      spreadRadius: 0.5,
+                    ),
                 ],
               ),
               child: Stack(
@@ -95,22 +98,20 @@ class ThemeToggleSwitch extends StatelessWidget {
                         Icon(
                           Icons.wb_sunny_rounded,
                           size: 13,
-                          color: isDark
-                              ? Colors.grey.shade600
-                              : Colors.amber.shade700,
+                          color: Colors.amber.shade700,
                         ),
                         Icon(
                           Icons.nightlight_round,
                           size: 13,
                           color: isDark
-                              ? Colors.indigo.shade200
+                              ? const Color(0xFF334155)
                               : Colors.grey.shade400,
                         ),
                       ],
                     ),
                   ),
 
-                  // Klizno dugme (Thumb)
+                  // Klizno dugme (Thumb) - svetle boje (bela) i u tamnoj temi radi jasne vidljivosti
                   AnimatedAlign(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeInOutCubic,
@@ -122,12 +123,10 @@ class ThemeToggleSwitch extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(horizontal: 2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDark
-                            ? const Color(0xFF0F172A)
-                            : Colors.white,
+                        color: Colors.white,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.18),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 3,
                             offset: const Offset(0, 1.5),
                           ),
@@ -140,7 +139,7 @@ class ThemeToggleSwitch extends StatelessWidget {
                               : Icons.wb_sunny_rounded,
                           size: 12,
                           color: isDark
-                              ? Colors.amber.shade300
+                              ? const Color(0xFF1E293B)
                               : Colors.amber.shade700,
                         ),
                       ),

@@ -577,6 +577,26 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
         );
       }),
     ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.white;
+        }
+        return const Color(0xFFCBD5E1);
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return const Color(0xFF2E7D32);
+        }
+        return const Color(0xFF334155);
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return Colors.transparent;
+        }
+        return const Color(0xFF64748B);
+      }),
+    ),
   );
 }
 
