@@ -207,9 +207,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 key: _moreFromSellerKey,
                 product: product,
               ),
-              const SizedBox(height: 20),
-              const Divider(height: 1, thickness: 1),
-              const SizedBox(height: 20),
               ProductReviewsSection(
                 key: _reviewsSectionKey,
                 reviewsFuture: _reviewsFuture!,
@@ -266,7 +263,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             product: product,
           ),
         ),
-        const Divider(height: 1, thickness: 1),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: ProductReviewsSection(

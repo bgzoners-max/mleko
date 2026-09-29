@@ -40,6 +40,8 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Divider(height: 1, thickness: 1),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Text(
