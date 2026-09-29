@@ -24,11 +24,10 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/skeleton.dart';
 
-import '../widgets/product/product_seller_banner.dart';
 import '../widgets/product/product_image_gallery.dart';
-import '../widgets/product/product_cart_block.dart';
 import '../widgets/product/product_info_section.dart';
-import '../widgets/purchase_guidance_card.dart';
+import '../widgets/product/more_from_seller_section.dart';
+import '../widgets/product/product_reviews_section.dart';
 
 Future<void> _shareProduct(BuildContext context, ProductModel product) async {
   final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
@@ -180,42 +179,57 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildDesktopLayout(ProductModel product) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = Breakpoints.isDesktop(context);
-        final galleryFraction = isDesktop ? 0.60 : 0.52;
-        final galleryWidth = constraints.maxWidth * galleryFraction;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ProductSellerBanner(sellerId: product.sellerId),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: galleryWidth,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ProductImageGallery(product: product, height: 480),
-                      ProductCartBlock(product: product, desktopMode: true),
-                    ],
+        final galleryWidth =
+            (constraints.maxWidth * 0.44).clamp(320.0, 440.0);
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Kompaktni glavni red: Galerija (levo) + Glavni info blok sa korpom (desno)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: galleryWidth,
+                    child: ProductImageGallery(
+                      product: product,
+                      height: 380,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: ProductInfoSection(
-                    product: product,
-                    reviewsFuture: _reviewsFuture!,
-                    onScrollToReviews: _scrollToReviews,
-                    moreFromSellerKey: _moreFromSellerKey,
-                    reviewsSectionKey: _reviewsSectionKey,
-                    includeCart: false,
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: ProductInfoSection(
+                      product: product,
+                      reviewsFuture: _reviewsFuture!,
+                      onScrollToReviews: _scrollToReviews,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const Divider(height: 1, thickness: 1),
-            _buildDesktopFooter(),
-          ],
+                ],
+              ),
+              const SizedBox(height: 28),
+              const Divider(height: 1, thickness: 1),
+              const SizedBox(height: 20),
+
+              // 2. Široka sekcija "Još iz ovog domaćinstva"
+              MoreFromSellerSection(
+                key: _moreFromSellerKey,
+                product: product,
+              ),
+              const SizedBox(height: 20),
+              const Divider(height: 1, thickness: 1),
+              const SizedBox(height: 20),
+
+              // 3. Široka sekcija "Ocene i utisci"
+              ProductReviewsSection(
+                key: _reviewsSectionKey,
+                reviewsFuture: _reviewsFuture!,
+              ),
+              const SizedBox(height: 20),
+              const Divider(height: 1, thickness: 1),
+              _buildDesktopFooter(),
+            ],
+          ),
         );
       },
     );
@@ -240,32 +254,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildMobileLayout(ProductModel product) {
-    final isSmallTablet = Breakpoints.isSmallTablet(context);
-    final isLargeTablet = Breakpoints.isLargeTablet(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ProductSellerBanner(sellerId: product.sellerId),
         ProductImageGallery(
           product: product,
-          height: isLargeTablet ? 360 : (isSmallTablet ? 280 : 220),
+          height: 270,
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: PurchaseGuidanceCard(
-            icon: Icons.lightbulb_outline,
-            title: 'Kako da poručiš?',
-            body:
-                'Dodaj proizvod u korpu, potvrdi količinu i pošalji upit prodavcu. On će ti odgovoriti u najkraćem mogućem roku.',
-            accentColor: Theme.of(context).colorScheme.primary,
+          padding: const EdgeInsets.all(12),
+          child: ProductInfoSection(
+            product: product,
+            reviewsFuture: _reviewsFuture!,
+            onScrollToReviews: _scrollToReviews,
           ),
         ),
-        ProductInfoSection(
-          product: product,
-          reviewsFuture: _reviewsFuture!,
-          onScrollToReviews: _scrollToReviews,
-          moreFromSellerKey: _moreFromSellerKey,
-          reviewsSectionKey: _reviewsSectionKey,
+        const Divider(height: 1, thickness: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: MoreFromSellerSection(
+            key: _moreFromSellerKey,
+            product: product,
+          ),
+        ),
+        const Divider(height: 1, thickness: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: ProductReviewsSection(
+            key: _reviewsSectionKey,
+            reviewsFuture: _reviewsFuture!,
+          ),
         ),
       ],
     );
@@ -275,7 +293,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget build(BuildContext context) {
     final isWideLayout = Breakpoints.useTwoPaneLayout(context);
     final maxWidth = isWideLayout
-        ? (Breakpoints.isDesktop(context) ? 980.0 : 920.0)
+        ? 1040.0
         : Breakpoints.maxContentWidth(context);
     _setProductMetadata(null);
     final isDark = Theme.of(context).brightness == Brightness.dark;
