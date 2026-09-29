@@ -297,6 +297,26 @@
   </script>
 
   <style>
+    /* Sakrij native browser scrollbarove (Chrome, Safari, Firefox, Edge) */
+    html, body {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE i Edge */
+    }
+    html::-webkit-scrollbar, body::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+      width: 0 !important;
+      height: 0 !important;
+    }
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+      width: 0 !important;
+      height: 0 !important;
+    }
+
     /* Stilovi za crawler fallback sadržaj koji je vidljiv pre nego što se Flutter učita */
     #seo-crawler-content {
       position: absolute;

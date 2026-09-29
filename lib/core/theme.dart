@@ -333,21 +333,10 @@ ThemeData _buildBaseTheme({required bool compact}) {
       backgroundColor: Colors.white,
       type: BottomNavigationBarType.fixed,
     ),
-    scrollbarTheme: ScrollbarThemeData(
-      thumbVisibility: WidgetStateProperty.all(true),
-      trackVisibility: WidgetStateProperty.all(true),
-      interactive: true,
-      thickness: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.hovered)) return 12.0;
-        return 8.0;
-      }),
-      radius: const Radius.circular(8),
-      thumbColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.hovered)) {
-          return const Color(0xFF2E7D32).withValues(alpha: 0.8);
-        }
-        return Colors.grey.withValues(alpha: 0.4);
-      }),
+    scrollbarTheme: const ScrollbarThemeData(
+      thumbVisibility: WidgetStatePropertyAll(false),
+      trackVisibility: WidgetStatePropertyAll(false),
+      thickness: WidgetStatePropertyAll(0.0),
     ),
     navigationBarTheme: NavigationBarThemeData(
       height: navBarHeight,
@@ -558,6 +547,11 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       selectedItemColor: Color(0xFFE89844),
       unselectedItemColor: Color(0xFF8C9388),
       type: BottomNavigationBarType.fixed,
+    ),
+    scrollbarTheme: const ScrollbarThemeData(
+      thumbVisibility: WidgetStatePropertyAll(false),
+      trackVisibility: WidgetStatePropertyAll(false),
+      thickness: WidgetStatePropertyAll(0.0),
     ),
     navigationBarTheme: NavigationBarThemeData(
       height: navBarHeight,
