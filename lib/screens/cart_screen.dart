@@ -11,6 +11,7 @@ import '../models/user_model.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/rustic_illustration.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/cart/cart_guest_banner.dart';
 import '../widgets/cart/cart_seller_group_card.dart';
@@ -135,10 +136,11 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildEmptyState() {
     return AppEmptyState(
+      motif: RusticMotif.basket,
       icon: Icons.shopping_basket_outlined,
-      title: 'Vaša korpa je prazna',
+      title: 'Korpa je još prazna',
       subtitle:
-          'Dodajte domaće proizvode u korpu i podržite lokalne proizvođače.',
+          'Dodaj nekoliko domaćih proizvoda i podrži gazdinstva iz svog kraja.',
       ctaLabel: 'Istraži proizvode',
       onCtaPressed: () => context.go('/'),
     );

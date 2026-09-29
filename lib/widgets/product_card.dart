@@ -100,31 +100,34 @@ class _ProductCardState extends State<ProductCard> {
             ),
           ),
         ),
-        // Badges top-left
+        // Badges top-left — blaga rotacija daje "ručno žigosan" pečat
         Positioned(
           top: 8,
           left: 8,
-          child: Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              if (!widget.product.isAvailable)
-                const _AmazonBadge(
-                  label: 'RASPRODATO',
-                  backgroundColor: AmazonColors.slate,
-                ),
-              if (_isNew)
-                const _AmazonBadge(
-                  label: 'SVEŽE',
-                  backgroundColor: AmazonColors.green,
-                ),
-              if (widget.isPopular)
-                const _AmazonBadge(
-                  label: 'PREPORUKA',
-                  backgroundColor: AmazonColors.amber,
-                  textColor: AmazonColors.darkNavy,
-                ),
-            ],
+          child: Transform.rotate(
+            angle: -0.035, // ≈ -2°: dovoljno da odiše zanatski, ne haotično
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                if (!widget.product.isAvailable)
+                  const _AmazonBadge(
+                    label: 'RASPRODATO',
+                    backgroundColor: AmazonColors.slate,
+                  ),
+                if (_isNew)
+                  const _AmazonBadge(
+                    label: 'SVEŽE',
+                    backgroundColor: AmazonColors.green,
+                  ),
+                if (widget.isPopular)
+                  const _AmazonBadge(
+                    label: 'PREPORUKA',
+                    backgroundColor: AmazonColors.amber,
+                    textColor: AmazonColors.darkNavy,
+                  ),
+              ],
+            ),
           ),
         ),
         // Favorite button top-right

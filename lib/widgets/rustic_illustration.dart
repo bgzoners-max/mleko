@@ -1,0 +1,292 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../constants/amazon_theme.dart';
+
+/// Motiv rustic ilustracije — koristi se u praznim stanjima umesto
+/// generičkih Material ikonica.
+enum RusticMotif {
+  /// Prazna korpa / lista želja.
+  basket,
+
+  /// Nema ponude u regionu (pejzaž sa ambarom).
+  field,
+
+  /// Pretraga bez rezultata.
+  search,
+}
+
+/// Topla, "ručno crtana" ilustracija u brend paleti (lan, zlato, terakota,
+/// livada). Zamenjuje sterilne sive ikonice i drži isti vizuelni jezik kao
+/// placeholder na karticama proizvoda.
+class RusticIllustration extends StatelessWidget {
+  final RusticMotif motif;
+  final double size;
+
+  const RusticIllustration({
+    super.key,
+    required this.motif,
+    this.size = 120,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: switch (motif) {
+          RusticMotif.basket => _BasketPainter(isDark: isDark),
+          RusticMotif.field => _FieldPainter(isDark: isDark),
+          RusticMotif.search => _SearchPainter(isDark: isDark),
+        },
+      ),
+    );
+  }
+}
+
+/// Prigušuje boje u tamnom režimu da ne "svetle" previše.
+Color _soft(Color color, bool isDark) =>
+    isDark ? color.withValues(alpha: 0.6) : color;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prazna korpa / lista želja
+// ─────────────────────────────────────────────────────────────────────────────
+class _BasketPainter extends CustomPainter {
+  final bool isDark;
+  const _BasketPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final wood = _soft(AmazonColors.gold, isDark);
+
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.032
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = wood;
+    final fill = Paint()
+      ..style = PaintingStyle.fill
+      ..color = wood.withValues(alpha: isDark ? 0.14 : 0.18);
+
+    canvas.save();
+    // Blagi nagib — ručno pletena korpa nikad nije savršeno ravna.
+    canvas.translate(s * 0.5, s * 0.55);
+    canvas.rotate(0.05);
+    canvas.translate(-s * 0.5, -s * 0.55);
+
+    // Ručka
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(s * 0.5, s * 0.44), radius: s * 0.20),
+      math.pi,
+      math.pi,
+      false,
+      stroke,
+    );
+
+    // Telo korpe (blagi trapez)
+    final body = Path()
+      ..moveTo(s * 0.22, s * 0.54)
+      ..lineTo(s * 0.78, s * 0.54)
+      ..lineTo(s * 0.69, s * 0.85)
+      ..lineTo(s * 0.31, s * 0.85)
+      ..close();
+    canvas.drawPath(body, fill);
+    canvas.drawPath(body, stroke);
+
+    // Pletenje
+    final weave = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.02
+      ..strokeCap = StrokeCap.round
+      ..color = wood.withValues(alpha: 0.55);
+    canvas.drawLine(Offset(s * 0.24, s * 0.64), Offset(s * 0.76, s * 0.64), weave);
+    canvas.drawLine(Offset(s * 0.27, s * 0.75), Offset(s * 0.73, s * 0.75), weave);
+    canvas.drawLine(Offset(s * 0.5, s * 0.54), Offset(s * 0.5, s * 0.85), weave);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _BasketPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pejzaž (nema ponude u regionu)
+// ─────────────────────────────────────────────────────────────────────────────
+class _FieldPainter extends CustomPainter {
+  final bool isDark;
+  const _FieldPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final green = _soft(AmazonColors.green, isDark);
+    final amber = _soft(AmazonColors.amberLight, isDark);
+    final terracotta = _soft(AmazonColors.dealRed, isDark);
+    final wood = _soft(AmazonColors.gold, isDark);
+
+    // Sunce
+    canvas.drawCircle(
+      Offset(s * 0.74, s * 0.26),
+      s * 0.10,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = amber.withValues(alpha: isDark ? 0.55 : 0.85),
+    );
+
+    // Zadnje brdo
+    final backHill = Path()
+      ..moveTo(s * 0.06, s * 0.72)
+      ..quadraticBezierTo(s * 0.5, s * 0.38, s * 0.94, s * 0.72)
+      ..lineTo(s * 0.94, s * 0.80)
+      ..lineTo(s * 0.06, s * 0.80)
+      ..close();
+    canvas.drawPath(
+      backHill,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = green.withValues(alpha: isDark ? 0.18 : 0.22),
+    );
+
+    // Prednje brdo
+    final frontHill = Path()
+      ..moveTo(-s * 0.04, s * 0.84)
+      ..quadraticBezierTo(s * 0.36, s * 0.58, s * 1.04, s * 0.84)
+      ..lineTo(s * 1.04, s * 0.92)
+      ..lineTo(-s * 0.04, s * 0.92)
+      ..close();
+    canvas.drawPath(
+      frontHill,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = green.withValues(alpha: isDark ? 0.28 : 0.32),
+    );
+
+    // Ambar: telo + krov
+    canvas.drawRect(
+      Rect.fromLTWH(s * 0.30, s * 0.56, s * 0.16, s * 0.14),
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = terracotta.withValues(alpha: isDark ? 0.6 : 0.85),
+    );
+    final roof = Path()
+      ..moveTo(s * 0.27, s * 0.56)
+      ..lineTo(s * 0.38, s * 0.45)
+      ..lineTo(s * 0.49, s * 0.56)
+      ..close();
+    canvas.drawPath(
+      roof,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = wood.withValues(alpha: isDark ? 0.6 : 0.9),
+    );
+
+    // Drvo (krošnja + deblo)
+    canvas.drawCircle(
+      Offset(s * 0.66, s * 0.62),
+      s * 0.075,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = green.withValues(alpha: isDark ? 0.35 : 0.45),
+    );
+    canvas.drawLine(
+      Offset(s * 0.66, s * 0.68),
+      Offset(s * 0.66, s * 0.78),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.022
+        ..strokeCap = StrokeCap.round
+        ..color = wood.withValues(alpha: 0.8),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FieldPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pretraga bez rezultata
+// ─────────────────────────────────────────────────────────────────────────────
+class _SearchPainter extends CustomPainter {
+  final bool isDark;
+  const _SearchPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final wood = _soft(AmazonColors.gold, isDark);
+    final green = _soft(AmazonColors.green, isDark);
+    final amber = _soft(AmazonColors.amberLight, isDark);
+
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.055
+      ..strokeCap = StrokeCap.round
+      ..color = wood;
+    final fillSoft = Paint()
+      ..style = PaintingStyle.fill
+      ..color = wood.withValues(alpha: isDark ? 0.10 : 0.13);
+
+    final center = Offset(s * 0.44, s * 0.44);
+    final radius = s * 0.24;
+
+    canvas.drawCircle(center, radius, fillSoft);
+    canvas.drawCircle(center, radius, ring);
+
+    // Drška lupe
+    canvas.drawLine(
+      Offset(center.dx + radius * 0.72, center.dy + radius * 0.72),
+      Offset(s * 0.82, s * 0.82),
+      ring,
+    );
+
+    // Klica unutra — simbol svežeg, još nepronađenog
+    canvas.drawLine(
+      Offset(s * 0.44, s * 0.56),
+      Offset(s * 0.44, s * 0.36),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.028
+        ..strokeCap = StrokeCap.round
+        ..color = green,
+    );
+
+    final leftLeaf = Path()
+      ..moveTo(s * 0.44, s * 0.47)
+      ..quadraticBezierTo(s * 0.32, s * 0.40, s * 0.34, s * 0.32)
+      ..quadraticBezierTo(s * 0.42, s * 0.33, s * 0.44, s * 0.47)
+      ..close();
+    final rightLeaf = Path()
+      ..moveTo(s * 0.44, s * 0.43)
+      ..quadraticBezierTo(s * 0.56, s * 0.36, s * 0.54, s * 0.28)
+      ..quadraticBezierTo(s * 0.46, s * 0.29, s * 0.44, s * 0.43)
+      ..close();
+    final leafPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = green.withValues(alpha: isDark ? 0.55 : 0.75);
+    canvas.drawPath(leftLeaf, leafPaint);
+    canvas.drawPath(rightLeaf, leafPaint);
+
+    // Zrne
+    canvas.drawCircle(
+      Offset(s * 0.44, s * 0.33),
+      s * 0.028,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = amber,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SearchPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
+

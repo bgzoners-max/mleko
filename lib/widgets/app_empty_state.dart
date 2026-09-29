@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import '../core/design_system.dart';
 import '../utils/animations.dart';
+import 'rustic_illustration.dart';
 
 /// Prazno stanje – jasna poruka i opciono CTA dugme kada nema podataka za prikaz.
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
+
+  /// Opcioni rustic motiv (ilustracija) — ako je zadat, prikazuje se umesto
+  /// generičke Material ikonice u kružnoj podlozi.
+  final RusticMotif? motif;
 
   /// Opciono CTA dugme (npr. "Pretraži proizvode", "Dodaj prvi proizvod").
   final String? ctaLabel;
@@ -21,6 +26,7 @@ class AppEmptyState extends StatelessWidget {
     this.icon = Icons.inbox_outlined,
     required this.title,
     this.subtitle,
+    this.motif,
     this.ctaLabel,
     this.onCtaPressed,
     this.ctaIcon,
@@ -39,19 +45,22 @@ class AppEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Premium Icon Container
-            Container(
-              padding: const EdgeInsets.all(AppDesign.spaceL),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
+            // Rustic ilustracija ili (fallback) ikonica u kružnoj podlozi
+            if (motif != null)
+              RusticIllustration(motif: motif!, size: 132)
+            else
+              Container(
+                padding: const EdgeInsets.all(AppDesign.spaceL),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 64,
+                  color: colorScheme.primary.withValues(alpha: 0.4),
+                ),
               ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: colorScheme.primary.withValues(alpha: 0.4),
-              ),
-            ),
             const SizedBox(height: AppDesign.spaceL),
             
             // Title

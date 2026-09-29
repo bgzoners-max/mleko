@@ -13,6 +13,7 @@ import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/rustic_illustration.dart';
 import '../widgets/product_card.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -129,9 +130,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           actions: const [AppHomeButton()],
         ),
         body: AppEmptyState(
+          motif: RusticMotif.basket,
           icon: Icons.favorite_outline,
-          title: 'Prijavite se za listu želja',
-          subtitle: 'Sačuvajte proizvode koje volite i lako ih pronađite kasnije.',
+          title: 'Prijavi se za listu želja',
+          subtitle:
+              'Sačuvaj omiljene proizvode i nađi ih kasnije na jednom mestu.',
           ctaLabel: 'Prijavi se',
           onCtaPressed: () => context.go('/login'),
         ),
@@ -169,10 +172,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           }
           if (list.isEmpty) {
             return AppEmptyState(
+              motif: RusticMotif.basket,
               icon: Icons.favorite_border,
-              title: 'Nemate omiljenih proizvoda',
+              title: 'Lista želja je još prazna',
               subtitle:
-                  'Dodajte srcem na karticama proizvoda da ih nađete brzo ovde.',
+                  'Klikni srce na proizvodu koji ti se dopao i naći ćeš ga ovde.',
               ctaLabel: 'Pretraži proizvode',
               ctaIcon: Icons.search,
               onCtaPressed: () => context.go('/'),

@@ -14,6 +14,9 @@ import '../app_empty_state.dart';
 import '../app_error_retry.dart';
 import '../cache_status_widget.dart';
 import '../app_shimmer.dart';
+import '../organic_divider.dart';
+import '../rustic_illustration.dart';
+import '../staggered_reveal.dart';
 
 import 'home_product_item.dart';
 import 'map_card.dart';
@@ -100,10 +103,11 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                 vertical: sectionSpacing,
               ),
               child: AppEmptyState(
+                motif: RusticMotif.field,
                 icon: Icons.storefront_outlined,
-                title: 'Nema proizvoda za prikaz',
+                title: 'Još nema ponude u ovom kraju',
                 subtitle:
-                    'Trenutno nema dostupnih proizvoda u ovom regionu. Pokušaj kasnije ili promeni filter.',
+                    'Gazdinstva iz ovog regiona još nisu objavila proizvode. Probaj drugi kraj ili navrati malo kasnije.',
                 ctaLabel: 'Pretraži proizvode',
                 onCtaPressed: onSearchTap,
               ),
@@ -128,15 +132,23 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                   Breakpoints.horizontalPadding(context),
                   8,
                 ),
-                child: Text(
-                  newProducts.isNotEmpty
-                      ? 'Najnoviji proizvodi'
-                      : 'Poslednje dodato',
-                  style: AppFonts.display(
-                    isDark
-                        ? AmazonColors.darkTextPrimary
-                        : AmazonColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      newProducts.isNotEmpty
+                          ? 'Najnoviji proizvodi'
+                          : 'Poslednje dodato',
+                      style: AppFonts.display(
+                        isDark
+                            ? AmazonColors.darkTextPrimary
+                            : AmazonColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    // "Prošivena" organska linija umesto strogog pravilnog razdelnika.
+                    const SizedBox(width: 84, child: OrganicDivider()),
+                  ],
                 ),
               ),
             ),
@@ -181,13 +193,17 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                     // Indeks i+1 — prvi proizvod je prikazan kao istaknuta kartica.
                     final product = displayList[i + 1];
                     final rating = ratings[product.id];
-                    return HomeProductItem(
-                      product: product,
-                      salesCount: salesCounts[product.id] ?? 0,
-                      canFavorite: canFavorite,
-                      userId: user?.id,
-                      avgRating: rating?.avg,
-                      reviewCount: rating?.count,
+                    // Kaskadni ulaz: mreža se "otvara" umesto da se pojavi odjednom.
+                    return StaggeredReveal(
+                      index: i,
+                      child: HomeProductItem(
+                        product: product,
+                        salesCount: salesCounts[product.id] ?? 0,
+                        canFavorite: canFavorite,
+                        userId: user?.id,
+                        avgRating: rating?.avg,
+                        reviewCount: rating?.count,
+                      ),
                     );
                   },
                   childCount: gridCount,

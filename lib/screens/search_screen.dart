@@ -15,6 +15,7 @@ import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
 import '../utils/image_precache_utils.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/rustic_illustration.dart';
 import '../widgets/product_card.dart';
 import '../widgets/search/search_filter_bar.dart';
 import '../widgets/search/search_filter_sidebar.dart';
@@ -372,11 +373,12 @@ class _SearchScreenState extends State<SearchScreen> {
     final hasFilters =
         _category != null || _region != null || _availableNow == true;
     final subtitle = hasFilters
-        ? 'Pokušajte da uklonite aktivne filtere ili promenite pojam pretrage.'
-        : 'Probajte drugi naziv ili pogledajte sve proizvode.';
+        ? 'Probaj da ukloniš aktivne filtere ili promeniš pojam pretrage.'
+        : 'Probaj drugi naziv ili pogledaj celu ponudu.';
     return AppEmptyState(
+      motif: RusticMotif.search,
       icon: Icons.search_off,
-      title: 'Nema rezultata za ovu pretragu',
+      title: 'Ništa nismo pronašli',
       subtitle: subtitle,
       ctaLabel: 'Pogledaj sve proizvode',
       ctaIcon: Icons.list,
