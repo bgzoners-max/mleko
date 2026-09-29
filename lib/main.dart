@@ -18,6 +18,7 @@ import 'services/communication/communication_services.dart';
 import 'services/core/crash_reporting_service.dart';
 import 'services/core/logger_service.dart';
 import 'services/core/notification_handler_service.dart';
+import 'services/core/secure_local_storage.dart';
 import 'widgets/common/app_error_widget.dart';
 import 'providers/cart_provider.dart';
 import 'providers/categories_provider.dart';
@@ -195,6 +196,11 @@ void main() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.publishableKey,
+    // Čuva sesiju (access + refresh token) u flutter_secure_storage
+    // (Keystore/Keychain) umesto plaintext SharedPreferences / localStorage.
+    authOptions: FlutterAuthClientOptions(
+      localStorage: SecureLocalStorage(),
+    ),
   );
 
   try {
