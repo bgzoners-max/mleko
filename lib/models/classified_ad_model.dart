@@ -14,6 +14,7 @@ class ClassifiedAdModel {
   final String? phone;
   final bool phonePublic;
   final String status; // 'active' | 'sold' | 'archived'
+  final String sellerType; // 'individual' | 'business' (Zakon o zaštiti potrošača)
   final int viewsCount;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -44,6 +45,7 @@ class ClassifiedAdModel {
     this.phone,
     this.phonePublic = true,
     this.status = 'active',
+    this.sellerType = 'individual',
     this.viewsCount = 0,
     required this.createdAt,
     required this.updatedAt,
@@ -68,6 +70,17 @@ class ClassifiedAdModel {
   bool get isCurrentlyFeatured =>
       isFeatured &&
       (featuredUntil == null || featuredUntil!.isAfter(DateTime.now()));
+
+  // --- Deklaracija oglašivača (Zakon o zaštiti potrošača) ---
+  bool get isBusinessSeller => sellerType == 'business';
+  bool get isIndividualSeller => sellerType != 'business';
+  String get sellerTypeLabel =>
+      isBusinessSeller ? 'Pravno lice / Trgovac' : 'Fizičko lice';
+  String get sellerTypeBadgeText =>
+      isBusinessSeller ? 'Trgovac' : 'Fizičko lice';
+  String get sellerTypeLegalDisclaimer => isBusinessSeller
+      ? 'Oglašivač je registrovan trgovac / pravno lice i posluje u skladu sa Zakonom o zaštiti potrošača.'
+      : 'Na kupovinu od fizičkog lica ne primenjuju se odredbe Zakona o zaštiti potrošača o pravu na jednostrani odustanak od ugovora u roku od 14 dana.';
 
   String get priceFormatted {
     if (priceType == 'free') return 'Besplatno';
@@ -504,6 +517,7 @@ class ClassifiedAdModel {
       phone: json['phone'] as String?,
       phonePublic: json['phone_public'] as bool? ?? true,
       status: json['status'] as String? ?? 'active',
+      sellerType: json['seller_type'] as String? ?? 'individual',
       viewsCount: (json['views_count'] as num?)?.toInt() ?? 0,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
@@ -549,6 +563,7 @@ class ClassifiedAdModel {
       if (phone != null) 'phone': phone,
       'phone_public': phonePublic,
       'status': status,
+      'seller_type': sellerType,
       'attributes': attributes,
       'is_featured': isFeatured,
       if (featuredUntil != null)
@@ -579,6 +594,7 @@ class ClassifiedAdModel {
     bool clearPhone = false,
     bool? phonePublic,
     String? status,
+    String? sellerType,
     int? viewsCount,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -609,6 +625,7 @@ class ClassifiedAdModel {
       phone: clearPhone ? null : (phone ?? this.phone),
       phonePublic: phonePublic ?? this.phonePublic,
       status: status ?? this.status,
+      sellerType: sellerType ?? this.sellerType,
       viewsCount: viewsCount ?? this.viewsCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

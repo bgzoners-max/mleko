@@ -151,6 +151,7 @@ class ClassifiedsService {
     city,
     phone_public,
     status,
+    seller_type,
     views_count,
     attributes,
     is_featured,
@@ -173,6 +174,7 @@ class ClassifiedsService {
     String? city,
     List<String>? cities,
     String? condition,
+    String? sellerType,
     double? minPrice,
     double? maxPrice,
     String? currency,
@@ -204,6 +206,9 @@ class ClassifiedsService {
         query = query.ilike('city', city);
       }
 
+      if (sellerType != null && sellerType.isNotEmpty) {
+        query = query.eq('seller_type', sellerType);
+      }
 
       if (condition != null && condition.isNotEmpty) {
         query = query.eq('condition', condition);

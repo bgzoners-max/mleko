@@ -21,6 +21,7 @@ class FakeClassifiedsService implements ClassifiedsService {
   double? lastMinPrice;
   double? lastMaxPrice;
   String? lastCondition;
+  String? lastSellerType;
   String? lastSearchQuery;
   Map<String, dynamic>? lastAttributeFilters;
   bool? lastOnlyFeatured;
@@ -45,6 +46,7 @@ class FakeClassifiedsService implements ClassifiedsService {
     String? city,
     List<String>? cities,
     String? condition,
+    String? sellerType,
     double? minPrice,
     double? maxPrice,
     String? currency,
@@ -64,6 +66,7 @@ class FakeClassifiedsService implements ClassifiedsService {
     lastMinPrice = minPrice;
     lastMaxPrice = maxPrice;
     lastCondition = condition;
+    lastSellerType = sellerType;
     lastSearchQuery = searchQuery;
     lastAttributeFilters = attributeFilters;
     lastOnlyFeatured = onlyFeatured;

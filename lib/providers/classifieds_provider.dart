@@ -37,6 +37,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   String? _selectedCity;
   String? _selectedDistrict;
   String? _selectedCondition;
+  String? _selectedSellerType;
   String? _searchQuery;
   double? _minPrice;
   double? _maxPrice;
@@ -59,6 +60,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   String? get selectedCity => _selectedCity;
   String? get selectedDistrict => _selectedDistrict;
   String? get selectedCondition => _selectedCondition;
+  String? get selectedSellerType => _selectedSellerType;
   String? get searchQuery => _searchQuery;
   double? get minPrice => _minPrice;
   double? get maxPrice => _maxPrice;
@@ -271,6 +273,7 @@ class ClassifiedsProvider extends ChangeNotifier {
         minPrice: _minPrice,
         maxPrice: _maxPrice,
         condition: _selectedCondition,
+        sellerType: _selectedSellerType,
         searchQuery: _searchQuery,
         attributeFilters:
             _selectedAttributes.isNotEmpty ? _selectedAttributes : null,
@@ -323,6 +326,7 @@ class ClassifiedsProvider extends ChangeNotifier {
         minPrice: _minPrice,
         maxPrice: _maxPrice,
         condition: _selectedCondition,
+        sellerType: _selectedSellerType,
         searchQuery: _searchQuery,
         attributeFilters:
             _selectedAttributes.isNotEmpty ? _selectedAttributes : null,
@@ -389,6 +393,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     _selectedCity = null;
     _selectedDistrict = null;
     _selectedCondition = null;
+    _selectedSellerType = null;
     _searchQuery = null;
     _minPrice = null;
     _maxPrice = null;
@@ -474,6 +479,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     _selectedCity = null;
     _selectedDistrict = null;
     _selectedCondition = null;
+    _selectedSellerType = null;
     _searchQuery = null;
     _minPrice = null;
     _maxPrice = null;
@@ -486,6 +492,12 @@ class ClassifiedsProvider extends ChangeNotifier {
   void selectCondition(String? condition) {
     if (_selectedCondition == condition) return;
     _selectedCondition = condition;
+    loadInitialAds();
+  }
+
+  void selectSellerType(String? sellerType) {
+    if (_selectedSellerType == sellerType) return;
+    _selectedSellerType = sellerType;
     loadInitialAds();
   }
 

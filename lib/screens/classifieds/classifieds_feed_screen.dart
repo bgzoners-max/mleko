@@ -542,6 +542,31 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           icon: Icons.bolt_rounded,
           activeColor: AmazonColors.badgeRed,
         ),
+        const SizedBox(width: 6),
+        Container(
+          width: 1,
+          height: 18,
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+        ),
+        const SizedBox(width: 6),
+        buildChipItem(
+          isSelected: classifieds.selectedSellerType == 'individual',
+          onTap: () => classifieds.selectSellerType(
+            classifieds.selectedSellerType == 'individual' ? null : 'individual',
+          ),
+          label: 'Fizička lica',
+          icon: Icons.person_outline_rounded,
+        ),
+        const SizedBox(width: 5),
+        buildChipItem(
+          isSelected: classifieds.selectedSellerType == 'business',
+          onTap: () => classifieds.selectSellerType(
+            classifieds.selectedSellerType == 'business' ? null : 'business',
+          ),
+          label: 'Firme / Trgovci',
+          icon: Icons.storefront_outlined,
+          activeColor: const Color(0xFF2563EB),
+        ),
       ],
     );
   }
@@ -663,6 +688,29 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               avatar: const Icon(Icons.bolt_rounded, size: 13, color: AmazonColors.badgeRed),
               label: const Text('Hitno', style: TextStyle(fontSize: 11)),
               onDeleted: () => classifieds.setOnlyUrgent(false),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              side: BorderSide(color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+            ),
+          if (classifieds.selectedSellerType != null)
+            InputChip(
+              avatar: Icon(
+                classifieds.selectedSellerType == 'business'
+                    ? Icons.storefront_outlined
+                    : Icons.person_outline_rounded,
+                size: 13,
+                color: classifieds.selectedSellerType == 'business'
+                    ? const Color(0xFF2563EB)
+                    : null,
+              ),
+              label: Text(
+                classifieds.selectedSellerType == 'business'
+                    ? 'Firme / Trgovci'
+                    : 'Fizička lica',
+                style: const TextStyle(fontSize: 11),
+              ),
+              onDeleted: () => classifieds.selectSellerType(null),
               visualDensity: VisualDensity.compact,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,

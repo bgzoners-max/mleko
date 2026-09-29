@@ -931,6 +931,37 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
+                  color: ad.isBusinessSeller
+                      ? const Color(0xFF1D4ED8)
+                      : (isDark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFF475569)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      ad.isBusinessSeller
+                          ? Icons.storefront_rounded
+                          : Icons.person_rounded,
+                      size: 11,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      ad.isBusinessSeller ? 'TRGOVAC' : 'FIZIČKO LICE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
                   color: ad.isSold
                       ? Colors.red.shade800.withValues(alpha: 0.12)
                       : ad.isRejected
@@ -1230,6 +1261,15 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
           ],
           _buildSpecRow('Mesto / Lokacija', ad.city, colorScheme),
           const Divider(height: 18),
+          _buildSpecRow(
+            'Prodaje',
+            ad.sellerTypeLabel,
+            colorScheme,
+            icon: ad.isBusinessSeller
+                ? Icons.storefront_outlined
+                : Icons.person_outline_rounded,
+          ),
+          const Divider(height: 18),
           if (ad.attributes.isNotEmpty) ...[
             for (final entry in ad.attributes.entries) ...[
               () {
@@ -1399,18 +1439,105 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Lokacija: ${ad.city}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          ad.city,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: ad.isBusinessSeller
+                                ? const Color(0xFF1D4ED8).withValues(alpha: isDark ? 0.25 : 0.1)
+                                : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: ad.isBusinessSeller
+                                  ? const Color(0xFF2563EB).withValues(alpha: 0.4)
+                                  : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                ad.isBusinessSeller ? Icons.storefront_rounded : Icons.person_rounded,
+                                size: 10,
+                                color: ad.isBusinessSeller
+                                    ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                ad.sellerTypeLabel,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: ad.isBusinessSeller
+                                      ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+                                      : colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: ad.isBusinessSeller
+                  ? const Color(0xFF2563EB).withValues(alpha: isDark ? 0.12 : 0.06)
+                  : (isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC)),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: ad.isBusinessSeller
+                    ? const Color(0xFF2563EB).withValues(alpha: 0.25)
+                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  ad.isBusinessSeller ? Icons.verified_user_outlined : Icons.shield_outlined,
+                  size: 15,
+                  color: ad.isBusinessSeller
+                      ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+                      : colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    ad.sellerTypeLegalDisclaimer,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

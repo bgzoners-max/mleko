@@ -390,7 +390,9 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
                       Row(
                         children: [
                           Icon(
-                            Icons.storefront_outlined,
+                            ad.isBusinessSeller
+                                ? Icons.storefront_outlined
+                                : Icons.person_outline_rounded,
                             size: 12,
                             color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
                           ),
@@ -407,19 +409,77 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: ad.isBusinessSeller
+                                  ? const Color(0xFF1D4ED8).withValues(alpha: isDark ? 0.22 : 0.1)
+                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04)),
+                              borderRadius: BorderRadius.circular(3),
+                              border: Border.all(
+                                color: ad.isBusinessSeller
+                                    ? const Color(0xFF2563EB).withValues(alpha: 0.35)
+                                    : (isDark ? Colors.white12 : Colors.black12),
+                                width: 0.6,
+                              ),
+                            ),
+                            child: Text(
+                              ad.sellerTypeBadgeText,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: ad.isBusinessSeller
+                                    ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+                                    : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                     ] else if (ad.categoryName != null) ...[
-                      Text(
-                        ad.categoryName!,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              ad.categoryName!,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: ad.isBusinessSeller
+                                  ? const Color(0xFF1D4ED8).withValues(alpha: isDark ? 0.22 : 0.1)
+                                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04)),
+                              borderRadius: BorderRadius.circular(3),
+                              border: Border.all(
+                                color: ad.isBusinessSeller
+                                    ? const Color(0xFF2563EB).withValues(alpha: 0.35)
+                                    : (isDark ? Colors.white12 : Colors.black12),
+                                width: 0.6,
+                              ),
+                            ),
+                            child: Text(
+                              ad.sellerTypeBadgeText,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: ad.isBusinessSeller
+                                    ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
+                                    : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                     ],
