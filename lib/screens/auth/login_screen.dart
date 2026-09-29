@@ -7,6 +7,7 @@ import '../../core/web_seo.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/error_dialog.dart';
 import '../../widgets/beta_announcement_banner.dart';
 
@@ -41,6 +42,11 @@ class LoginScreen extends StatelessWidget {
 
     if (isDesktop) {
       return Scaffold(
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Prijava'),
+          actions: const [AppHomeButton()],
+        ),
         body: Column(
           children: [
             const BetaAnnouncementBanner(),
@@ -189,6 +195,11 @@ class LoginScreen extends StatelessWidget {
 
     // Mobilni i tablet prikaz (Mobile First)
     return Scaffold(
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Prijava'),
+        actions: const [AppHomeButton()],
+      ),
       backgroundColor: isDark
           ? theme.scaffoldBackgroundColor
           : const Color(0xFFF9F6F0),

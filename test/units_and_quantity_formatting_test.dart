@@ -116,19 +116,19 @@ void main() {
 
     test('OrderItemModel.totalQuantityLabel includes veza and pak', () {
       final items = [
-        OrderItemModel(
+        const OrderItemModel(
           productId: '1',
           productName: 'Mladi luk',
           quantityKg: 3,
           unitType: ProductModel.unitVeza,
         ),
-        OrderItemModel(
+        const OrderItemModel(
           productId: '2',
           productName: 'Jaja pakovanje',
           quantityKg: 2,
           unitType: ProductModel.unitPak,
         ),
-        OrderItemModel(
+        const OrderItemModel(
           productId: '3',
           productName: 'Beli luk',
           quantityKg: 0.1,

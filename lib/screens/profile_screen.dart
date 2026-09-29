@@ -21,6 +21,7 @@ import '../widgets/profile/seller_gallery_section.dart';
 import '../widgets/profile/profile_data_card.dart';
 import '../widgets/profile/profile_section_header.dart';
 import '../widgets/profile/panel_placeholder.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/guest_auth_prompt.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -46,7 +47,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Prijava')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Prijava'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -75,7 +80,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isWide = Breakpoints.useTwoPaneLayout(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Profil'),
+        actions: const [AppHomeButton()],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

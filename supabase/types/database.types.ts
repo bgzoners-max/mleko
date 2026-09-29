@@ -1975,26 +1975,25 @@ export type Database = {
           email: string | null
           farm_gallery_urls: string[] | null
           farm_name: string | null
-          id: string
-          is_admin: boolean
+          id: string | null
+          is_admin: boolean | null
           is_guest: boolean | null
           is_verified: boolean | null
           lat: number | null
           lng: number | null
           location: string | null
           phone: string | null
-          phone_public: boolean
+          phone_public: boolean | null
           postal_code: string | null
           profile_image_url: string | null
           role: string | null
           seller_quick_replies: string[] | null
           seller_story: string | null
           seller_tags: string[] | null
-          updated_at: string | null
         }[]
         SetofOptions: {
           from: "*"
-          to: "profiles"
+          to: "public_profiles"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -2073,28 +2072,65 @@ export type Database = {
         Returns: {
           available_kg: number | null
           available_now: boolean | null
-          category: string
+          avg_rating: number | null
+          category: string | null
           created_at: string | null
-          delivery_mode: string
+          delivery_mode: string | null
           description: string | null
-          id: string
+          id: string | null
           image_urls: string[] | null
           is_domestic: boolean | null
-          location: string
+          location: string | null
           min_order_kg: number | null
-          name: string
-          order_step: number
-          origin: string
+          name: string | null
+          order_count: number | null
+          order_step: number | null
           pickup_options: string[] | null
-          price_per_kg: number
-          search_vector: unknown
-          seller_id: string
-          shelf_life_days: number
-          unit_type: string
+          price_per_kg: number | null
+          review_count: number | null
+          seller_id: string | null
+          seller_is_verified: boolean | null
+          unit_type: string | null
         }[]
         SetofOptions: {
           from: "*"
-          to: "products"
+          to: "products_with_ratings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_related_seller_products: {
+        Args: {
+          p_exclude_product_id: string
+          p_limit?: number
+          p_seller_id: string
+        }
+        Returns: {
+          available_kg: number | null
+          available_now: boolean | null
+          avg_rating: number | null
+          category: string | null
+          created_at: string | null
+          delivery_mode: string | null
+          description: string | null
+          id: string | null
+          image_urls: string[] | null
+          is_domestic: boolean | null
+          location: string | null
+          min_order_kg: number | null
+          name: string | null
+          order_count: number | null
+          order_step: number | null
+          pickup_options: string[] | null
+          price_per_kg: number | null
+          review_count: number | null
+          seller_id: string | null
+          seller_is_verified: boolean | null
+          unit_type: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products_with_ratings"
           isOneToOne: false
           isSetofReturn: true
         }
@@ -2140,6 +2176,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      is_admin_or_service_role: { Args: never; Returns: boolean }
       is_seller_verified: { Args: { p_seller_id: string }; Returns: boolean }
       moderate_classified_ad: {
         Args: {

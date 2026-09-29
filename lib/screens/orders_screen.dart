@@ -8,6 +8,7 @@ import '../core/responsive.dart';
 import '../models/order_model.dart';
 import '../providers/app_state.dart';
 import '../services/services.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/orders/buyer_order_card.dart';
@@ -244,7 +245,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Moje porudžbine')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Moje porudžbine'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -277,7 +282,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final panelGap = Breakpoints.panelGap(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Moje porudžbine')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Moje porudžbine'),
+        actions: const [AppHomeButton()],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

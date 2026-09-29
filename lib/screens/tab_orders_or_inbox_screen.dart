@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
+import '../widgets/app_back_button.dart';
 import 'orders_screen.dart';
 import 'seller/seller_inbox_screen.dart';
 import 'seller/seller_orders_screen.dart';
@@ -52,7 +53,9 @@ class _SellerOrdersInboxTabsState extends State<_SellerOrdersInboxTabs>
     ];
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Porudžbine'),
+        actions: const [AppHomeButton()],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),
           child: LayoutBuilder(

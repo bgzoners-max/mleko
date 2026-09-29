@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../widgets/app_back_button.dart';
 
 final _slides = [
   {
@@ -42,7 +43,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        actions: const [AppHomeButton()],
+      ),
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
             Expanded(

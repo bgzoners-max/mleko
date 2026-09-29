@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_back_button.dart';
 
 class SearchInputAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextEditingController controller;
@@ -22,7 +23,9 @@ class SearchInputAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      leading: const AppBackButton(fallbackRoute: '/'),
       title: const Text('Pretraga'),
+      actions: const [AppHomeButton()],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: Padding(

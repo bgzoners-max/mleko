@@ -14,6 +14,7 @@ import '../../services/communication/communication_services.dart';
 import '../../services/orders/order_services.dart';
 import '../../services/social/social_services.dart';
 import '../../widgets/add_buyer_review_dialog.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/cancel_order_dialog.dart';
@@ -108,7 +109,11 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     final user = context.watch<AppState>().user;
     if (user == null || !user.isSeller) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Porudžbine')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Porudžbine'),
+          actions: const [AppHomeButton()],
+        ),
         body: const Center(child: Text('Samo za prodavce.')),
       );
     }
@@ -116,8 +121,13 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
     _initStream(user.id);
 
     return Scaffold(
-      appBar:
-          widget.showAppBar ? AppBar(title: const Text('Porudžbine')) : null,
+      appBar: widget.showAppBar
+          ? AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Porudžbine'),
+              actions: const [AppHomeButton()],
+            )
+          : null,
       body: SafeArea(
         top: !widget.showAppBar,
         child: Align(

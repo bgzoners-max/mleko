@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../services/services.dart';
+import '../widgets/app_back_button.dart';
 
 const int _kMaxMessages = 5;
 
@@ -113,7 +114,11 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/support'),
         title: Text(_ticket?.subject ?? 'Razgovor sa podrškom'),
+        actions: const [
+          AppHomeButton(),
+        ],
         bottom: _ticket != null
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(28),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/services.dart';
+import '../../widgets/app_back_button.dart';
 
 class AdminTicketsScreen extends StatefulWidget {
   const AdminTicketsScreen({super.key});
@@ -104,6 +105,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Admin — Pregled'),
         actions: [
           IconButton(
@@ -119,6 +121,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
               _loadStats();
             },
           ),
+          const AppHomeButton(),
         ],
       ),
       body: Align(

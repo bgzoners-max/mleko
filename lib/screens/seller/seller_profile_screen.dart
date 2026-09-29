@@ -5,6 +5,7 @@ import 'package:mleko/services/services.dart';
 import '../../core/web_seo.dart';
 import '../../models/user_model.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/seller_profile/seller_profile_content.dart';
 
 class SellerProfileScreen extends StatefulWidget {
@@ -36,7 +37,11 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
       builder: (context, userSnap) {
         if (userSnap.hasError) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Prodajni profil')),
+            appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Prodajni profil'),
+              actions: const [AppHomeButton()],
+            ),
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -71,14 +76,22 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
         }
         if (!userSnap.hasData) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Prodajni profil')),
+            appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Prodajni profil'),
+              actions: const [AppHomeButton()],
+            ),
             body: const BuyerProfileSkeleton(),
           );
         }
         final seller = userSnap.data;
         if (seller == null || !seller.isSeller) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Prodajni profil')),
+            appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Prodajni profil'),
+              actions: const [AppHomeButton()],
+            ),
             body: const Center(child: Text('Prodavac nije pronađen.')),
           );
         }

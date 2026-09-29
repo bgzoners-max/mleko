@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:mleko/services/services.dart';
 import '../../providers/app_state.dart';
 
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/home/seller_inbox_item.dart';
@@ -14,9 +15,9 @@ import '../../widgets/seller/conversation_inbox_card.dart';
 import '../../widgets/seller/order_inbox_card.dart';
 import '../../widgets/skeleton.dart';
 
-/// Jedinstveni inbox za prodavca â€“ porudÅ¾bine i razgovori u jednoj listi
+/// Jedinstveni inbox za prodavca – porudžbine i razgovori u jednoj listi
 class SellerInboxScreen extends StatefulWidget {
-  /// Samo razgovori (bez porudÅ¾bina bez razgovora) â€“ za tab Razgovori
+  /// Samo razgovori (bez porudžbina bez razgovora) – za tab Razgovori
   final bool showOnlyConversations;
   final bool showAppBar;
 
@@ -73,7 +74,6 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
   }
 
   void _onScroll() {
-    // Ako smo blizu dna liste (300px od kraja) i ima joÅ¡ podataka, uÄitaj sledeÄ‡u "stranu"
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 300 &&
         _hasMore) {
@@ -107,7 +107,11 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
       _inboxStream = null;
       _inboxUserId = null;
       return Scaffold(
-        appBar: AppBar(title: const Text('Inbox')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Inbox'),
+          actions: const [AppHomeButton()],
+        ),
         body: AppEmptyState(
           icon: Icons.store_mall_directory_outlined,
           title: 'Samo za prodavce.',
@@ -122,7 +126,13 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
     }
 
     return Scaffold(
-      appBar: widget.showAppBar ? AppBar(title: const Text('Razgovori')) : null,
+      appBar: widget.showAppBar
+          ? AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Razgovori'),
+              actions: const [AppHomeButton()],
+            )
+          : null,
       body: SafeArea(
         top: !widget.showAppBar,
         child: Align(
@@ -134,7 +144,7 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
               builder: (context, snap) {
                 if (snap.hasError) {
                   return AppErrorRetry(
-                    message: 'GreÅ¡ka pri uÄitavanju inbox-a.',
+                    message: 'Greška pri učitavanju inbox-a.',
                     detail: snap.error?.toString(),
                     onRetry: () => _refreshController.add(null),
                   );
@@ -160,7 +170,6 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
                       .toList();
                 }
 
-                // AÅ¾uriramo _hasMore van build faze u stream listeneru ili ovde preko post frame callback-a
                 if (list.length < _limit && _hasMore) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) setState(() => _hasMore = false);
@@ -180,8 +189,8 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
                               ? 'Nema razgovora'
                               : 'Nema upita ni poruka',
                           subtitle: widget.showOnlyConversations
-                              ? 'Kada kupci poÅ¡alju poruku, pojaviÄ‡e se ovde.'
-                              : 'Upiti i poruke od kupaca Ä‡e se pojaviti ovde kada poÄnu da naruÄuju.',
+                              ? 'Kada kupci pošalju poruku, pojaviće se ovde.'
+                              : 'Upiti i poruke od kupaca će se pojaviti ovde kada počnu da naručuju.',
                           ctaLabel: 'Pregledaj proizvode',
                           ctaIcon: Icons.storefront_outlined,
                           onCtaPressed: () => context.go('/'),

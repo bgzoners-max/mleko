@@ -128,6 +128,61 @@ mixin ProductListingMixin {
     return attachSelectedDeliveryPointIds(products);
   }
 
+  Future<List<ProductModel>> getRelatedSellerProducts({
+    required String sellerId,
+    required String excludeProductId,
+    int limit = 6,
+  }) async {
+    try {
+      final res = await client.rpc(
+        'get_related_seller_products',
+        params: {
+          'p_seller_id': sellerId,
+          'p_exclude_product_id': excludeProductId,
+          'p_limit': limit,
+        },
+      );
+
+      final rows = res as List;
+      return rows
+          .map((row) => ProductModel.fromJson(row as Map<String, dynamic>))
+          .toList(growable: false);
+    } catch (e) {
+      LoggerService.warning(
+        'RPC get_related_seller_products failed, falling back to direct query',
+        extra: {'sellerId': sellerId, 'error': e.toString()},
+      );
+
+      try {
+        final rows = await client
+            .from('products')
+            .select(
+              'id, seller_id, category, name, price_per_kg, min_order_kg, '
+              'order_step, available_kg, unit_type, description, image_urls, '
+              'pickup_options, location, is_domestic, available_now, '
+              'delivery_mode, created_at, seller_is_verified',
+            )
+            .eq('seller_id', sellerId)
+            .neq('id', excludeProductId)
+            .eq('available_now', true)
+            .order('created_at', ascending: false)
+            .limit(limit);
+
+        return (rows as List)
+            .map((row) => ProductModel.fromJson(row as Map<String, dynamic>))
+            .toList(growable: false);
+      } catch (fallbackError, fallbackSt) {
+        LoggerService.error(
+          'Failed to fetch related seller products via fallback',
+          fallbackError,
+          stackTrace: fallbackSt,
+          extra: {'sellerId': sellerId, 'excludeProductId': excludeProductId},
+        );
+        return const [];
+      }
+    }
+  }
+
   Future<ProductModel?> getProduct(String id) async {
     final cache = ProductCacheService();
     try {

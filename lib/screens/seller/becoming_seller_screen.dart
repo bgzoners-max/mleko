@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/app_back_button.dart';
 
 class BecomingSellerScreen extends StatefulWidget {
   const BecomingSellerScreen({super.key});
@@ -70,7 +71,11 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Postani prodavac')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Postani prodavac'),
+        actions: const [AppHomeButton()],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

@@ -7,6 +7,7 @@ import '../../models/classified_seller_stats_model.dart';
 import '../../providers/app_state.dart';
 import '../../core/responsive.dart';
 import '../../services/classifieds/classifieds_service.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/app_network_image.dart';
@@ -305,7 +306,11 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
 
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Moji oglasi')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/classifieds'),
+          title: const Text('Moji oglasi'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -325,6 +330,7 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/classifieds'),
         title: const Text('Moji oglasi'),
         actions: [
           IconButton(
@@ -335,6 +341,7 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
               _load();
             },
           ),
+          const AppHomeButton(),
         ],
       ),
       body: FutureBuilder<List<ClassifiedAdModel>>(

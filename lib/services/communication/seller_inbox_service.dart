@@ -1,11 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../widgets/home/seller_inbox_item.dart';
 import '../core/logger_service.dart';
 
-/// Jedinstveni inbox za prodavca â€“ porudÅ¾bine + razgovori, sortirano po datumu
+/// Jedinstveni inbox za prodavca – porudžbine + razgovori, sortirano po datumu
 class SellerInboxService {
   final _client = Supabase.instance.client;
 

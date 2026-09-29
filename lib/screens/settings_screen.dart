@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/responsive.dart';
 import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
+import '../widgets/app_back_button.dart';
 
 String _fontScaleLabel(double scale) {
   if (scale <= 0.95) return 'Manja';
@@ -60,14 +61,22 @@ class SettingsScreen extends StatelessWidget {
     final appSettings = context.watch<AppSettingsProvider>();
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Podešavanja')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Podešavanja'),
+          actions: const [AppHomeButton()],
+        ),
         body: const Center(
             child: Text('Prijavite se da pristupite podešavanjima.')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Podešavanja')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Podešavanja'),
+        actions: const [AppHomeButton()],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

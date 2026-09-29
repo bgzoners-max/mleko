@@ -20,6 +20,7 @@ import '../../models/seller_delivery_models.dart';
 import '../../providers/app_state.dart';
 import '../../services/media/image_compression_service.dart';
 import '../../services/services.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/cupertino_category_picker.dart';
 
 class AddEditProductScreen extends StatefulWidget {
@@ -83,7 +84,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   void _exitScreen() {
-    if (isEdit && Navigator.of(context).canPop()) {
+    if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
       return;
     }
@@ -495,6 +496,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           onPressed: _loading ? null : _exitScreen,
         ),
         title: Text(isEdit ? 'Izmeni proizvod' : 'Dodaj proizvod'),
+        actions: const [AppHomeButton()],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

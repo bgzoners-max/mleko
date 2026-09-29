@@ -10,6 +10,7 @@ import '../../core/responsive.dart';
 import '../../models/classified_subscription_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 
 /// Ekran za pregled i upravljanje sačuvanim pretragama i praćenim kategorijama oglasa.
@@ -103,7 +104,11 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
 
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Praćene kategorije')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/classifieds'),
+          title: const Text('Praćene kategorije'),
+          actions: const [AppHomeButton()],
+        ),
         body: const Center(
           child: Text('Prijavite se da biste videli praćene kategorije.'),
         ),
@@ -115,6 +120,7 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/classifieds'),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -128,6 +134,7 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
               ),
           ],
         ),
+        actions: const [AppHomeButton()],
       ),
       body: Align(
         alignment: Alignment.topCenter,

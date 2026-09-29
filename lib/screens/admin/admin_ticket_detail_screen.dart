@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 import '../../services/services.dart';
+import '../../widgets/app_back_button.dart';
 
 const int _kMaxMessages = 5;
 
@@ -141,6 +142,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/admin/tickets'),
         title: Text(_ticket?.ticketNumber ?? 'Detalji tiketa'),
         actions: [
           if (_savingStatus)
@@ -176,6 +178,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                       ))
                   .toList(),
             ),
+          const AppHomeButton(),
         ],
       ),
       body: _loading

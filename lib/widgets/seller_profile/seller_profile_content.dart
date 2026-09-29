@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
 import '../../models/user_model.dart';
 import '../../providers/cart_provider.dart';
+import '../app_back_button.dart';
 
 import 'seller_farm_gallery_section.dart';
 import 'seller_order_draft_bar.dart';
@@ -32,6 +33,7 @@ class SellerProfileContent extends StatelessWidget {
     final isWide = Breakpoints.useTwoPaneLayout(context);
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: Text(sellerName),
         actions: [
           if (draftCount > 0)
@@ -45,6 +47,7 @@ class SellerProfileContent extends StatelessWidget {
                 ),
               ),
             ),
+          const AppHomeButton(),
         ],
       ),
       bottomNavigationBar:

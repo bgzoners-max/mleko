@@ -7,6 +7,7 @@ import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/checkout/checkout_multi_form.dart';
 
 /// Checkout više proizvoda od istog prodavca
@@ -110,13 +111,21 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Porudžbina')),
+        appBar: AppBar(
+          leading: AppBackButton(fallbackRoute: '/seller/${widget.sellerId}'),
+          title: const Text('Porudžbina'),
+          actions: const [AppHomeButton()],
+        ),
         body: const ProductDetailSkeleton(),
       );
     }
     if (_error != null || _items == null || _items!.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Porudžbina')),
+        appBar: AppBar(
+          leading: AppBackButton(fallbackRoute: '/seller/${widget.sellerId}'),
+          title: const Text('Porudžbina'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

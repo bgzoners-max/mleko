@@ -8,6 +8,7 @@ import '../../core/responsive.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/seller_delivery_settings_tab.dart';
 
 /// Podešavanja prodavca: lokacija, priča, galerija
@@ -221,7 +222,9 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Podešavanja prodavca'),
+        actions: const [AppHomeButton()],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,

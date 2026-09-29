@@ -14,6 +14,7 @@ import 'package:mleko/services/services.dart';
 import '../../services/core/analytics_service.dart';
 import 'dart:async';
 import '../offline_indicator.dart';
+import '../app_back_button.dart';
 import 'checkout_address_form.dart';
 import 'checkout_bottom_nav.dart';
 import 'checkout_delivery_options.dart';
@@ -602,7 +603,11 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
         !_items.any((i) => !i.product.isAvailable);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Porudžbina kod: ${widget.sellerName}')),
+      appBar: AppBar(
+        leading: AppBackButton(fallbackRoute: '/seller/${widget.sellerId}'),
+        title: Text('Porudžbina kod: ${widget.sellerName}'),
+        actions: const [AppHomeButton()],
+      ),
       bottomNavigationBar: CheckoutBottomNav(
         isEmpty: _items.isEmpty,
         totalRsd: totalRsd,

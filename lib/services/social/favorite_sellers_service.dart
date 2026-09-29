@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
 import '../../models/user_model.dart';
+import '../core/logger_service.dart';
 
 class FavoriteSellersService {
   static final FavoriteSellersService _instance = FavoriteSellersService._();
@@ -36,7 +37,11 @@ class FavoriteSellersService {
   }
 
   Future<void> unfollow(String userId, String sellerId) async {
-    await _client.from('favorite_sellers').delete().eq('user_id', userId).eq('seller_id', sellerId);
+    await _client
+        .from('favorite_sellers')
+        .delete()
+        .eq('user_id', userId)
+        .eq('seller_id', sellerId);
   }
 
   Future<void> toggleFollow(String userId, String sellerId) async {
@@ -48,10 +53,30 @@ class FavoriteSellersService {
     }
   }
 
-  /// Jedan RPC umesto getFavoriteSellerIds + products.inFilter
-  Future<List<ProductModel>> getProductsFromFavoriteSellers(String userId) async {
-    final res = await _client.rpc('get_products_from_favorite_sellers', params: {'p_user_id': userId});
-    return (res as List).map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
+  Future<List<ProductModel>> getProductsFromFavoriteSellers(
+      String userId) async {
+    try {
+      final res = await _client.rpc('get_products_from_favorite_sellers',
+          params: {'p_user_id': userId});
+      return (res as List)
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      LoggerService.warning(
+        'RPC get_products_from_favorite_sellers failed, using fallback',
+        extra: {'userId': userId, 'error': e.toString()},
+      );
+      final favIds = await getFavoriteSellerIds(userId);
+      if (favIds.isEmpty) return [];
+      final list = await _client
+          .from('products')
+          .select()
+          .inFilter('seller_id', favIds)
+          .order('created_at', ascending: false);
+      return (list as List)
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
   }
 
   Future<int> getFollowersCount(String sellerId) async {
@@ -63,9 +88,27 @@ class FavoriteSellersService {
     return response.count;
   }
 
-  /// Jedan RPC umesto getFavoriteSellerIds + profiles.inFilter
   Future<List<UserModel>> getFavoriteSellersWithProfiles(String userId) async {
-    final res = await _client.rpc('get_favorite_sellers_with_profiles', params: {'p_user_id': userId});
-    return (res as List).map((e) => UserModel.fromJson(e as Map<String, dynamic>)).toList();
+    try {
+      final res = await _client.rpc('get_favorite_sellers_with_profiles',
+          params: {'p_user_id': userId});
+      return (res as List)
+          .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      LoggerService.warning(
+        'RPC get_favorite_sellers_with_profiles failed, using fallback query',
+        extra: {'userId': userId, 'error': e.toString()},
+      );
+      final favIds = await getFavoriteSellerIds(userId);
+      if (favIds.isEmpty) return [];
+      final list = await _client
+          .from('public_profiles')
+          .select()
+          .inFilter('id', favIds);
+      return (list as List)
+          .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
   }
 }

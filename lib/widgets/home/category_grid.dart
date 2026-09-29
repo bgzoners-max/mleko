@@ -52,44 +52,41 @@ class CategoryGrid extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
                 width: 1.0,
               ),
-              boxShadow: [
-                if (!isDark)
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.025),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-              ],
+              boxShadow: AmazonColors.getCardShadow(context),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 onTap: () => context.push('/categories/${cat.id}', extra: cat),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   child: Row(
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: 32,
+                        height: 32,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: catColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
+                          color: catColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: catColor.withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
                         ),
                         child: buildCategoryIcon(
                           cat.icon,
-                          size: 16,
+                          size: 17,
                           color: catColor,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           cat.name,
@@ -107,11 +104,11 @@ class CategoryGrid extends StatelessWidget {
                       ),
                       if (scaledFontSize < 16.0)
                         Icon(
-                          Icons.chevron_right,
-                          size: 14,
+                          Icons.chevron_right_rounded,
+                          size: 16,
                           color: isDark
-                              ? AmazonColors.darkTextSecondary.withValues(alpha: 0.6)
-                              : AmazonColors.textSecondary.withValues(alpha: 0.6),
+                              ? AmazonColors.darkTextSecondary.withValues(alpha: 0.5)
+                              : AmazonColors.textSecondary.withValues(alpha: 0.5),
                         ),
                     ],
                   ),

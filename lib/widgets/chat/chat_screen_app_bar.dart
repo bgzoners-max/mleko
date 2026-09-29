@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../app_back_button.dart';
 
 class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? otherPartyName;
@@ -19,6 +20,7 @@ class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      leading: const AppBackButton(fallbackRoute: '/conversations'),
       title: Text(otherPartyName ?? 'Razgovor'),
       actions: [
         if (otherPartyId != null)
@@ -29,6 +31,7 @@ class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
               isBuyer ? '/seller/$otherPartyId' : '/buyer/$otherPartyId',
             ),
           ),
+        const AppHomeButton(),
       ],
     );
   }

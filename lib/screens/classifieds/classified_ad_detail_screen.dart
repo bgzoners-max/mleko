@@ -22,6 +22,7 @@ import '../../services/communication/chat_service.dart';
 import '../../supabase_config.dart';
 import '../../utils/classified_attributes_engine.dart';
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_network_image.dart';
 import '../../widgets/classifieds/report_classified_ad_dialog.dart';
 
@@ -354,6 +355,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
           return Scaffold(
             backgroundColor: AmazonColors.getCanvas(context),
             appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/classifieds'),
               backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
               foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
               elevation: 0,
@@ -373,6 +375,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),
+              actions: const [AppHomeButton()],
             ),
             body: const Center(child: CircularProgressIndicator()),
           );
@@ -382,6 +385,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
           return Scaffold(
             backgroundColor: AmazonColors.getCanvas(context),
             appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/classifieds'),
               backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
               foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
               elevation: 0,
@@ -401,6 +405,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),
+              actions: const [AppHomeButton()],
             ),
             body: AppErrorRetry(
               message: 'Oglas nije pronađen',
@@ -424,6 +429,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         return Scaffold(
           backgroundColor: AmazonColors.getCanvas(context),
           appBar: AppBar(
+            leading: const AppBackButton(fallbackRoute: '/classifieds'),
             backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
             foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
             elevation: 0,
@@ -472,6 +478,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                   tooltip: 'Izmeni oglas',
                   onPressed: () => context.push('/classifieds/edit/${ad.id}'),
                 ),
+              const AppHomeButton(),
             ],
           ),
           bottomNavigationBar: isWide

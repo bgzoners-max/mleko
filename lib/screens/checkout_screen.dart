@@ -15,6 +15,7 @@ import '../utils/number_input_utils.dart';
 import '../utils/quantity_engine.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/checkout/checkout_product_summary_card.dart';
 import '../widgets/checkout/checkout_single_buyer_form.dart';
 import '../widgets/skeleton.dart';
@@ -54,7 +55,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       builder: (context, snap) {
         if (snap.hasError) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Porudžbina')),
+            appBar: AppBar(
+              leading: AppBackButton(fallbackRoute: '/product/${widget.productId}'),
+              title: const Text('Porudžbina'),
+              actions: const [AppHomeButton()],
+            ),
             body: AppErrorRetry(
               message: 'Greška pri učitavanju proizvoda.',
               detail: snap.error?.toString(),
@@ -64,14 +69,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
         if (!snap.hasData) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Porudžbina')),
+            appBar: AppBar(
+              leading: AppBackButton(fallbackRoute: '/product/${widget.productId}'),
+              title: const Text('Porudžbina'),
+              actions: const [AppHomeButton()],
+            ),
             body: const ProductDetailSkeleton(),
           );
         }
         final product = snap.data;
         if (product == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Porudžbina')),
+            appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Porudžbina'),
+              actions: const [AppHomeButton()],
+            ),
             body: const AppEmptyState(
               icon: Icons.inventory_2_outlined,
               title: 'Proizvod nije pronađen',
@@ -337,7 +350,11 @@ class _CheckoutFormState extends State<_CheckoutForm> {
     final isOffline = context.select<AppState, bool>((s) => s.isOffline);
     final user = context.select<AppState, UserModel?>((s) => s.user);
     return Scaffold(
-      appBar: AppBar(title: const Text('Porudžbina')),
+      appBar: AppBar(
+        leading: AppBackButton(fallbackRoute: '/product/${widget.product.id}'),
+        title: const Text('Porudžbina'),
+        actions: const [AppHomeButton()],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

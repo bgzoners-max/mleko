@@ -12,6 +12,7 @@ import 'package:mleko/services/services.dart';
 import '../utils/image_precache_utils.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/product_card.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/skeleton.dart';
 
 class ChildCategoriesScreen extends StatefulWidget {
@@ -181,6 +182,7 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/categories'),
         backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
         foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
         elevation: 0,
@@ -202,6 +204,9 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
         iconTheme: IconThemeData(
           color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
         ),
+        actions: const [
+          AppHomeButton(),
+        ],
       ),
       body: _buildBody(),
     );

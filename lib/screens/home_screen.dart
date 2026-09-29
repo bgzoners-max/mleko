@@ -427,7 +427,6 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!loc.gpsTried) {
       final detected = await loc.tryDetectFromGps();
       if (detected && context.mounted) {
-        Navigator.of(context).pop();
         return;
       }
     }

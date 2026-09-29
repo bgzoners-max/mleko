@@ -11,6 +11,7 @@ import '../models/user_model.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/cart/cart_guest_banner.dart';
 import '../widgets/cart/cart_seller_group_card.dart';
 
@@ -91,6 +92,7 @@ class _CartScreenState extends State<CartScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Korpa'),
         actions: [
           if (!_loading && _groupedItems.isNotEmpty)
@@ -120,6 +122,7 @@ class _CartScreenState extends State<CartScreen> {
               },
               child: const Text('Isprazni'),
             ),
+          const AppHomeButton(),
         ],
       ),
       body: _loading

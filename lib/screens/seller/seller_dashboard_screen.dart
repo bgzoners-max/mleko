@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/seller_product_card.dart';
 import '../../widgets/skeleton.dart';
@@ -66,7 +67,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
     if (user == null || !user.isSeller) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Moji proizvodi')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Moji proizvodi'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -110,15 +115,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Moji proizvodi'),
         actions: isTwoPaneLayout
-            ? null
+            ? const [AppHomeButton()]
             : [
                 IconButton(
                   icon: const Icon(Icons.add),
                   tooltip: 'Dodaj novi proizvod',
                   onPressed: goToAddProduct,
                 ),
+                const AppHomeButton(),
               ],
       ),
       floatingActionButton: isTwoPaneLayout

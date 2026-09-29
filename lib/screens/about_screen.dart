@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mleko/core/responsive.dart';
+import '../widgets/app_back_button.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -8,7 +9,13 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = Breakpoints.horizontalPadding(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('O platformi')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('O platformi'),
+        actions: const [
+          AppHomeButton(),
+        ],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

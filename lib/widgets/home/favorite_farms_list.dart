@@ -8,7 +8,7 @@ import '../../services/services.dart';
 import '../skeleton.dart';
 import '../app_network_image.dart';
 
-/// Lista gazdinstava koje kupac prati (isti podatak kao ekran â€žPratim prodavceâ€œ).
+/// Lista gazdinstava koje kupac prati (isti podatak kao ekran „Pratim prodavce“).
 class FavoriteFarmsList extends StatefulWidget {
   final TabController? tabController;
 

@@ -7,6 +7,7 @@ import '../../models/review_model.dart';
 import '../../models/seller_stats_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/seller_review_widgets.dart';
 import '../../widgets/skeleton.dart';
 
@@ -30,7 +31,11 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest || !user.isSeller || user.id != widget.sellerId) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Recenzije')),
+        appBar: AppBar(
+          leading: AppBackButton(fallbackRoute: '/seller/${widget.sellerId}'),
+          title: const Text('Recenzije'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -46,7 +51,13 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () => context.pop(),
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      context.go('/seller/${widget.sellerId}');
+                    }
+                  },
                   child: const Text('Nazad'),
                 ),
               ],
@@ -58,7 +69,9 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: AppBackButton(fallbackRoute: '/seller/${widget.sellerId}'),
         title: const Text('Recenzije'),
+        actions: const [AppHomeButton()],
       ),
       body: Align(
         alignment: Alignment.topCenter,

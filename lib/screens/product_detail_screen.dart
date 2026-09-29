@@ -22,6 +22,7 @@ import '../supabase_config.dart';
 
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/skeleton.dart';
 
 import '../widgets/product/product_image_gallery.dart';
@@ -38,7 +39,6 @@ Future<void> _shareProduct(BuildContext context, ProductModel product) async {
   final text =
       'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:\n$url';
 
-  // Ako nema slike ili smo na Webu, deli samo tekst i link
   if (product.imageUrls.isEmpty || kIsWeb) {
     await SharePlus.instance.share(
       ShareParams(text: text, subject: product.name),
@@ -54,13 +54,11 @@ Future<void> _shareProduct(BuildContext context, ProductModel product) async {
       ),
     );
 
-    // Preuzimanje prve slike u memoriju
     final request =
         await HttpClient().getUrl(Uri.parse(product.imageUrls.first));
     final response = await request.close();
     final bytes = await consolidateHttpClientResponseBytes(response);
 
-    // Deljenje fajla generisanog direktno iz memorije
     await SharePlus.instance.share(
       ShareParams(
         text: text,
@@ -71,9 +69,11 @@ Future<void> _shareProduct(BuildContext context, ProductModel product) async {
       ),
     );
   } catch (e, st) {
-    unawaited(ErrorHandlerService().handleError(e,
-        stackTrace: st, context: 'Share product image fallback'));
-    // Fallback ako preuzimanje slike ne uspe (npr. loš internet)
+    unawaited(ErrorHandlerService().handleError(
+      e,
+      stackTrace: st,
+      context: 'Share product image fallback',
+    ));
     await SharePlus.instance.share(
       ShareParams(text: text, subject: product.name),
     );
@@ -109,11 +109,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     _productFuture ??=
         context.read<ProductsService>().getProduct(widget.productId);
     _reviewsFuture ??= _loadReviewsFuture();
-  }
-
-  @override
-  void initState() {
-    super.initState();
   }
 
   @override
@@ -160,7 +155,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _reviewsFuture = _loadReviewsFuture();
       });
 
-
   void _setProductMetadata(ProductModel? product) {
     if (product == null) {
       setPageMetadata(
@@ -186,7 +180,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Kompaktni glavni red: Galerija (levo) + Glavni info blok sa korpom (desno)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -210,8 +203,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(height: 28),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
-
-              // 2. Široka sekcija "Još iz ovog domaćinstva"
               MoreFromSellerSection(
                 key: _moreFromSellerKey,
                 product: product,
@@ -219,8 +210,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(height: 20),
               const Divider(height: 1, thickness: 1),
               const SizedBox(height: 20),
-
-              // 3. Široka sekcija "Ocene i utisci"
               ProductReviewsSection(
                 key: _reviewsSectionKey,
                 reviewsFuture: _reviewsFuture!,
@@ -295,13 +284,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final maxWidth = isWideLayout
         ? 1040.0
         : Breakpoints.maxContentWidth(context);
-    _setProductMetadata(null);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
       appBar: AppBar(
-        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+        leading: const AppBackButton(fallbackRoute: '/'),
+        backgroundColor:
+            isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+        foregroundColor:
+            isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
@@ -314,22 +306,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         title: Text(
           'Proizvod',
           style: TextStyle(
-            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+            color: isDark
+                ? AmazonColors.darkTextPrimary
+                : AmazonColors.textPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
         iconTheme: IconThemeData(
-          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+          color:
+              isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
         ),
         actions: [
           FutureBuilder<ProductModel?>(
             future: _productFuture,
-            builder: (_, snap) {
+            builder: (_, snapshot) {
               return IconButton(
                 icon: Icon(Icons.adaptive.share),
                 tooltip: 'Podeli proizvod',
-                onPressed: snap.hasData
-                    ? () => withHaptic(() => _shareProduct(context, snap.data!))
+                onPressed: snapshot.hasData
+                    ? () =>
+                        withHaptic(() => _shareProduct(context, snapshot.data!))
                     : null,
               );
             },
@@ -349,11 +345,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               if (user == null || user.isGuest) return const SizedBox.shrink();
               return FutureBuilder<ProductModel?>(
                 future: _productFuture,
-                builder: (_, snap) {
-                  if (!snap.hasData) return const SizedBox.shrink();
-                  final p = snap.data!;
+                builder: (_, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  final product = snapshot.data!;
                   return Selector<FavoritesProvider, bool>(
-                    selector: (_, fav) => fav.isFavorite(p.id),
+                    selector: (_, fav) => fav.isFavorite(product.id),
                     builder: (_, isFavorite, __) {
                       final favorites = ctx.read<FavoritesProvider>();
                       return IconButton(
@@ -364,8 +360,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: isFavorite ? Colors.red : null,
                         ),
-                        onPressed: () =>
-                            withHaptic(() => favorites.toggle(user.id, p.id)),
+                        onPressed: () => withHaptic(
+                          () => favorites.toggle(user.id, product.id),
+                        ),
                       );
                     },
                   );
@@ -373,22 +370,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               );
             },
           ),
+          const AppHomeButton(),
         ],
       ),
       body: FutureBuilder<ProductModel?>(
         future: _productFuture,
-        builder: (context, snap) {
-          if (snap.hasError) {
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
             return AppErrorRetry(
               message: 'Greška pri učitavanju proizvoda.',
-              detail: snap.error?.toString(),
+              detail: snapshot.error?.toString(),
               onRetry: _retry,
             );
           }
-          if (!snap.hasData) {
+          if (!snapshot.hasData) {
             return const ProductDetailSkeleton();
           }
-          final product = snap.data;
+          final product = snapshot.data;
           if (product == null) {
             return const AppEmptyState(
               icon: Icons.search_off_outlined,

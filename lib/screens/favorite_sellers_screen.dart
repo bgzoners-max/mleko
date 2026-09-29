@@ -7,6 +7,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/skeleton.dart';
 
 class FavoriteSellersScreen extends StatefulWidget {
@@ -36,7 +37,11 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Pratim prodavce')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Pratim prodavce'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -52,7 +57,11 @@ class _FavoriteSellersScreenState extends State<FavoriteSellersScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pratim prodavce')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Pratim prodavce'),
+        actions: const [AppHomeButton()],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

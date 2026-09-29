@@ -5,6 +5,7 @@ import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../providers/app_state.dart';
 import '../services/services.dart';
+import '../widgets/app_back_button.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -34,7 +35,11 @@ class _SupportScreenState extends State<SupportScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Podrška / prijava problema'),
+        actions: const [
+          AppHomeButton(),
+        ],
         bottom: TabBar(
           controller: _tabCtrl,
           tabs: const [

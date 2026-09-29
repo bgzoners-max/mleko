@@ -10,6 +10,7 @@ import '../providers/favorites_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../utils/image_precache_utils.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/product_card.dart';
@@ -122,7 +123,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 : 320.0;
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Omiljeni proizvodi')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Omiljeni proizvodi'),
+          actions: const [AppHomeButton()],
+        ),
         body: AppEmptyState(
           icon: Icons.favorite_outline,
           title: 'Prijavite se za listu želja',
@@ -136,7 +141,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     _initStream(user.id);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Omiljeni proizvodi')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: const Text('Omiljeni proizvodi'),
+        actions: const [AppHomeButton()],
+      ),
       body: StreamBuilder<List<ProductModel>>(
         stream: _favoritesStream,
         builder: (context, snap) {

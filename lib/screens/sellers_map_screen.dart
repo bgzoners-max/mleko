@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/map_tiles.dart';
 import '../core/responsive.dart';
+import '../widgets/app_back_button.dart';
 
 /// Mapa prodavaca – prikazuje prodavce na mapi sa interaktivnim profilima i geolokacijom.
 class SellersMapScreen extends StatefulWidget {
@@ -230,6 +231,7 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Prodavci na mapi'),
         actions: [
           IconButton(
@@ -240,6 +242,7 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
               _fitBounds(list);
             },
           ),
+          const AppHomeButton(),
         ],
       ),
       floatingActionButton: FloatingActionButton(

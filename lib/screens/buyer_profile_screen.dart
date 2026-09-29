@@ -8,6 +8,7 @@ import '../models/review_model.dart';
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/profile/buyer_profile_header.dart';
 import '../widgets/profile/buyer_profile_reviews_section.dart';
 import '../widgets/skeleton.dart';
@@ -92,7 +93,11 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
       builder: (context, snap) {
         if (snap.hasError) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Profil kupca')),
+            appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Profil kupca'),
+              actions: const [AppHomeButton()],
+            ),
             body: AppErrorRetry(
               message: 'Greška pri učitavanju profila.',
               detail: snap.error?.toString(),
@@ -102,7 +107,11 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
         }
         if (!snap.hasData) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Profil kupca')),
+            appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Profil kupca'),
+              actions: const [AppHomeButton()],
+            ),
             body: const BuyerProfileSkeleton(),
           );
         }
@@ -117,7 +126,11 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
         final displayName = user?.displayName ?? user?.farmName ?? 'Kupac';
 
         return Scaffold(
-          appBar: AppBar(title: Text(displayName)),
+          appBar: AppBar(
+            leading: const AppBackButton(fallbackRoute: '/'),
+            title: Text(displayName),
+            actions: const [AppHomeButton()],
+          ),
           body: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(

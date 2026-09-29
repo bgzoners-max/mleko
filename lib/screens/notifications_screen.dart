@@ -15,6 +15,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/notifications/notification_card.dart';
 import '../widgets/notifications/notification_desktop_panel.dart';
 import '../widgets/notifications/notification_quick_actions_card.dart';
@@ -192,6 +193,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Obaveštenja'),
         actions: [
           if (!kIsWeb &&
@@ -266,6 +268,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ],
             ],
           ),
+          const AppHomeButton(),
         ],
       ),
       body: Align(

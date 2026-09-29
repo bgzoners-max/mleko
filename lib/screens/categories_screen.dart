@@ -6,6 +6,7 @@ import '../core/responsive.dart';
 import '../providers/categories_provider.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/skeleton.dart';
@@ -30,6 +31,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
         foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
         elevation: 0,
@@ -51,6 +53,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         iconTheme: IconThemeData(
           color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
         ),
+        actions: const [
+          AppHomeButton(),
+        ],
       ),
       body: _buildBody(),
     );

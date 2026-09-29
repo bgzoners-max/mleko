@@ -11,6 +11,7 @@ import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/app_back_button.dart';
 import '../widgets/chat/conversation_list_tile.dart';
 import '../widgets/chat/conversations_desktop_sidebar.dart';
 import '../widgets/skeleton.dart';
@@ -276,7 +277,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Poruke')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/'),
+          title: const Text('Poruke'),
+          actions: const [AppHomeButton()],
+        ),
         body: AppEmptyState(
           icon: Icons.chat_bubble_outline,
           title: 'Vaše poruke',
@@ -295,7 +300,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Poruke'),
+        actions: const [
+          AppHomeButton(),
+        ],
         bottom: isTwoPaneLayout
             ? null
             : TabBar(

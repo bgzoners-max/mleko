@@ -42,7 +42,7 @@ class _ProductCardState extends State<ProductCard> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
     final borderColor = _isHovered
-        ? AmazonColors.amberDark
+        ? AmazonColors.amber
         : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray);
 
     final hasValidImage = widget.product.imageUrls.isNotEmpty &&
@@ -50,7 +50,7 @@ class _ProductCardState extends State<ProductCard> {
 
     final imageChild = !hasValidImage
         ? Container(
-            color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+            color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF0EDE5),
             child: Center(
               child: Icon(
                 Icons.inventory_2_outlined,
@@ -63,7 +63,7 @@ class _ProductCardState extends State<ProductCard> {
             imageUrl: widget.product.imageUrls.first,
             fit: BoxFit.cover,
             placeholder: Container(
-              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF0EDE5),
               child: const Center(
                 child: SizedBox(
                   width: 20,
@@ -73,7 +73,7 @@ class _ProductCardState extends State<ProductCard> {
               ),
             ),
             errorWidget: Container(
-              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF0EDE5),
               child: Center(
                 child: Icon(
                   Icons.broken_image_outlined,
@@ -90,27 +90,26 @@ class _ProductCardState extends State<ProductCard> {
         Hero(
           tag: 'product_image_${widget.product.id}_0',
           child: AnimatedScale(
-            scale: _isHovered ? 1.03 : 1.0,
-            duration: const Duration(milliseconds: 200),
+            scale: _isHovered ? 1.04 : 1.0,
+            duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
             child: gridMode
                 ? SizedBox.expand(child: imageChild)
                 : AspectRatio(aspectRatio: 1.25, child: imageChild),
           ),
         ),
-        // Subtle top gradient overlay for badge legibility
         Positioned(
           top: 0,
           left: 0,
           right: 0,
-          height: 36,
+          height: 38,
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.35),
+                  Colors.black.withValues(alpha: 0.3),
                   Colors.transparent,
                 ],
               ),
@@ -119,25 +118,25 @@ class _ProductCardState extends State<ProductCard> {
         ),
         // Badges top-left
         Positioned(
-          top: 6,
-          left: 6,
+          top: 7,
+          left: 7,
           child: Wrap(
             spacing: 4,
             runSpacing: 4,
             children: [
               if (!widget.product.isAvailable)
                 const _AmazonBadge(
-                  label: 'NEDOSTUPNO',
+                  label: 'RASPRODATO',
                   backgroundColor: AmazonColors.slate,
                 ),
               if (_isNew)
                 const _AmazonBadge(
-                  label: 'NOVO',
+                  label: 'SVEŽE',
                   backgroundColor: AmazonColors.green,
                 ),
               if (widget.isPopular)
                 const _AmazonBadge(
-                  label: 'POPULARNO',
+                  label: 'PREPORUKA',
                   backgroundColor: AmazonColors.amber,
                   textColor: AmazonColors.darkNavy,
                 ),
@@ -147,25 +146,34 @@ class _ProductCardState extends State<ProductCard> {
         // Favorite button top-right
         if (widget.onFavoriteToggle != null)
           Positioned(
-            top: 5,
-            right: 5,
+            top: 7,
+            right: 7,
             child: Material(
               color: Colors.transparent,
               child: Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: isDark
+                      ? const Color(0xFF1E2632).withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.92),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  iconSize: 17,
+                  iconSize: 18,
                   tooltip: widget.isFavorite == true
                       ? 'Ukloni iz omiljenih'
                       : 'Dodaj u omiljene',
                   icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 220),
                     transitionBuilder: (child, animation) =>
                         ScaleTransition(scale: animation, child: child),
                     child: Icon(
@@ -174,9 +182,9 @@ class _ProductCardState extends State<ProductCard> {
                           : Icons.favorite_border,
                       key: ValueKey(widget.isFavorite),
                       color: widget.isFavorite == true
-                          ? const Color(0xFFFF4D4F)
-                          : Colors.white,
-                      size: 17,
+                          ? const Color(0xFFE04F44)
+                          : (isDark ? Colors.white70 : AmazonColors.textSecondary),
+                      size: 18,
                     ),
                   ),
                   onPressed: () => withHaptic(widget.onFavoriteToggle),
@@ -188,19 +196,19 @@ class _ProductCardState extends State<ProductCard> {
     );
 
     final textContent = Padding(
-      padding: const EdgeInsets.fromLTRB(8, 7, 8, 8),
+      padding: const EdgeInsets.fromLTRB(9, 8, 9, 9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Kategorija (Amazon teal link style)
+          // 1. Kategorija (warm forest moss)
           Text(
             widget.product.category.toUpperCase(),
             style: const TextStyle(
               fontSize: 9.5,
               fontWeight: FontWeight.w700,
               color: AmazonColors.link,
-              letterSpacing: 0.4,
+              letterSpacing: 0.5,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -216,8 +224,8 @@ class _ProductCardState extends State<ProductCard> {
                   widget.product.name,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
-                    height: 1.2,
+                    fontSize: 13,
+                    height: 1.25,
                     color: isDark
                         ? AmazonColors.darkTextPrimary
                         : AmazonColors.textPrimary,
@@ -230,7 +238,7 @@ class _ProductCardState extends State<ProductCard> {
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.verified,
-                  size: 13,
+                  size: 14,
                   color: AmazonColors.link,
                 ),
               ],
@@ -238,47 +246,80 @@ class _ProductCardState extends State<ProductCard> {
           ),
           const SizedBox(height: 4),
 
-          // 3. Amazon Deal cena (B12704 bold crvena) + Ocena
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(
-                child: Text(
-                  widget.product.priceFormatted,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.3,
-                    color: isDark ? const Color(0xFFFF6B6B) : AmazonColors.dealRed,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      size: 12,
-                      color: Color(0xFFFFA41C), // Amazon star gold
-                    ),
-                    const SizedBox(width: 2.5),
-                    Text(
-                      '${widget.avgRating!.toStringAsFixed(1)} (${widget.reviewCount})',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? AmazonColors.darkTextSecondary
-                            : AmazonColors.textSecondary,
+          // 3. Cena sa jasnom hijerarhijom + Ocena
+          Builder(
+            builder: (context) {
+              final priceParts = widget.product.priceFormatted.split(' RSD');
+              final priceNum = priceParts.isNotEmpty ? priceParts[0] : widget.product.priceFormatted;
+              final priceUnit = priceParts.length > 1 ? priceParts[1] : '';
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: priceNum,
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.3,
+                              color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
+                            ),
+                          ),
+                          TextSpan(
+                            text: ' RSD',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
+                            ),
+                          ),
+                          if (priceUnit.isNotEmpty)
+                            TextSpan(
+                              text: priceUnit,
+                              style: TextStyle(
+                                fontSize: 10.0,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? AmazonColors.darkTextSecondary
+                                    : AmazonColors.textSecondary,
+                              ),
+                            ),
+                        ],
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-            ],
+                  ),
+                  if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 14,
+                          color: AmazonColors.amber,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${widget.avgRating!.toStringAsFixed(1)} (${widget.reviewCount})',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AmazonColors.darkTextSecondary
+                                : AmazonColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 4),
 
@@ -287,7 +328,7 @@ class _ProductCardState extends State<ProductCard> {
             children: [
               Icon(
                 Icons.location_on_outlined,
-                size: 11.5,
+                size: 12,
                 color: isDark
                     ? AmazonColors.darkTextSecondary
                     : AmazonColors.textSecondary,
@@ -308,11 +349,11 @@ class _ProductCardState extends State<ProductCard> {
               ),
               const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AmazonColors.darkBorder.withValues(alpha: 0.6)
-                      : const Color(0xFFF0F2F2),
+                      ? AmazonColors.darkBorder.withValues(alpha: 0.5)
+                      : const Color(0xFFF0ECE1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -329,28 +370,27 @@ class _ProductCardState extends State<ProductCard> {
             ],
           ),
 
-          // 5. Ako nije grid (npr. lista), prikaži Amazon dugme
+          // 5. Ako nije grid (npr. lista), prikaži dugme
           if (!gridMode) ...[
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
-              height: 32,
+              height: 34,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AmazonColors.amberLight,
-                  foregroundColor: AmazonColors.darkNavy,
+                  backgroundColor: AmazonColors.amber,
+                  foregroundColor: Colors.white,
                   elevation: 0,
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    side: const BorderSide(color: AmazonColors.amberDark, width: 0.8),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 onPressed: () => withHaptic(
                     () => context.push('/product/${widget.product.id}')),
                 child: const Text(
-                  'Pogledaj detalje',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  'Pogledaj ponudu',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -360,25 +400,17 @@ class _ProductCardState extends State<ProductCard> {
     );
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      transform: Matrix4.translationValues(0, _isHovered ? -2.5 : 0, 0),
+      transform: Matrix4.translationValues(0, _isHovered ? -4.0 : 0, 0),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: borderColor,
           width: _isHovered ? 1.2 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: _isHovered ? 0.35 : 0.12)
-                : Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.025),
-            blurRadius: _isHovered ? 8 : 3,
-            offset: Offset(0, _isHovered ? 3 : 1),
-          ),
-        ],
+        boxShadow: AmazonColors.getCardShadow(context, isHovered: _isHovered),
       ),
       clipBehavior: Clip.antiAlias,
       child: Semantics(
@@ -437,14 +469,14 @@ class _AmazonBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(3),
+        color: backgroundColor.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 2,
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 3,
             offset: const Offset(0, 1),
           ),
         ],
@@ -455,7 +487,7 @@ class _AmazonBadge extends StatelessWidget {
           fontSize: 9,
           fontWeight: FontWeight.w800,
           color: textColor,
-          letterSpacing: 0.4,
+          letterSpacing: 0.5,
         ),
       ),
     );

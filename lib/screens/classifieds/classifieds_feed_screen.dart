@@ -14,6 +14,7 @@ import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../utils/classified_attributes_engine.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/classifieds/classified_ad_card.dart';
 import '../../widgets/classifieds/classified_category_tiles.dart';
@@ -1376,6 +1377,13 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     }
 
     return Scaffold(
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Mali oglasi'),
+              actions: const [AppHomeButton()],
+            ),
       backgroundColor: canvasColor,
       floatingActionButton: fab,
       body: content,

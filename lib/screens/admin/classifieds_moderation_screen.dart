@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/classified_report_model.dart';
 import '../../services/classifieds/classified_reports_service.dart';
 import '../../core/responsive.dart';
+import '../../widgets/app_back_button.dart';
 
 class ClassifiedsModerationScreen extends StatefulWidget {
   const ClassifiedsModerationScreen({
@@ -242,6 +243,7 @@ class _ClassifiedsModerationScreenState extends State<ClassifiedsModerationScree
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/classifieds'),
         title: const Text('Moderacija oglasa'),
         actions: [
           IconButton(
@@ -249,6 +251,7 @@ class _ClassifiedsModerationScreenState extends State<ClassifiedsModerationScree
             tooltip: 'Osveži',
             onPressed: _loadReports,
           ),
+          const AppHomeButton(),
         ],
         bottom: TabBar(
           controller: _tabController,

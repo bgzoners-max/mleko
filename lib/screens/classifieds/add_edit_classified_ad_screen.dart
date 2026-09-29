@@ -19,6 +19,7 @@ import '../../services/media/image_compression_service.dart';
 import '../../services/media/storage_service.dart';
 import '../../utils/classified_attributes_engine.dart';
 import '../../utils/number_input_utils.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_network_image.dart';
 import '../../widgets/guest_auth_prompt.dart';
@@ -794,7 +795,11 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
             content: Text(isEdit ? 'Oglas uspešno ažuriran.' : 'Oglas uspešno objavljen!'),
           ),
         );
-        Navigator.pop(context);
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          context.go('/classifieds');
+        }
       }
     } catch (e) {
       // Ako oglas nije sačuvan, obriši sve tek upload-ovane slike
@@ -831,14 +836,22 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
     if (_initializing) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Učitavanje...')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/classifieds'),
+          title: const Text('Učitavanje...'),
+          actions: const [AppHomeButton()],
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (user == null || user.isGuest) {
       return Scaffold(
-        appBar: AppBar(title: Text(isEdit ? 'Izmeni oglas' : 'Postavi novi oglas')),
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/classifieds'),
+          title: Text(isEdit ? 'Izmeni oglas' : 'Postavi novi oglas'),
+          actions: const [AppHomeButton()],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -858,7 +871,9 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/classifieds'),
         title: Text(isEdit ? 'Izmeni oglas' : 'Postavi novi oglas'),
+        actions: const [AppHomeButton()],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(

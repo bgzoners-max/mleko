@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/error_dialog.dart';
 import '../../widgets/beta_announcement_banner.dart';
 import 'login_screen.dart';
@@ -21,6 +22,11 @@ class RegisterScreen extends StatelessWidget {
     if (isDesktop) {
       final isDark = theme.brightness == Brightness.dark;
       return Scaffold(
+        appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: '/login'),
+          title: const Text('Registracija'),
+          actions: const [AppHomeButton()],
+        ),
         body: Column(
           children: [
             const BetaAnnouncementBanner(),
@@ -162,7 +168,11 @@ class RegisterScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Registracija')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/login'),
+        title: const Text('Registracija'),
+        actions: const [AppHomeButton()],
+      ),
       body: Column(
         children: [
           const BetaAnnouncementBanner(),
@@ -658,7 +668,13 @@ class _RegisterFormState extends State<_RegisterForm> {
         ElevatedButton(onPressed: _submit, child: const Text('Registruj se')),
         const SizedBox(height: 12),
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/login');
+            }
+          },
           child: const Text('Već imaš nalog? Prijavi se'),
         ),
       ],

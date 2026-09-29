@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Kartica mape â€“ kompaktno, tap otvara punu mapu
+/// Kartica mape – kompaktno, tap otvara punu mapu
 class MapCard extends StatelessWidget {
   const MapCard({super.key});
 
@@ -15,25 +15,26 @@ class MapCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: () => context.push('/sellers-map'),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(18),
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Theme.of(context).colorScheme.primary,
-                      const Color(0xFF2E7D32),
+                      Color(0xFF142419),
+                      Color(0xFF245938),
                     ],
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.25),
+                      color: const Color(0xFF142419).withValues(alpha: 0.3),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -44,39 +45,80 @@ class MapCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFFD97724).withValues(alpha: 0.6),
+                          width: 1.2,
+                        ),
                       ),
-                      child: const Icon(Icons.map_outlined,
-                          size: 32, color: Colors.white),
+                      child: const Icon(
+                        Icons.explore_outlined,
+                        size: 28,
+                        color: Color(0xFFFBF8F2),
+                      ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Prodavci na mapi',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2.5),
+                            margin: const EdgeInsets.only(bottom: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD97724).withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: const Color(0xFFD97724).withValues(alpha: 0.5),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Text(
+                              'LOKALNA GAZDINSTVA',
+                              style: TextStyle(
+                                fontSize: 9.0,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFFFD9A0),
+                                letterSpacing: 0.6,
+                              ),
+                            ),
                           ),
+                          const Text(
+                            'Zavirite u komšiluk na mapi',
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
                           Text(
-                            'PronaÄ‘i domaÄ‡e u svojoj blizini',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9)),
+                            'Pronađite sveže domaće proizvode u vašoj blizini',
+                            style: TextStyle(
+                              fontSize: 12.0,
+                              color: Colors.white.withValues(alpha: 0.88),
+                              height: 1.25,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios,
-                        size: 18, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -108,7 +150,7 @@ class MapCard extends StatelessWidget {
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('PodrÅ¡ka'),
+                    child: const Text('Podrška'),
                   ),
                   TextButton(
                     onPressed: () => context.push('/uslovi-koriscenja'),
@@ -117,7 +159,7 @@ class MapCard extends StatelessWidget {
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text('Uslovi koriÅ¡Ä‡enja'),
+                    child: const Text('Uslovi korišćenja'),
                   ),
                   TextButton(
                     onPressed: () => context.push('/politika-privatnosti'),

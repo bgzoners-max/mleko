@@ -8,6 +8,7 @@ import '../../models/buyer_review_model.dart';
 import '../../models/review_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
+import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/buyer_review_widgets.dart';
 import '../../widgets/skeleton.dart';
@@ -67,21 +68,33 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
         user.isSeller ||
         user.id != widget.buyerId) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Recenzije')),
+        appBar: AppBar(
+          leading: AppBackButton(fallbackRoute: '/buyer/${widget.buyerId}'),
+          title: const Text('Recenzije'),
+          actions: const [AppHomeButton()],
+        ),
         body: AppEmptyState(
           icon: Icons.lock_outline,
           title: 'Privatan pristup',
           subtitle: 'Ovu stranicu može da vidi samo kupac na svom nalogu.',
           ctaLabel: 'Nazad',
           ctaIcon: Icons.arrow_back,
-          onCtaPressed: () => context.pop(),
+          onCtaPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/buyer/${widget.buyerId}');
+            }
+          },
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
+        leading: AppBackButton(fallbackRoute: '/buyer/${widget.buyerId}'),
         title: const Text('Recenzije'),
+        actions: const [AppHomeButton()],
       ),
       body: Align(
         alignment: Alignment.topCenter,

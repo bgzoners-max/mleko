@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:mleko/core/responsive.dart';
 import 'package:mleko/providers/app_state.dart';
+import 'package:mleko/widgets/app_back_button.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -45,11 +46,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/login'),
         title: const Text('Potvrda emaila'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/login'),
-        ),
+        actions: const [AppHomeButton()],
       ),
       body: Align(
         alignment: Alignment.topCenter,

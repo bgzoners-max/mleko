@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/services.dart';
+import '../../widgets/app_back_button.dart';
 
 class AdminPushHealthScreen extends StatefulWidget {
   const AdminPushHealthScreen({super.key});
@@ -75,6 +76,7 @@ class _AdminPushHealthScreenState extends State<AdminPushHealthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/admin/tickets'),
         title: const Text('Admin — Push health'),
         actions: [
           IconButton(
@@ -82,6 +84,7 @@ class _AdminPushHealthScreenState extends State<AdminPushHealthScreen> {
             tooltip: 'Osveži',
             onPressed: _load,
           ),
+          const AppHomeButton(),
         ],
       ),
       body: Align(

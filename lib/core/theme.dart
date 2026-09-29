@@ -376,7 +376,7 @@ ThemeData buildAppTheme({bool compact = false}) {
   final base = _buildBaseTheme(compact: compact);
   final navBarHeight = compact ? 56.0 : 64.0;
   return base.copyWith(
-    scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+    scaffoldBackgroundColor: const Color(0xFFF8F6F0),
     canvasColor: Colors.white,
     appBarTheme: AppBarTheme(
       centerTitle: true,
@@ -394,13 +394,13 @@ ThemeData buildAppTheme({bool compact = false}) {
       ThemeData.light().textTheme,
       Brightness.light,
     ).apply(
-      bodyColor: const Color(0xFF0A0A0A),
-      displayColor: const Color(0xFF0A0A0A),
+      bodyColor: const Color(0xFF1B201C),
+      displayColor: const Color(0xFF1B201C),
     ),
     colorScheme: base.colorScheme.copyWith(
       surface: Colors.white,
-      onSurface: const Color(0xFF0A0A0A),
-      onSurfaceVariant: const Color(0xFF37434F),
+      onSurface: const Color(0xFF1B201C),
+      onSurfaceVariant: const Color(0xFF4A554D),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       selectedItemColor: Color(0xFF2E7D32),

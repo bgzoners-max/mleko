@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/responsive.dart';
+import 'app_back_button.dart';
 
 /// Zajednički layout za pravne dokumente (Privacy, Terms, itd.)
 class LegalDocumentLayout extends StatelessWidget {
@@ -28,7 +29,13 @@ class LegalDocumentLayout extends StatelessWidget {
         phone: 22, largeTabletValue: 28, desktop: 32);
 
     return Scaffold(
-      appBar: AppBar(title: Text(appBarTitle)),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
+        title: Text(appBarTitle),
+        actions: const [
+          AppHomeButton(),
+        ],
+      ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

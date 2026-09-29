@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/map_tiles.dart';
+import '../../widgets/app_back_button.dart';
 
 /// Ekran za odabir lokacije na mapi – prodavac tapne tačku da postavi marker.
 /// Koristi InteractionOptions bez doubleTapZoom da tapovi odmah reaguju,
@@ -64,8 +65,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
   void _confirm() {
     if (_selectedPoint != null) {
-      context.pop(
-          {'lat': _selectedPoint!.latitude, 'lng': _selectedPoint!.longitude});
+      if (Navigator.of(context).canPop()) {
+        context.pop({
+          'lat': _selectedPoint!.latitude,
+          'lng': _selectedPoint!.longitude,
+        });
+      } else {
+        context.go('/seller-settings');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -79,6 +86,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     final initialCenter = _selectedPoint ?? MapPickerScreen._srbijaCentar;
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Odaberi lokaciju'),
         actions: [
           if (_selectedPoint != null)
@@ -86,6 +94,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               onPressed: _confirm,
               child: const Text('Sačuvaj'),
             ),
+          const AppHomeButton(),
         ],
       ),
       body: Column(
