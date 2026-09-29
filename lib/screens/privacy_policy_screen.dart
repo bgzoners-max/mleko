@@ -25,7 +25,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
       effectiveDate: '9. april 2026.',
       children: [
         b.section('1', 'Ko je rukovalac podacima', [
-          'Rukovalac podacima o ličnosti u vezi sa platformom domaćimarket.rs je Vladimir Ivanović, Crvenih Hrastova 6, Beograd, Republika Srbija, email: vrvlada@gmail.com.',
+          'Rukovalac podacima o ličnosti u vezi sa platformom domaćimarket.rs je Vladimir Ivanović, Beograd, Republika Srbija, email: kontakt@domacimarket.rs.',
           'Rukovalac određuje svrhe i načine obrade podataka o ličnosti u okviru funkcionisanja platforme.',
         ]),
         b.section('2', 'Status platforme', [
@@ -141,7 +141,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'da podnese pritužbu Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti',
         ]),
         b.text(
-            'Zahtev za ostvarivanje prava korisnik može poslati na email: vrvlada@gmail.com. Rukovalac će odgovoriti u rokovima i pod uslovima predviđenim važećim propisima Republike Srbije.'),
+            'Zahtev za ostvarivanje prava korisnik može poslati na email: kontakt@domacimarket.rs. Rukovalac će odgovoriti u rokovima i pod uslovima predviđenim važećim propisima Republike Srbije.'),
         b.section('18', 'Pritužba Povereniku', [
           'Ako korisnik smatra da se njegovi podaci obrađuju suprotno zakonu, ima pravo da podnese pritužbu Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti.',
           'Kontakt Poverenika: Bulevar kralja Aleksandra 15, Beograd, email: office@poverenik.rs, web: www.poverenik.rs.',
@@ -155,7 +155,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'Aktuelna verzija politike biće objavljena na platformi, uz naznačen datum stupanja na snagu.',
         ]),
         b.section('21', 'Kontakt', [
-          'Za sva pitanja u vezi sa ovom Politikom privatnosti i obradom podataka o ličnosti možete se obratiti na: Vladimir Ivanović, Crvenih Hrastova 6, Beograd, Republika Srbija, email: vrvlada@gmail.com.',
+          'Za sva pitanja u vezi sa ovom Politikom privatnosti i obradom podataka o ličnosti možete se obratiti na: Vladimir Ivanović, Beograd, Republika Srbija, email: kontakt@domacimarket.rs.',
         ]),
       ],
     );
