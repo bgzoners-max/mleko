@@ -23,7 +23,7 @@ class MyClassifiedAdsScreen extends StatefulWidget {
 
 class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
   late ClassifiedsService _service;
-  late Future<List<ClassifiedAdModel>> _adsFuture;
+  Future<List<ClassifiedAdModel>> _adsFuture = Future.value(const []);
   Future<ClassifiedSellerStatsModel>? _statsFuture;
 
   @override
@@ -39,6 +39,11 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
       setState(() {
         _adsFuture = _service.getUserAds(user.id);
         _statsFuture = _service.getSellerStats(user.id);
+      });
+    } else {
+      setState(() {
+        _adsFuture = Future.value(const []);
+        _statsFuture = null;
       });
     }
   }
