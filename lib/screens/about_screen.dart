@@ -174,7 +174,7 @@ class _AboutContent extends StatelessWidget {
                 runSpacing: 10,
                 children: [
                   _buildPillTag(context, Icons.verified_user_outlined, '100% Bez posrednika'),
-                  _buildPillTag(context, Icons.currency_exchange_rounded, 'Sav novac ide domaćinu'),
+                  _buildPillTag(context, Icons.payments_outlined, 'Sav novac ide domaćinu'),
                   _buildPillTag(context, Icons.campaign_outlined, '100% Besplatni oglasi'),
                 ],
               ),
@@ -206,7 +206,7 @@ class _AboutContent extends StatelessWidget {
                   flex: isWide ? 1 : 0,
                   child: _buildPillarCard(
                     context: context,
-                    icon: Icons.eco_rounded,
+                    icon: Icons.eco,
                     iconColor: const Color(0xFF2E7D32),
                     tagText: 'OD NJIVE DO TRPEZE',
                     title: 'Pijaca domaće hrane sa sela',
@@ -226,7 +226,7 @@ class _AboutContent extends StatelessWidget {
                   flex: isWide ? 1 : 0,
                   child: _buildPillarCard(
                     context: context,
-                    icon: Icons.storefront_rounded,
+                    icon: Icons.storefront_outlined,
                     iconColor: const Color(0xFFD97724),
                     tagText: '100% BESPLATNO I BEZ PROVIZIJE',
                     title: 'Nacionalni Mali Oglasi',
@@ -275,35 +275,35 @@ class _AboutContent extends StatelessWidget {
               const SizedBox(height: 18),
               _buildFeatureRow(
                 context,
-                Icons.explore_outlined,
+                Icons.map_outlined,
                 'Interaktivna mapa gazdinstava',
                 'Jednim klikom pronađite proizvođače u vašoj neposrednoj geografskoj blizini, pogledajte njihovu ponudu i dogovorite posetu gazdinstvu.',
               ),
               const Divider(height: 24),
               _buildFeatureRow(
                 context,
-                Icons.chat_bubble_outline_rounded,
+                Icons.chat_outlined,
                 'Bezbedan interni chat (Poruke)',
                 'Komunicirajte sa proizvođačima i prodavcima direktno u aplikaciji u realnom vremenu — dogovorite detalje isporuke bez preuranjenog deljenja ličnih podataka.',
               ),
               const Divider(height: 24),
               _buildFeatureRow(
                 context,
-                Icons.security_rounded,
+                Icons.shield_outlined,
                 'Zaštita privatnosti i protiv spama',
                 'Brojevi telefona i osetljivi podaci zaštićeni su od automatskih botova i scraping-a. Korisnik sam bira vidljivost svog broja telefona.',
               ),
               const Divider(height: 24),
               _buildFeatureRow(
                 context,
-                Icons.devices_rounded,
+                Icons.devices_outlined,
                 'Moderna PWA tehnologija',
                 'Domaći Market radi trenutno na svim uređajima (telefon, tablet, računar). Možete ga instalirati kao aplikaciju jednim klikom — bez trošenja memorije i bez App Store/Google Play registracija.',
               ),
               const Divider(height: 24),
               _buildFeatureRow(
                 context,
-                Icons.favorite_border_rounded,
+                Icons.favorite_outline,
                 'Praćenje omiljenih gazdinstava',
                 'Zaprati omiljena seoska domaćinstva kako bi među prvima saznao kada stignu novi proizvodi, sveže seosko mleko ili sezonsko voće.',
               ),
@@ -373,7 +373,7 @@ class _AboutContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Icon(
-                Icons.handshake_rounded,
+                Icons.handshake_outlined,
                 size: 36,
                 color: AmazonColors.amber,
               ),
@@ -568,7 +568,7 @@ class _AboutContent extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Icon(
-                      Icons.check_circle_outline_rounded,
+                      Icons.check_circle_outline,
                       size: 14,
                       color: iconColor,
                     ),
