@@ -319,6 +319,8 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
     double totalL = 0;
     double totalGkg = 0;
     double totalPieces = 0;
+    double totalVeza = 0;
+    double totalPak = 0;
 
     for (final e in _items) {
       final p = e.product;
@@ -331,6 +333,12 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
           break;
         case ProductModel.unitPiece:
           totalPieces += e.quantity;
+          break;
+        case ProductModel.unitVeza:
+          totalVeza += e.quantity;
+          break;
+        case ProductModel.unitPak:
+          totalPak += e.quantity;
           break;
         default:
           totalKg += e.quantity;
@@ -353,6 +361,14 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
     if (totalPieces > 0) {
       parts.add(ProductModel.formatQuantityWithUnit(
           totalPieces, ProductModel.unitPiece));
+    }
+    if (totalVeza > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(
+          totalVeza, ProductModel.unitVeza));
+    }
+    if (totalPak > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(
+          totalPak, ProductModel.unitPak));
     }
     if (parts.isEmpty) return '';
     return 'Ukupno količina: ${parts.join(' + ')}';

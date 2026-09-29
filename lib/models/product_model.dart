@@ -29,6 +29,8 @@ class ProductModel {
   static const String unitL = 'L';
   static const String unitG = 'g';
   static const String unitPiece = 'kom';
+  static const String unitVeza = 'veza';
+  static const String unitPak = 'pak';
 
   final String id;
   final String sellerId;
@@ -139,11 +141,17 @@ class ProductModel {
     if (unitType == unitPiece) {
       return '${pricePerKg.toStringAsFixed(0)} RSD/kom';
     }
+    if (unitType == unitVeza) {
+      return '${pricePerKg.toStringAsFixed(0)} RSD/veza';
+    }
+    if (unitType == unitPak) {
+      return '${pricePerKg.toStringAsFixed(0)} RSD/pak';
+    }
     // Za kg i g: cena je izražena po kilogramu
     return '${pricePerKg.toStringAsFixed(0)} RSD/kg';
   }
 
-  /// Za prikaz količine: "2 kg" ili "1.5 L" ili "750 ml"
+  /// Za prikaz količine: "2 kg" ili "100 g" ili "1.5 L" ili "750 ml"
   String formatQuantity(double value) {
     if (unitType == unitL) {
       if (value < 1 && value > 0) return '${(value * 1000).round()} ml';
@@ -156,7 +164,17 @@ class ProductModel {
     if (unitType == unitPiece) {
       return '${value.toStringAsFixed(0)} kom';
     }
-    // default: kg
+    if (unitType == unitVeza) {
+      return '${value.toStringAsFixed(0)} veza';
+    }
+    if (unitType == unitPak) {
+      return '${value.toStringAsFixed(0)} pak';
+    }
+    // default: kg (vrednosti manje od 1 kg se automatski prikazuju u gramima, npr. 0.1 -> 100 g)
+    if (value < 1 && value > 0) {
+      final grams = (value * 1000).round();
+      return '$grams g';
+    }
     return '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)} kg';
   }
 
@@ -168,6 +186,10 @@ class ProductModel {
         return 'g';
       case unitPiece:
         return 'kom';
+      case unitVeza:
+        return 'veza';
+      case unitPak:
+        return 'pak';
       default:
         return 'kg';
     }
@@ -207,6 +229,8 @@ class ProductModel {
       unitL => unitL,
       unitG => unitG,
       unitPiece => unitPiece,
+      unitVeza => unitVeza,
+      unitPak => unitPak,
       _ => unitKg,
     };
     final minOrder = (json['min_order_kg'] as num?)?.toDouble() ?? 1;
@@ -246,6 +270,30 @@ class ProductModel {
     );
   }
 
+  /// Parsira unos količine za kg: "0.1" / "0,1" → 0.1, "100g" / "100 g" → 0.1, "500g" → 0.5, "1.5 kg" → 1.5.
+  static double parseQuantityKg(String text) {
+    var raw = text.trim().toLowerCase();
+    if (raw.isEmpty) return 0;
+
+    final isGrams = (raw.endsWith('grama') ||
+            raw.endsWith('gram') ||
+            raw.endsWith('gr') ||
+            raw.endsWith('g')) &&
+        !raw.contains('kg');
+
+    if (isGrams) {
+      final numPart = raw.replaceAll(RegExp(r'[^0-9.,]'), '');
+      final v = double.tryParse(numPart.replaceAll(',', '.'));
+      if (v != null && v > 0) return v / 1000.0;
+    }
+
+    raw = raw.replaceAll('kg', '').replaceAll(',', '.').trim();
+    final v = double.tryParse(raw);
+    if (v == null || v <= 0) return 0;
+
+    return v;
+  }
+
   /// Parsira unos količine za L: "750" → 0.75, "0.75" → 0.75, "1" → 1. Brojevi >= 100 tretiraju se kao ml.
   static double parseQuantityL(String text) {
     final v = double.tryParse(text.replaceAll(',', '.').trim());
@@ -267,7 +315,17 @@ class ProductModel {
     if (unitType == unitPiece) {
       return '${value.toStringAsFixed(0)} kom';
     }
-    // default: kg
+    if (unitType == unitVeza) {
+      return '${value.toStringAsFixed(0)} veza';
+    }
+    if (unitType == unitPak) {
+      return '${value.toStringAsFixed(0)} pak';
+    }
+    // default: kg (vrednosti manje od 1 kg se prikazuju u gramima, npr. 0.1 -> 100 g)
+    if (value < 1 && value > 0) {
+      final grams = (value * 1000).round();
+      return '$grams g';
+    }
     return '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)} kg';
   }
 

@@ -305,14 +305,20 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final price = NumberInputUtils.parseDecimal(_priceController.text);
     final minOrder = _unitType == ProductModel.unitL
         ? ProductModel.parseQuantityL(_minOrderController.text)
-        : (NumberInputUtils.parseDecimal(_minOrderController.text) ?? 1.0);
+        : (_unitType == ProductModel.unitKg
+            ? ProductModel.parseQuantityKg(_minOrderController.text)
+            : (NumberInputUtils.parseDecimal(_minOrderController.text) ?? 1.0));
     final available = _unitType == ProductModel.unitL
         ? ProductModel.parseQuantityL(_availableController.text)
-        : (NumberInputUtils.parseDecimal(_availableController.text) ?? 0.0);
+        : (_unitType == ProductModel.unitKg
+            ? ProductModel.parseQuantityKg(_availableController.text)
+            : (NumberInputUtils.parseDecimal(_availableController.text) ?? 0.0));
     final parsedOrderStep = _orderStepController.text.trim().isNotEmpty
         ? (_unitType == ProductModel.unitL
             ? ProductModel.parseQuantityL(_orderStepController.text)
-            : NumberInputUtils.parseDecimal(_orderStepController.text))
+            : (_unitType == ProductModel.unitKg
+                ? ProductModel.parseQuantityKg(_orderStepController.text)
+                : NumberInputUtils.parseDecimal(_orderStepController.text)))
         : null;
 
     final resolvedStep = (parsedOrderStep != null && parsedOrderStep > 0)
@@ -450,11 +456,30 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       ProductModel.unitL => 1.0,
       ProductModel.unitG => 0.05,
       ProductModel.unitPiece => 1.0,
+      ProductModel.unitVeza => 1.0,
+      ProductModel.unitPak => 1.0,
       _ => suggestedOrderStepKg(
           category: category, name: name, minOrderKg: minOrderKg),
     };
 
     return math.min(defaultStepByUnit, minOrderKg);
+  }
+
+  String? _formatQuantityHint(String text, String unitType) {
+    final raw = text.trim();
+    if (raw.isEmpty) return null;
+    if (unitType == ProductModel.unitKg) {
+      final qty = ProductModel.parseQuantityKg(raw);
+      if (qty > 0) {
+        return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitKg)}';
+      }
+    } else if (unitType == ProductModel.unitL) {
+      final qty = ProductModel.parseQuantityL(raw);
+      if (qty > 0) {
+        return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitL)}';
+      }
+    }
+    return null;
   }
 
   @override
@@ -521,13 +546,19 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       items: const [
                         DropdownMenuItem(
                             value: ProductModel.unitKg,
-                            child: Text('Kilogrami (kg)')),
+                            child: Text('Kilogrami / grami (kg / g)')),
                         DropdownMenuItem(
                             value: ProductModel.unitL,
-                            child: Text('Litri / ml')),
+                            child: Text('Litri / mililitri (L / ml)')),
                         DropdownMenuItem(
                             value: ProductModel.unitPiece,
                             child: Text('Komadi (kom)')),
+                        DropdownMenuItem(
+                            value: ProductModel.unitVeza,
+                            child: Text('Veza / vezica (veza)')),
+                        DropdownMenuItem(
+                            value: ProductModel.unitPak,
+                            child: Text('Pakovanje (pak)')),
                       ],
                       onChanged: (v) =>
                           setState(() => _unitType = v ?? ProductModel.unitKg),
@@ -543,11 +574,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: _unitType == ProductModel.unitL
-                            ? 'Cena po litru (RSD) *'
-                            : _unitType == ProductModel.unitPiece
-                                ? 'Cena po komadu (RSD) *'
-                                : 'Cena po kg (RSD) *',
+                        labelText: switch (_unitType) {
+                          ProductModel.unitL => 'Cena po litru (RSD) *',
+                          ProductModel.unitPiece => 'Cena po komadu (RSD) *',
+                          ProductModel.unitVeza => 'Cena po vezi (RSD) *',
+                          ProductModel.unitPak => 'Cena po pakovanju (RSD) *',
+                          _ => 'Cena po kg (RSD) *',
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -555,12 +588,22 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       controller: _minOrderController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        labelText: _unitType == ProductModel.unitL
-                            ? 'Minimalna porudžbina (L ili ml, npr. 0.75 ili 750) *'
-                            : _unitType == ProductModel.unitPiece
-                                ? 'Minimalna porudžbina (komada, npr. 10) *'
-                                : 'Minimalna porudžbina (kg) *',
+                        labelText: switch (_unitType) {
+                          ProductModel.unitL =>
+                            'Minimalna porudžbina (L ili ml, npr. 0.75 ili 750) *',
+                          ProductModel.unitPiece =>
+                            'Minimalna porudžbina (komada, npr. 10) *',
+                          ProductModel.unitVeza =>
+                            'Minimalna porudžbina (veza, npr. 1 ili 5) *',
+                          ProductModel.unitPak =>
+                            'Minimalna porudžbina (pakovanja, npr. 1 ili 2) *',
+                          _ =>
+                            'Minimalna porudžbina (kg ili g, npr. 0.1 ili 100g) *',
+                        },
+                        helperText: _formatQuantityHint(
+                            _minOrderController.text, _unitType),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -568,13 +611,22 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       controller: _orderStepController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        labelText: _unitType == ProductModel.unitL
-                            ? 'Korak porudžbine (L ili ml, npr. 0.5 ili 500) - opciono'
-                            : _unitType == ProductModel.unitPiece
-                                ? 'Korak porudžbine (komada, npr. 1 ili 5) - opciono'
-                                : 'Korak porudžbine (kg, npr. 0.1 ili 0.5) - opciono',
-                        helperText:
+                        labelText: switch (_unitType) {
+                          ProductModel.unitL =>
+                            'Korak porudžbine (L ili ml, npr. 0.5 ili 500) - opciono',
+                          ProductModel.unitPiece =>
+                            'Korak porudžbine (komada, npr. 1 ili 5) - opciono',
+                          ProductModel.unitVeza =>
+                            'Korak porudžbine (veza, npr. 1 ili 2) - opciono',
+                          ProductModel.unitPak =>
+                            'Korak porudžbine (pakovanja, npr. 1 ili 2) - opciono',
+                          _ =>
+                            'Korak porudžbine (kg ili g, npr. 0.1 ili 100g) - opciono',
+                        },
+                        helperText: _formatQuantityHint(
+                                _orderStepController.text, _unitType) ??
                             'Količina za koju se porudžbina menja (mora biti ≤ minimalnoj količini)',
                       ),
                     ),
@@ -583,12 +635,17 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       controller: _availableController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
-                        labelText: _unitType == ProductModel.unitL
-                            ? 'Dostupna količina (L ili ml)'
-                            : _unitType == ProductModel.unitPiece
-                                ? 'Dostupna količina (komada)'
-                                : 'Dostupna količina (kg)',
+                        labelText: switch (_unitType) {
+                          ProductModel.unitL => 'Dostupna količina (L ili ml)',
+                          ProductModel.unitPiece => 'Dostupna količina (komada)',
+                          ProductModel.unitVeza => 'Dostupna količina (veza)',
+                          ProductModel.unitPak => 'Dostupna količina (pakovanja)',
+                          _ => 'Dostupna količina (kg)',
+                        },
+                        helperText: _formatQuantityHint(
+                            _availableController.text, _unitType),
                       ),
                     ),
                     const SizedBox(height: 16),

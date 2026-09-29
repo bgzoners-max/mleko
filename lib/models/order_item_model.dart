@@ -18,9 +18,9 @@ class OrderItemModel {
 
   double get totalPrice => unitPrice * quantityKg;
 
-  /// Ukupna količina po jedinicama za prikaz (npr. "7.5 kg + 3 L + 650 g + 30 kom").
+  /// Ukupna količina po jedinicama za prikaz (npr. "7.5 kg + 3 L + 650 g + 30 kom + 2 veza + 1 pak").
   static String totalQuantityLabel(List<OrderItemModel> items) {
-    double totalKg = 0, totalL = 0, totalGkg = 0, totalPieces = 0;
+    double totalKg = 0, totalL = 0, totalGkg = 0, totalPieces = 0, totalVeza = 0, totalPak = 0;
     for (final item in items) {
       switch (item.unitType) {
         case ProductModel.unitL:
@@ -32,6 +32,12 @@ class OrderItemModel {
         case ProductModel.unitPiece:
           totalPieces += item.quantityKg;
           break;
+        case ProductModel.unitVeza:
+          totalVeza += item.quantityKg;
+          break;
+        case ProductModel.unitPak:
+          totalPak += item.quantityKg;
+          break;
         default:
           totalKg += item.quantityKg;
       }
@@ -41,6 +47,8 @@ class OrderItemModel {
     if (totalL > 0) parts.add(ProductModel.formatQuantityWithUnit(totalL, ProductModel.unitL));
     if (totalGkg > 0) parts.add(ProductModel.formatQuantityWithUnit(totalGkg, ProductModel.unitG));
     if (totalPieces > 0) parts.add(ProductModel.formatQuantityWithUnit(totalPieces, ProductModel.unitPiece));
+    if (totalVeza > 0) parts.add(ProductModel.formatQuantityWithUnit(totalVeza, ProductModel.unitVeza));
+    if (totalPak > 0) parts.add(ProductModel.formatQuantityWithUnit(totalPak, ProductModel.unitPak));
     if (parts.isEmpty) return '';
     return 'Ukupno količina: ${parts.join(' + ')}';
   }
