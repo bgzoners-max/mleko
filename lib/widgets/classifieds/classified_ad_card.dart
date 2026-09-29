@@ -116,7 +116,7 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
                                 imageUrl: imageUrl,
                                 fit: BoxFit.cover,
                                 placeholder: Container(
-                                  color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+                                  color: isDark ? const Color(0xFF1B241E) : const Color(0xFFF3F3F3),
                                   child: const Center(
                                     child: SizedBox(
                                       width: 20,
@@ -126,7 +126,7 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
                                   ),
                                 ),
                                 errorWidget: Container(
-                                  color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+                                  color: isDark ? const Color(0xFF1B241E) : const Color(0xFFF3F3F3),
                                   child: Center(
                                     child: Icon(
                                       Icons.broken_image_outlined,
@@ -137,7 +137,7 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
                                 ),
                               )
                             : Container(
-                                color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF3F3F3),
+                                color: isDark ? const Color(0xFF1B241E) : const Color(0xFFF3F3F3),
                                 child: Center(
                                   child: Icon(
                                     Icons.inventory_2_outlined,

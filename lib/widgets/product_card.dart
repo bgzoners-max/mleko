@@ -2,11 +2,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../constants/amazon_theme.dart';
 import '../core/constants.dart';
+import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
 import 'app_network_image.dart';
+import 'rustic_image_placeholder.dart';
 
 class ProductCard extends StatefulWidget {
   final ProductModel product;
@@ -32,6 +33,7 @@ class ProductCard extends StatefulWidget {
 
 class _ProductCardState extends State<ProductCard> {
   bool _isHovered = false;
+  bool _isPressed = false;
 
   bool get _isNew {
     final diff = DateTime.now().difference(widget.product.createdAt).inDays;
@@ -49,21 +51,12 @@ class _ProductCardState extends State<ProductCard> {
         !widget.product.imageUrls.first.contains('placehold.co');
 
     final imageChild = !hasValidImage
-        ? Container(
-            color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF0EDE5),
-            child: Center(
-              child: Icon(
-                Icons.inventory_2_outlined,
-                size: 32,
-                color: isDark ? Colors.white38 : AmazonColors.textSecondary.withValues(alpha: 0.5),
-              ),
-            ),
-          )
+        ? const RusticImagePlaceholder()
         : AppNetworkImage.thumbnail(
             imageUrl: widget.product.imageUrls.first,
             fit: BoxFit.cover,
             placeholder: Container(
-              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF0EDE5),
+              color: isDark ? const Color(0xFF1B241E) : const Color(0xFFF0EDE5),
               child: const Center(
                 child: SizedBox(
                   width: 20,
@@ -72,16 +65,7 @@ class _ProductCardState extends State<ProductCard> {
                 ),
               ),
             ),
-            errorWidget: Container(
-              color: isDark ? const Color(0xFF1E2632) : const Color(0xFFF0EDE5),
-              child: Center(
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  size: 28,
-                  color: isDark ? Colors.white38 : AmazonColors.textSecondary.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
+            errorWidget: const RusticImagePlaceholder(),
           );
 
     final image = Stack(
@@ -118,8 +102,8 @@ class _ProductCardState extends State<ProductCard> {
         ),
         // Badges top-left
         Positioned(
-          top: 7,
-          left: 7,
+          top: 8,
+          left: 8,
           child: Wrap(
             spacing: 4,
             runSpacing: 4,
@@ -146,8 +130,8 @@ class _ProductCardState extends State<ProductCard> {
         // Favorite button top-right
         if (widget.onFavoriteToggle != null)
           Positioned(
-            top: 7,
-            right: 7,
+            top: 8,
+            right: 8,
             child: Material(
               color: Colors.transparent,
               child: Container(
@@ -155,7 +139,7 @@ class _ProductCardState extends State<ProductCard> {
                 height: 32,
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF1E2632).withValues(alpha: 0.85)
+                      ? const Color(0xFF1B241E).withValues(alpha: 0.85)
                       : Colors.white.withValues(alpha: 0.92),
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -196,7 +180,7 @@ class _ProductCardState extends State<ProductCard> {
     );
 
     final textContent = Padding(
-      padding: const EdgeInsets.fromLTRB(9, 8, 9, 9),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -205,7 +189,7 @@ class _ProductCardState extends State<ProductCard> {
           Text(
             widget.product.category.toUpperCase(),
             style: const TextStyle(
-              fontSize: 9.5,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
               color: AmazonColors.link,
               letterSpacing: 0.5,
@@ -213,7 +197,7 @@ class _ProductCardState extends State<ProductCard> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
 
           // 2. Naziv proizvoda + verifikovan nalog
           Row(
@@ -264,16 +248,16 @@ class _ProductCardState extends State<ProductCard> {
                           TextSpan(
                             text: priceNum,
                             style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.3,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
                               color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
                             ),
                           ),
                           TextSpan(
                             text: ' RSD',
                             style: TextStyle(
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
                             ),
@@ -333,7 +317,7 @@ class _ProductCardState extends State<ProductCard> {
                     ? AmazonColors.darkTextSecondary
                     : AmazonColors.textSecondary,
               ),
-              const SizedBox(width: 2.5),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   widget.product.location,
@@ -349,17 +333,17 @@ class _ProductCardState extends State<ProductCard> {
               ),
               const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isDark
                       ? AmazonColors.darkBorder.withValues(alpha: 0.5)
                       : const Color(0xFFF0ECE1),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   'min ${widget.product.minOrderFormatted}',
                   style: TextStyle(
-                    fontSize: 9.5,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: isDark
                         ? AmazonColors.darkTextSecondary
@@ -390,7 +374,7 @@ class _ProductCardState extends State<ProductCard> {
                     () => context.push('/product/${widget.product.id}')),
                 child: const Text(
                   'Pogledaj ponudu',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -405,7 +389,7 @@ class _ProductCardState extends State<ProductCard> {
       transform: Matrix4.translationValues(0, _isHovered ? -4.0 : 0, 0),
       decoration: BoxDecoration(
         color: cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppDesign.radiusL),
         border: Border.all(
           color: borderColor,
           width: _isHovered ? 1.2 : 1.0,
@@ -421,6 +405,9 @@ class _ProductCardState extends State<ProductCard> {
         child: InkWell(
           onTap: () =>
               withHaptic(() => context.push('/product/${widget.product.id}')),
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.max,
@@ -436,11 +423,18 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final card = LayoutBuilder(
-      builder: (context, constraints) {
-        final gridMode = constraints.maxHeight.isFinite;
-        return _buildCard(context, gridMode);
-      },
+    final card = AnimatedScale(
+      // Blagi "stisak" kartice pri pritisku — povratna informacija da je tap
+      // registrovan (na webu se kombinuje sa hover lift-om iz _buildCard).
+      scale: _isPressed ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final gridMode = constraints.maxHeight.isFinite;
+          return _buildCard(context, gridMode);
+        },
+      ),
     );
 
     if (kIsWeb) {
@@ -469,7 +463,7 @@ class _AmazonBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(6),
@@ -484,7 +478,7 @@ class _AmazonBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 9,
+          fontSize: 10,
           fontWeight: FontWeight.w800,
           color: textColor,
           letterSpacing: 0.5,

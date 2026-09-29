@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../constants/amazon_theme.dart';
 import '../../core/constants.dart';
+import '../../core/design_system.dart';
 import '../../core/responsive.dart';
 import '../../models/app_error.dart';
 import '../../models/home_products_data.dart';
@@ -113,6 +113,11 @@ class HomeNarrowProductsSliver extends StatelessWidget {
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
+        // Prvi proizvod izlazi iz grida kao istaknuta "hero" kartica;
+        // ostatak (max 5) ostaje u mreži — ukupan broj prikazanih je i dalje 6.
+        final remaining = displayList.length - 1;
+        final gridCount = remaining > 5 ? 5 : remaining;
+
         return SliverMainAxisGroup(
           slivers: [
             SliverToBoxAdapter(
@@ -127,19 +132,42 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                   newProducts.isNotEmpty
                       ? 'Najnoviji proizvodi'
                       : 'Poslednje dodato',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: isDark
+                  style: AppFonts.display(
+                    isDark
                         ? AmazonColors.darkTextPrimary
                         : AmazonColors.textPrimary,
                   ),
                 ),
               ),
             ),
+            // ── Istaknuti (prvi) proizvod — puna širina, izvan uniformnog grida.
+            // Uvodi asimetriju i vizuelni ritam; koristi postojeći "list" mod
+            // ProductCard kartice (slika + sadržaj + dugme).
             SliverPadding(
               padding: EdgeInsets.symmetric(
                   horizontal: Breakpoints.horizontalPadding(context)),
+              sliver: SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: HomeProductItem(
+                      product: displayList.first,
+                      salesCount: salesCounts[displayList.first.id] ?? 0,
+                      canFavorite: canFavorite,
+                      userId: user?.id,
+                      avgRating: ratings[displayList.first.id]?.avg,
+                      reviewCount: ratings[displayList.first.id]?.count,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                  Breakpoints.horizontalPadding(context),
+                  12,
+                  Breakpoints.horizontalPadding(context),
+                  0),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: isTabletLayout ? (isLargeTablet ? 3 : 2) : 2,
@@ -150,7 +178,8 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
-                    final product = displayList[i];
+                    // Indeks i+1 — prvi proizvod je prikazan kao istaknuta kartica.
+                    final product = displayList[i + 1];
                     final rating = ratings[product.id];
                     return HomeProductItem(
                       product: product,
@@ -161,7 +190,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                       reviewCount: rating?.count,
                     );
                   },
-                  childCount: displayList.take(6).length,
+                  childCount: gridCount,
                 ),
               ),
             ),

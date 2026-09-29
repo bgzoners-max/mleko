@@ -5,8 +5,8 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../constants/amazon_theme.dart';
 import '../core/constants.dart';
+import '../core/design_system.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import '../models/home_products_data.dart';
@@ -484,10 +484,8 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Text(
           'Kategorije hrane',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
-            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+          style: AppFonts.display(
+            isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
           ),
         ),
         TextButton(

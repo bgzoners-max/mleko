@@ -151,11 +151,17 @@ class ProductModel {
     return '${pricePerKg.toStringAsFixed(0)} RSD/kg';
   }
 
-  /// Za prikaz količine: "2 kg" ili "100 g" ili "1.5 L" ili "750 ml"
+  /// Srpska konvencija decimala: zarez umesto tačke ("1,5" umesto "1.5").
+  static String _formatDecimal(double value) {
+    final decimals = value.truncateToDouble() == value ? 0 : 1;
+    return value.toStringAsFixed(decimals).replaceAll('.', ',');
+  }
+
+  /// Za prikaz količine: "2 kg" ili "100 g" ili "1,5 L" ili "750 ml"
   String formatQuantity(double value) {
     if (unitType == unitL) {
       if (value < 1 && value > 0) return '${(value * 1000).round()} ml';
-      return '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)} L';
+      return '${_formatDecimal(value)} L';
     }
     if (unitType == unitG) {
       final grams = (value * 1000).round();
@@ -175,7 +181,7 @@ class ProductModel {
       final grams = (value * 1000).round();
       return '$grams g';
     }
-    return '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)} kg';
+    return '${_formatDecimal(value)} kg';
   }
 
   String get quantityUnitLabel {
@@ -306,7 +312,7 @@ class ProductModel {
   static String formatQuantityWithUnit(double value, String unitType) {
     if (unitType == unitL) {
       if (value < 1 && value > 0) return '${(value * 1000).round()} ml';
-      return '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)} L';
+      return '${_formatDecimal(value)} L';
     }
     if (unitType == unitG) {
       final grams = (value * 1000).round();
@@ -326,7 +332,7 @@ class ProductModel {
       final grams = (value * 1000).round();
       return '$grams g';
     }
-    return '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1)} kg';
+    return '${_formatDecimal(value)} kg';
   }
 
   /// Parsira unos količine za g: "100" → 0.1, "250" → 0.25, "1000" → 1.0.

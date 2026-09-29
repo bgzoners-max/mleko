@@ -157,7 +157,7 @@ void main() {
       );
 
       final label = OrderItemModel.totalQuantityLabel([item1, item2, item3, item4]);
-      expect(label, contains('2.5 kg'));
+      expect(label, contains('2,5 kg'));
       expect(label, contains('3 L'));
       expect(label, contains('200 g'));
       expect(label, contains('30 kom'));

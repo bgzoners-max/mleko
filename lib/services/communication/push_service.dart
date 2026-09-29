@@ -116,7 +116,7 @@ void _showLocalNotification({
         ticker: 'Nova obaveštenja',
         styleInformation: const BigTextStyleInformation(''),
         icon: 'ic_notification',
-        color: const Color(0xFF1B5E20),
+        color: const Color(0xFF245938),
       ),
       iOS: const DarwinNotificationDetails(
         presentAlert: true,

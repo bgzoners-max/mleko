@@ -169,7 +169,7 @@ class _PriceAndAvailability extends StatelessWidget {
         : (isDark ? const Color(0xFF3A2424) : const Color(0xFFFFEBEE));
 
     final badgeBorderColor = product.isAvailable
-        ? (isDark ? const Color(0xFF2E7D32) : const Color(0xFFA5D6A7))
+        ? (isDark ? const Color(0xFF2E7D32) : const Color(0xFF245938))
         : (isDark ? const Color(0xFFC62828) : const Color(0xFFEF9A9A));
 
     final badgeTextColor = product.isAvailable

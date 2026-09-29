@@ -10,7 +10,7 @@ Color getClassifiedCategoryColor(String name) {
     return const Color(0xFF0288D1); // Vozila - Plava
   }
   if (lower.contains('nekretnin') || lower.contains('stan') || lower.contains('kuć')) {
-    return const Color(0xFF1B5E20); // Nekretnine - Šumska zelena
+    return const Color(0xFF245938); // Nekretnine - Šumska zelena
   }
   if (lower.contains('poljoprivred') || lower.contains('traktor')) {
     return const Color(0xFF2E7D32); // Poljoprivreda - Sveža poljoprivredna zelena

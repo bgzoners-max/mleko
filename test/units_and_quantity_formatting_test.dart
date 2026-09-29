@@ -31,7 +31,7 @@ void main() {
 
     test('formatQuantity formats quantities >= 1 kg as kg', () {
       expect(productKg.formatQuantity(1.0), '1 kg');
-      expect(productKg.formatQuantity(1.5), '1.5 kg');
+      expect(productKg.formatQuantity(1.5), '1,5 kg');
       expect(productKg.formatQuantity(2.0), '2 kg');
     });
 
@@ -39,7 +39,7 @@ void main() {
       expect(ProductModel.formatQuantityWithUnit(0.1, ProductModel.unitKg), '100 g');
       expect(ProductModel.formatQuantityWithUnit(0.5, ProductModel.unitKg), '500 g');
       expect(ProductModel.formatQuantityWithUnit(1.0, ProductModel.unitKg), '1 kg');
-      expect(ProductModel.formatQuantityWithUnit(2.5, ProductModel.unitKg), '2.5 kg');
+      expect(ProductModel.formatQuantityWithUnit(2.5, ProductModel.unitKg), '2,5 kg');
     });
   });
 

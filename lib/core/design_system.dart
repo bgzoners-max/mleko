@@ -1,6 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 export '../constants/amazon_theme.dart' show AmazonColors;
+
+/// Tipografski tokeni: serif (Bitter) za naslove, sans (Roboto) za tekst.
+///
+/// Bitter je topli, zanatski slab-serif koji "Domaćem Marketu" daje karakter
+/// nasleđa i sela, uz potpunu podršku za srpske dijakritike (č, ć, š, ž, đ).
+/// Roboto ostaje radni konj za sitne, guste tekstove gde je čitljivost
+/// kritična (cene, metapodaci, forme, dugmad).
+class AppFonts {
+  AppFonts._();
+
+  /// Naslov sekcije ili ekrana — topli zanatski serif (Bitter).
+  static TextStyle display(
+    Color color, {
+    double fontSize = 17,
+    FontWeight fontWeight = FontWeight.w700,
+    double height = 1.3,
+    double letterSpacing = -0.1,
+  }) {
+    return GoogleFonts.bitter(
+      textStyle: TextStyle(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: height,
+        letterSpacing: letterSpacing,
+        color: color,
+      ),
+    );
+  }
+}
 
 /// Centralizovan dizajn sistem sa tokenima za razmake, radijuse, veličine i boje.
 /// Služi kao jedinstven izvor istine (SSOT) za UI konzistentnost.

@@ -102,38 +102,45 @@ IconButtonThemeData _buildIconButtonTheme({
   );
 }
 
-/// Roboto – klasičan, prepoznatljiv i visoko čitljiv font za ceo sistem.
+/// Tipografski sistem: Bitter (topli zanatski serif) za naslove —
+/// Display / Headline / Title role nose identitet "nasleđa i sela",
+/// dok Roboto ostaje sans podloga za Body / Label (čitljivost na
+/// malim veličinama: cene, forme, dugmad, metapodaci).
 TextTheme _buildTextTheme(TextTheme base, Brightness brightness) {
   final roboto = GoogleFonts.robotoTextTheme(base);
+  final bitter = GoogleFonts.bitterTextTheme(base);
   return roboto.copyWith(
-    // Display / Headline — Roboto
-    displayLarge: GoogleFonts.roboto(textStyle: roboto.displayLarge)
-        .copyWith(fontSize: 26, fontWeight: FontWeight.w700, height: 1.25),
-    displayMedium: GoogleFonts.roboto(textStyle: roboto.displayMedium)
-        .copyWith(fontSize: 22, fontWeight: FontWeight.w700, height: 1.25),
-    displaySmall: GoogleFonts.roboto(textStyle: roboto.displaySmall)
-        .copyWith(fontSize: 20, fontWeight: FontWeight.w600, height: 1.25),
-    headlineLarge: GoogleFonts.roboto(textStyle: roboto.headlineLarge)
-        .copyWith(fontSize: 18, fontWeight: FontWeight.w600, height: 1.25),
-    headlineMedium: GoogleFonts.roboto(textStyle: roboto.headlineMedium)
-        .copyWith(fontSize: 16, fontWeight: FontWeight.w600, height: 1.25),
-    headlineSmall: GoogleFonts.roboto(textStyle: roboto.headlineSmall)
-        .copyWith(fontSize: 15, fontWeight: FontWeight.w600, height: 1.25),
-    // Title — Roboto
-    titleLarge: roboto.titleLarge?.copyWith(
+    // Display / Headline — Bitter (karakter i izražaj)
+    displayLarge: GoogleFonts.bitter(textStyle: bitter.displayLarge)
+        .copyWith(fontSize: 26, fontWeight: FontWeight.w700, height: 1.2, letterSpacing: -0.2),
+    displayMedium: GoogleFonts.bitter(textStyle: bitter.displayMedium)
+        .copyWith(fontSize: 22, fontWeight: FontWeight.w700, height: 1.2, letterSpacing: -0.2),
+    displaySmall: GoogleFonts.bitter(textStyle: bitter.displaySmall)
+        .copyWith(fontSize: 20, fontWeight: FontWeight.w600, height: 1.25, letterSpacing: -0.1),
+    headlineLarge: GoogleFonts.bitter(textStyle: bitter.headlineLarge)
+        .copyWith(fontSize: 18, fontWeight: FontWeight.w700, height: 1.25),
+    headlineMedium: GoogleFonts.bitter(textStyle: bitter.headlineMedium)
+        .copyWith(fontSize: 16, fontWeight: FontWeight.w700, height: 1.25),
+    headlineSmall: GoogleFonts.bitter(textStyle: bitter.headlineSmall)
+        .copyWith(fontSize: 15, fontWeight: FontWeight.w700, height: 1.3),
+    // Title — Bitter (serif naslovi dijaloga, sekcija i ekrana)
+    titleLarge: GoogleFonts.bitter(textStyle: bitter.titleLarge)
+        .copyWith(
       fontSize: 18, fontWeight: FontWeight.w700, height: 1.25,
     ),
-    titleMedium: roboto.titleMedium?.copyWith(
-      fontSize: 15, fontWeight: FontWeight.w600, height: 1.25,
+    titleMedium: GoogleFonts.bitter(textStyle: bitter.titleMedium)
+        .copyWith(
+      fontSize: 15, fontWeight: FontWeight.w700, height: 1.3,
     ),
-    titleSmall: roboto.titleSmall?.copyWith(
-      fontSize: 13, fontWeight: FontWeight.w600, height: 1.25,
+    titleSmall: GoogleFonts.bitter(textStyle: bitter.titleSmall)
+        .copyWith(
+      fontSize: 13, fontWeight: FontWeight.w600, height: 1.3,
     ),
-    // Body — Roboto
+    // Body — Roboto (gust, čitljiv sadržaj)
     bodyLarge: roboto.bodyLarge?.copyWith(fontSize: 15, height: 1.4),
     bodyMedium: roboto.bodyMedium?.copyWith(fontSize: 13, height: 1.4),
     bodySmall: roboto.bodySmall?.copyWith(fontSize: 11, height: 1.3),
-    // Label — Roboto
+    // Label — Roboto (dugmad, chipovi, metapodaci)
     labelLarge: roboto.labelLarge?.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
     labelMedium: roboto.labelMedium?.copyWith(fontSize: 11),
     labelSmall: roboto.labelSmall?.copyWith(fontSize: 10, height: 1.2),
@@ -162,32 +169,32 @@ ThemeData _buildBaseTheme({required bool compact}) {
     ),
     colorScheme: const ColorScheme(
       brightness: Brightness.light,
-      primary: Color(0xFF1B5E20), // tamnija, jači kontrast
+      primary: Color(0xFF245938), // Topla šumska zelena (brend: AmazonColors.link)
       onPrimary: Colors.white,
-      secondary: Color(0xFF689F38), // Malo zasićenija zelena
+      secondary: Color(0xFF2E7D32), // Prirodna livadska zelena (brend: AmazonColors.green)
       onSecondary: Colors.white,
       error: Color(0xFFD32F2F),
       onError: Colors.white,
       surface: Colors.white,
-      onSurface: Color(0xFF1A1C1E), // Skoro crna za bolji kontrast
+      onSurface: Color(0xFF1B201C), // Topla ugljena (brend: AmazonColors.textPrimary)
       surfaceContainerHighest: Color(0xFFF1F4F1), // Veoma svetla zelena/siva
-      onSurfaceVariant: Color(0xFF42474E),
+      onSurfaceVariant: Color(0xFF4A554D),
       outline: Color(0xFF72777F),
       shadow: Color(0xFF000000),
       inverseSurface: Color(0xFF2F3033),
       onInverseSurface: Color(0xFFF1F0F4),
       tertiary: Color(0xFF386567),
       onTertiary: Colors.white,
-      primaryContainer: Color(0xFF388E3C),
+      primaryContainer: Color(0xFF386B41),
       onPrimaryContainer: Colors.white,
-      secondaryContainer: Color(0xFFDCEDC8),
-      onSecondaryContainer: Color(0xFF1B5E20),
+      secondaryContainer: Color(0xFFE4E9D6),
+      onSecondaryContainer: Color(0xFF245938),
     ),
     appBarTheme: const AppBarTheme(
       centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 2,
-      backgroundColor: Color(0xFF1B5E20),
+      backgroundColor: Color(0xFF1E3424), // Duboki šumski bor (brend: AmazonColors.navNavy)
       foregroundColor: Colors.white,
       titleTextStyle: TextStyle(
         fontSize: 20,
@@ -206,7 +213,7 @@ ThemeData _buildBaseTheme({required bool compact}) {
       touch: touch,
       buttonPaddingH: buttonPaddingH,
       buttonPaddingV: buttonPaddingV,
-      backgroundColor: const Color(0xFF1B5E20),
+      backgroundColor: const Color(0xFF245938),
       foregroundColor: Colors.white,
       borderRadius: 18,
     ),
@@ -214,14 +221,14 @@ ThemeData _buildBaseTheme({required bool compact}) {
       touch: touch,
       buttonPaddingH: buttonPaddingH,
       buttonPaddingV: buttonPaddingV,
-      foregroundColor: const Color(0xFF1B5E20),
+      foregroundColor: const Color(0xFF245938),
     ),
     outlinedButtonTheme: _buildOutlinedButtonTheme(
       touch: touch,
       buttonPaddingH: buttonPaddingH,
       buttonPaddingV: buttonPaddingV,
-      borderColor: const Color(0xFF1B5E20),
-      foregroundColor: const Color(0xFF1B5E20),
+      borderColor: const Color(0xFF245938),
+      foregroundColor: const Color(0xFF245938),
     ),
     iconButtonTheme: _buildIconButtonTheme(
       touch: touch,
@@ -250,7 +257,7 @@ ThemeData _buildBaseTheme({required bool compact}) {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(
-          color: Color(0xFF1B5E20),
+          color: Color(0xFF245938),
           width: 2.0,
         ),
       ),
@@ -381,7 +388,7 @@ ThemeData buildAppTheme({bool compact = false}) {
     appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
-      backgroundColor: const Color(0xFF1B5E20),
+      backgroundColor: const Color(0xFF1E3424), // Duboki šumski bor (brend)
       foregroundColor: Colors.white,
       titleTextStyle: GoogleFonts.roboto(
         fontSize: 17,
@@ -457,8 +464,8 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
     useMaterial3: true,
     brightness: Brightness.dark,
     visualDensity: visualDensity,
-    scaffoldBackgroundColor: const Color(0xFF121212),
-    canvasColor: const Color(0xFF1E1E1E),
+    scaffoldBackgroundColor: const Color(0xFF121714),
+    canvasColor: const Color(0xFF1B241E),
     textTheme: _buildTextTheme(
       ThemeData.dark().textTheme,
       Brightness.dark,
@@ -468,10 +475,10 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
     ),
     colorScheme: const ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF99D19C), // Lakša zelena za tamni režim
-      onPrimary: Color(0xFF003916),
-      secondary: Color(0xFFB9F6CA),
-      onSecondary: Color(0xFF003916),
+      primary: Color(0xFFE89844), // Topli medeni ćilibar (brend: AmazonColors.amberLight)
+      onPrimary: Color(0xFF142419),
+      secondary: Color(0xFFE89844),
+      onSecondary: Color(0xFF142419),
       error: Color(0xFFF2B8B5),
       onError: Color(0xFF601410),
       surface: Color(0xFF1A1C19), // Tamno siva sa zelenim tonom
@@ -482,12 +489,12 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       shadow: Colors.black,
       inverseSurface: Color(0xFFE2E3DD),
       onInverseSurface: Color(0xFF1A1C19),
-      tertiary: Color(0xFFB9F6CA),
-      onTertiary: Color(0xFF003916),
+      tertiary: Color(0xFFE89844),
+      onTertiary: Color(0xFF142419),
       primaryContainer: Color(0xFF005223),
-      onPrimaryContainer: Color(0xFFC8FFC6), // Unapređen kontrast za sitan tekst
+      onPrimaryContainer: Color(0xFFE89844), // Topli kontrast za sitan tekst
       secondaryContainer: Color(0xFF386B41),
-      onSecondaryContainer: Color(0xFFB9F6CA),
+      onSecondaryContainer: Color(0xFFE89844),
     ),
     appBarTheme: const AppBarTheme(
       centerTitle: true,
@@ -499,22 +506,22 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       touch: touch,
       buttonPaddingH: buttonPaddingH,
       buttonPaddingV: buttonPaddingV,
-      backgroundColor: const Color(0xFF99D19C),
-      foregroundColor: const Color(0xFF003916),
+      backgroundColor: const Color(0xFFE89844),
+      foregroundColor: const Color(0xFF142419),
       borderRadius: 12,
     ),
     textButtonTheme: _buildTextButtonTheme(
       touch: touch,
       buttonPaddingH: buttonPaddingH,
       buttonPaddingV: buttonPaddingV,
-      foregroundColor: const Color(0xFF99D19C),
+      foregroundColor: const Color(0xFFE89844),
     ),
     outlinedButtonTheme: _buildOutlinedButtonTheme(
       touch: touch,
       buttonPaddingH: buttonPaddingH,
       buttonPaddingV: buttonPaddingV,
-      borderColor: const Color(0xFF99D19C),
-      foregroundColor: const Color(0xFF99D19C),
+      borderColor: const Color(0xFFE89844),
+      foregroundColor: const Color(0xFFE89844),
     ),
     iconButtonTheme: _buildIconButtonTheme(
       touch: touch,
@@ -527,7 +534,7 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
           EdgeInsets.symmetric(horizontal: 16, vertical: inputPaddingV),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: Color(0xFF1E2632),
+      backgroundColor: Color(0xFF1B241E),
       surfaceTintColor: Colors.transparent,
       modalElevation: 4,
       showDragHandle: true,
@@ -548,17 +555,17 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       minVerticalPadding: compact ? 4 : 10,
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      selectedItemColor: Color(0xFF99D19C),
+      selectedItemColor: Color(0xFFE89844),
       unselectedItemColor: Color(0xFF8C9388),
       type: BottomNavigationBarType.fixed,
     ),
     navigationBarTheme: NavigationBarThemeData(
       height: navBarHeight,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      indicatorColor: const Color(0xFF99D19C).withValues(alpha: 0.2),
+      indicatorColor: const Color(0xFFE89844).withValues(alpha: 0.2),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return const IconThemeData(color: Color(0xFF99D19C), size: 26);
+          return const IconThemeData(color: Color(0xFFE89844), size: 26);
         }
         return const IconThemeData(color: Color(0xFF8C9388), size: 24);
       }),
@@ -567,7 +574,7 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
           return const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF99D19C),
+            color: Color(0xFFE89844),
           );
         }
         return const TextStyle(

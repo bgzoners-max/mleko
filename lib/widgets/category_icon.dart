@@ -103,5 +103,5 @@ Color getFoodCategoryColor(String name) {
   if (lower.contains('pić') || lower.contains('sok') || lower.contains('vino')) {
     return const Color(0xFF6A1B9A); // Pića i sokovi - Ljubičasta
   }
-  return const Color(0xFF1B5E20); // Podrazumevana primarna zelena
+  return const Color(0xFF245938); // Podrazumevana primarna zelena
 }

@@ -121,10 +121,10 @@ class _MarketSegmentPillState extends State<_MarketSegmentPill> {
         ];
       } else {
         backgroundColor = isDark ? const Color(0xFF193220) : Colors.white;
-        textColor = isDark ? const Color(0xFFA5D6A7) : const Color(0xFF1B5E20);
+        textColor = isDark ? const Color(0xFFE89844) : const Color(0xFF245938);
         iconColor = isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32);
         border = Border.all(
-          color: isDark ? const Color(0xFF4CAF50) : const Color(0xFFA5D6A7),
+          color: isDark ? const Color(0xFF4CAF50) : const Color(0xFFE89844),
           width: 1.2,
         );
         shadows = [

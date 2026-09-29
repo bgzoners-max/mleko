@@ -1532,7 +1532,7 @@ class _LoginFormState extends State<_LoginForm> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide:
-                    const BorderSide(color: Color(0xFF1B5E20), width: 1.8),
+                    const BorderSide(color: Color(0xFF245938), width: 1.8),
               ),
             ),
             onSubmitted: (_) => _isLockedOut || isAppLoading ? null : _submit(),
@@ -1563,7 +1563,7 @@ class _LoginFormState extends State<_LoginForm> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide:
-                    const BorderSide(color: Color(0xFF1B5E20), width: 1.8),
+                    const BorderSide(color: Color(0xFF245938), width: 1.8),
               ),
               suffixIcon: IconButton(
                 tooltip: _obscure ? 'Prikaži lozinku' : 'Sakrij lozinku',
@@ -1636,7 +1636,7 @@ class _LoginFormState extends State<_LoginForm> {
           ElevatedButton(
             onPressed: (_isLockedOut || isAppLoading) ? null : _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1B5E20),
+              backgroundColor: const Color(0xFF245938),
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(50),
               elevation: 0,
@@ -1739,7 +1739,7 @@ class _LoginFormState extends State<_LoginForm> {
                 child: const Text('Registruj se',
                     style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1B5E20))),
+                        color: Color(0xFF245938))),
               ),
             ],
           ),
