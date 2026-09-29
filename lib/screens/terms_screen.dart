@@ -128,7 +128,7 @@ class TermsScreen extends StatelessWidget {
           'Na ove Uslove korišćenja primenjuje se pravo Republike Srbije. Za sporove koji nastanu u vezi sa korišćenjem platforme nadležan je stvarno nadležni sud u Republici Srbiji, osim ako obavezujući propisi nalažu drugačije.',
         ]),
         b.section('19', 'Kontakt podaci', [
-          'Za sva pitanja, primedbe ili prijave u vezi sa ovim Uslovima korišćenja možete se obratiti na: Vladimir Ivanović, Beograd, Republika Srbija, email: kontakt@domacimarket.rs.',
+          'Za sva pitanja, primedbe ili prijave u vezi sa ovim Uslovima korišćenja možete se obratiti na: Vladimir Ivanović, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
         ]),
       ],
     );
