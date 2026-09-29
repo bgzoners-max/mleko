@@ -35,7 +35,7 @@ void main() {
 
       expect(find.text('Šta će se desiti sledeće?'), findsOneWidget);
       expect(find.text('Zlatiborski Kačkavalj'), findsOneWidget);
-      expect(find.text('1200 RSD/kg'), findsOneWidget);
+      expect(find.text('1200 din./kg'), findsOneWidget);
       expect(find.textContaining('OFFLINE'), findsNothing);
     });
 

@@ -134,22 +134,33 @@ class ProductModel {
 
   bool get isVolumeUnit => unitType == unitL;
 
-  String get priceFormatted {
-    if (unitType == unitL) {
-      return '${pricePerKg.toStringAsFixed(0)} RSD/L';
+  /// Oznaka valute za prikaz — domaći ton ("din.").
+  /// U podacima i u SEO strukturiranim podacima i dalje ostaje ISO kod "RSD".
+  static const String priceCurrencyLabel = 'din.';
+
+  /// Brojčani deo cene, bez valute i jedinice (npr. "800").
+  String get priceNumber => pricePerKg.toStringAsFixed(0);
+
+  /// Sufiks jedinice u ceni (npr. "/kg", "/L", "/kom").
+  String get priceUnitSuffix {
+    switch (unitType) {
+      case unitL:
+        return '/L';
+      case unitPiece:
+        return '/kom';
+      case unitVeza:
+        return '/veza';
+      case unitPak:
+        return '/pak';
+      default:
+        // Za kg i g: cena je izražena po kilogramu
+        return '/kg';
     }
-    if (unitType == unitPiece) {
-      return '${pricePerKg.toStringAsFixed(0)} RSD/kom';
-    }
-    if (unitType == unitVeza) {
-      return '${pricePerKg.toStringAsFixed(0)} RSD/veza';
-    }
-    if (unitType == unitPak) {
-      return '${pricePerKg.toStringAsFixed(0)} RSD/pak';
-    }
-    // Za kg i g: cena je izražena po kilogramu
-    return '${pricePerKg.toStringAsFixed(0)} RSD/kg';
   }
+
+  /// Cena u formatu za prikaz, npr. "800 din./kg" ili "500 din./L".
+  String get priceFormatted =>
+      '$priceNumber $priceCurrencyLabel$priceUnitSuffix';
 
   /// Srpska konvencija decimala: zarez umesto tačke ("1,5" umesto "1.5").
   static String _formatDecimal(double value) {

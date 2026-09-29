@@ -54,12 +54,16 @@ String formatDeliveryWindow(String timeFrom, String timeTo) {
   return '${normalizeDeliveryTimeString(timeFrom)} - ${normalizeDeliveryTimeString(timeTo)}';
 }
 
+/// Formatira novčani iznos za prikaz: "250 din." ili "250,50 din."
+/// (u podacima polja ostaju `*_rsd` kao brojevi, a "RSD" ostaje ISO kod u SEO-u).
 String? formatRsdAmount(double? value) {
   if (value == null) return null;
   final rounded = value.roundToDouble();
-  final text =
-      rounded == value ? rounded.toStringAsFixed(0) : value.toStringAsFixed(2);
-  return '$text RSD';
+  final text = (rounded == value
+          ? rounded.toStringAsFixed(0)
+          : value.toStringAsFixed(2))
+      .replaceAll('.', ',');
+  return '$text din.';
 }
 
 class SellerDeliverySlotModel {

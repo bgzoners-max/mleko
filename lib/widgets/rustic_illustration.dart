@@ -15,6 +15,12 @@ enum RusticMotif {
 
   /// Pretraga bez rezultata.
   search,
+
+  /// Puna korpa (onboarding: kupovina direktno od proizvođača).
+  fullBasket,
+
+  /// Rustična dostava (onboarding: preuzimanje, dostava ili dogovor).
+  delivery,
 }
 
 /// Topla, "ručno crtana" ilustracija u brend paleti (lan, zlato, terakota,
@@ -41,6 +47,8 @@ class RusticIllustration extends StatelessWidget {
           RusticMotif.basket => _BasketPainter(isDark: isDark),
           RusticMotif.field => _FieldPainter(isDark: isDark),
           RusticMotif.search => _SearchPainter(isDark: isDark),
+          RusticMotif.fullBasket => _FullBasketPainter(isDark: isDark),
+          RusticMotif.delivery => _DeliveryPainter(isDark: isDark),
         },
       ),
     );
@@ -288,5 +296,194 @@ class _SearchPainter extends CustomPainter {
   bool shouldRepaint(covariant _SearchPainter oldDelegate) =>
       oldDelegate.isDark != isDark;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Puna korpa (onboarding)
+// ─────────────────────────────────────────────────────────────────────────────
+class _FullBasketPainter extends CustomPainter {
+  final bool isDark;
+  const _FullBasketPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final wood = _soft(AmazonColors.gold, isDark);
+    final green = _soft(AmazonColors.green, isDark);
+    final amber = _soft(AmazonColors.amberLight, isDark);
+    final terracotta = _soft(AmazonColors.badgeRed, isDark);
+
+    // Plodovi koji vire iz korpe
+    canvas.drawCircle(
+      Offset(s * 0.34, s * 0.44),
+      s * 0.085,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = green.withValues(alpha: 0.85),
+    );
+    canvas.drawCircle(
+      Offset(s * 0.50, s * 0.38),
+      s * 0.105,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = terracotta.withValues(alpha: 0.9),
+    );
+    canvas.drawCircle(
+      Offset(s * 0.67, s * 0.45),
+      s * 0.08,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = amber,
+    );
+
+    // Listić na srednjem plodu
+    final leaf = Path()
+      ..moveTo(s * 0.50, s * 0.26)
+      ..quadraticBezierTo(s * 0.58, s * 0.17, s * 0.65, s * 0.24)
+      ..quadraticBezierTo(s * 0.57, s * 0.30, s * 0.50, s * 0.26)
+      ..close();
+    canvas.drawPath(
+      leaf,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = green,
+    );
+
+    // Korpa (trapez)
+    final body = Path()
+      ..moveTo(s * 0.20, s * 0.52)
+      ..lineTo(s * 0.80, s * 0.52)
+      ..lineTo(s * 0.70, s * 0.84)
+      ..lineTo(s * 0.30, s * 0.84)
+      ..close();
+    canvas.drawPath(
+      body,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = wood.withValues(alpha: isDark ? 0.14 : 0.18),
+    );
+    canvas.drawPath(
+      body,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.032
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = wood,
+    );
+
+    // Pletenje
+    final weave = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.02
+      ..strokeCap = StrokeCap.round
+      ..color = wood.withValues(alpha: 0.55);
+    canvas.drawLine(Offset(s * 0.23, s * 0.62), Offset(s * 0.77, s * 0.62), weave);
+    canvas.drawLine(Offset(s * 0.26, s * 0.73), Offset(s * 0.74, s * 0.73), weave);
+    canvas.drawLine(Offset(s * 0.40, s * 0.52), Offset(s * 0.36, s * 0.84), weave);
+    canvas.drawLine(Offset(s * 0.60, s * 0.52), Offset(s * 0.64, s * 0.84), weave);
+  }
+
+  @override
+  bool shouldRepaint(covariant _FullBasketPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Rustično dostavno vozilo (onboarding)
+// ─────────────────────────────────────────────────────────────────────────────
+class _DeliveryPainter extends CustomPainter {
+  final bool isDark;
+  const _DeliveryPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final wood = _soft(AmazonColors.gold, isDark);
+    final green = _soft(AmazonColors.green, isDark);
+    final terracotta = _soft(AmazonColors.dealRed, isDark);
+    final slate = isDark ? AmazonColors.darkTextSecondary : AmazonColors.slate;
+
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = s * 0.032
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = wood;
+    final lightFill = Paint()
+      ..style = PaintingStyle.fill
+      ..color = wood.withValues(alpha: isDark ? 0.12 : 0.16);
+
+    // Tovarni deo (karoserija)
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(s * 0.14, s * 0.40, s * 0.50, s * 0.26),
+      Radius.circular(s * 0.04),
+    );
+    canvas.drawRRect(body, lightFill);
+    canvas.drawRRect(body, stroke);
+
+    // Kabina
+    final cabin = Path()
+      ..moveTo(s * 0.64, s * 0.48)
+      ..lineTo(s * 0.78, s * 0.48)
+      ..lineTo(s * 0.88, s * 0.62)
+      ..lineTo(s * 0.64, s * 0.62)
+      ..close();
+    canvas.drawPath(cabin, lightFill);
+    canvas.drawPath(cabin, stroke);
+
+    // Prozor kabine
+    final window = Path()
+      ..moveTo(s * 0.68, s * 0.51)
+      ..lineTo(s * 0.77, s * 0.51)
+      ..lineTo(s * 0.83, s * 0.60)
+      ..lineTo(s * 0.68, s * 0.60)
+      ..close();
+    canvas.drawPath(
+      window,
+      Paint()
+        ..style = PaintingStyle.fill
+        ..color = green.withValues(alpha: 0.55),
+    );
+
+    // Ukrasna traka — "domaći potpis" na vozilu
+    canvas.drawLine(
+      Offset(s * 0.20, s * 0.545),
+      Offset(s * 0.58, s * 0.545),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.03
+        ..strokeCap = StrokeCap.round
+        ..color = terracotta.withValues(alpha: 0.8),
+    );
+
+    // Točkovi
+    final tyre = Paint()
+      ..style = PaintingStyle.fill
+      ..color = slate;
+    final hub = Paint()
+      ..style = PaintingStyle.fill
+      ..color = wood;
+    canvas.drawCircle(Offset(s * 0.30, s * 0.68), s * 0.075, tyre);
+    canvas.drawCircle(Offset(s * 0.30, s * 0.68), s * 0.03, hub);
+    canvas.drawCircle(Offset(s * 0.74, s * 0.68), s * 0.075, tyre);
+    canvas.drawCircle(Offset(s * 0.74, s * 0.68), s * 0.03, hub);
+
+    // Tlo
+    canvas.drawLine(
+      Offset(s * 0.12, s * 0.78),
+      Offset(s * 0.88, s * 0.78),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.022
+        ..strokeCap = StrokeCap.round
+        ..color = wood.withValues(alpha: 0.45),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _DeliveryPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
+}
+
 
 

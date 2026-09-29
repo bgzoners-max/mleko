@@ -49,8 +49,8 @@ void main() {
 
     test('formatRsdAmount formats integer and decimal amounts', () {
       expect(formatRsdAmount(null), isNull);
-      expect(formatRsdAmount(250.0), '250 RSD');
-      expect(formatRsdAmount(250.50), '250.50 RSD');
+      expect(formatRsdAmount(250.0), '250 din.');
+      expect(formatRsdAmount(250.50), '250,50 din.');
     });
 
     test('SellerDeliverySlotModel serialization, update, and labels', () {
@@ -158,8 +158,8 @@ void main() {
       expect(selection.method, DeliveryMethod.sellerDelivery);
       expect(selection.city, 'Novi Sad');
       expect(selection.scheduleLabel, 'Subota, 08:00 - 12:00');
-      expect(selection.feeLabel, '150 RSD');
-      expect(selection.minOrderLabel, '800 RSD');
+      expect(selection.feeLabel, '150 din.');
+      expect(selection.minOrderLabel, '800 din.');
     });
   });
 }

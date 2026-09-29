@@ -61,7 +61,7 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       );
 
-      expect(productVeza.priceFormatted, '70 RSD/veza');
+      expect(productVeza.priceFormatted, '70 din./veza');
       expect(productVeza.formatQuantity(1), '1 veza');
       expect(productVeza.formatQuantity(5), '5 veza');
       expect(productVeza.quantityUnitLabel, 'veza');
@@ -82,7 +82,7 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       );
 
-      expect(productPak.priceFormatted, '250 RSD/pak');
+      expect(productPak.priceFormatted, '250 din./pak');
       expect(productPak.formatQuantity(1), '1 pak');
       expect(productPak.formatQuantity(3), '3 pak');
       expect(productPak.quantityUnitLabel, 'pak');

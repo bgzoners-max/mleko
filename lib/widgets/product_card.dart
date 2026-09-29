@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../core/constants.dart';
 import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
+import '../providers/app_settings_provider.dart';
 import 'app_network_image.dart';
 import 'rustic_image_placeholder.dart';
 
@@ -223,10 +225,12 @@ class _ProductCardState extends State<ProductCard> {
               ),
               if (widget.product.sellerIsVerified) ...[
                 const SizedBox(width: 4),
-                const Icon(
-                  Icons.verified,
-                  size: 14,
-                  color: AmazonColors.link,
+                const _VerifiedPulse(
+                  child: Icon(
+                    Icons.verified,
+                    size: 14,
+                    color: AmazonColors.link,
+                  ),
                 ),
               ],
             ],
@@ -236,50 +240,70 @@ class _ProductCardState extends State<ProductCard> {
           // 3. Cena sa jasnom hijerarhijom + Ocena
           Builder(
             builder: (context) {
-              final priceParts = widget.product.priceFormatted.split(' RSD');
-              final priceNum = priceParts.isNotEmpty ? priceParts[0] : widget.product.priceFormatted;
-              final priceUnit = priceParts.length > 1 ? priceParts[1] : '';
+              // Bez string-parsiranja: broj, valuta i jedinica dolaze iz modela.
+              final priceNum = widget.product.priceNumber;
+              final priceUnit = widget.product.priceUnitSuffix;
+              final animationsOn =
+                  context.read<AppSettingsProvider?>()?.animationsEnabled ?? true;
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: priceNum,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.2,
-                              color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
+                    // Kada se cena osveži, iznos "tiho" klizne umesto da skoči.
+                    child: AnimatedSwitcher(
+                      duration: animationsOn
+                          ? const Duration(milliseconds: 240)
+                          : Duration.zero,
+                      switchInCurve: Curves.easeOutCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.30),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      // Ključ po formatiranoj ceni: animira se samo pri promeni.
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: priceNum,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                                color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
+                              ),
                             ),
-                          ),
-                          TextSpan(
-                            text: ' RSD',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
+                            TextSpan(
+                              text: ' ${ProductModel.priceCurrencyLabel}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? const Color(0xFFFF8B72) : AmazonColors.dealRed,
+                              ),
                             ),
-                          ),
-                          if (priceUnit.isNotEmpty)
                             TextSpan(
                               text: priceUnit,
                               style: TextStyle(
-                                fontSize: 10.0,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w500,
                                 color: isDark
                                     ? AmazonColors.darkTextSecondary
                                     : AmazonColors.textSecondary,
                               ),
                             ),
-                        ],
+                          ],
+                        ),
+                        key: ValueKey(widget.product.priceFormatted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (widget.avgRating != null && (widget.reviewCount ?? 0) > 0)
@@ -488,6 +512,70 @@ class _AmazonBadge extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Jednokratni "pop" (0.7 → 1.12 → 1.0) na verified bedžu kada se kartica
+/// pojavi — dovoljno da privuče pogled, bez beskonačnog pulsiranja koje zamara.
+/// Poštuje korisničko podešavanje "Animacije".
+class _VerifiedPulse extends StatefulWidget {
+  final Widget child;
+
+  const _VerifiedPulse({required this.child});
+
+  @override
+  State<_VerifiedPulse> createState() => _VerifiedPulseState();
+}
+
+class _VerifiedPulseState extends State<_VerifiedPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.7, end: 1.12).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.12, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 55,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // Nullable lookup — bezbedno i van punog app stabla (izolovani testovi).
+    final enabled =
+        context.read<AppSettingsProvider?>()?.animationsEnabled ?? false;
+    if (enabled) {
+      _controller.forward();
+    } else {
+      _controller.value = 1;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(scale: _scale, child: widget.child);
   }
 }
 

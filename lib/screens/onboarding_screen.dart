@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/rustic_illustration.dart';
 
 final _slides = [
   {
     'title': 'Kupuj direktno',
     'subtitle':
-        'Pregledajte ponudu i kupujte direktno od proizvođača, bez posrednika.',
-    'icon': Icons.shopping_basket,
+        'Pregledaj ponudu i kupuj direktno od proizvođača, bez posrednika.',
+    'motif': RusticMotif.fullBasket,
   },
   {
     'title': 'Otkrij lokalno',
     'subtitle':
         'Pronađi domaće proizvode i ljude koji stoje iza njihove proizvodnje.',
-    'icon': Icons.storefront_outlined,
+    'motif': RusticMotif.field,
   },
   {
     'title': 'Dogovor po meri',
     'subtitle':
         'Preuzimanje, dostava ili direktan dogovor, u skladu sa ponudom prodavca.',
-    'icon': Icons.delivery_dining,
+    'motif': RusticMotif.delivery,
   },
 ];
 
@@ -63,9 +64,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(s['icon'] as IconData,
-                            size: 80,
-                            color: Theme.of(context).colorScheme.primary),
+                        // Rustic ilustracija umesto generičke ikonice —
+                        // onboarding nosi "ljudski" ton aplikacije.
+                        RusticIllustration(
+                          motif: s['motif'] as RusticMotif,
+                          size: 168,
+                        ),
                         const SizedBox(height: 32),
                         Text(
                           s['title'] as String,
@@ -82,7 +86,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           style: Theme.of(context)
                               .textTheme
                               .bodyLarge
-                              ?.copyWith(color: Colors.grey.shade700),
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
