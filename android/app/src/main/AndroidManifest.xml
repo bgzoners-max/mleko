@@ -9,6 +9,7 @@
         android:label="Domaći market"
         android:name=".MyApp"
         android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
         android:resizeableActivity="true">
         <activity
             android:name=".MainActivity"
