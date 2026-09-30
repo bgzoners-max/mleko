@@ -101,7 +101,9 @@ class BackgroundSyncService {
       if (client.auth.currentSession?.isExpired == true) {
         try {
           await client.auth.refreshSession();
-        } catch (_) {}
+        } catch (e) {
+          LoggerService.warning('Failed to refresh session in background isolate', extra: {'error': e.toString()});
+        }
       }
       return;
     } catch (_) {

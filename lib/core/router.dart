@@ -161,7 +161,8 @@ GoRouter createRouter(AppState appState) {
       // Sve ostale rute (profil, porudžbine, dodavanje oglasa itd.) zahtevaju prijavu
       final isGuest = appState.user == null || appState.user!.isGuest;
       if (isGuest) {
-        return '/login';
+        final returnTo = Uri.encodeComponent(state.uri.toString());
+        return '/login?returnTo=$returnTo';
       }
 
       // Admin stranice — samo korisnici sa is_admin = true

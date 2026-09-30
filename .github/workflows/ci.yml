@@ -28,6 +28,8 @@ jobs:
         run: dart run tool/check_cyrillic_strings.dart
       - name: Guard against committed keystores/secrets
         run: dart run tool/check_no_committed_secrets.dart
+      - name: Enforce max file size
+        run: dart run tool/check_file_size.dart
 
       - name: Scan SECURITY DEFINER migrations (heuristic)
         run: dart run tool/scan_security_definer_migrations.dart
@@ -59,12 +61,21 @@ jobs:
           flutter build web --release --no-pub --no-wasm-dry-run
           dart run tool/copy_web_shell_assets.dart
 
+      - name: Generate HTML coverage report
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y --no-install-recommends lcov > /dev/null 2>&1 || true
+          genhtml coverage/lcov.info -o coverage/html --no-function-coverage --quiet || true
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: coverage
-          path: coverage/lcov.info
+          path: |
+            coverage/lcov.info
+            coverage/coverage_summary.json
+            coverage/html/
 
   db-integration-checks:
     runs-on: ubuntu-latest

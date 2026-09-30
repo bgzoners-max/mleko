@@ -2,16 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../constants/serbian_cities.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
-import '../../models/category_attribute_model.dart';
+
 import '../../models/classified_ad_model.dart';
-import '../../models/classified_category_model.dart';
+
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
@@ -20,8 +20,22 @@ import '../../services/media/storage_service.dart';
 import '../../utils/classified_attributes_engine.dart';
 import '../../utils/number_input_utils.dart';
 import '../../widgets/app_back_button.dart';
-import '../../widgets/app_empty_state.dart';
-import '../../widgets/app_network_image.dart';
+
+import '../../widgets/classifieds/add_edit/classified_attributes_section.dart';
+import '../../widgets/classifieds/add_edit/classified_seller_type_section.dart';
+import '../../widgets/classifieds/add_edit/classified_promotion_section.dart';
+import '../../widgets/classifieds/add_edit/classified_image_picker_row.dart';
+import '../../widgets/classifieds/add_edit/category_selection_modal.dart';
+import '../../widgets/classifieds/add_edit/classified_city_autocomplete.dart';
+import '../../widgets/classifieds/add_edit/classified_submit_button.dart';
+import '../../widgets/classifieds/add_edit/classified_price_section.dart';
+import '../../widgets/classifieds/add_edit/classified_contact_section.dart';
+import '../../widgets/classifieds/add_edit/classified_category_selector.dart';
+import '../../widgets/classifieds/add_edit/classified_condition_selector.dart';
+import '../../widgets/classifieds/add_edit/classified_title_field.dart';
+import '../../widgets/classifieds/add_edit/classified_description_field.dart';
+import '../../widgets/classifieds/add_edit/classified_guest_empty_state.dart';
+
 import '../../widgets/guest_auth_prompt.dart';
 
 class AddEditClassifiedAdScreen extends StatefulWidget {
@@ -354,340 +368,17 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     }
   }
 
-  void _openCategoryPicker(BuildContext context) {
+  void _openCategoryPicker(BuildContext context) async {
     final categories = context.read<ClassifiedsProvider>().categories;
-    final modalPath = <ClassifiedCategoryModel>[];
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.75,
-              minChildSize: 0.4,
-              maxChildSize: 0.92,
-              expand: false,
-              builder: (_, scrollCtl) {
-                Widget headerWidget;
-                Widget contentWidget;
-
-                if (modalPath.isNotEmpty) {
-                  final current = modalPath.last;
-                  final currentBreadcrumb =
-                      modalPath.map((e) => e.name).join(' > ');
-
-                  headerWidget = Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () =>
-                              setModalState(() => modalPath.removeLast()),
-                        ),
-                        Expanded(
-                          child: Text(
-                            current.name,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  contentWidget = ListView(
-                    controller: scrollCtl,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    children: [
-                      OutlinedButton.icon(
-                        icon: Icon(current.iconData, size: 18),
-                        label: Text(
-                          modalPath.length == 1
-                              ? 'Izaberi celu kategoriju: ${current.name}'
-                              : 'Izaberi celu podkategoriju: ${current.name}',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () {
-                          _selectCategory(
-                            current.id,
-                            currentBreadcrumb,
-                          );
-                          Navigator.pop(ctx);
-                        },
-                      ),
-                      if (current.subcategories.isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        if (!current.isRoot && current.subcategories.where((s) => s.subcategories.isNotEmpty).length >= 2) ...[
-                          // Grupisan prikaz po sekcijama (npr. Automobili -> • NEMAČKA -> marke, • ITALIJA -> marke)
-                          for (final group in current.subcategories.where((s) => s.subcategories.isNotEmpty)) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(top: 14, bottom: 6),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    group.name.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  TextButton(
-                                    style: TextButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                                    ),
-                                    onPressed: () {
-                                      _selectCategory(
-                                        group.id,
-                                        [...modalPath.map((e) => e.name), group.name].join(' > '),
-                                      );
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: Text(
-                                      'Izaberi: ${group.name}',
-                                      style: const TextStyle(fontSize: 11),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisExtent: 46,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                              ),
-                              itemCount: group.subcategories.length,
-                              itemBuilder: (c, i) {
-                                final brand = group.subcategories[i];
-                                return _CategoryCardPicker(
-                                  category: brand,
-                                  hasChildren: false,
-                                  onTap: () {
-                                    final fullPath = [
-                                      ...modalPath.map((e) => e.name),
-                                      group.name,
-                                      brand.name,
-                                    ].join(' > ');
-                                    _selectCategory(brand.id, fullPath);
-                                    Navigator.pop(ctx);
-                                  },
-                                );
-                              },
-                            ),
-                          ],
-                          // Samostalne podkategorije (Džipovi, Havarisana, Ostalo)
-                          if (current.subcategories.any((s) => s.subcategories.isEmpty)) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16, bottom: 6),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text(
-                                    'OSTALO / DODATNE KATEGORIJE',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisExtent: 54,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                              ),
-                              itemCount: current.subcategories.where((s) => s.subcategories.isEmpty).length,
-                              itemBuilder: (c, i) {
-                                final sub = current.subcategories.where((s) => s.subcategories.isEmpty).toList()[i];
-                                return _CategoryCardPicker(
-                                  category: sub,
-                                  hasChildren: false,
-                                  onTap: () {
-                                    final fullPath = [
-                                      ...modalPath.map((e) => e.name),
-                                      sub.name,
-                                    ].join(' > ');
-                                    _selectCategory(sub.id, fullPath);
-                                    Navigator.pop(ctx);
-                                  },
-                                );
-                              },
-                            ),
-                          ],
-                        ] else ...[
-                          Text(
-                            modalPath.length == 1
-                                ? 'Izaberite podkategoriju:'
-                                : 'Ili izaberite užu podkategoriju:',
-                            style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisExtent: 46,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                            ),
-                            itemCount: current.subcategories.length,
-                            itemBuilder: (c, i) {
-                              final sub = current.subcategories[i];
-                              return _CategoryCardPicker(
-                                category: sub,
-                                hasChildren: sub.subcategories.isNotEmpty,
-                                onTap: () {
-                                  if (sub.subcategories.isNotEmpty) {
-                                    setModalState(() => modalPath.add(sub));
-                                  } else {
-                                    final fullPath = [
-                                      ...modalPath.map((e) => e.name),
-                                      sub.name
-                                    ].join(' > ');
-                                    _selectCategory(
-                                      sub.id,
-                                      fullPath,
-                                      isConditionApplicable:
-                                          sub.isConditionApplicable,
-                                    );
-                                    Navigator.pop(ctx);
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ],
-                    ],
-                  );
-                } else {
-                  // Nivo 1: Glavne kategorije
-                  headerWidget = Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'Izaberi kategoriju',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  contentWidget = ListView.builder(
-                    controller: scrollCtl,
-                    itemCount: categories.length,
-                    itemBuilder: (c, i) {
-                      final cat = categories[i];
-                      return ListTile(
-                        leading: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(cat.iconData, size: 20),
-                        ),
-                        title: Text(cat.name,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w600)),
-                        trailing: cat.subcategories.isNotEmpty
-                            ? const Icon(Icons.chevron_right, size: 20)
-                            : null,
-                        onTap: () {
-                          if (cat.subcategories.isNotEmpty) {
-                            setModalState(() => modalPath.add(cat));
-                          } else {
-                            _selectCategory(
-                              cat.id,
-                              cat.name,
-                              isConditionApplicable:
-                                  cat.isConditionApplicable,
-                            );
-                            Navigator.pop(ctx);
-                          }
-                        },
-                      );
-                    },
-                  );
-                }
-
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
-                    child: Column(
-                      children: [
-                        headerWidget,
-                        Expanded(child: contentWidget),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
+    final result = await CategorySelectionModal.show(context, categories);
+    
+    if (result != null) {
+      _selectCategory(
+        result.id,
+        result.name,
+        isConditionApplicable: result.isConditionApplicable,
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -855,20 +546,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
           title: Text(isEdit ? 'Izmeni oglas' : 'Postavi novi oglas'),
           actions: const [AppHomeButton()],
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: AppEmptyState(
-              icon: Icons.account_circle_outlined,
-              title: 'Potrebna prijava za postavljanje oglasa',
-              subtitle:
-                  'Kao gost možete slobodno pregledati oglase i kontaktirati prodavce. Za objavu sopstvenog oglasa potrebno je da se prijavite ili besplatno registrujete.',
-              ctaLabel: 'Prijavi se',
-              ctaIcon: Icons.login,
-              onCtaPressed: () => context.push('/login'),
-            ),
-          ),
-        ),
+        body: const ClassifiedGuestEmptyState(),
       );
     }
 
@@ -891,551 +569,113 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Sekcija: Fotografije
-                  Row(
-                    children: [
-                      Text(
-                        'Fotografije oglasa (do 8 slika)',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '– možete izabrati više odjednom',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Kliknite "Dodaj" i držite Ctrl ili Shift za izbor više slika istovremeno.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 100,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        InkWell(
-                          onTap: _isPickingImages ? null : _pickImages,
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 100,
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: colorScheme.outlineVariant,
-                                style: BorderStyle.solid,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_a_photo_outlined, color: colorScheme.primary),
-                                const SizedBox(height: 4),
-                                const Text('Dodaj', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        ..._existingImages.asMap().entries.map((entry) {
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: AppNetworkImage.thumbnail(
-                                    imageUrl: entry.value,
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    placeholder: Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: colorScheme.surfaceContainerHighest,
-                                      child: const Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        ),
-                                      ),
-                                    ),
-                                    errorWidget: Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: colorScheme.surfaceContainerHighest,
-                                      child: Icon(
-                                        Icons.broken_image_outlined,
-                                        size: 28,
-                                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => setState(() => _existingImages.removeAt(entry.key)),
-                                    child: Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      padding: const EdgeInsets.all(4),
-                                      child: const Icon(Icons.close, size: 14, color: Colors.white),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                        ..._newImageBytes.asMap().entries.map((entry) {
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.memory(
-                                    entry.value,
-                                    width: 100,
-                                    height: 100,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      width: 100,
-                                      height: 100,
-                                      color: colorScheme.surfaceContainerHighest,
-                                      child: Icon(
-                                        Icons.broken_image_outlined,
-                                        size: 28,
-                                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => setState(() => _newImageBytes.removeAt(entry.key)),
-                                    child: Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      padding: const EdgeInsets.all(4),
-                                      child: const Icon(Icons.close, size: 14, color: Colors.white),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                        if (_isPickingImages)
-                          for (var k = 0; k < (_incomingCount > 0 ? _incomingCount : 1); k++)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: colorScheme.primary.withValues(alpha: 0.5),
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Spacer(),
-                                    Icon(
-                                      Icons.photo_library_outlined,
-                                      color: colorScheme.primary,
-                                      size: 26,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      child: Text(
-                                        _incomingCount > 1
-                                            ? 'Slika ${k + 1}/$_incomingCount'
-                                            : (_imageProcessingStatus ?? 'Učitavanje...'),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(3),
-                                        child: LinearProgressIndicator(
-                                          value: _imageProcessingProgress,
-                                          minHeight: 4,
-                                          backgroundColor: colorScheme.surfaceContainerHighest,
-                                          valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                      ],
-                    ),
+                  ClassifiedImagePickerRow(
+                    theme: theme,
+                    colorScheme: colorScheme,
+                    isPickingImages: _isPickingImages,
+                    onPickImages: _pickImages,
+                    existingImages: _existingImages,
+                    newImageBytes: _newImageBytes,
+                    onRemoveExisting: (index) => setState(() => _existingImages.removeAt(index)),
+                    onRemoveNew: (index) => setState(() => _newImageBytes.removeAt(index)),
+                    incomingCount: _incomingCount,
+                    imageProcessingStatus: _imageProcessingStatus,
+                    imageProcessingProgress: _imageProcessingProgress,
                   ),
                   const SizedBox(height: 20),
 
-                  // Naslov
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Naslov oglasa *',
-                      hintText: 'npr. Traktor IMT 539, bušilica Bosch, iPhone 14...',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Unesite naslov oglasa.';
-                      if (v.trim().length < 4) return 'Naslov mora imati najmanje 4 karaktera.';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                  ClassifiedTitleField(controller: _titleController),
 
-                  // Izbor kategorije
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Kategorija *'),
-                    subtitle: Text(
-                      _selectedCategoryId != null
-                          ? (_selectedCategoryName ?? _selectedCategoryId!)
-                          : 'Kliknite da izaberete kategoriju',
-                      style: TextStyle(
-                        color: _selectedCategoryId != null
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
-                        fontWeight: _selectedCategoryId != null
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
+                  ClassifiedCategorySelector(
+                    selectedCategoryId: _selectedCategoryId,
+                    selectedCategoryName: _selectedCategoryName,
+                    colorScheme: colorScheme,
                     onTap: () => _openCategoryPicker(context),
                   ),
-                  const Divider(),
                   const SizedBox(height: 12),
 
-                  // Tip cene
-                  DropdownButtonFormField<String>(
-                    initialValue: _priceType,
-                    decoration: const InputDecoration(labelText: 'Način formiranja cene'),
-                    items: const [
-                      DropdownMenuItem(value: 'fixed', child: Text('Fiksna cena')),
-                      DropdownMenuItem(value: 'negotiable', child: Text('Cena po dogovoru')),
-                      DropdownMenuItem(value: 'call', child: Text('Pozvati za cenu')),
-                      DropdownMenuItem(value: 'free', child: Text('Besplatno (poklanjam)')),
-                    ],
-                    onChanged: (v) => setState(() => _priceType = v ?? 'fixed'),
+                  ClassifiedPriceSection(
+                    priceType: _priceType,
+                    currency: _currency,
+                    priceController: _priceController,
+                    onPriceTypeChanged: (v) => setState(() => _priceType = v ?? 'fixed'),
+                    onCurrencyChanged: (v) => setState(() => _currency = v ?? 'RSD'),
                   ),
                   const SizedBox(height: 16),
 
-                  // Iznos cene i valuta (ako nije besplatno ili poziv)
-                  if (_priceType == 'fixed' || _priceType == 'negotiable')
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextFormField(
-                            controller: _priceController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: _priceType == 'fixed' ? 'Cena *' : 'Okvirna cena',
-                              hintText: 'npr. 2500',
-                            ),
-                            validator: (v) {
-                              if (_priceType == 'fixed' && (v == null || v.trim().isEmpty)) {
-                                return 'Unesite cenu.';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButtonFormField<String>(
-                            isExpanded: true,
-                            initialValue: _currency,
-                            decoration: const InputDecoration(
-                              labelText: 'Valuta',
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'RSD',
-                                child: Text('RSD (din)', overflow: TextOverflow.ellipsis),
-                              ),
-                              DropdownMenuItem(
-                                value: 'EUR',
-                                child: Text('EUR (€)', overflow: TextOverflow.ellipsis),
-                              ),
-                            ],
-                            onChanged: (v) => setState(() => _currency = v ?? 'RSD'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 16),
+                  ClassifiedConditionSelector(
+                    isConditionApplicable: _isConditionApplicable,
+                    condition: _condition,
+                    onChanged: (v) => setState(() => _condition = v ?? 'used'),
+                  ),
 
-                  // Stanje predmeta (samo za tehniku, vozila, alate, nameštaj itd.; sakriveno za životinje, voće, povrće, usluge...)
-                  if (_isConditionApplicable) ...[
-                    DropdownButtonFormField<String>(
-                      initialValue: (_condition == 'new' || _condition == 'used')
-                          ? _condition
-                          : 'used',
-                      decoration:
-                          const InputDecoration(labelText: 'Stanje predmeta'),
-                      items: const [
-                        DropdownMenuItem(value: 'used', child: Text('Polovno')),
-                        DropdownMenuItem(
-                            value: 'new', child: Text('Novo / Nekorišćeno')),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => _condition = v ?? 'used'),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Karakteristike / specifikacije predmeta (za automobile, mašine, nekretnine, telefone...)
-                  () {
-                    final categoryAttributes =
-                        ClassifiedAttributesEngine.getAttributesForCategory(
-                      _selectedCategoryId,
-                    );
-                    if (categoryAttributes.isNotEmpty) {
-                      return _buildAttributesSection(
-                        theme,
-                        colorScheme,
-                        categoryAttributes,
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }(),
+                  ClassifiedAttributesWrapper(
+                    theme: theme,
+                    colorScheme: colorScheme,
+                    categoryId: _selectedCategoryId,
+                    currentAttributes: _attributes,
+                    onChanged: (key, val) {
+                      setState(() {
+                        if (val == null) {
+                          _attributes.remove(key);
+                        } else {
+                          _attributes[key] = val;
+                        }
+                      });
+                    },
+                  ),
 
                   // Grad / Lokacija sa automatskim predlozima
-                  Autocomplete<String>(
-                    initialValue: TextEditingValue(text: _cityController.text),
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.trim().isEmpty) {
-                        return const Iterable<String>.empty();
-                      }
-                      return SerbianCities.suggestions(textEditingValue.text);
-                    },
-                    onSelected: (String selection) {
-                      _cityController.text = selection;
-                    },
-                    fieldViewBuilder: (
-                      BuildContext context,
-                      TextEditingController fieldTextEditingController,
-                      FocusNode fieldFocusNode,
-                      VoidCallback onFieldSubmitted,
-                    ) {
-                      // Sinhronizacija vrednosti
-                      if (_cityController.text.isNotEmpty && fieldTextEditingController.text.isEmpty) {
-                        fieldTextEditingController.text = _cityController.text;
-                      }
-                      fieldTextEditingController.addListener(() {
-                        _cityController.text = fieldTextEditingController.text;
-                      });
+                  ClassifiedCityAutocomplete(controller: _cityController),
+                  const SizedBox(height: 16),
 
-                      return TextFormField(
-                        controller: fieldTextEditingController,
-                        focusNode: fieldFocusNode,
-                        decoration: const InputDecoration(
-                          labelText: 'Grad ili mesto *',
-                          hintText: 'npr. Beograd, Čačak, Zlatibor...',
-                          prefixIcon: Icon(Icons.location_on_outlined),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Unesite grad ili mesto.';
-                          return null;
-                        },
-                      );
-                    },
+                  ClassifiedContactSection(
+                    phoneController: _phoneController,
+                    phonePublic: _phonePublic,
+                    onPhonePublicChanged: (v) => setState(() => _phonePublic = v),
                   ),
                   const SizedBox(height: 16),
 
-                  // Kontakt telefon
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Kontakt telefon',
-                      hintText: 'npr. 064 123 4567',
-                    ),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Prikaži telefon javno u oglasu'),
-                    subtitle: const Text('Ako isključite, kupci vas mogu kontaktirati samo preko četa.'),
-                    value: _phonePublic,
-                    onChanged: (v) => setState(() => _phonePublic = v),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Opis oglasa
-                  TextFormField(
-                    controller: _descController,
-                    maxLines: 5,
-                    maxLength: 2000,
-                    keyboardType: TextInputType.multiline,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'Detaljan opis',
-                      hintText: 'Opišite stanje, karakteristike, razlog prodaje, zamene itd.',
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  ClassifiedDescriptionField(controller: _descController),
 
                   // Sekcija: Tip oglašivača (Zakon o zaštiti potrošača)
-                  _buildSellerTypeSection(theme, colorScheme),
+                  ClassifiedSellerTypeSection(
+                    theme: theme,
+                    colorScheme: colorScheme,
+                    sellerType: _sellerType,
+                    onChanged: (val) {
+                      setState(() {
+                        _sellerType = val;
+                      });
+                    },
+                  ),
 
                   // Sekcija za promociju oglasa
-                  Card(
-                    elevation: 0,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: (_isFeatured || _isUrgent)
-                            ? (_isFeatured ? const Color(0xFFD97706) : const Color(0xFFDC2626))
-                            : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                        width: (_isFeatured || _isUrgent) ? 1.5 : 1.0,
-                      ),
-                    ),
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.campaign_rounded,
-                                size: 20,
-                                color: colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Promocija oglasa',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            secondary: const Icon(
-                              Icons.star_rounded,
-                              color: Color(0xFFD97706),
-                            ),
-                            title: const Text(
-                              'Istakni oglas (Featured)',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: const Text(
-                              'Oglas će se prikazivati na vrhu pretrage i sa zlatnim okvirom.',
-                            ),
-                            value: _isFeatured,
-                            onChanged: (val) {
-                              setState(() {
-                                _isFeatured = val;
-                                if (val && _featuredUntil == null) {
-                                  _featuredUntil = DateTime.now().add(const Duration(days: 30));
-                                } else if (!val) {
-                                  _featuredUntil = null;
-                                }
-                              });
-                            },
-                          ),
-                          const Divider(height: 16),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            secondary: const Icon(
-                              Icons.bolt_rounded,
-                              color: Color(0xFFDC2626),
-                            ),
-                            title: const Text(
-                              'Hitna prodaja (Urgent)',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: const Text(
-                              'Privucite kupce bedžom HITNO u uočljivoj crvenoj boji.',
-                            ),
-                            value: _isUrgent,
-                            onChanged: (val) => setState(() => _isUrgent = val),
-                          ),
-                        ],
-                      ),
-                    ),
+                  ClassifiedPromotionSection(
+                    theme: theme,
+                    colorScheme: colorScheme,
+                    isFeatured: _isFeatured,
+                    isUrgent: _isUrgent,
+                    onFeaturedChanged: (val) {
+                      setState(() {
+                        _isFeatured = val;
+                        if (val && _featuredUntil == null) {
+                          _featuredUntil = DateTime.now().add(const Duration(days: 30));
+                        } else if (!val) {
+                          _featuredUntil = null;
+                        }
+                      });
+                    },
+                    onUrgentChanged: (val) => setState(() => _isUrgent = val),
                   ),
                   const SizedBox(height: 8),
 
                   // Dugme za objavu
-                  FilledButton(
-                    onPressed: _loading ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: _loading
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              ),
-                              if (_uploadStatusText != null) ...[
-                                const SizedBox(width: 12),
-                                Text(
-                                  _uploadStatusText!,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          )
-                        : Text(
-                            isEdit ? 'Sačuvaj izmene' : 'Objavi oglas',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
+                  ClassifiedSubmitButton(
+                    loading: _loading,
+                    isEdit: isEdit,
+                    uploadStatusText: _uploadStatusText,
+                    onSubmit: _submit,
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -1447,465 +687,8 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     );
   }
 
-  Widget _buildSellerTypeSection(ThemeData theme, ColorScheme colorScheme) {
-    final isDark = theme.brightness == Brightness.dark;
-    final isBusiness = _sellerType == 'business';
 
-    Widget buildTypeCard({
-      required String type,
-      required String title,
-      required String subtitle,
-      required IconData icon,
-      required bool selected,
-    }) {
-      final activeColor = type == 'business'
-          ? const Color(0xFF2563EB)
-          : colorScheme.primary;
 
-      return InkWell(
-        onTap: () => setState(() => _sellerType = type),
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: selected
-                ? activeColor.withValues(alpha: isDark ? 0.22 : 0.08)
-                : (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.02)),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected
-                  ? activeColor
-                  : colorScheme.outlineVariant.withValues(alpha: 0.6),
-              width: selected ? 2.0 : 1.0,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? activeColor.withValues(alpha: 0.15)
-                      : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: selected
-                      ? activeColor
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                            color: selected
-                                ? (isDark ? Colors.white : colorScheme.onSurface)
-                                : colorScheme.onSurface,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selected
-                                  ? activeColor
-                                  : (isDark ? Colors.white38 : Colors.black38),
-                              width: selected ? 6 : 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 20),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-          width: 1.0,
-        ),
-      ),
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.gavel_rounded,
-                  size: 18,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tip oglašivača * (Zakonska deklaracija)',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Prema Zakonu o zaštiti potrošača i Zakonu o elektronskoj trgovini, oglašivač je dužan da se izjasni da li nastupa kao fizičko ili pravno lice / trgovac.',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 14),
-            buildTypeCard(
-              type: 'individual',
-              title: 'Fizičko lice',
-              subtitle:
-                  'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
-              icon: Icons.person_outline_rounded,
-              selected: !isBusiness,
-            ),
-            const SizedBox(height: 10),
-            buildTypeCard(
-              type: 'business',
-              title: 'Pravno lice / Trgovac',
-              subtitle:
-                  'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo koje nastupa u okviru svoje delatnosti.',
-              icon: Icons.storefront_outlined,
-              selected: isBusiness,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isBusiness
-                    ? const Color(0xFF2563EB).withValues(alpha: isDark ? 0.15 : 0.08)
-                    : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9)),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isBusiness
-                      ? const Color(0xFF2563EB).withValues(alpha: 0.3)
-                      : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 16,
-                    color: isBusiness
-                        ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      isBusiness
-                          ? 'Kao registrovan trgovac / pravno lice, obavezni ste da poslujete u skladu sa Zakonom o zaštiti potrošača i obezbedite zakonska prava kupcima (pravo na jednostrani odustanak od ugovora na daljinu u roku od 14 dana, saobraznost robe, izdavanje računa).'
-                          : 'Na kupovinu od fizičkog lica ne primenjuju se odredbe Zakona o zaštiti potrošača o pravu na jednostrani odustanak od ugovora u roku od 14 dana.',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        height: 1.35,
-                        color: isBusiness
-                            ? (isDark ? const Color(0xFFBFDBFE) : const Color(0xFF1E3A8A))
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttributesSection(
-    ThemeData theme,
-    ColorScheme colorScheme,
-    List<CategoryAttribute> attributes,
-  ) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.tune_rounded, size: 20, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Karakteristike predmeta',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            for (final attr in attributes) ...[
-              if (attr.type == AttributeType.number) ...[
-                TextFormField(
-                  key: ValueKey('attr_${attr.key}'),
-                  initialValue: _attributes[attr.key]?.toString() ?? '',
-                  keyboardType: attr.isDecimal
-                      ? const TextInputType.numberWithOptions(decimal: true)
-                      : TextInputType.number,
-                  inputFormatters: [
-                    if (!attr.isDecimal)
-                      FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  decoration: InputDecoration(
-                    labelText: attr.label,
-                    hintText: attr.hint,
-                    suffixText: attr.unit,
-                    prefixIcon:
-                        attr.icon != null ? Icon(attr.icon, size: 20) : null,
-                  ),
-                  onChanged: (val) {
-                    final n = attr.isDecimal
-                        ? NumberInputUtils.parseDecimal(val)
-                        : NumberInputUtils.parseInteger(val);
-                    if (n != null) {
-                      _attributes[attr.key] = n;
-                    } else {
-                      _attributes.remove(attr.key);
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-              ] else if (attr.type == AttributeType.select) ...[
-                DropdownButtonFormField<String>(
-                  key: ValueKey('attr_${attr.key}'),
-                  initialValue: _attributes[attr.key]?.toString(),
-                  decoration: InputDecoration(
-                    labelText: attr.label,
-                    prefixIcon:
-                        attr.icon != null ? Icon(attr.icon, size: 20) : null,
-                  ),
-                  items: [
-                    DropdownMenuItem<String>(
-                      value: null,
-                      child: Text(
-                        'Nije izabrano',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      ),
-                    ),
-                    ...(attr.options ?? const []).map(
-                      (opt) => DropdownMenuItem(
-                        value: opt.value,
-                        child: Text(opt.label),
-                      ),
-                    ),
-                  ],
-                  onChanged: (val) {
-                    setState(() {
-                      if (val == null || val.isEmpty) {
-                        _attributes.remove(attr.key);
-                      } else {
-                        _attributes[attr.key] = val;
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-              ] else if (attr.type == AttributeType.boolean) ...[
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  secondary:
-                      attr.icon != null ? Icon(attr.icon, size: 20) : null,
-                  title: Text(attr.label),
-                  subtitle: attr.hint != null ? Text(attr.hint!) : null,
-                  value: _attributes[attr.key] == true,
-                  onChanged: (val) {
-                    setState(() {
-                      _attributes[attr.key] = val;
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-              ] else ...[
-                TextFormField(
-                  key: ValueKey('attr_${attr.key}'),
-                  initialValue: _attributes[attr.key]?.toString() ?? '',
-                  decoration: InputDecoration(
-                    labelText: attr.label,
-                    hintText: attr.hint,
-                    suffixText: attr.unit,
-                    prefixIcon:
-                        attr.icon != null ? Icon(attr.icon, size: 20) : null,
-                  ),
-                  onChanged: (val) {
-                    final t = val.trim();
-                    if (t.isNotEmpty) {
-                      _attributes[attr.key] = t;
-                    } else {
-                      _attributes.remove(attr.key);
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-/// 2-kolonska kartica za izbor podkategorije u formi za oglas
-class _CategoryCardPicker extends StatelessWidget {
-  final ClassifiedCategoryModel category;
-  final bool hasChildren;
-  final VoidCallback onTap;
 
-  const _CategoryCardPicker({
-    required this.category,
-    this.hasChildren = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-            width: 1.0,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: category.brandLogoAsset != null
-                    ? Colors.white
-                    : (isDark ? const Color(0xFF0F172A) : Colors.white),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF334155)
-                      : const Color(0xFFE5E7EB),
-                ),
-              ),
-              child: category.brandLogoAsset != null
-                  ? Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Image.asset(
-                        category.brandLogoAsset!,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.medium,
-                        errorBuilder: (_, __, ___) => Icon(category.iconData,
-                            size: 18, color: colorScheme.primary),
-                      ),
-                    )
-                  : Icon(category.iconData,
-                      size: 18, color: colorScheme.primary),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      category.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.15),
-                    ),
-                  ),
-                  if (category.adCount > 0) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 4.5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${category.adCount}',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (hasChildren)
-              const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-}

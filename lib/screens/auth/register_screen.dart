@@ -8,7 +8,8 @@ import '../../providers/app_state.dart';
 import '../../widgets/app_back_button.dart';
 import '../../widgets/error_dialog.dart';
 import '../../widgets/beta_announcement_banner.dart';
-import 'login_screen.dart';
+import '../../widgets/auth/marketing_content.dart';
+
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});

@@ -35,7 +35,11 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
   @override
   void dispose() {
     widget.tabController?.removeListener(_onTabChanged);
-    _channel?.unsubscribe();
+    if (_channel != null) {
+      try {
+        Supabase.instance.client.removeChannel(_channel!);
+      } catch (_) {}
+    }
     _channel = null;
     super.dispose();
   }
@@ -85,7 +89,9 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) {
       if (_loadedForUserId != null) {
-        _channel?.unsubscribe();
+        if (_channel != null) {
+          try { Supabase.instance.client.removeChannel(_channel!); } catch (_) {}
+        }
         _channel = null;
         setState(() {
           _loadedForUserId = null;
@@ -95,7 +101,9 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
       return;
     }
     if (_loadedForUserId != user.id) {
-      _channel?.unsubscribe();
+      if (_channel != null) {
+        try { Supabase.instance.client.removeChannel(_channel!); } catch (_) {}
+      }
       _subscribeToFavoriteSellersChanges();
       setState(() {
         _loadedForUserId = user.id;

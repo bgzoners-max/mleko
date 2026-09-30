@@ -58,7 +58,7 @@ class _RusticCratePainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..color = wood;
 
-    // ── Plodovi koji virе iznad sanduka (blaga asimetrija) ──
+    // ── Plodovi koji vire iznad sanduka (blaga asimetrija) ──
     final r = s * 0.11;
     final fruitPaint = Paint()..style = PaintingStyle.fill;
     fruitPaint.color = terracotta;

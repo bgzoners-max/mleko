@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'logger_service.dart';
 
 /// Interfejs za modularne provajdere za praćenje grešaka (npr. Crashlytics, Sentry, Mock za testove).
 abstract class CrashReporter {
@@ -95,7 +96,9 @@ class FirebaseCrashlyticsReporter implements CrashReporter {
     if (!_isAvailable) return;
     try {
       await FirebaseCrashlytics.instance.setUserIdentifier(userId ?? '');
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('FirebaseCrashlytics setUserIdentifier failed', extra: {'error': e.toString()});
+    }
   }
 
   @override
@@ -103,7 +106,9 @@ class FirebaseCrashlyticsReporter implements CrashReporter {
     if (!_isAvailable) return;
     try {
       await FirebaseCrashlytics.instance.setCustomKey(key, value);
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('FirebaseCrashlytics setCustomKey failed', extra: {'error': e.toString()});
+    }
   }
 
   @override
@@ -111,7 +116,9 @@ class FirebaseCrashlyticsReporter implements CrashReporter {
     if (!_isAvailable) return;
     try {
       await FirebaseCrashlytics.instance.log(message);
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('FirebaseCrashlytics log failed', extra: {'error': e.toString()});
+    }
   }
 }
 
@@ -169,7 +176,9 @@ class CrashReportingService {
           information: information,
           fatal: fatal,
         );
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('CrashReportingService recordError failed', extra: {'error': e.toString()});
+      }
     }
   }
 
@@ -181,7 +190,9 @@ class CrashReportingService {
     for (final reporter in _reporters) {
       try {
         await reporter.recordFlutterError(details, fatal: fatal);
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('CrashReportingService recordFlutterError failed', extra: {'error': e.toString()});
+      }
     }
   }
 
@@ -190,7 +201,9 @@ class CrashReportingService {
     for (final reporter in _reporters) {
       try {
         await reporter.setUserIdentifier(userId);
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('CrashReportingService setUserIdentifier failed', extra: {'error': e.toString()});
+      }
     }
   }
 
@@ -199,7 +212,9 @@ class CrashReportingService {
     for (final reporter in _reporters) {
       try {
         await reporter.setCustomKey(key, value);
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('CrashReportingService setCustomKey failed', extra: {'error': e.toString()});
+      }
     }
   }
 
@@ -208,7 +223,9 @@ class CrashReportingService {
     for (final reporter in _reporters) {
       try {
         await reporter.log(message);
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('CrashReportingService log failed', extra: {'error': e.toString()});
+      }
     }
   }
 }

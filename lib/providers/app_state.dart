@@ -101,7 +101,9 @@ class AppState extends ChangeNotifier {
         _unreadNotificationCount = 0;
         _unreadDebounceTimer?.cancel();
         _unreadDebounceTimer = null;
-        unawaited(_notifChannel?.unsubscribe());
+        if (_notifChannel != null) {
+          try { unawaited(Supabase.instance.client.removeChannel(_notifChannel!)); } catch (_) {}
+        }
         _notifChannel = null;
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
@@ -162,7 +164,9 @@ class AppState extends ChangeNotifier {
           _unreadNotificationCount = 0;
           _unreadDebounceTimer?.cancel();
           _unreadDebounceTimer = null;
-          unawaited(_notifChannel?.unsubscribe());
+          if (_notifChannel != null) {
+            try { unawaited(Supabase.instance.client.removeChannel(_notifChannel!)); } catch (_) {}
+          }
           _notifChannel = null;
         }
       }
@@ -221,7 +225,9 @@ class AppState extends ChangeNotifier {
 
   void _subscribeToNotifications() {
     // Prethodno unsubscribe ako je kanal već aktivan
-    _notifChannel?.unsubscribe();
+    if (_notifChannel != null) {
+      try { Supabase.instance.client.removeChannel(_notifChannel!); } catch (_) {}
+    }
     _notifChannel = null;
 
     if (_user == null || _user!.isGuest) return;
@@ -300,7 +306,9 @@ class AppState extends ChangeNotifier {
     _unreadDebounceTimer = null;
     _notificationEventsController.close();
     _authSubscription?.cancel();
-    _notifChannel?.unsubscribe();
+    if (_notifChannel != null) {
+      try { Supabase.instance.client.removeChannel(_notifChannel!); } catch (_) {}
+    }
     _connectivity.removeListener(_connectivityListener);
     _connectivity.dispose();
     _syncManager.dispose();

@@ -94,10 +94,10 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[Locale('sr')];
 
-  /// The title of the application
+  /// No description provided for @appTitle.
   ///
   /// In sr, this message translates to:
-  /// **'Mleko'**
+  /// **'Domaći market'**
   String get appTitle;
 }
 

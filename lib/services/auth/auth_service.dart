@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/logger_service.dart';
 
 import '../../models/user_model.dart';
 import '../../models/app_error.dart';
@@ -42,7 +43,9 @@ class AuthService {
       if (user != null && user.isAnonymous) {
         await _client.auth.signOut();
       }
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('ensureCleanSession failed', extra: {'error': e.toString()});
+    }
   }
 
   Future<UserModel?> getCurrentUser() async {
@@ -53,7 +56,9 @@ class AuthService {
         // Nalog gosta ne treba da postoji — odjavljujemo zaostalu anonimnu sesiju
         try {
           await _client.auth.signOut();
-        } catch (_) {}
+        } catch (e) {
+          LoggerService.warning('signOut anonymous failed', extra: {'error': e.toString()});
+        }
         return null;
       }
 
@@ -164,7 +169,9 @@ class AuthService {
     if (_client.auth.currentUser?.isAnonymous == true) {
       try {
         await _client.auth.signOut();
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('signOut leftover guest failed', extra: {'error': e.toString()});
+      }
     }
   }
 

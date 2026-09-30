@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design_system.dart';
+import '../../services/core/logger_service.dart';
 
 /// Prijateljski i responsivni fallback widget koji zamenjuje crveni/sivi ekran greške u Flutteru.
 ///
@@ -39,16 +40,21 @@ class _AppErrorWidgetState extends State<AppErrorWidget> {
           duration: Duration(seconds: 2),
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      LoggerService.warning('Failed to show SnackBar in AppErrorWidget', extra: {'error': e.toString()});
+    }
   }
 
   void _navigateToHome(BuildContext context) {
     try {
       context.go('/');
-    } catch (_) {
+    } catch (e) {
+      LoggerService.warning('Failed to go to / in AppErrorWidget', extra: {'error': e.toString()});
       try {
         Navigator.maybeOf(context)?.popUntil((route) => route.isFirst);
-      } catch (_) {}
+      } catch (e) {
+        LoggerService.warning('Failed to pop routes in AppErrorWidget', extra: {'error': e.toString()});
+      }
     }
   }
 

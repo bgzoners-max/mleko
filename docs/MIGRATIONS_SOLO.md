@@ -45,6 +45,24 @@ Trenutni repo broji preko 180 migracija u `supabase/migrations/`, od kojih mnoge
    - Na postojećoj remote bazi: `supabase migration repair --status applied <verzije>` ili zadržavanje inkrementalnih migracija do sledeće veće verzije (v2.0).
    - Za nova okruženja (dev, staging, novi developer): baza se instant podiže iz jednog baseline fajla.
 
+### Kvartalna konsolidacija (novi proces od Q4 2026)
+
+Svakog kvartala (januar, april, jul, oktobar) pregledaj migracije iz prethodnog kvartala i spoji stabilne grupe:
+
+| Korak | Akcija | Komanda / alat |
+|-------|--------|----------------|
+| 1 | Identificiraj feature-grupe | Ručni pregled: npr. svi `fix_rls_*`, svi `add_index_*` |
+| 2 | Proveri da su primenjene na produkciji | `supabase migration list` |
+| 3 | Spoji u jednu migraciju po feature grupi | Ručno: kreiraj `YYYYMMDD_consolidated_<feature>.sql` |
+| 4 | Označi stare kao `applied` | `supabase migration repair --status applied <verzija>` |
+| 5 | Premesti stare u arhivu | `mv supabase/migrations/<stare> docs/sql/migrations_archive/` |
+| 6 | Verifikuj | `supabase db reset --local` mora proći čisto |
+
+**Pravila:**
+- Nikada ne konsoliduj migracije koje nisu primenjene na SVA okruženja (dev, staging, prod).
+- Ostavi minimum 30 dana od poslednje primene pre konsolidacije.
+- Dokumentuj svaku konsolidaciju u `CHANGELOG.md` sa listom spojenih migracija.
+
 ---
 
 ## 🛡️ Bezbednost `supabase/seed.sql` i test naloga (`password123`)

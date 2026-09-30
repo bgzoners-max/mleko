@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart' as p_provider;
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_providers.dart';
 import 'core/router.dart';
@@ -271,6 +272,7 @@ void main() async {
             darkTheme: buildAppDarkTheme(compact: settings.compactMode),
             themeMode: settings.themeMode,
             localizationsDelegates: const [
+              AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
