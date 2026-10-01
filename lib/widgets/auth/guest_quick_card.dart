@@ -9,7 +9,7 @@ class GuestQuickCard extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onTap;
 
-  const GuestQuickCard({
+  const GuestQuickCard({super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

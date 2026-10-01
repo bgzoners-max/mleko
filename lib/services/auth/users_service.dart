@@ -79,24 +79,37 @@ class UsersService {
     bool? phonePublic,
   }) async {
     try {
-      final data = <String, dynamic>{
-        'id': userId,
+      final updateData = <String, dynamic>{
         'updated_at': DateTime.now().toIso8601String(),
       };
-      if (email != null) data['email'] = email;
-      if (displayName != null) data['display_name'] = displayName;
-      if (phone != null) data['phone'] = phone;
-      if (city != null) data['city'] = city;
-      if (postalCode != null) data['postal_code'] = postalCode;
-      if (role != null) data['role'] = role;
-      if (isGuest != null) data['is_guest'] = isGuest;
-      if (farmName != null) data['farm_name'] = farmName;
-      if (location != null) data['location'] = location;
-      if (profileImageUrl != null) data['profile_image_url'] = profileImageUrl;
-      if (lat != null) data['lat'] = lat;
-      if (lng != null) data['lng'] = lng;
-      if (phonePublic != null) data['phone_public'] = phonePublic;
-      await _client.from('profiles').upsert(data);
+      if (email != null) updateData['email'] = email;
+      if (displayName != null) updateData['display_name'] = displayName;
+      if (phone != null) updateData['phone'] = phone;
+      if (city != null) updateData['city'] = city;
+      if (postalCode != null) updateData['postal_code'] = postalCode;
+      if (role != null) updateData['role'] = role;
+      if (isGuest != null) updateData['is_guest'] = isGuest;
+      if (farmName != null) updateData['farm_name'] = farmName;
+      if (location != null) updateData['location'] = location;
+      if (profileImageUrl != null) {
+        updateData['profile_image_url'] = profileImageUrl;
+      }
+      if (lat != null) updateData['lat'] = lat;
+      if (lng != null) updateData['lng'] = lng;
+      if (phonePublic != null) updateData['phone_public'] = phonePublic;
+
+      final updated = await _client
+          .from('profiles')
+          .update(updateData)
+          .eq('id', userId)
+          .select('id')
+          .maybeSingle();
+
+      if (updated == null) {
+        final insertData = Map<String, dynamic>.from(updateData);
+        insertData['id'] = userId;
+        await _client.from('profiles').insert(insertData);
+      }
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

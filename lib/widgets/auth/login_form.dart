@@ -10,7 +10,7 @@ import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
 import '../error_dialog.dart';
 class LoginForm extends StatefulWidget {
-  const LoginForm();
+  const LoginForm({super.key});
 
   @override
   State<LoginForm> createState() => LoginFormState();

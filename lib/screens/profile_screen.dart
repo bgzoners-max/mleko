@@ -19,7 +19,6 @@ import '../widgets/profile/buyer_stats_card.dart';
 import '../widgets/profile/seller_profile_photo_section.dart';
 import '../widgets/profile/seller_gallery_section.dart';
 import '../widgets/profile/profile_data_card.dart';
-import '../widgets/profile/profile_section_header.dart';
 import '../widgets/profile/panel_placeholder.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/guest_auth_prompt.dart';
@@ -41,6 +40,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(builder: (_) => screen),
     );
   }
+
+  void _push(String route) => context.push(route);
+  void _openPanel(String section, Widget screen, {required bool isWide}) {
+    if (isWide) {
+      _showInPanel(section, screen);
+    } else {
+      _push(switch (section) {
+        'favorites' => '/favorites',
+        'favorite-sellers' => '/favorite-sellers',
+        'saved-searches' => '/classifieds/saved-searches',
+        'messages' => '/conversations',
+        'notifications' => '/notifications',
+        'settings' => '/settings',
+        'becoming-seller' => '/becoming-seller',
+        _ => '/',
+      });
+    }
+  }
+
+  bool _isActive(String section, bool isWide) =>
+      isWide && _activeSection == section;
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Flexible(
           flex: 3,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 200, maxWidth: 420),
+            constraints: const BoxConstraints(minWidth: 200, maxWidth: 430),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -116,59 +136,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 6),
                   ],
                   ProfileDataCard(user: user),
-                  const SizedBox(height: 6),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.tips_and_updates_outlined,
-                            size: 18,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Brži pristup svim važnim stvarima',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w700),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Na profilu možeš brzo otvoriti porudžbine, omiljene proizvode, poruke i podešavanja.',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(height: 1.4),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   if (!user.isGuest) ...[
                     BuyerStatsCard(user: user),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                   ],
-                  if (user.isSeller) ...[
-                    MiniStoreCard(user: user),
-                    const SizedBox(height: 6),
-                  ],
-                  Card(
-                    child: Column(
-                      children: _buildNavItems(context, user, isWide: true),
-                    ),
-                  ),
+                  // SEKCIJA 1: MINI PIJACA (sa blago zelenkastom pozadinom)
+                  _buildMiniPijacaSection(context, user, isWide: true),
+                  const SizedBox(height: 10),
+                  // SEKCIJA 2: OGLASNIK (sve stavke oglasnika na jednom mestu)
+                  _buildOglasnikSection(context, user, isWide: true),
+                  const SizedBox(height: 10),
+                  // SEKCIJA 3: RECENZIJE I OCENE (zajednički ugled)
+                  _buildReviewsSection(context, user, isWide: true),
+                  const SizedBox(height: 10),
+                  // SEKCIJA 4: NALOG I PODEŠAVANJA
+                  _buildAccountSection(context, user, isWide: true),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -202,37 +186,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: EdgeInsets.all(isSmallTablet ? 12 : 8),
       children: [
         ...profileCards,
-        SizedBox(height: isSmallTablet ? 12 : 8),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
+        SizedBox(height: isSmallTablet ? 10 : 8),
+
+        // SEKCIJA 1: MINI PIJACA (sa blago zelenkastom pozadinom)
+        _buildMiniPijacaSection(context, user, isWide: false),
+        SizedBox(height: isSmallTablet ? 10 : 8),
+
+        // SEKCIJA 2: OGLASNIK (sve stavke oglasnika na jednom mestu)
+        _buildOglasnikSection(context, user, isWide: false),
+        SizedBox(height: isSmallTablet ? 10 : 8),
+
+        // SEKCIJA 3: RECENZIJE I OCENE (zajednički ugled)
+        _buildReviewsSection(context, user, isWide: false),
+        SizedBox(height: isSmallTablet ? 10 : 8),
+
+        // SEKCIJA 4: NALOG I PODEŠAVANJA
+        _buildAccountSection(context, user, isWide: false),
+        const SizedBox(height: 60),
+      ],
+    );
+  }
+
+  /// SEKCIJA 1: Sve što ima veze sa Mini pijacom (hrana, gazdinstva, porudžbine)
+  /// Upakovano zajedno sa blago zelenkastom pozadinom!
+  Widget _buildMiniPijacaSection(BuildContext context, UserModel user,
+      {required bool isWide}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Blago zelenkasta pozadina prilagođena temi (prirodni ton domaćinstva i hrane)
+    final bgColor = isDark ? const Color(0xFF132B1D) : const Color(0xFFEFF8F2);
+    final borderColor =
+        isDark ? const Color(0xFF1E462E) : const Color(0xFFC7E7D1);
+    final headerColor =
+        isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ZAGLAVLJE MINI PIJACE
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.tips_and_updates_outlined,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: headerColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.storefront_rounded,
+                      size: 20, color: headerColor),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Brži pristup svim važnim stvarima',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                        'MINI PIJACA',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                          color: headerColor,
+                        ),
                       ),
-                      const SizedBox(height: 4),
                       Text(
-                        'Na profilu možeš brzo otvoriti porudžbine, omiljene proizvode, poruke i podešavanja.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(height: 1.4),
+                        'Domaća hrana, porudžbine i gazdinstvo',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade700,
+                        ),
                       ),
                     ],
                   ),
@@ -240,251 +279,404 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-        ),
-        SizedBox(height: isSmallTablet ? 8 : 4),
-        if (user.isSeller) ...[
-          MiniStoreCard(user: user),
-          SizedBox(height: isSmallTablet ? 8 : 4),
+          const Divider(height: 12, thickness: 0.8),
+
+          // Ako je korisnik prodavac: kartica za njegovu mini prodavnicu
+          if (user.isSeller) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: MiniStoreCard(user: user),
+            ),
+            ListTile(
+              visualDensity: VisualDensity.compact,
+              leading: Icon(Icons.location_on_outlined, color: headerColor),
+              title: const Text('Moja lokacija i isporuke na mapi',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Podešavanje adrese i tačaka isporuke hrane'),
+              onTap: () => _push('/seller-settings'),
+            ),
+          ],
+
+          // Kupovina na mini pijaci (porudžbine i omiljeno)
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: Icon(Icons.shopping_bag_outlined, color: headerColor),
+            title: const Text('Moje porudžbine hrane',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Praćenje statusa i istorija porudžbina'),
+            onTap: () => _push('/orders'),
+          ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: Icon(Icons.favorite_outline, color: headerColor),
+            title: const Text('Omiljeni proizvodi'),
+            subtitle: const Text('Brzi pristup najdražim proizvodima sa pijace'),
+            selected: _isActive('favorites', isWide),
+            onTap: () => _openPanel('favorites', const FavoritesScreen(),
+                isWide: isWide),
+          ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: Icon(Icons.people_outline, color: headerColor),
+            title: const Text('Pratim gazdinstva i prodavce'),
+            subtitle: const Text('Obaveštenja o novoj ponudi proizvođača'),
+            selected: _isActive('favorite-sellers', isWide),
+            onTap: () => _openPanel(
+                'favorite-sellers', const FavoriteSellersScreen(),
+                isWide: isWide),
+          ),
+
+          // Ako korisnik još nije prodavac: ponuda da otvori gazdinstvo
+          if (!user.isGuest && !user.isSeller)
+            ListTile(
+              visualDensity: VisualDensity.compact,
+              leading: Icon(Icons.add_business_outlined, color: headerColor),
+              title: const Text('Postani prodavac / Otvori gazdinstvo',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle:
+                  const Text('Organizovana prodaja domaće hrane na mini pijaci'),
+              selected: _isActive('becoming-seller', isWide),
+              onTap: () => _openPanel(
+                  'becoming-seller', const BecomingSellerScreen(),
+                  isWide: isWide),
+            ),
+          const SizedBox(height: 6),
         ],
-        ..._buildNavItems(context, user, isWide: false),
-      ],
+      ),
     );
   }
 
-  List<Widget> _buildNavItems(BuildContext context, UserModel user,
+  /// SEKCIJA 2: Sve što ima veze sa Oglasnikom
+  /// Svi mali oglasi grupisani zajedno i blizu jedno drugog!
+  Widget _buildOglasnikSection(BuildContext context, UserModel user,
       {required bool isWide}) {
-    void push(String route) => context.push(route);
-    void openPanel(String section, Widget screen) =>
-        _showInPanel(section, screen);
-    bool isActive(String section) => isWide && _activeSection == section;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerColor =
+        isDark ? const Color(0xFFFFB74D) : const Color(0xFFE65100);
 
-    return [
-      const ProfileSectionHeader(title: 'KUPOVINA'),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.shopping_bag_outlined),
-        title: const Text('Moje porudžbine',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text('Praćenje statusa i istorija'),
-        onTap: () => push('/orders'),
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.favorite_outline),
-        title: const Text('Omiljeni proizvodi'),
-        subtitle: const Text('Brzi pristup najdražim proizvodima'),
-        selected: isActive('favorites'),
-        onTap: () => isWide
-            ? openPanel('favorites', const FavoritesScreen())
-            : push('/favorites'),
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.people_outline),
-        title: const Text('Pratim prodavce'),
-        selected: isActive('favorite-sellers'),
-        onTap: () => isWide
-            ? openPanel('favorite-sellers', const FavoriteSellersScreen())
-            : push('/favorite-sellers'),
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.rate_review_outlined),
-        title: const Text('Moje recenzije'),
-        onTap: () => push('/buyer/${user.id}/reviews'),
-      ),
-      const ProfileSectionHeader(title: 'OGLASNIK'),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.campaign_outlined),
-        title: const Text('Moji oglasi',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text('Pregled, izmena i status vaših oglasa'),
-        onTap: () {
-          if (user.isGuest) {
-            showGuestAuthPrompt(
-              context,
-              title: 'Moji oglasi',
-              message:
-                  'Kao gost možete slobodno pregledati sve oglase. Da biste upravljali sopstvenim oglasima, potrebno je da se prijavite na nalog.',
-              icon: Icons.campaign_outlined,
-            );
-            return;
-          }
-          push('/classifieds/my');
-        },
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.notifications_active_outlined),
-        title: const Text('Praćene kategorije i pretrage',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text('Obaveštenja o novim oglasima'),
-        selected: isActive('saved-searches'),
-        trailing: () {
-          final count =
-              context.watch<ClassifiedsProvider>().subscriptions.length;
-          if (count == 0) return null;
-          return Badge.count(
-            count: count,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          );
-        }(),
-        onTap: () {
-          if (user.isGuest) {
-            showGuestAuthPrompt(
-              context,
-              title: 'Praćene pretrage',
-              message:
-                  'Da biste sačuvali pretrage i dobijali obaveštenja o novim oglasima, potrebno je da se prijavite na nalog.',
-              icon: Icons.notifications_active_outlined,
-            );
-            return;
-          }
-          isWide
-              ? openPanel('saved-searches', const SavedSearchesScreen())
-              : push('/classifieds/saved-searches');
-        },
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.add_circle_outline),
-        title: const Text('Postavi novi oglas'),
-        subtitle: const Text('Besplatna objava oglasa'),
-        onTap: () {
-          if (user.isGuest) {
-            showGuestAuthPrompt(
-              context,
-              title: 'Postavljanje oglasa',
-              message:
-                  'Kao gost možete slobodno pregledati sve oglase. Da biste postavili svoj oglas, potrebno je da se prijavite na nalog ili besplatno registrujete.',
-              icon: Icons.add_circle_outline,
-            );
-            return;
-          }
-          push('/classifieds/new');
-        },
-      ),
-      if (!user.isGuest && !user.isSeller)
-        ListTile(
-          visualDensity: VisualDensity.compact,
-          leading: const Icon(Icons.chat_bubble_outline),
-          title: const Text('Poruke'),
-          selected: isActive('messages'),
-          onTap: () => isWide
-              ? openPanel('messages', const ConversationsScreen())
-              : push('/conversations'),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade900 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+          width: 1.0,
         ),
-      const SizedBox(height: 8),
-      const ProfileSectionHeader(title: 'PRODAVNICA'),
-      if (user.isSeller) ...[
-        if (!user.isGuest)
-          ListTile(
-            visualDensity: VisualDensity.compact,
-            leading: const Icon(Icons.chat_bubble_outline),
-            title: const Text('Poruke'),
-            selected: isActive('messages'),
-            onTap: () => isWide
-                ? openPanel('messages', const ConversationsScreen())
-                : push('/conversations'),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-        ListTile(
-          visualDensity: VisualDensity.compact,
-          leading: const Icon(Icons.location_on_outlined),
-          title: const Text('Moja lokacija na mapi'),
-          onTap: () => push('/seller-settings'),
-        ),
-        ListTile(
-          visualDensity: VisualDensity.compact,
-          leading: const Icon(Icons.rate_review_outlined),
-          title: const Text('Recenzije kupaca'),
-          selected: isActive('reviews'),
-          onTap: () => isWide
-              ? openPanel('reviews', SellerReviewsScreen(sellerId: user.id))
-              : push('/seller/${user.id}/reviews'),
-        ),
-      ] else if (!user.isGuest) ...[
-        ListTile(
-          visualDensity: VisualDensity.compact,
-          leading: const Icon(Icons.storefront_outlined),
-          title: const Text('Postani prodavac / Otvori gazdinstvo'),
-          subtitle: const Text('Organizovana prodaja domaće hrane i isporuke'),
-          selected: isActive('becoming-seller'),
-          onTap: () => isWide
-              ? openPanel('becoming-seller', const BecomingSellerScreen())
-              : push('/becoming-seller'),
-        ),
-      ] else ...[
-        ListTile(
-          visualDensity: VisualDensity.compact,
-          leading: const Icon(Icons.person_add_outlined),
-          title: const Text('Registruj se'),
-          subtitle: const Text('Kupuj hranu, postavljaj oglase i otvori gazdinstvo'),
-          onTap: () => push('/register'),
-        ),
-      ],
-      const SizedBox(height: 8),
-      const ProfileSectionHeader(title: 'NALOG I PODRŠKA'),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.notifications_outlined),
-        title: const Text('Obaveštenja'),
-        subtitle: const Text('Nove poruke i ažuriranja'),
-        selected: isActive('notifications'),
-        onTap: () => isWide
-            ? openPanel('notifications', const NotificationsScreen())
-            : push('/notifications'),
+        ],
       ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.settings_outlined),
-        title: const Text('Podešavanja'),
-        selected: isActive('settings'),
-        onTap: () => isWide
-            ? openPanel('settings', const SettingsScreen())
-            : push('/settings'),
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.help_outline),
-        title: const Text('Podrška i pomoć'),
-        onTap: () => push('/support'),
-      ),
-      ListTile(
-        visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.info_outline),
-        title: const Text('O aplikaciji'),
-        onTap: () => push('/about'),
-      ),
-      const Divider(),
-      ListTile(
-        leading: const Icon(Icons.logout),
-        title: const Text('Odjavi se'),
-        onTap: () async {
-          final ok = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Odjavi se?'),
-              content:
-                  const Text('Da li ste sigurni da želite da se odjavite?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Odustani'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ZAGLAVLJE OGLASNIKA
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: headerColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child:
+                      Icon(Icons.campaign_outlined, size: 20, color: headerColor),
                 ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Odjavi se'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'OGLASNIK',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                          color: headerColor,
+                        ),
+                      ),
+                      Text(
+                        'Mali oglasi, ponude i potražnja',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-          );
-          if (ok == true && context.mounted) {
-            await context.read<AppState>().authService.signOut();
-            if (context.mounted) context.go('/login');
-          }
-        },
+          ),
+          const Divider(height: 12, thickness: 0.8),
+
+          // Moji oglasi
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: Icon(Icons.format_list_bulleted_rounded, color: headerColor),
+            title: const Text('Moji oglasi',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Pregled, izmena i status objavljenih oglasa'),
+            onTap: () {
+              if (user.isGuest) {
+                showGuestAuthPrompt(
+                  context,
+                  title: 'Moji oglasi',
+                  message:
+                      'Kao gost možete slobodno pregledati sve oglase. Da biste upravljali sopstvenim oglasima, potrebno je da se prijavite.',
+                  icon: Icons.campaign_outlined,
+                );
+                return;
+              }
+              _push('/classifieds/my');
+            },
+          ),
+
+          // Postavi novi oglas
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: Icon(Icons.add_circle_outline, color: headerColor),
+            title: const Text('Postavi novi oglas',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Besplatna objava novog malog oglasa'),
+            onTap: () {
+              if (user.isGuest) {
+                showGuestAuthPrompt(
+                  context,
+                  title: 'Postavljanje oglasa',
+                  message:
+                      'Kao gost možete slobodno pregledati sve oglase. Da biste postavili svoj oglas, potrebno je da se prijavite.',
+                  icon: Icons.add_circle_outline,
+                );
+                return;
+              }
+              _push('/classifieds/new');
+            },
+          ),
+
+          // Praćene kategorije i pretrage (sa brojačem)
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading:
+                Icon(Icons.notifications_active_outlined, color: headerColor),
+            title: const Text('Praćene kategorije i pretrage',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Obaveštenja o novim oglasima koji vas zanimaju'),
+            selected: _isActive('saved-searches', isWide),
+            trailing: () {
+              final count =
+                  context.watch<ClassifiedsProvider>().subscriptions.length;
+              if (count == 0) return null;
+              return Badge.count(
+                count: count,
+                backgroundColor: headerColor,
+              );
+            }(),
+            onTap: () {
+              if (user.isGuest) {
+                showGuestAuthPrompt(
+                  context,
+                  title: 'Praćene pretrage',
+                  message:
+                      'Da biste sačuvali pretrage i dobijali obaveštenja o novim oglasima, potrebno je da se prijavite.',
+                  icon: Icons.notifications_active_outlined,
+                );
+                return;
+              }
+              _openPanel('saved-searches', const SavedSearchesScreen(),
+                  isWide: isWide);
+            },
+          ),
+          const SizedBox(height: 6),
+        ],
       ),
-    ];
+    );
+  }
+
+  /// SEKCIJA 3: Ocene i recenzije (zajednički ugled prodavca i kupca)
+  Widget _buildReviewsSection(BuildContext context, UserModel user,
+      {required bool isWide}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const headerColor = Colors.amber;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade900 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                Icon(Icons.star_outline_rounded,
+                    size: 20, color: headerColor),
+                SizedBox(width: 8),
+                Text(
+                  'OCENE I RECENZIJE',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    color: headerColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 8, thickness: 0.8),
+          if (user.isSeller)
+            ListTile(
+              visualDensity: VisualDensity.compact,
+              leading: const Icon(Icons.rate_review_outlined),
+              title: const Text('Recenzije kupaca',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle:
+                  const Text('Utisci kupaca za proizvode i male oglase'),
+              selected: _isActive('reviews', isWide),
+              onTap: () => _openPanel(
+                  'reviews', SellerReviewsScreen(sellerId: user.id),
+                  isWide: isWide),
+            ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.reviews_outlined),
+            title: const Text('Moje date recenzije'),
+            subtitle: const Text('Utisci koje ste ostavili drugim prodavcima'),
+            onTap: () => _push('/buyer/${user.id}/reviews'),
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  /// SEKCIJA 4: Nalog i podešavanja
+  Widget _buildAccountSection(BuildContext context, UserModel user,
+      {required bool isWide}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey.shade900 : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                Icon(Icons.manage_accounts_outlined,
+                    size: 20, color: Colors.grey.shade600),
+                const SizedBox(width: 8),
+                Text(
+                  'NALOG I PODEŠAVANJA',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 8, thickness: 0.8),
+          if (!user.isGuest)
+            ListTile(
+              visualDensity: VisualDensity.compact,
+              leading: const Icon(Icons.chat_bubble_outline),
+              title: const Text('Poruke'),
+              subtitle: const Text('Direktni razgovori sa kupcima i prodavcima'),
+              selected: _isActive('messages', isWide),
+              onTap: () => _openPanel('messages', const ConversationsScreen(),
+                  isWide: isWide),
+            ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Obaveštenja'),
+            subtitle: const Text('Nove poruke i statusi'),
+            selected: _isActive('notifications', isWide),
+            onTap: () => _openPanel(
+                'notifications', const NotificationsScreen(),
+                isWide: isWide),
+          ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.settings_outlined),
+            title: const Text('Podešavanja'),
+            selected: _isActive('settings', isWide),
+            onTap: () => _openPanel('settings', const SettingsScreen(),
+                isWide: isWide),
+          ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.help_outline),
+            title: const Text('Podrška i pomoć'),
+            onTap: () => _push('/support'),
+          ),
+          ListTile(
+            visualDensity: VisualDensity.compact,
+            leading: const Icon(Icons.info_outline),
+            title: const Text('O aplikaciji'),
+            onTap: () => _push('/about'),
+          ),
+          const Divider(height: 8),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text('Odjavi se',
+                style: TextStyle(color: Colors.redAccent)),
+            onTap: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Odjavi se?'),
+                  content:
+                      const Text('Da li ste sigurni da želite da se odjavite?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Odustani'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Odjavi se'),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true && context.mounted) {
+                await context.read<AppState>().authService.signOut();
+                if (context.mounted) {
+                  context.go('/');
+                }
+              }
+            },
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
   }
 }

@@ -2,7 +2,7 @@ import 'auth_utils.dart';
 import '../../providers/app_settings_provider.dart';
 import 'package:flutter/material.dart';
 class MobileHeroSection extends StatelessWidget {
-  const MobileHeroSection();
+  const MobileHeroSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +125,7 @@ class MobileHeroSection extends StatelessWidget {
 }
 
 class MobileShowcaseSection extends StatelessWidget {
-  const MobileShowcaseSection();
+  const MobileShowcaseSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +271,7 @@ class MobileShowcaseCard extends StatelessWidget {
   final String actionLabel;
   final VoidCallback onAction;
 
-  const MobileShowcaseCard({
+  const MobileShowcaseCard({super.key,
     required this.isDark,
     required this.icon,
     required this.badgeText,
@@ -466,7 +466,7 @@ class MobileTrustBadge extends StatelessWidget {
   final String label;
   final bool isDark;
 
-  const MobileTrustBadge({
+  const MobileTrustBadge({super.key,
     required this.icon,
     required this.label,
     required this.isDark,

@@ -170,8 +170,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         slivers: [
           // Standalone Amazon Header ako nismo na početnoj (embedded)
           if (!widget.isEmbedded)
-            SliverToBoxAdapter(
-              child: const ClassifiedFeedHeader(),
+            const SliverToBoxAdapter(
+              child: ClassifiedFeedHeader(),
             ),
 
           // Opcioni header (MarketModeSwitcher)
@@ -391,7 +391,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                   ),
                 ),
               ),
-            
+
             // Header podkategorija sa navigacijom (breadcrumbs) i dugmetom 'Sve u...'
             if (classifieds.activeRootCategory != null)
               SliverToBoxAdapter(
