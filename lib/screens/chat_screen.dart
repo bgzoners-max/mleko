@@ -15,6 +15,7 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/chat/chat_date_separator.dart';
 import '../widgets/chat/chat_input_area.dart';
+import '../widgets/chat/chat_item_context_card.dart';
 import '../widgets/chat/chat_message_bubble.dart';
 import '../widgets/chat/chat_message_menu.dart';
 import '../widgets/chat/chat_order_context_card.dart';
@@ -72,6 +73,13 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _sending = false;
   String? _otherPartyName;
   String? _otherPartyId;
+  String? _itemTitle;
+  String? _itemImageUrl;
+  double? _itemPrice;
+  String? _itemUnit;
+  String? _productId;
+  String? _adId;
+  String? _itemType;
   OrderModel? _order;
   bool _isBuyer = true;
   List<String> _sellerCustomReplies = const [];
@@ -213,6 +221,13 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _otherPartyName = otherPartyName;
         _otherPartyId = otherPartyId;
+        _itemTitle = info.itemTitle;
+        _itemImageUrl = info.itemImageUrl;
+        _itemPrice = info.itemPrice;
+        _itemUnit = info.itemUnit;
+        _productId = info.productId;
+        _adId = info.adId;
+        _itemType = info.itemType;
         _order = order;
         _isBuyer = isBuyer;
         _sellerCustomReplies = customReplies.length > 5
@@ -378,6 +393,7 @@ class _ChatScreenState extends State<ChatScreen> {
         otherPartyName: _otherPartyName,
         otherPartyId: _otherPartyId,
         isBuyer: _isBuyer,
+        itemTitle: _itemTitle,
       ),
       body: Align(
         alignment: Alignment.topCenter,
@@ -387,7 +403,18 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           child: Column(
             children: [
-              if (_order != null) ChatOrderContextCard(order: _order!),
+              if (_order != null)
+                ChatOrderContextCard(order: _order!)
+              else if (_itemTitle != null && _itemTitle!.isNotEmpty)
+                ChatItemContextCard(
+                  title: _itemTitle!,
+                  imageUrl: _itemImageUrl,
+                  price: _itemPrice,
+                  unit: _itemUnit,
+                  productId: _productId,
+                  adId: _adId,
+                  itemType: _itemType,
+                ),
               if (_sellerStats != null)
                 ChatSellerStatsCard(stats: _sellerStats!),
               Padding(

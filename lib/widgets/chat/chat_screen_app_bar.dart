@@ -6,12 +6,14 @@ class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? otherPartyName;
   final String? otherPartyId;
   final bool isBuyer;
+  final String? itemTitle;
 
   const ChatScreenAppBar({
     super.key,
     required this.otherPartyName,
     required this.otherPartyId,
     required this.isBuyer,
+    this.itemTitle,
   });
 
   @override
@@ -21,7 +23,28 @@ class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       leading: const AppBackButton(fallbackRoute: '/conversations'),
-      title: Text(otherPartyName ?? 'Razgovor'),
+      title: itemTitle != null && itemTitle!.isNotEmpty
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  otherPartyName ?? 'Razgovor',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  itemTitle!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            )
+          : Text(otherPartyName ?? 'Razgovor'),
       actions: [
         if (otherPartyId != null)
           IconButton(

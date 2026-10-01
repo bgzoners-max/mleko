@@ -23,14 +23,28 @@ class ChatService {
 
   static const typingStaleThreshold = Duration(seconds: 6);
 
-  Future<String?> _findConversationId(String buyerId, String sellerId) async {
+  Future<String?> _findConversationId(
+    String buyerId,
+    String sellerId, {
+    String? productId,
+    String? adId,
+  }) async {
     try {
-      final existing = await _client
+      var query = _client
           .from('conversations')
           .select('id')
           .eq('buyer_id', buyerId)
-          .eq('seller_id', sellerId)
-          .maybeSingle();
+          .eq('seller_id', sellerId);
+
+      if (productId != null) {
+        query = query.eq('product_id', productId);
+      } else if (adId != null) {
+        query = query.eq('ad_id', adId);
+      } else {
+        query = query.isFilter('product_id', null).isFilter('ad_id', null);
+      }
+
+      final existing = await query.maybeSingle();
       return existing?['id'] as String?;
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
@@ -39,32 +53,39 @@ class ChatService {
 
   // ─── Razgovori ─────────────────────────────────────────────────────────────
 
-  /// Pronađi ili kreiraj razgovor između kupca i prodavca.
+  /// Pronađi ili kreiraj razgovor između kupca i prodavca vezan za konkretan
+  /// proizvod ([productId]) ili oglas ([adId]).
   ///
-  /// Razgovor između kupca i prodavca je jedinstven (1-na-1 thread).
+  /// Svaki proizvod/predmet ima svoj zaseban razgovor.
   /// Polje `orderId` predstavlja kontekst najrelevantnije/poslednje porudžbine
   /// koja se prikazuje u zaglavlju razgovora.
-  /// - Ako je [orderId] prosleđen i [updateOrderIdIfPresent] je true, zaglavlje se
-  ///   ažurira na novu porudžbinu.
-  /// - Ako [orderId] nije prosleđen, postojeće vezivanje za porudžbinu u bazi se NE briše.
   Future<String> getOrCreateConversation(
     String buyerId,
     String sellerId, {
+    String? productId,
+    String? adId,
     String? orderId,
     bool updateOrderIdIfPresent = true,
   }) async {
     try {
       final shouldUpdateOrderId = orderId != null && updateOrderIdIfPresent;
+      final payload = <String, dynamic>{
+        'buyer_id': buyerId,
+        'seller_id': sellerId,
+        if (productId != null) 'product_id': productId,
+        if (adId != null) 'ad_id': adId,
+        if (shouldUpdateOrderId) 'order_id': orderId,
+      };
+
+      final onConflict = productId != null
+          ? 'buyer_id,seller_id,product_id'
+          : adId != null
+              ? 'buyer_id,seller_id,ad_id'
+              : 'buyer_id,seller_id';
+
       final res = await _client
           .from('conversations')
-          .upsert(
-            {
-              'buyer_id': buyerId,
-              'seller_id': sellerId,
-              if (shouldUpdateOrderId) 'order_id': orderId,
-            },
-            onConflict: 'buyer_id,seller_id',
-          )
+          .upsert(payload, onConflict: onConflict)
           .select('id')
           .single();
       return res['id'] as String;
@@ -73,7 +94,12 @@ class ChatService {
         'Conversation upsert failed, retrying with fetch fallback',
         extra: {'error': e.toString()},
       );
-      final existingId = await _findConversationId(buyerId, sellerId);
+      final existingId = await _findConversationId(
+        buyerId,
+        sellerId,
+        productId: productId,
+        adId: adId,
+      );
       if (existingId == null) {
         throw AppError.from(e, stackTrace: st);
       }
@@ -830,13 +856,20 @@ class ChatService {
 
   // ─── Info o razgovoru ──────────────────────────────────────────────────────
 
-  /// Dohvata kompletne informacije o razgovoru sa imenima učesnika.
+  /// Dohvata kompletne informacije o razgovoru sa imenima učesnika i podacima o predmetu/proizvodu.
   Future<
       ({
         String? id,
         String? buyerId,
         String? sellerId,
         String? orderId,
+        String? productId,
+        String? adId,
+        String? itemTitle,
+        String? itemImageUrl,
+        double? itemPrice,
+        String? itemUnit,
+        String? itemType,
         String buyerName,
         String sellerName,
       })> getConversationInfoWithProfiles(String conversationId) async {
@@ -846,23 +879,40 @@ class ChatService {
         params: {'p_conversation_id': conversationId},
       );
 
-      if (result == null) {
+      if (result == null || (result as List).isEmpty) {
         return (
           id: null,
           buyerId: null,
           sellerId: null,
           orderId: null,
+          productId: null,
+          adId: null,
+          itemTitle: null,
+          itemImageUrl: null,
+          itemPrice: null,
+          itemUnit: null,
+          itemType: null,
           buyerName: 'Korisnik',
           sellerName: 'Korisnik'
         );
       }
 
-      final row = (result as List).first as Map<String, dynamic>;
+      final first = result.first;
+      final row = first is Map<String, dynamic>
+          ? first
+          : Map<String, dynamic>.from(first as Map);
       return (
         id: row['id'] as String?,
         buyerId: row['buyer_id'] as String?,
         sellerId: row['seller_id'] as String?,
         orderId: row['order_id'] as String?,
+        productId: row['product_id'] as String?,
+        adId: row['ad_id'] as String?,
+        itemTitle: row['item_title'] as String?,
+        itemImageUrl: row['item_image_url'] as String?,
+        itemPrice: (row['item_price'] as num?)?.toDouble(),
+        itemUnit: row['item_unit'] as String?,
+        itemType: row['item_type'] as String?,
         buyerName: (row['buyer_name'] as String?) ?? 'Kupac',
         sellerName: (row['seller_name'] as String?) ?? 'Prodavac',
       );

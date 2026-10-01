@@ -268,7 +268,11 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
 
     try {
       final chatService = context.read<ChatService>();
-      final convId = await chatService.getOrCreateConversation(user.id, ad.userId);
+      final convId = await chatService.getOrCreateConversation(
+        user.id,
+        ad.userId,
+        adId: ad.id,
+      );
       if (mounted) {
         unawaited(context.push('/chat/$convId'));
       }

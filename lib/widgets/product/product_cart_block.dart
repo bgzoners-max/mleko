@@ -123,7 +123,11 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
     try {
       final convId = await context
           .read<ChatService>()
-          .getOrCreateConversation(user.id, widget.product.sellerId);
+          .getOrCreateConversation(
+            user.id,
+            widget.product.sellerId,
+            productId: widget.product.id,
+          );
       if (mounted) unawaited(context.push('/chat/$convId'));
     } catch (_) {
       if (mounted) {

@@ -228,6 +228,7 @@ export type Database = {
           price: number
           price_type: string
           reports_count: number
+          seller_type: string
           shares_count: number
           status: string
           title: string
@@ -255,6 +256,7 @@ export type Database = {
           price?: number
           price_type?: string
           reports_count?: number
+          seller_type?: string
           shares_count?: number
           status?: string
           title: string
@@ -282,6 +284,7 @@ export type Database = {
           price?: number
           price_type?: string
           reports_count?: number
+          seller_type?: string
           shares_count?: number
           status?: string
           title?: string
@@ -452,35 +455,76 @@ export type Database = {
       }
       conversations: {
         Row: {
+          ad_id: string | null
           buyer_id: string
           created_at: string | null
           id: string
           order_id: string | null
+          product_id: string | null
           seller_id: string
           updated_at: string | null
         }
         Insert: {
+          ad_id?: string | null
           buyer_id: string
           created_at?: string | null
           id?: string
           order_id?: string | null
+          product_id?: string | null
           seller_id: string
           updated_at?: string | null
         }
         Update: {
+          ad_id?: string | null
           buyer_id?: string
           created_at?: string | null
           id?: string
           order_id?: string | null
+          product_id?: string | null
           seller_id?: string
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "conversations_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "classified_ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "public_classified_ads"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_listing_autoflags"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "conversations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_with_ratings"
             referencedColumns: ["id"]
           },
         ]
@@ -1957,10 +2001,17 @@ export type Database = {
       get_conversation_info_with_profile: {
         Args: { p_conversation_id: string }
         Returns: {
+          ad_id: string
           buyer_id: string
           buyer_name: string
           id: string
+          item_image_url: string
+          item_price: number
+          item_title: string
+          item_type: string
+          item_unit: string
           order_id: string
+          product_id: string
           seller_id: string
           seller_name: string
         }[]
@@ -2143,7 +2194,12 @@ export type Database = {
         Args: { p_seller_id: string }
         Returns: Json
       }
-      get_seller_inbox: { Args: { p_seller_id: string }; Returns: Json }
+      get_seller_inbox:
+        | { Args: { p_seller_id: string }; Returns: Json }
+        | {
+            Args: { p_limit?: number; p_offset?: number; p_seller_id: string }
+            Returns: Json
+          }
       get_seller_loyalty_stats: { Args: { p_seller_id: string }; Returns: Json }
       get_seller_popular_products: {
         Args: { p_limit?: number; p_seller_id: string }

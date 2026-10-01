@@ -399,6 +399,7 @@ class BuyerOrderCard extends StatelessWidget {
                         user.id,
                         o.sellerId,
                         orderId: o.id,
+                        productId: o.productId,
                       );
                       if (context.mounted) unawaited(context.push('/chat/$convId'));
                     } catch (e) {

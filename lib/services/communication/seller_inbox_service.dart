@@ -28,6 +28,8 @@ class SellerInboxService {
       orderId: row['order_id'] as String?,
       conversationId: row['conversation_id'] as String?,
       buyerId: row['buyer_id'] as String?,
+      productId: row['product_id'] as String?,
+      adId: row['ad_id'] as String?,
       otherPartyName: row['other_party_name'] as String?,
       otherPartyImageUrl: row['other_party_image_url'] as String?,
       productName: row['product_name'] as String?,

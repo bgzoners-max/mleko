@@ -14,12 +14,26 @@ class ConversationModel {
   final int unreadCount;
   final bool isFavorite;
   final bool hidden;
+  final String? productId;
+  final String? adId;
+  final String? itemTitle;
+  final String? itemImageUrl;
+  final double? itemPrice;
+  final String? itemUnit;
+  final String? itemType;
 
   const ConversationModel({
     required this.id,
     required this.buyerId,
     required this.sellerId,
     this.orderId,
+    this.productId,
+    this.adId,
+    this.itemTitle,
+    this.itemImageUrl,
+    this.itemPrice,
+    this.itemUnit,
+    this.itemType,
     required this.createdAt,
     required this.updatedAt,
     this.otherPartyName,
@@ -58,6 +72,13 @@ class ConversationModel {
       buyerId: json['buyer_id'] as String,
       sellerId: json['seller_id'] as String,
       orderId: json['order_id'] as String?,
+      productId: json['product_id'] as String?,
+      adId: json['ad_id'] as String?,
+      itemTitle: json['item_title'] as String?,
+      itemImageUrl: json['item_image_url'] as String?,
+      itemPrice: (json['item_price'] as num?)?.toDouble(),
+      itemUnit: json['item_unit'] as String?,
+      itemType: json['item_type'] as String?,
       createdAt: parseDate(json['created_at'], now),
       updatedAt: parseDate(json['updated_at'], now),
       otherPartyName: json['other_party_name'] as String?,

@@ -510,8 +510,14 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
             deliverySelection: deliverySelection,
           );
 
-          await chatService.getOrCreateConversation(user.id, widget.sellerId,
-              orderId: orderId);
+          await chatService.getOrCreateConversation(
+            user.id,
+            widget.sellerId,
+            orderId: orderId,
+            productId: widget.items.isNotEmpty
+                ? widget.items.first.product.id
+                : null,
+          );
 
           if (_savePhoneToProfile) {
             final shouldUpdatePhone = (user.phone ?? '').trim() != phone;

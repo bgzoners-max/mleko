@@ -278,7 +278,8 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         }
         await chatService.getOrCreateConversation(
             user.id, widget.product.sellerId,
-            orderId: orderId);
+            orderId: orderId,
+            productId: widget.product.id);
         unawaited(AnalyticsService().logPurchase(
           transactionId: orderId,
           value: qty * widget.product.pricePerKg,

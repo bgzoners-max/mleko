@@ -191,6 +191,12 @@ void main() {
         'unread_count': 2,
         'is_favorite': true,
         'hidden': false,
+        'product_id': 'prod-123',
+        'item_title': 'Domaći sir',
+        'item_image_url': 'https://img.com/sir.jpg',
+        'item_price': 850.0,
+        'item_unit': 'kg',
+        'item_type': 'product',
       };
 
       final conv = ConversationModel.fromJson(json);
@@ -198,6 +204,12 @@ void main() {
       expect(conv.buyerId, 'buyer-1');
       expect(conv.sellerId, 'seller-1');
       expect(conv.orderId, 'ord-100');
+      expect(conv.productId, 'prod-123');
+      expect(conv.itemTitle, 'Domaći sir');
+      expect(conv.itemImageUrl, 'https://img.com/sir.jpg');
+      expect(conv.itemPrice, 850.0);
+      expect(conv.itemUnit, 'kg');
+      expect(conv.itemType, 'product');
       expect(conv.otherPartyName, 'Marko');
       expect(conv.lastMessageBody, 'Da li šaljete brzom poštom?');
       expect(conv.unreadCount, 2);

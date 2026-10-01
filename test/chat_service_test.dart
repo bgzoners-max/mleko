@@ -191,6 +191,72 @@ void main() {
         throwsA(isA<AppError>()),
       );
     });
+
+    test('upsert with productId sets product_id and onConflict for product', () async {
+      String? sentPayload;
+      String? onConflictHeader;
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
+          sentPayload = body;
+          onConflictHeader = req.url.queryParameters['on_conflict'];
+          return http.Response(
+            jsonEncode({'id': 'conv-product-101'}),
+            201,
+            headers: {'content-type': 'application/vnd.pgrst.object+json'},
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient(
+        'https://fake-project.supabase.co',
+        'fake-key',
+        httpClient: mockClient,
+      );
+
+      final service = ChatService(client: supabase);
+      final id = await service.getOrCreateConversation(
+        'buyer1',
+        'seller1',
+        productId: 'prod-cheese-456',
+      );
+      expect(id, equals('conv-product-101'));
+      expect(sentPayload, contains('"product_id":"prod-cheese-456"'));
+      expect(onConflictHeader, equals('buyer_id,seller_id,product_id'));
+    });
+
+    test('upsert with adId sets ad_id and onConflict for classified ad', () async {
+      String? sentPayload;
+      String? onConflictHeader;
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
+          sentPayload = body;
+          onConflictHeader = req.url.queryParameters['on_conflict'];
+          return http.Response(
+            jsonEncode({'id': 'conv-ad-777'}),
+            201,
+            headers: {'content-type': 'application/vnd.pgrst.object+json'},
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient(
+        'https://fake-project.supabase.co',
+        'fake-key',
+        httpClient: mockClient,
+      );
+
+      final service = ChatService(client: supabase);
+      final id = await service.getOrCreateConversation(
+        'buyer1',
+        'seller1',
+        adId: 'ad-tractor-888',
+      );
+      expect(id, equals('conv-ad-777'));
+      expect(sentPayload, contains('"ad_id":"ad-tractor-888"'));
+      expect(onConflictHeader, equals('buyer_id,seller_id,ad_id'));
+    });
   });
 
   group('Chat Image Signed URLs & Privacy', () {

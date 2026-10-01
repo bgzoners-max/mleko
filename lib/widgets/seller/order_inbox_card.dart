@@ -260,6 +260,8 @@ class _OrderInboxCardState extends State<OrderInboxCard> {
                               o.buyerId!,
                               widget.user.id,
                               orderId: o.orderId,
+                              productId: o.productId,
+                              adId: o.adId,
                             );
                             if (context.mounted) unawaited(context.push('/chat/$convId'));
                           } catch (e, stack) {

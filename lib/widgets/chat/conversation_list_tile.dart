@@ -100,6 +100,35 @@ class _ConversationListTileState extends State<ConversationListTile> {
                             ),
                           ],
                         ),
+                        if (conv.itemTitle != null && conv.itemTitle!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2, bottom: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  conv.itemType == 'ad'
+                                      ? Icons.campaign_outlined
+                                      : Icons.shopping_bag_outlined,
+                                  size: 13,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    conv.itemTitle!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         const SizedBox(height: 2),
                         Text(
                           conv.lastMessageBody ?? 'Nema poruka',
