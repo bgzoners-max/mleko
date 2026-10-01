@@ -150,8 +150,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
               _ProductQuantityStepper(
                 quantity: _quantity,
                 minQuantity: product.minOrderKg,
-                maxQuantity:
-                    product.availableKg > 0 ? product.availableKg : 99999.0,
+                maxQuantity: product.maxOrderQuantity,
                 step: product.quantityStep,
                 formattedQuantity: product.formatQuantity(_quantity),
                 onChanged: (newQuantity) =>

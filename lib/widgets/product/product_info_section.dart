@@ -177,9 +177,9 @@ class _PriceAndAvailability extends StatelessWidget {
         : (isDark ? const Color(0xFFE57373) : const Color(0xFFC62828));
 
     final availabilityLabel = product.isAvailable
-        ? (product.availableKg > 0
+        ? (product.hasStockInfo
             ? 'Na stanju (${product.availableFormatted})'
-            : 'Dostupno')
+            : 'Dostupno po porudžbini')
         : 'Rasprodato';
 
     return Wrap(

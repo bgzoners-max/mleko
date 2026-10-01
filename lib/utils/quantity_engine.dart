@@ -1,7 +1,31 @@
+import 'dart:math' as math;
+
 class QuantityEngine {
   const QuantityEngine._();
 
   static const double _epsilon = 0.000001;
+
+  /// Određuje maksimalni razumni limit za UI stepper i biranje količine.
+  /// Usklađeno sa REPO_BIBLE.md §11 (stanje zaliha `availableKg` je informativno za kupca).
+  static double resolveMaxQuantity({
+    required double minQuantity,
+    required double step,
+    double defaultCap = 1000.0,
+  }) {
+    if (minQuantity <= 0) return 1.0;
+    final validStep = step > 0 ? step : minQuantity;
+    final candidate = math.max(
+      minQuantity * 20.0,
+      minQuantity + (50.0 * validStep),
+    );
+    final dynamicCap = math.max(defaultCap, minQuantity * 20.0);
+    final rawMax = math.min(candidate, dynamicCap);
+    return normalizeQuantity(
+      quantity: rawMax,
+      minQuantity: minQuantity,
+      step: validStep,
+    );
+  }
 
   /// Centralno razrešavanje koraka poručivanja u skladu sa REPO_BIBLE.md.
   /// Prioritet ima eksplicitni `orderStep` (> 0). Ako nije postavljen, koristi se `minQuantity` (> 0),

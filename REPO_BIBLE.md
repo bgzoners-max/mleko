@@ -30,15 +30,21 @@ Svaki proizvod ima:
 
 ## 3. Units
 
-Podržane jedinice:
+Podržane jedinice u bazi i aplikaciji (prema bazi `CHECK (unit_type IN ('kg','L','kom','veza','pak'))`):
 
-- `kg`
-- `L`
-- `kom`
+- `kg` — težina (podrazumevano)
+- `L` — tečnost (litri)
+- `kom` — komadni artikli (npr. pakovanje jaja, tegle, pogače)
+- `veza` — svež zeleniš i vezice (mladi luk, peršun, sremuš, rotkvice)
+- `pak` — standardna pakovanja (pečurke, sušeno voće, čajevi)
+
+Pravila za jedinice:
+- `g` je zastarelo (legacy) i pri parsiranju u `ProductModel.fromJson` automatski se normalizuje u `kg` (npr. `0.1 kg`).
+- Pravilo za komadne i vezane artikle (`kom`, `veza`, `pak`): `order_step` je obavezno celobrojan (tipično `1`), a minimalna količina i koraci su celi brojevi bez decimala.
 
 ## 4. Order Step Rules
 
-`order_step` je eksplicitna vrednost po proizvodu.
+`order_step` je eksplicitna vrednost po proizvodu (u bazi `NOT NULL`).
 
 Pravila:
 
@@ -46,11 +52,11 @@ Pravila:
 - UI koristi `product.order_step` iz baze
 - backend validira po `product.order_step` iz baze
 - `order_step > 0`
-- `order_step <= min_quantity`
+- `order_step <= min_quantity` (baza ima `CHECK (order_step <= min_quantity)`)
 
 ### Kategorija Kačkavalj
 
-Za proizvode iz kategorije `Kačkavalj` korak porudžbine je:
+Za proizvode iz kategorije `Kačkavalj` preporučeni korak porudžbine je:
 
 - `order_step = 0.1 kg` (100 g)
 
@@ -153,8 +159,7 @@ Sistem mora biti:
 - predvidiv za kupce
 - lak za implementaciju
 
-Minimalna količina dolazi od prodavca, a koraci dolaze iz sistemskih pravila.
-Minimalna količina i korak dolaze od prodavca kroz model proizvoda.
+Minimalna količina i korak poručivanja dolaze isključivo od prodavca kroz model proizvoda (`min_order_kg` i `order_step`).
 
 ## Arhitektonski savet
 
@@ -178,7 +183,13 @@ Zato važi kanonsko pravilo:
 - **Porudžbina je direktan upit/zahtev (`status = 'sent'`), a ne automatska magacinska rezervacija.**
 - Poljoprivrednici robu često pripremaju po prijemu porudžbine (muža mleka, branje plodova, sveže pripremanje, pravljenje sira).
 - Glavni i autoritativni prekidač dostupnosti je `products.available_now` (boolean):
-  - Ako je `available_now = false`, backend funkcija `create_order_with_items` strogo odbija kreiranje porudžbine (`product % is currently unavailable`).
-- Polje `available_kg` u modelu proizvoda ima **informativni karakter** za gazdinstvo i kupca. Backend svesno **ne** vrši blokadu porudžbine poređenjem `quantity <= available_kg` niti automatski dekrementira zalihu, jer bi to blokiralo legitimne narudžbine kod proizvođača koji proizvode po zahtevu ili ne ažuriraju brojno stanje u realnom vremenu.
+  - U modelu aplikacije `ProductModel.isAvailable => availableNow`.
+  - Ako je `available_now = false`, backend funkcija `create_order_with_items` strogo odbija kreiranje porudžbine (`product % is currently unavailable`), a UI prikazuje bedž `Rasprodato` i onemogućava dodavanje u korpu.
+- Polje `available_kg` u modelu proizvoda ima **informativni karakter** za gazdinstvo i kupca (`hasStockInfo => availableKg > 0`).
+  - Backend svesno **ne** vrši blokadu porudžbine poređenjem `quantity <= available_kg` niti automatski dekrementira zalihu, jer bi to blokiralo legitimne narudžbine kod proizvođača koji proizvode po zahtevu ili ne ažuriraju brojno stanje u realnom vremenu.
+  - Ako je `available_now = true`, a `available_kg = 0`, proizvod je **„Dostupno po porudžbini”** (kupac može normalno da naruči).
+  - Ako je `available_now = true` i `available_kg > 0`, UI prikazuje informativno stanje: **„Na stanju (X)”**.
+- **Maksimalna količina na stepperu (`maxQuantity`):**
+  - Predstavlja ergonomski UI limit biranja količine (`QuantityEngine.resolveMaxQuantity`), a ne restriktivno sečenje na `available_kg`. Kupac ne sme biti veštački blokiran da naruči 5 kg sira ako je prodavac u polju zalihe naveo 2 kg ili 0 kg.
 - Konačnu potvrdu količine, termina i isporuke prodavac vrši prihvatanjem porudžbine (`accepted`) ili dogovorom sa kupcem kroz chat/poziv.
 

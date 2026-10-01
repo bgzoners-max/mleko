@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/order_item_model.dart';
 import 'package:mleko/models/product_model.dart';
+import 'package:mleko/utils/quantity_engine.dart';
 
 void main() {
   group('Smart quantity formatting (kg -> g conversion)', () {
@@ -174,6 +175,94 @@ void main() {
       expect(ProductModel.parseQuantityKg(''), 0.0);
       expect(ProductModel.parseQuantityKg('abc'), 0.0);
       expect(ProductModel.parseQuantityKg('-5'), 0.0);
+    });
+  });
+
+  group('Availability (REPO_BIBLE §11: Upit vs. Magacin)', () {
+    test('isAvailable depends on availableNow, availableKg is informative', () {
+      final makeToOrder = ProductModel(
+        id: 'p-mto',
+        sellerId: 's1',
+        category: 'mlečni',
+        name: 'Svež sir',
+        pricePerKg: 600,
+        minOrderKg: 0.5,
+        availableKg: 0,
+        availableNow: true,
+        unitType: ProductModel.unitKg,
+        description: 'Pravi se sveže po narudžbini',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Ub',
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      // availableNow = true, availableKg = 0 -> DOSTUPNO po porudžbini, nema stock info
+      expect(makeToOrder.isAvailable, isTrue);
+      expect(makeToOrder.hasStockInfo, isFalse);
+
+      final inStock = makeToOrder.copyWith(availableKg: 10);
+      expect(inStock.isAvailable, isTrue);
+      expect(inStock.hasStockInfo, isTrue);
+
+      final soldOutWithZeroStock = makeToOrder.copyWith(availableNow: false);
+      expect(soldOutWithZeroStock.isAvailable, isFalse);
+      expect(soldOutWithZeroStock.hasStockInfo, isFalse);
+
+      final soldOutWithResidualStock = makeToOrder.copyWith(
+        availableNow: false,
+        availableKg: 5,
+      );
+      expect(soldOutWithResidualStock.isAvailable, isFalse);
+      expect(soldOutWithResidualStock.hasStockInfo, isTrue);
+    });
+
+    test('QuantityEngine.resolveMaxQuantity calculates reasonable UI stepper bounds', () {
+      // 0.1 kg sir (step 0.1): min 0.1 -> max(0.1*20=2.0, 0.1+50*0.1=5.1) -> 5.1 kg
+      expect(
+        QuantityEngine.resolveMaxQuantity(minQuantity: 0.1, step: 0.1),
+        closeTo(5.1, 0.001),
+      );
+
+      // 1 L mleko (step 1): min 1 -> max(20, 1+50*1=51) -> 51 L
+      expect(
+        QuantityEngine.resolveMaxQuantity(minQuantity: 1.0, step: 1.0),
+        51.0,
+      );
+
+      // 10 kom jaja (step 10): min 10 -> max(200, 10+50*10=510) -> 510 kom
+      expect(
+        QuantityEngine.resolveMaxQuantity(minQuantity: 10.0, step: 10.0),
+        510.0,
+      );
+
+      // 50 kg krompir (step 25): candidate = max(1000, 50+1250=1300), defaultCap 1000 -> 1000 kg
+      expect(
+        QuantityEngine.resolveMaxQuantity(minQuantity: 50.0, step: 25.0),
+        1000.0,
+      );
+    });
+
+    test('ProductModel.maxOrderQuantity delegates to QuantityEngine', () {
+      final product = ProductModel(
+        id: 'p-step',
+        sellerId: 's1',
+        category: 'mlečni',
+        name: 'Kačkavalj',
+        pricePerKg: 1400,
+        minOrderKg: 0.2,
+        orderStep: 0.1,
+        availableKg: 0,
+        unitType: ProductModel.unitKg,
+        description: 'Test',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Pirot',
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      // min 0.2, step 0.1 -> max(0.2*20=4.0, 0.2+50*0.1=5.2) -> 5.2
+      expect(product.maxOrderQuantity, closeTo(5.2, 0.001));
     });
   });
 }

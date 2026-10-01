@@ -215,8 +215,17 @@ class ProductModel {
   String get minOrderFormatted => formatQuantity(minOrderKg);
   String get availableFormatted => formatQuantity(availableKg);
 
-  /// Proizvod je dostupan za narudžbinu (ima na stanju i availableNow)
-  bool get isAvailable => availableKg > 0 && availableNow;
+  /// Proizvod je dostupan za narudžbinu (autoritativno pravilo: REPO_BIBLE.md §11).
+  bool get isAvailable => availableNow;
+
+  /// Da li postoji evidentirano brojno stanje zaliha (informativni karakter).
+  bool get hasStockInfo => availableKg > 0;
+
+  /// Maksimalni preporučeni limit za UI stepper (REPO_BIBLE.md §11).
+  double get maxOrderQuantity => QuantityEngine.resolveMaxQuantity(
+        minQuantity: minOrderKg,
+        step: quantityStep,
+      );
 
   bool get supportsSellerDelivery => deliveryMode != ProductDeliveryMode.none;
 
