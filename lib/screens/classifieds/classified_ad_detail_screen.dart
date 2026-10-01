@@ -19,7 +19,6 @@ import '../../services/communication/chat_service.dart';
 import '../../supabase_config.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/app_back_button.dart';
-import '../../widgets/app_network_image.dart';
 import '../../widgets/classifieds/report_classified_ad_dialog.dart';
 import '../../widgets/classifieds/detail/classified_breadcrumbs.dart';
 import '../../widgets/classifieds/detail/classified_image_gallery.dart';
@@ -30,6 +29,7 @@ import '../../widgets/classifieds/detail/classified_specifications_table.dart';
 import '../../widgets/classifieds/detail/classified_description_card.dart';
 import '../../widgets/classifieds/detail/classified_seller_card.dart';
 import '../../widgets/classifieds/detail/classified_action_buttons.dart';
+import '../../widgets/product/full_screen_image_viewer.dart';
 
 class ClassifiedAdDetailScreen extends StatefulWidget {
   final String adId;
@@ -286,67 +286,22 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   }
 
   void _openImageLightbox(List<String> images, int initialIndex) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        int activeIdx = initialIndex;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Dialog(
-              backgroundColor: Colors.black.withValues(alpha: 0.95),
-              insetPadding: EdgeInsets.zero,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  PageView.builder(
-                    itemCount: images.length,
-                    controller: PageController(initialPage: initialIndex),
-                    onPageChanged: (i) => setModalState(() => activeIdx = i),
-                    itemBuilder: (context, idx) {
-                      return InteractiveViewer(
-                        minScale: 0.8,
-                        maxScale: 3.5,
-                        child: Center(
-                          child: AppNetworkImage(
-                            imageUrl: images[idx],
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  Positioned(
-                    top: 20,
-                    right: 20,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 24,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${activeIdx + 1} / ${images.length}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        barrierDismissible: true,
+        pageBuilder: (BuildContext context, _, __) {
+          return FullScreenImageViewer(
+            productId: 'ad_${widget.adId}',
+            imageUrls: images,
+            initialIndex: initialIndex,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
     );
   }
 
