@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mleko/models/app_error.dart';
 import 'package:mleko/models/product_model.dart';
 import 'package:mleko/providers/cart_provider.dart';
 import 'package:mleko/services/catalog/products_service.dart';
@@ -310,6 +311,119 @@ void main() {
       // Gostujući ključ u storage-u je očišćen
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(CartProvider.storageKeyFor(null)), isNull);
+    });
+  });
+
+  group('CartProvider QuantityEngine Validation & Normalization Tests', () {
+    late FakeProductsService service;
+    late ProductModel cheese;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      service = FakeProductsService();
+      cheese = ProductModel(
+        id: 'p-cheese',
+        sellerId: 's-farm',
+        category: 'mlečni',
+        name: 'Domaći sir',
+        pricePerKg: 800,
+        unitType: ProductModel.unitKg,
+        minOrderKg: 0.5,
+        orderStep: 0.5,
+        availableKg: 20,
+        availableNow: true,
+        description: 'Sir',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Ub',
+        createdAt: DateTime(2026, 1, 1),
+      );
+      service.addMockProduct(cheese);
+    });
+
+    test('addForSeller with valid quantity succeeds and normalizes', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.addForSeller(
+        sellerId: 's-farm',
+        productId: 'p-cheese',
+        quantity: 0.5,
+      );
+      expect(cart.getQuantityForSeller('s-farm', 'p-cheese'), 0.5);
+
+      await cart.addForSeller(
+        sellerId: 's-farm',
+        productId: 'p-cheese',
+        quantity: 0.5,
+      );
+      expect(cart.getQuantityForSeller('s-farm', 'p-cheese'), 1.0);
+    });
+
+    test('addForSeller with invalid non-step quantity (e.g. 1.37 kg) throws AppError validation', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      expect(
+        () => cart.addForSeller(
+          sellerId: 's-farm',
+          productId: 'p-cheese',
+          quantity: 1.37,
+        ),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', ErrorType.validation)),
+      );
+      expect(cart.containsInSeller('s-farm', 'p-cheese'), isFalse);
+    });
+
+    test('addForSeller below minOrderKg throws AppError validation', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      expect(
+        () => cart.addForSeller(
+          sellerId: 's-farm',
+          productId: 'p-cheese',
+          quantity: 0.2, // minOrder is 0.5
+        ),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', ErrorType.validation)),
+      );
+    });
+
+    test('setQuantityForSeller validates and normalizes', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.setQuantityForSeller(
+        sellerId: 's-farm',
+        productId: 'p-cheese',
+        quantity: 2.5,
+      );
+      expect(cart.getQuantityForSeller('s-farm', 'p-cheese'), 2.5);
+
+      // Invalid non-step quantity rejected
+      expect(
+        () => cart.setQuantityForSeller(
+          sellerId: 's-farm',
+          productId: 'p-cheese',
+          quantity: 1.37,
+        ),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', ErrorType.validation)),
+      );
+      // Value in cart remains unchanged
+      expect(cart.getQuantityForSeller('s-farm', 'p-cheese'), 2.5);
+    });
+
+    test('setQuantityForSeller handles floating-point inexact steps cleanly', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      // 0.5 + 0.5000000000000001 (IEEE floating point artifact) normalizes cleanly
+      await cart.setQuantityForSeller(
+        sellerId: 's-farm',
+        productId: 'p-cheese',
+        quantity: 1.0000000000000002,
+      );
+      expect(cart.getQuantityForSeller('s-farm', 'p-cheese'), 1.0);
     });
   });
 }

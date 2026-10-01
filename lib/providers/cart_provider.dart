@@ -3,8 +3,10 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/app_error.dart';
 import '../models/order_item_model.dart';
 import '../models/product_model.dart';
+import '../utils/quantity_engine.dart';
 import 'package:mleko/services/services.dart';
 
 class CartProvider extends ChangeNotifier {
@@ -327,9 +329,43 @@ class CartProvider extends ChangeNotifier {
   }) async {
     if (quantity <= 0) return;
     await _initFuture;
+
+    final product = await _productsService.getProduct(productId);
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
-    sellerDraft[productId] = (sellerDraft[productId] ?? 0) + quantity;
+    final currentQty = sellerDraft[productId] ?? 0.0;
+    var targetQty = currentQty + quantity;
+
+    if (product != null) {
+      final step = product.quantityStep;
+      final minQty = product.minOrderKg;
+
+      if (!QuantityEngine.isValidQuantity(
+        quantity: targetQty,
+        minQuantity: minQty,
+        step: step,
+      )) {
+        throw AppError(
+          message: 'Invalid quantity for ${product.name}',
+          userMessage:
+              '${product.name}: količina mora biti od minimuma (${product.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, product.unitType)}.',
+          type: ErrorType.validation,
+        );
+      }
+      targetQty = QuantityEngine.normalizeQuantity(
+        quantity: targetQty,
+        minQuantity: minQty,
+        step: step,
+      );
+    } else {
+      targetQty = QuantityEngine.normalizeQuantity(
+        quantity: targetQty,
+        minQuantity: targetQty,
+        step: 1.0,
+      );
+    }
+
+    sellerDraft[productId] = targetQty;
     _invalidateCache(sellerId);
     notifyListeners();
     _scheduleSave();
@@ -345,9 +381,42 @@ class CartProvider extends ChangeNotifier {
       await removeFromSeller(sellerId: sellerId, productId: productId);
       return;
     }
+
+    final product = await _productsService.getProduct(productId);
+    var targetQty = quantity;
+
+    if (product != null) {
+      final step = product.quantityStep;
+      final minQty = product.minOrderKg;
+
+      if (!QuantityEngine.isValidQuantity(
+        quantity: targetQty,
+        minQuantity: minQty,
+        step: step,
+      )) {
+        throw AppError(
+          message: 'Invalid quantity for ${product.name}',
+          userMessage:
+              '${product.name}: količina mora biti od minimuma (${product.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, product.unitType)}.',
+          type: ErrorType.validation,
+        );
+      }
+      targetQty = QuantityEngine.normalizeQuantity(
+        quantity: targetQty,
+        minQuantity: minQty,
+        step: step,
+      );
+    } else {
+      targetQty = QuantityEngine.normalizeQuantity(
+        quantity: targetQty,
+        minQuantity: targetQty,
+        step: 1.0,
+      );
+    }
+
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
-    sellerDraft[productId] = quantity;
+    sellerDraft[productId] = targetQty;
     _invalidateCache(sellerId);
     notifyListeners();
     _scheduleSave();
