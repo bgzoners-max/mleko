@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 /// Autentična "Craft & Heritage" paleta boja i tokeni za Domaći Market.
-/// Zadržava API kompatibilnost (`AmazonColors`) uz topli, organski i zanatski vizuelni ton.
+///
+/// Istorijsko ime `AmazonColors` zadržano je kao alias radi kompatibilnosti;
+/// novi kod treba da koristi [AppPalette].
+typedef AppPalette = AmazonColors;
+
 class AmazonColors {
   // ── Primarna tamna šumska paleta (zaglavlja, navigacija, akcenti) ──
   static const Color darkNavy = Color(0xFF142419); // Duboka šumska mahovina

@@ -8,8 +8,6 @@ import type { Database, Json } from "../../types/database.types.ts"
 const ALLOWED_ORIGINS = [
   "https://domacimarket.rs",
   "https://www.domacimarket.rs",
-  "https://naseselo.app",
-  "https://www.naseselo.app",
   "http://localhost:3000", // Za lokalni development
   "http://localhost:8080", // Za lokalni development
 ]

@@ -8,6 +8,11 @@ import 'dart:io';
 /// postepeno kako se dodaju testovi. Nemojte ih podizati iznad izmerene
 /// vrednosti — CI ce pasti dok se testovi ne dodaju.
 ///
+/// NAPOMENA (2026-10-01): izmereno ~20.6% na cistom `flutter test --coverage`
+/// run-u (27983 LF). Vrednost ~35% iz STATUS.md potice iz zastarelog
+/// inkrementalnog `coverage/lcov.info` fajla i ne sme se koristiti kao osnova
+/// za podizanje praga dok se CI ne prebaci na cist (brisan) coverage direktorijum.
+///
 /// `lib/utils` je aspiracioni cilj (45%): trenutno se preskace jer nijedan
 /// fajl u tom folderu nije ukljucen u coverage, pa podizanje ne blokira build.
 const Map<String, double> folderGates = {
