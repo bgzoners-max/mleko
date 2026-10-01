@@ -138,8 +138,8 @@ class ProductModel {
   /// U podacima i u SEO strukturiranim podacima i dalje ostaje ISO kod "RSD".
   static const String priceCurrencyLabel = 'din.';
 
-  /// Brojčani deo cene, bez valute i jedinice (npr. "800").
-  String get priceNumber => pricePerKg.toStringAsFixed(0);
+  /// Brojčani deo cene, bez valute i jedinice (npr. "800" ili "199,99").
+  String get priceNumber => _formatDecimal(pricePerKg);
 
   /// Sufiks jedinice u ceni (npr. "/kg", "/L", "/kom").
   String get priceUnitSuffix {
@@ -163,37 +163,46 @@ class ProductModel {
       '$priceNumber $priceCurrencyLabel$priceUnitSuffix';
 
   /// Srpska konvencija decimala: zarez umesto tačke ("1,5" umesto "1.5").
+  /// Podržava preciznost do 3 decimale (npr. "2,25 kg", "0,125 kg")
+  /// uz uklanjanje suvišnih pratećih nula ("2" umesto "2,000", "1,5" umesto "1,500").
   static String _formatDecimal(double value) {
-    final decimals = value.truncateToDouble() == value ? 0 : 1;
-    return value.toStringAsFixed(decimals).replaceAll('.', ',');
+    if (value.truncateToDouble() == value) {
+      return value.toInt().toString();
+    }
+    var str = value.toStringAsFixed(3);
+    str = str.replaceFirst(RegExp(r'0+$'), '');
+    str = str.replaceFirst(RegExp(r'\.$'), '');
+    return str.replaceAll('.', ',');
   }
 
-  /// Za prikaz količine: "2 kg" ili "100 g" ili "1,5 L" ili "750 ml"
-  String formatQuantity(double value) {
-    if (unitType == unitL) {
-      if (value < 1 && value > 0) return '${(value * 1000).round()} ml';
-      return '${_formatDecimal(value)} L';
+  /// Srpska gramatička pravila za množinu na osnovu broja (Slavic plural):
+  /// - n završava na 1, ali ne 11 -> [one] (npr. 1 veza, 21 veza, 1 pak)
+  /// - n završava na 2-4, ali ne 12-14 -> [few] (npr. 2 veze, 24 veze, 2 paka)
+  /// - svi ostali (0, 5-20, 25-30, 11-14...) -> [many] (npr. 5 veza, 11 veza, 5 pakova)
+  static String pluralSr(
+    num count, {
+    required String one,
+    required String few,
+    required String many,
+  }) {
+    final int n = count.abs().round();
+    final int mod10 = n % 10;
+    final int mod100 = n % 100;
+
+    if (mod100 >= 11 && mod100 <= 14) {
+      return many;
     }
-    if (unitType == unitG) {
-      final grams = (value * 1000).round();
-      return '$grams g';
+    if (mod10 == 1) {
+      return one;
     }
-    if (unitType == unitPiece) {
-      return '${value.toStringAsFixed(0)} kom';
+    if (mod10 >= 2 && mod10 <= 4) {
+      return few;
     }
-    if (unitType == unitVeza) {
-      return '${value.toStringAsFixed(0)} veza';
-    }
-    if (unitType == unitPak) {
-      return '${value.toStringAsFixed(0)} pak';
-    }
-    // default: kg (vrednosti manje od 1 kg se automatski prikazuju u gramima, npr. 0.1 -> 100 g)
-    if (value < 1 && value > 0) {
-      final grams = (value * 1000).round();
-      return '$grams g';
-    }
-    return '${_formatDecimal(value)} kg';
+    return many;
   }
+
+  /// Za prikaz količine: "2 kg" ili "100 g" ili "1,5 L" ili "750 ml" ili "2 veze" ili "3 paka".
+  String formatQuantity(double value) => formatQuantityWithUnit(value, unitType);
 
   String get quantityUnitLabel {
     switch (unitType) {
@@ -339,13 +348,15 @@ class ProductModel {
       return '$grams g';
     }
     if (unitType == unitPiece) {
-      return '${value.toStringAsFixed(0)} kom';
+      return '${_formatDecimal(value)} kom';
     }
     if (unitType == unitVeza) {
-      return '${value.toStringAsFixed(0)} veza';
+      final suffix = pluralSr(value, one: 'veza', few: 'veze', many: 'veza');
+      return '${_formatDecimal(value)} $suffix';
     }
     if (unitType == unitPak) {
-      return '${value.toStringAsFixed(0)} pak';
+      final suffix = pluralSr(value, one: 'pak', few: 'paka', many: 'pakova');
+      return '${_formatDecimal(value)} $suffix';
     }
     // default: kg (vrednosti manje od 1 kg se prikazuju u gramima, npr. 0.1 -> 100 g)
     if (value < 1 && value > 0) {

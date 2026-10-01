@@ -34,18 +34,23 @@ void main() {
       expect(productKg.formatQuantity(1.0), '1 kg');
       expect(productKg.formatQuantity(1.5), '1,5 kg');
       expect(productKg.formatQuantity(2.0), '2 kg');
+      expect(productKg.formatQuantity(2.25), '2,25 kg');
+      expect(productKg.formatQuantity(1.125), '1,125 kg');
     });
 
-    test('formatQuantityWithUnit matches formatQuantity behavior', () {
+    test('formatQuantityWithUnit matches formatQuantity behavior and supports up to 3 decimals', () {
       expect(ProductModel.formatQuantityWithUnit(0.1, ProductModel.unitKg), '100 g');
       expect(ProductModel.formatQuantityWithUnit(0.5, ProductModel.unitKg), '500 g');
       expect(ProductModel.formatQuantityWithUnit(1.0, ProductModel.unitKg), '1 kg');
       expect(ProductModel.formatQuantityWithUnit(2.5, ProductModel.unitKg), '2,5 kg');
+      expect(ProductModel.formatQuantityWithUnit(2.25, ProductModel.unitKg), '2,25 kg');
+      expect(ProductModel.formatQuantityWithUnit(1.125, ProductModel.unitKg), '1,125 kg');
+      expect(ProductModel.formatQuantityWithUnit(1.75, ProductModel.unitL), '1,75 L');
     });
   });
 
   group('New unit types: veza and pak', () {
-    test('formatQuantity and priceFormatted for veza and pak', () {
+    test('formatQuantity and priceFormatted for veza and pak with Slavic plurals', () {
       final productVeza = ProductModel(
         id: 'p-veza',
         sellerId: 's1',
@@ -64,7 +69,17 @@ void main() {
 
       expect(productVeza.priceFormatted, '70 din./veza');
       expect(productVeza.formatQuantity(1), '1 veza');
+      expect(productVeza.formatQuantity(2), '2 veze');
+      expect(productVeza.formatQuantity(3), '3 veze');
+      expect(productVeza.formatQuantity(4), '4 veze');
       expect(productVeza.formatQuantity(5), '5 veza');
+      expect(productVeza.formatQuantity(11), '11 veza');
+      expect(productVeza.formatQuantity(12), '12 veza');
+      expect(productVeza.formatQuantity(14), '14 veza');
+      expect(productVeza.formatQuantity(20), '20 veza');
+      expect(productVeza.formatQuantity(21), '21 veza');
+      expect(productVeza.formatQuantity(22), '22 veze');
+      expect(productVeza.formatQuantity(25), '25 veza');
       expect(productVeza.quantityUnitLabel, 'veza');
 
       final productPak = ProductModel(
@@ -85,8 +100,39 @@ void main() {
 
       expect(productPak.priceFormatted, '250 din./pak');
       expect(productPak.formatQuantity(1), '1 pak');
-      expect(productPak.formatQuantity(3), '3 pak');
+      expect(productPak.formatQuantity(2), '2 paka');
+      expect(productPak.formatQuantity(3), '3 paka');
+      expect(productPak.formatQuantity(4), '4 paka');
+      expect(productPak.formatQuantity(5), '5 pakova');
+      expect(productPak.formatQuantity(11), '11 pakova');
+      expect(productPak.formatQuantity(12), '12 pakova');
+      expect(productPak.formatQuantity(14), '14 pakova');
+      expect(productPak.formatQuantity(20), '20 pakova');
+      expect(productPak.formatQuantity(21), '21 pak');
+      expect(productPak.formatQuantity(22), '22 paka');
+      expect(productPak.formatQuantity(25), '25 pakova');
       expect(productPak.quantityUnitLabel, 'pak');
+    });
+
+    test('priceNumber and priceFormatted support decimal prices with Serbian comma', () {
+      final productDecimal = ProductModel(
+        id: 'p-dec',
+        sellerId: 's1',
+        category: 'sir',
+        name: 'Kozji sir',
+        pricePerKg: 199.99,
+        minOrderKg: 1,
+        availableKg: 10,
+        unitType: ProductModel.unitKg,
+        description: 'Test',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Valjevo',
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      expect(productDecimal.priceNumber, '199,99');
+      expect(productDecimal.priceFormatted, '199,99 din./kg');
     });
 
     test('ProductModel.fromJson parses unit_type veza and pak correctly', () {
@@ -139,8 +185,8 @@ void main() {
 
       final label = OrderItemModel.totalQuantityLabel(items);
       expect(label, contains('100 g'));
-      expect(label, contains('3 veza'));
-      expect(label, contains('2 pak'));
+      expect(label, contains('3 veze'));
+      expect(label, contains('2 paka'));
     });
   });
 
