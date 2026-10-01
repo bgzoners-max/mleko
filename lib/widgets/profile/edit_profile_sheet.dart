@@ -69,10 +69,12 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     final user = widget.user;
     setState(() => _saving = true);
     try {
+      final farmNameTrimmed = _farmNameCtrl.text.trim();
+      final displayNameTrimmed = _nameCtrl.text.trim();
       await usersService.upsertProfile(
         user.id,
-        displayName:
-            _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+        farmName: farmNameTrimmed.isNotEmpty ? farmNameTrimmed : null,
+        displayName: displayNameTrimmed.isNotEmpty ? displayNameTrimmed : null,
         phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
         city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
         postalCode:
@@ -80,9 +82,6 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
         location:
             _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
         phonePublic: _phonePublic,
-        farmName: user.isSeller && _farmNameCtrl.text.trim().isNotEmpty
-            ? _farmNameCtrl.text.trim()
-            : null,
       );
       if (user.isSeller) {
         await usersService.updateSellerTags(user.id, _selectedTags);
@@ -140,9 +139,24 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
               ),
               const SizedBox(height: 16),
               TextField(
+                controller: _farmNameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Prikazano ime (Display name)',
+                  hintText: 'npr. Vladimir Ivanović ili Naziv radnje',
+                  border: OutlineInputBorder(),
+                  helperText: 'Ime koje se javno prikazuje na profilu i oglasima',
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 12),
+              TextField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(
-                    labelText: 'Ime i prezime', border: OutlineInputBorder()),
+                  labelText: 'Ime i prezime',
+                  hintText: 'Vaše lično ime i prezime',
+                  border: OutlineInputBorder(),
+                  helperText: 'Lično ime i prezime',
+                ),
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: 12),
@@ -219,17 +233,9 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
                 textCapitalization: TextCapitalization.sentences,
               ),
               if (isSeller) ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _farmNameCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'Naziv gazdinstva',
-                      border: OutlineInputBorder()),
-                  textCapitalization: TextCapitalization.sentences,
-                ),
                 const SizedBox(height: 16),
                 Text(
-                  'Oznake gazdinstva',
+                  'Oznake prodavca',
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall

@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/user_model.dart';
 import '../../models/app_error.dart';
 
+const Object _undefined = Object();
+
 class UsersService {
   static final UsersService _instance = UsersService._();
   factory UsersService({SupabaseClient? client}) {
@@ -65,15 +67,15 @@ class UsersService {
   Future<void> upsertProfile(
     String userId, {
     String? email,
-    String? displayName,
-    String? phone,
-    String? city,
-    String? postalCode,
+    Object? displayName = _undefined,
+    Object? phone = _undefined,
+    Object? city = _undefined,
+    Object? postalCode = _undefined,
     String? role,
     bool? isGuest,
-    String? farmName,
-    String? location,
-    String? profileImageUrl,
+    Object? farmName = _undefined,
+    Object? location = _undefined,
+    Object? profileImageUrl = _undefined,
     double? lat,
     double? lng,
     bool? phonePublic,
@@ -83,15 +85,15 @@ class UsersService {
         'updated_at': DateTime.now().toIso8601String(),
       };
       if (email != null) updateData['email'] = email;
-      if (displayName != null) updateData['display_name'] = displayName;
-      if (phone != null) updateData['phone'] = phone;
-      if (city != null) updateData['city'] = city;
-      if (postalCode != null) updateData['postal_code'] = postalCode;
+      if (!identical(displayName, _undefined)) updateData['display_name'] = displayName;
+      if (!identical(phone, _undefined)) updateData['phone'] = phone;
+      if (!identical(city, _undefined)) updateData['city'] = city;
+      if (!identical(postalCode, _undefined)) updateData['postal_code'] = postalCode;
       if (role != null) updateData['role'] = role;
       if (isGuest != null) updateData['is_guest'] = isGuest;
-      if (farmName != null) updateData['farm_name'] = farmName;
-      if (location != null) updateData['location'] = location;
-      if (profileImageUrl != null) {
+      if (!identical(farmName, _undefined)) updateData['farm_name'] = farmName;
+      if (!identical(location, _undefined)) updateData['location'] = location;
+      if (!identical(profileImageUrl, _undefined)) {
         updateData['profile_image_url'] = profileImageUrl;
       }
       if (lat != null) updateData['lat'] = lat;

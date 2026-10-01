@@ -43,8 +43,10 @@ class ProfileDataCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
             ],
-            if (user.displayName != null)
-              DataRowWidget(label: 'Ime', value: user.displayName!),
+            if (user.farmName != null && user.farmName!.trim().isNotEmpty)
+              DataRowWidget(label: 'Prikazano ime', value: user.farmName!),
+            if (user.displayName != null && user.displayName!.trim().isNotEmpty)
+              DataRowWidget(label: 'Ime i prezime', value: user.displayName!),
             if (user.phone != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
@@ -108,8 +110,6 @@ class ProfileDataCard extends StatelessWidget {
               ),
             if (user.email != null && !user.isGuest)
               DataRowWidget(label: 'Email', value: user.email!),
-            if (user.isSeller && user.farmName != null)
-              DataRowWidget(label: 'Gazdinstvo', value: user.farmName!),
             if (user.isSeller && user.sellerTags.isNotEmpty) ...[
               const SizedBox(height: 2),
               Wrap(

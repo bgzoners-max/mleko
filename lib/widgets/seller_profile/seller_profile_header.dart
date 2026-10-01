@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
 import '../../core/responsive.dart';
+import '../../core/profile_display_names.dart';
 import '../../widgets/app_network_image.dart';
 
 class SellerProfileHeader extends StatefulWidget {
@@ -95,7 +96,10 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
               children: [
                 Expanded(
                   child: Text(
-                    seller.farmName ?? 'Gazdinstvo',
+                    resolveProfileDisplayName(
+                      seller.farmName,
+                      seller.displayName,
+                    ),
                     textAlign: TextAlign.center,
                     style: Breakpoints.heroTitleStyle(
                       context,

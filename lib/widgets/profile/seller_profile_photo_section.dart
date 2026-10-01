@@ -5,6 +5,7 @@ import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
 import '../../core/utils/error_messages.dart';
+import '../../core/profile_display_names.dart';
 
 class SellerProfilePhotoSection extends StatefulWidget {
   final UserModel user;
@@ -139,8 +140,13 @@ class SellerProfilePhotoContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(currentUser.farmName ?? 'Gazdinstvo',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    resolveProfileDisplayName(
+                      currentUser.farmName,
+                      currentUser.displayName,
+                    ),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   if (followersCount > 0) ...[
                     const SizedBox(height: 2),
                     Text('$followersCount pratilaca',
