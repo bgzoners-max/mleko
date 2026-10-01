@@ -177,9 +177,9 @@ class ProductModel {
   }
 
   /// Srpska gramatička pravila za množinu na osnovu broja (Slavic plural):
-  /// - n završava na 1, ali ne 11 -> [one] (npr. 1 veza, 21 veza, 1 pak)
-  /// - n završava na 2-4, ali ne 12-14 -> [few] (npr. 2 veze, 24 veze, 2 paka)
-  /// - svi ostali (0, 5-20, 25-30, 11-14...) -> [many] (npr. 5 veza, 11 veza, 5 pakova)
+  /// - n završava na 1, ali ne 11 -> [one] (npr. 1 veza, 21 veza, 1 pakovanje)
+  /// - n završava na 2-4, ali ne 12-14 -> [few] (npr. 2 veze, 24 veze, 2 pakovanja)
+  /// - svi ostali (0, 5-20, 25-30, 11-14...) -> [many] (npr. 5 veza, 11 veza, 5 pakovanja)
   static String pluralSr(
     num count, {
     required String one,
@@ -202,7 +202,7 @@ class ProductModel {
     return many;
   }
 
-  /// Za prikaz količine: "2 kg" ili "100 g" ili "1,5 L" ili "750 ml" ili "2 veze" ili "3 paka".
+  /// Za prikaz količine: "2 kg" ili "100 g" ili "1,5 L" ili "750 ml" ili "2 veze" ili "3 pakovanja".
   String formatQuantity(double value) => formatQuantityWithUnit(value, unitType);
 
   String get quantityUnitLabel {
@@ -362,7 +362,7 @@ class ProductModel {
       return '${_formatDecimal(value)} $suffix';
     }
     if (unitType == unitPak) {
-      final suffix = pluralSr(value, one: 'pak', few: 'paka', many: 'pakova');
+      final suffix = pluralSr(value, one: 'pakovanje', few: 'pakovanja', many: 'pakovanja');
       return '${_formatDecimal(value)} $suffix';
     }
     // default: kg (vrednosti manje od 1 kg se prikazuju u gramima, npr. 0.1 -> 100 g)

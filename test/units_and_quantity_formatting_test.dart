@@ -99,18 +99,18 @@ void main() {
       );
 
       expect(productPak.priceFormatted, '250 din./pak');
-      expect(productPak.formatQuantity(1), '1 pak');
-      expect(productPak.formatQuantity(2), '2 paka');
-      expect(productPak.formatQuantity(3), '3 paka');
-      expect(productPak.formatQuantity(4), '4 paka');
-      expect(productPak.formatQuantity(5), '5 pakova');
-      expect(productPak.formatQuantity(11), '11 pakova');
-      expect(productPak.formatQuantity(12), '12 pakova');
-      expect(productPak.formatQuantity(14), '14 pakova');
-      expect(productPak.formatQuantity(20), '20 pakova');
-      expect(productPak.formatQuantity(21), '21 pak');
-      expect(productPak.formatQuantity(22), '22 paka');
-      expect(productPak.formatQuantity(25), '25 pakova');
+      expect(productPak.formatQuantity(1), '1 pakovanje');
+      expect(productPak.formatQuantity(2), '2 pakovanja');
+      expect(productPak.formatQuantity(3), '3 pakovanja');
+      expect(productPak.formatQuantity(4), '4 pakovanja');
+      expect(productPak.formatQuantity(5), '5 pakovanja');
+      expect(productPak.formatQuantity(11), '11 pakovanja');
+      expect(productPak.formatQuantity(12), '12 pakovanja');
+      expect(productPak.formatQuantity(14), '14 pakovanja');
+      expect(productPak.formatQuantity(20), '20 pakovanja');
+      expect(productPak.formatQuantity(21), '21 pakovanje');
+      expect(productPak.formatQuantity(22), '22 pakovanja');
+      expect(productPak.formatQuantity(25), '25 pakovanja');
       expect(productPak.quantityUnitLabel, 'pak');
     });
 
@@ -186,7 +186,7 @@ void main() {
       final label = OrderItemModel.totalQuantityLabel(items);
       expect(label, contains('100 g'));
       expect(label, contains('3 veze'));
-      expect(label, contains('2 paka'));
+      expect(label, contains('2 pakovanja'));
     });
   });
 
