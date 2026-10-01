@@ -11,7 +11,7 @@ import 'dart:io';
 /// `lib/utils` je aspiracioni cilj (45%): trenutno se preskace jer nijedan
 /// fajl u tom folderu nije ukljucen u coverage, pa podizanje ne blokira build.
 const Map<String, double> folderGates = {
-  'lib/services/orders': 20.0,
+  'lib/services/orders': 25.0,
   'lib/utils': 45.0,
 };
 

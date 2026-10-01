@@ -426,4 +426,94 @@ void main() {
       expect(cart.getQuantityForSeller('s-farm', 'p-cheese'), 1.0);
     });
   });
+
+  group('CartProvider User Isolation, Merging & Debounce Flush', () {
+    late FakeProductsService service;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      service = FakeProductsService();
+      service.addMockProduct(_createProduct(id: 'p-1', sellerId: 's-1', name: 'Mleko'));
+      service.addMockProduct(_createProduct(id: 'p-2', sellerId: 's-2', name: 'Sir'));
+    });
+
+    test('switching between User A and User B preserves isolation without cross-contamination', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      // User A adds p-1
+      await cart.setUser('user-A');
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-1', quantity: 2.0);
+      await cart.flush();
+
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), 2.0);
+      expect(cart.count, 1);
+
+      // Switch to User B (cart should be empty initially for User B)
+      await cart.setUser('user-B');
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), isNull);
+      expect(cart.isEmpty, isTrue);
+
+      // User B adds p-2
+      await cart.addForSeller(sellerId: 's-2', productId: 'p-2', quantity: 1.0);
+      await cart.flush();
+      expect(cart.getQuantityForSeller('s-2', 'p-2'), 1.0);
+      expect(cart.count, 1);
+
+      // Switch back to User A (cart should restore User A items only)
+      await cart.setUser('user-A');
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), 2.0);
+      expect(cart.getQuantityForSeller('s-2', 'p-2'), isNull);
+      expect(cart.count, 1);
+    });
+
+    test('guest items are merged with existing user items upon login', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      // 1. User X already has p-1 in their account
+      await cart.setUser('user-X');
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-1', quantity: 1.0);
+      await cart.flush();
+
+      // 2. User logs out -> becomes guest
+      await cart.setUser(null);
+      expect(cart.isEmpty, isTrue);
+
+      // 3. Guest adds p-2
+      await cart.addForSeller(sellerId: 's-2', productId: 'p-2', quantity: 3.0);
+      expect(cart.count, 1);
+
+      // 4. Guest logs in as User X
+      await cart.setUser('user-X');
+
+      // Both p-1 (from existing user cart) and p-2 (from guest session) must exist!
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), 1.0);
+      expect(cart.getQuantityForSeller('s-2', 'p-2'), 3.0);
+      expect(cart.count, 2);
+      expect(cart.hasMigratedFromGuest, isTrue);
+
+      // Storage under guest key must be wiped
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(CartProvider.storageKeyFor(null)), isFalse);
+    });
+
+    test('flush forces pending debounce save to storage immediately', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.setUser('user-debounce');
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-1', quantity: 2.0);
+
+      // Call flush to commit pending write
+      await cart.flush();
+
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(CartProvider.storageKeyFor('user-debounce'));
+      expect(saved, isNotNull);
+      expect(saved, contains('p-1'));
+
+      cart.dispose();
+    });
+  });
 }

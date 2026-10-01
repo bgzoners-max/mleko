@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:mleko/services/core/connectivity_service.dart';
 import 'package:mleko/services/orders/order_queue_service.dart';
+import 'package:mleko/services/orders/order_sync_service.dart';
+import 'package:mleko/services/orders/orders_service.dart';
 import 'package:mleko/services/orders/sync_manager.dart';
 import 'package:mleko/widgets/orders/pending_orders_banner.dart';
 
@@ -115,6 +119,62 @@ void main() {
 
       OrderQueueService.removeListener(listener);
     });
+
+    test('addPendingOrder rejects duplicate IDs and markAsSynced/cleanSyncedOrders works', () async {
+      final queueService = OrderQueueService();
+      final now = DateTime.now();
+
+      final o1 = PendingOrder(
+        id: 'ord-dup-1',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        productId: 'p-1',
+        productName: 'Jabuke',
+        quantityKg: 5.0,
+        unitType: 'kg',
+        buyerCity: 'Valjevo',
+        buyerPhone: '0623456789',
+        preferCall: false,
+        pickupOptions: const [],
+        createdAt: now,
+      );
+
+      final o2 = PendingOrder(
+        id: 'ord-dup-2',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        productId: 'p-2',
+        productName: 'Kruške',
+        quantityKg: 3.0,
+        unitType: 'kg',
+        buyerCity: 'Valjevo',
+        buyerPhone: '0623456789',
+        preferCall: false,
+        pickupOptions: const [],
+        createdAt: now,
+      );
+
+      await queueService.addPendingOrder(o1);
+      // Adding duplicate ID
+      await queueService.addPendingOrder(o1);
+      expect(await queueService.getPendingCount(), 1);
+
+      await queueService.addPendingOrder(o2);
+      expect(await queueService.getPendingCount(), 2);
+
+      // Mark o1 as synced
+      await queueService.markAsSynced('ord-dup-1');
+      expect(await queueService.getPendingCount(onlyUnsynced: true), 1);
+      expect(await queueService.getPendingCount(onlyUnsynced: false), 2);
+
+      // Clean synced orders -> only o2 remains
+      await queueService.cleanSyncedOrders();
+      expect(await queueService.getPendingCount(onlyUnsynced: false), 1);
+
+      // Remove o2 -> queue empty
+      await queueService.removePendingOrder('ord-dup-2');
+      expect(await queueService.getPendingCount(onlyUnsynced: false), 0);
+    });
   });
 
   group('SyncManager and PendingOrdersBanner UI', () {
@@ -170,6 +230,47 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(PendingOrdersBanner), findsOneWidget);
       expect(find.text('Pošalji sada'), findsNothing);
+    });
+  });
+
+  group('OrderSyncService offline skip & empty queue tests', () {
+    test('syncPendingOrders skips sync when connectivity is offline', () async {
+      final queueService = OrderQueueService();
+      final syncService = OrderSyncService(
+        queueService: queueService,
+        ordersService: OrdersService(),
+      );
+
+      final connectivity = ConnectivityService(reachabilityChecker: () async => false);
+      connectivity.reportNetworkFailure(const SocketException('No route to host'));
+      expect(connectivity.isOffline, isTrue);
+
+      final result = await syncService.syncPendingOrders(
+        connectivity: connectivity,
+        skipConnectivityCheck: false,
+      );
+
+      expect(result, equals(0));
+    });
+
+    test('syncPendingOrders returns 0 immediately when queue is empty', () async {
+      SharedPreferences.setMockInitialValues({});
+      final queueService = OrderQueueService();
+      final syncService = OrderSyncService(
+        queueService: queueService,
+        ordersService: OrdersService(),
+      );
+
+      final connectivity = ConnectivityService(reachabilityChecker: () async => true);
+      connectivity.reportNetworkSuccess();
+      expect(connectivity.isOnline, isTrue);
+
+      final result = await syncService.syncPendingOrders(
+        connectivity: connectivity,
+        skipConnectivityCheck: false,
+      );
+
+      expect(result, equals(0));
     });
   });
 }

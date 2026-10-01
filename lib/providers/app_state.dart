@@ -54,6 +54,20 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  @visibleForTesting
+  int get authEventVersion => _authEventVersion;
+
+  @visibleForTesting
+  bool isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) =>
+      _isCurrentAuthEvent(authVersion, expectedUserId: expectedUserId);
+
+  @visibleForTesting
+  Timer? get unreadDebounceTimer => _unreadDebounceTimer;
+
+  @visibleForTesting
+  void scheduleLoadUnreadCountForTesting([Duration delay = const Duration(milliseconds: 300)]) =>
+      _scheduleLoadUnreadCount(delay);
+
   bool get isOnline => _connectivity.isOnline;
   bool get isOffline => _connectivity.isOffline;
   AuthService get authService => _auth;
@@ -177,7 +191,7 @@ class AppState extends ChangeNotifier {
 
   bool _isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) {
     if (authVersion != _authEventVersion) return false;
-    final currentUserId = Supabase.instance.client.auth.currentSession?.user.id;
+    final currentUserId = _auth.currentSupabaseUser?.id;
     return currentUserId == expectedUserId;
   }
 

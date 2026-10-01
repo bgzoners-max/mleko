@@ -1,3 +1,4 @@
+import '../services/core/logger_service.dart';
 import '../utils/quantity_engine.dart';
 
 enum ProductDeliveryMode { none, allSellerPoints, selectedPoints }
@@ -270,6 +271,12 @@ class ProductModel {
     };
     final minOrder = (json['min_order_kg'] as num?)?.toDouble() ?? 1;
     final parsedOrderStep = (json['order_step'] as num?)?.toDouble();
+    if (parsedOrderStep == null || parsedOrderStep <= 0) {
+      LoggerService.warning(
+        'ProductModel.fromJson: order_step is missing or non-positive, falling back to min_order_kg',
+        extra: {'id': json['id'], 'name': json['name'], 'fallback': minOrder},
+      );
+    }
     final normalizedOrderStep = (parsedOrderStep != null && parsedOrderStep > 0)
         ? parsedOrderStep
         : minOrder;

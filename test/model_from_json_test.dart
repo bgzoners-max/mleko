@@ -107,10 +107,37 @@ void main() {
       expect(product.name, '');
       expect(product.pricePerKg, 0);
       expect(product.minOrderKg, 1);
+      expect(product.orderStep, 1); // fallback to minOrderKg
       expect(product.availableKg, 0);
       expect(product.description, '');
       expect(product.imageUrls, isEmpty);
       expect(product.location, '');
+    });
+
+    test('order_step falls back to min_order_kg when null or <= 0', () {
+      // 1. order_step is null -> fallback to min_order_kg (2.0)
+      final pNull = ProductModel.fromJson({
+        'id': 'p-null',
+        'min_order_kg': 2.0,
+        'order_step': null,
+      });
+      expect(pNull.orderStep, 2.0);
+
+      // 2. order_step is 0 or negative -> fallback to min_order_kg (0.5)
+      final pZero = ProductModel.fromJson({
+        'id': 'p-zero',
+        'min_order_kg': 0.5,
+        'order_step': 0,
+      });
+      expect(pZero.orderStep, 0.5);
+
+      // 3. order_step is valid positive number -> preserved
+      final pValid = ProductModel.fromJson({
+        'id': 'p-valid',
+        'min_order_kg': 1.0,
+        'order_step': 0.25,
+      });
+      expect(pValid.orderStep, 0.25);
     });
   });
 
@@ -173,6 +200,79 @@ void main() {
 
       expect(order.status, OrderStatus.archived);
       expect(order.isArchived, true);
+      expect(order.statusLabel, 'Arhivirano');
+    });
+
+    test('verifies all status labels and manual archive eligibility', () {
+      final now = DateTime.now();
+
+      OrderModel makeOrder(OrderStatus status) => OrderModel(
+        id: 'ord-${status.name}',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        note: '',
+        buyerCity: 'Beograd',
+        buyerPhone: '0601234567',
+        status: status,
+        createdAt: now,
+      );
+
+      expect(makeOrder(OrderStatus.sent).statusLabel, 'Na čekanju');
+      expect(makeOrder(OrderStatus.sent).canBuyerManuallyArchive, isFalse);
+
+      expect(makeOrder(OrderStatus.accepted).statusLabel, 'Prihvaćeno');
+      expect(makeOrder(OrderStatus.accepted).canBuyerManuallyArchive, isFalse);
+
+      expect(makeOrder(OrderStatus.shipped).statusLabel, 'Poslato');
+      expect(makeOrder(OrderStatus.shipped).canBuyerManuallyArchive, isFalse);
+
+      expect(makeOrder(OrderStatus.delivered).statusLabel, 'Isporučeno');
+      expect(makeOrder(OrderStatus.delivered).canBuyerManuallyArchive, isTrue);
+
+      expect(makeOrder(OrderStatus.rejected).statusLabel, 'Odbijeno');
+      expect(makeOrder(OrderStatus.rejected).canBuyerManuallyArchive, isTrue);
+
+      expect(makeOrder(OrderStatus.cancelledBySeller).statusLabel, 'Otkazano');
+      expect(makeOrder(OrderStatus.cancelledBySeller).canBuyerManuallyArchive, isTrue);
+
+      expect(makeOrder(OrderStatus.archived).statusLabel, 'Arhivirano');
+      expect(makeOrder(OrderStatus.archived).canBuyerManuallyArchive, isFalse);
+    });
+
+    test('delivery helper getters format correctly', () {
+      final orderWithDelivery = OrderModel(
+        id: 'ord-deliv',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        note: '',
+        buyerCity: 'Novi Sad',
+        buyerPhone: '061234567',
+        deliveryMethod: DeliveryMethod.sellerDelivery,
+        deliveryPointLabel: 'Pijaca Liman',
+        deliveryAddress: 'Bulevar cara Lazara bb',
+        deliveryWeekday: 6, // Subota
+        deliveryTimeFrom: '09:00',
+        deliveryTimeTo: '11:00',
+        createdAt: DateTime.now(),
+      );
+
+      expect(orderWithDelivery.hasSellerDelivery, isTrue);
+      expect(orderWithDelivery.deliveryMethodLabel, 'Dostava od strane prodavca');
+      expect(orderWithDelivery.formattedDeliverySchedule, contains('Subota'));
+      expect(orderWithDelivery.formattedDeliverySchedule, contains('09:00 - 11:00'));
+
+      final orderAgreement = OrderModel(
+        id: 'ord-agr',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        note: '',
+        buyerCity: 'Novi Sad',
+        buyerPhone: '061234567',
+        deliveryMethod: DeliveryMethod.agreement,
+        createdAt: DateTime.now(),
+      );
+      expect(orderAgreement.hasSellerDelivery, isFalse);
+      expect(orderAgreement.formattedDeliverySchedule, isNull);
     });
   });
 

@@ -68,6 +68,41 @@ void main() {
       expect(msgId, isNot(equals(diffBodyId)));
     });
 
+    test('computeNotificationId handles Serbian Cyrillic and Latin diacritics safely', () {
+      final latinId = PushService.computeNotificationId(
+        type: 'new_order',
+        orderId: 'ord-čćžšđ',
+        title: 'Porudžbina za voće i povrće',
+        body: 'Domaćinstvo Jovanović je potvrdilo pošiljku.',
+      );
+
+      final cyrillicId = PushService.computeNotificationId(
+        type: 'new_order',
+        orderId: 'ord-1',
+        title: 'Поруџбина за домаћи сир',
+        body: 'Домаћинство Јовановић је прихватило наруџбину.',
+      );
+
+      expect(latinId, isNonNegative);
+      expect(latinId, lessThan(2147483647));
+      expect(cyrillicId, isNonNegative);
+      expect(cyrillicId, lessThan(2147483647));
+      expect(latinId, isNot(equals(cyrillicId)));
+    });
+
+    test('computeNotificationId remains strictly within 31-bit integer bounds', () {
+      for (var i = 0; i < 100; i++) {
+        final id = PushService.computeNotificationId(
+          type: 'type_$i',
+          orderId: 'ord_$i',
+          title: 'Title $i long text that might produce high hashes',
+          body: 'Body $i with plenty of content',
+        );
+        expect(id >= 0, isTrue, reason: 'ID must be non-negative for Android notification manager');
+        expect(id < 2147483647, isTrue, reason: 'ID must be within 31-bit signed int range');
+      }
+    });
+
     test('channel routing separates order events from chat/general notifications', () {
       // Order types must map to order channel
       expect(notificationTypeIsOrderRelated('new_order'), isTrue);
