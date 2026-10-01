@@ -2,19 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
-    show
-        AuthChangeEvent,
-        AuthState,
-        Supabase,
-        PostgresChangeEvent,
-        PostgresChangeFilter,
-        PostgresChangeFilterType,
-        PostgresChangePayload,
-        RealtimeChannel;
+    show AuthChangeEvent, AuthState, PostgresChangePayload;
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../services/media/image_cache_service.dart';
+import 'unread_notifications_provider.dart';
 
+/// Fasada preko novih izdvojenih providera — javni API ostaje nepromenjen.
+///
+/// Korak 1 split-a god-objecta:
+/// - unread state + realtime kanal → [UnreadNotificationsProvider]
+/// - auth / connectivity / sync ostaju ovde dok se ne izdvoje u koraku 2
+///   (AuthSessionProvider, SyncProvider).
+///
+/// Svi postojeći pozivaoci (`context.watch<AppState>().user`,
+/// `appState.syncManager`, `appState.incrementUnreadCount()`...) rade bez
+/// izmena jer fasada delegira ka unutrašnjim instancama.
 class AppState extends ChangeNotifier {
   final AuthService _auth;
   final ConnectivityService _connectivity = ConnectivityService();
@@ -22,15 +25,16 @@ class AppState extends ChangeNotifier {
   final OrdersService _ordersService;
   late final SyncManager _syncManager;
 
+  /// Izdvojeni unread provider — poseduje brojač, debounce i realtime kanal.
+  late final UnreadNotificationsProvider unreadNotifications;
+
   StreamSubscription? _authSubscription;
   late final VoidCallback _connectivityListener;
-  RealtimeChannel? _notifChannel;
   int _authEventVersion = 0;
 
   UserModel? _user;
   bool _authChecked = false;
   bool _loading = false;
-  int _unreadNotificationCount = 0;
   bool _pendingEmailVerification = false;
   bool _justConfirmedEmail = false;
 
@@ -61,12 +65,14 @@ class AppState extends ChangeNotifier {
   bool isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) =>
       _isCurrentAuthEvent(authVersion, expectedUserId: expectedUserId);
 
-  @visibleForTesting
-  Timer? get unreadDebounceTimer => _unreadDebounceTimer;
+  // Test-only pristup debounce timeru izdvojenog providera.
+  // Namerno nije @visibleForTesting na strani potrošača jer se koristi
+  // i u produkcijskom AppState getteru.
+  Timer? get unreadDebounceTimer => unreadNotifications.debugDebounceTimer;
 
   @visibleForTesting
   void scheduleLoadUnreadCountForTesting([Duration delay = const Duration(milliseconds: 300)]) =>
-      _scheduleLoadUnreadCount(delay);
+      unreadNotifications.scheduleReloadForTesting(delay);
 
   bool get isOnline => _connectivity.isOnline;
   bool get isOffline => _connectivity.isOffline;
@@ -74,11 +80,26 @@ class AppState extends ChangeNotifier {
   ConnectivityService get connectivity => _connectivity;
   OrderQueueService get orderQueue => _orderQueue;
   SyncManager get syncManager => _syncManager;
-  int get unreadNotificationCount => _unreadNotificationCount;
 
-  AppState({required OrdersService ordersService, AuthService? authService})
-      : _auth = authService ?? AuthService(),
+  /// Delegirano ka [UnreadNotificationsProvider] — postojeći pozivaoci
+  /// (`watch<AppState>().unreadNotificationCount`) rade bez izmena,
+  /// ali više ne izazivaju rebuild celog AppState-a kada se pretplate
+  /// direktno na [unreadNotifications].
+  int get unreadNotificationCount => unreadNotifications.unreadCount;
+  Stream<PostgresChangePayload> get notificationEvents =>
+      unreadNotifications.events;
+
+  AppState({
+    required OrdersService ordersService,
+    AuthService? authService,
+    UnreadNotificationsProvider? unreadNotificationsProvider,
+  })  : _auth = authService ?? AuthService(),
         _ordersService = ordersService {
+    unreadNotifications =
+        unreadNotificationsProvider ?? UnreadNotificationsProvider();
+    // Fasada prosleđuje promene brojača svojim listener-ima radi
+    // kompatibilnosti (badge u router-u sluša AppState).
+    unreadNotifications.addListener(_forwardUnreadNotifications);
     _syncManager = SyncManager(
       queueService: _orderQueue,
       ordersService: _ordersService,
@@ -112,13 +133,7 @@ class AppState extends ChangeNotifier {
         await PushService.clearRegistrationState();
         if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
         _user = null;
-        _unreadNotificationCount = 0;
-        _unreadDebounceTimer?.cancel();
-        _unreadDebounceTimer = null;
-        if (_notifChannel != null) {
-          try { unawaited(Supabase.instance.client.removeChannel(_notifChannel!)); } catch (_) {}
-        }
-        _notifChannel = null;
+        unreadNotifications.unbind();
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
         if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
@@ -161,27 +176,20 @@ class AppState extends ChangeNotifier {
 
         _user = resolvedUser;
         if (_user != null && !_user!.isGuest) {
-          _scheduleLoadUnreadCount();
+          unreadNotifications.bindUser(_user!.id);
           await PushService().registerToken(_user!.id);
 
           if (!_isCurrentAuthEvent(authVersion,
               expectedUserId: sessionUserId)) {
             return;
           }
-          _subscribeToNotifications();
         } else {
           await PushService.clearRegistrationState();
           if (!_isCurrentAuthEvent(authVersion,
               expectedUserId: sessionUserId)) {
             return;
           }
-          _unreadNotificationCount = 0;
-          _unreadDebounceTimer?.cancel();
-          _unreadDebounceTimer = null;
-          if (_notifChannel != null) {
-            try { unawaited(Supabase.instance.client.removeChannel(_notifChannel!)); } catch (_) {}
-          }
-          _notifChannel = null;
+          unreadNotifications.unbind();
         }
       }
       _authChecked = true;
@@ -202,127 +210,23 @@ class AppState extends ChangeNotifier {
     _connectivity.addListener(_connectivityListener);
   }
 
-  Timer? _unreadDebounceTimer;
-  final StreamController<PostgresChangePayload> _notificationEventsController =
-      StreamController<PostgresChangePayload>.broadcast();
+  void resetUnreadCount() => unreadNotifications.resetCount();
 
-  /// Stream promena na tabeli notifications za prijavljenog korisnika.
-  /// Omogućava ekranima (poput NotificationsScreen) da reaguju na promene
-  /// bez otvaranja dodatnih Realtime kanala ka serveru.
-  Stream<PostgresChangePayload> get notificationEvents =>
-      _notificationEventsController.stream;
+  void incrementUnreadCount() => unreadNotifications.incrementCount();
 
-  Future<void> _loadUnreadCount() async {
-    if (_user == null || _user!.isGuest) return;
-    _unreadNotificationCount =
-        await NotificationsService().getUnreadCount(_user!.id);
+  void decrementUnreadCount() => unreadNotifications.decrementCount();
+
+  void _forwardUnreadNotifications() {
+    // Kompatibilnost: postojeći listener-i AppState (badge, main.dart sync)
+    // i dalje dobijaju notify kada se brojač promeni u izdvojenom provideru.
     notifyListeners();
-  }
-
-  void _scheduleLoadUnreadCount([Duration delay = const Duration(milliseconds: 300)]) {
-    _unreadDebounceTimer?.cancel();
-    _unreadDebounceTimer = Timer(delay, () async {
-      final currentUserId = _user?.id;
-      if (_user == null || _user!.isGuest || currentUserId == null) return;
-      try {
-        await _loadUnreadCount();
-      } catch (e, st) {
-        LoggerService.error(
-          'Failed to load unread count in debounced notification callback',
-          e,
-          stackTrace: st,
-          extra: {'user_id': currentUserId},
-        );
-      }
-    });
-  }
-
-  void _subscribeToNotifications() {
-    // Prethodno unsubscribe ako je kanal već aktivan
-    if (_notifChannel != null) {
-      try { Supabase.instance.client.removeChannel(_notifChannel!); } catch (_) {}
-    }
-    _notifChannel = null;
-
-    if (_user == null || _user!.isGuest) return;
-
-    final client = Supabase.instance.client;
-    final userId = _user!.id;
-
-    try {
-      LoggerService.debug('Subscribing to notifications',
-          extra: {'user_id': userId});
-      _notifChannel = client
-          .channel('notifications-$userId')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'notifications',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'user_id',
-              value: userId,
-            ),
-            callback: (payload) {
-              if (!_notificationEventsController.isClosed) {
-                _notificationEventsController.add(payload);
-              }
-              _scheduleLoadUnreadCount();
-            },
-          )
-          .onPostgresChanges(
-            event: PostgresChangeEvent.update,
-            schema: 'public',
-            table: 'notifications',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'user_id',
-              value: userId,
-            ),
-            callback: (payload) {
-              if (!_notificationEventsController.isClosed) {
-                _notificationEventsController.add(payload);
-              }
-              _scheduleLoadUnreadCount();
-            },
-          )
-          .subscribe();
-    } catch (e, st) {
-      LoggerService.error(
-        'Failed to subscribe to notifications',
-        e,
-        stackTrace: st,
-        extra: {'user_id': userId},
-      );
-    }
-  }
-
-  void resetUnreadCount() {
-    _unreadNotificationCount = 0;
-    notifyListeners();
-  }
-
-  void incrementUnreadCount() {
-    _unreadNotificationCount++;
-    notifyListeners();
-  }
-
-  void decrementUnreadCount() {
-    if (_unreadNotificationCount > 0) {
-      _unreadNotificationCount--;
-      notifyListeners();
-    }
   }
 
   @override
   void dispose() {
-    _unreadDebounceTimer?.cancel();
-    _unreadDebounceTimer = null;
-    _notificationEventsController.close();
+    unreadNotifications.removeListener(_forwardUnreadNotifications);
+    unreadNotifications.dispose();
     _authSubscription?.cancel();
-    if (_notifChannel != null) {
-      try { Supabase.instance.client.removeChannel(_notifChannel!); } catch (_) {}
-    }
     _connectivity.removeListener(_connectivityListener);
     _connectivity.dispose();
     _syncManager.dispose();

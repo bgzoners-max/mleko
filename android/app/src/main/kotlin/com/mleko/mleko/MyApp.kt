@@ -48,6 +48,12 @@ class MyApp : Application() {
 
             nm.createNotificationChannel(orders)
             nm.createNotificationChannel(urgent)
+
+            // Ukloni zastarele v1 kanale ako postoje (migracija na v2).
+            // Bez ovoga korisnici koji su instalirali stariju verziju
+            // zadržavaju duplirane kanale u sistemskim podešavanjima.
+            nm.deleteNotificationChannel("orders_high_v1")
+            nm.deleteNotificationChannel("mleko_urgent_v1")
         }
     }
 }

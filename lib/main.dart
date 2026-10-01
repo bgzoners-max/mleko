@@ -40,7 +40,21 @@ class GlobalScrollBehavior extends MaterialScrollBehavior {
   @override
   Widget buildScrollbar(
       BuildContext context, Widget child, ScrollableDetails details) {
-    // Svi skrol barovi su uklonjeni (nevidljivi)
+    // Scrollbar je vidljiv samo na desktop/web radi pristupacnosti;
+    // na touch uredjajima ostaje skriven.
+    final platform = Theme.of(context).platform;
+    final isDesktop = platform == TargetPlatform.macOS ||
+        platform == TargetPlatform.windows ||
+        platform == TargetPlatform.linux;
+    if (isDesktop || kIsWeb) {
+      return Scrollbar(
+        controller: details.controller,
+        thumbVisibility: true,
+        thickness: 8.0,
+        radius: const Radius.circular(8),
+        child: child,
+      );
+    }
     return child;
   }
 

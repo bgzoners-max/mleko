@@ -59,6 +59,10 @@ import '../widgets/theme_toggle_switch.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Pomoćna funkcija za premium tranzicije između ekrana i ažuriranje SEO metapodataka.
+///
+/// Poštuje sistemsko smanjenje animacija (pristupačnost): kada je na uređaju
+/// uključeno "Remove animations" / "Reduce motion", vraća običnu stranicu
+/// bez Fade+Slide+Scale tranzicije.
 Page<T> buildPageTransition<T>({
   required GoRouterState state,
   required Widget child,
@@ -68,6 +72,9 @@ Page<T> buildPageTransition<T>({
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.disableAnimationsOf(context)) {
+        return child;
+      }
       // Suptilna "Shared Axis" tranzicija (Fade + Slide + Scale)
       final fadeAnimation = CurvedAnimation(
         parent: animation,
@@ -588,7 +595,7 @@ GoRouter createRouter(AppState appState) {
         builder: (context, state, navigationShell) =>
             MainShell(navigationShell: navigationShell),
         branches: [
-          // Buyer shell
+          // TAB 1: Pocetna (buyer/seller home + product/checkout/cart/search detalji)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -600,6 +607,23 @@ GoRouter createRouter(AppState appState) {
               ),
             ],
           ),
+          // TAB 2: Oglasi (ranije skriveni u MarketMode switcheru)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/classifieds',
+                pageBuilder: (context, state) {
+                  final categoryId = state.uri.queryParameters['category'];
+                  return buildPageTransition(
+                    state: state,
+                    child: ClassifiedsFeedScreen(
+                        initialCategoryId: categoryId),
+                  );
+                },
+              ),
+            ],
+          ),
+          // TAB 3: Porudzbine / Inbox (prodavac: inbox, kupac: porudzbine)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -611,6 +635,19 @@ GoRouter createRouter(AppState appState) {
               ),
             ],
           ),
+          // TAB 4: Poruke
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/conversations',
+                pageBuilder: (context, state) => buildPageTransition(
+                  state: state,
+                  child: const ConversationsScreen(),
+                ),
+              ),
+            ],
+          ),
+          // TAB 5: Profil
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -633,19 +670,30 @@ class MainShell extends StatelessWidget {
 
   const MainShell({super.key, required this.navigationShell});
 
+  // Redosled mora da prati StatefulShellBranch redosled:
+  // 0=Pocetna, 1=Oglasi, 2=Porudzbine, 3=Poruke, 4=Profil.
   static const _destinations = [
     (icon: Icons.cottage, label: 'Početna'),
+    (icon: Icons.storefront, label: 'Oglasi'),
     (icon: Icons.receipt_long, label: 'Porudžbine'),
+    (icon: Icons.chat_bubble_outline, label: 'Poruke'),
     (icon: Icons.person, label: 'Profil'),
   ];
 
   static const _guestDestinations = [
     (icon: Icons.cottage, label: 'Početna'),
+    (icon: Icons.storefront, label: 'Oglasi'),
     (icon: Icons.login_rounded, label: 'Prijavi se'),
   ];
 
   void _onDestinationSelected(BuildContext context, int i, {required bool isGuest}) {
     if (isGuest) {
+      if (i == 1) {
+        // Tab Oglasi: ocisti filtere oglasa i sinhronizuj MarketMode.
+        context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+        navigationShell.goBranch(1, initialLocation: true);
+        return;
+      }
       if (i == 0) {
         context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
         context.read<ClassifiedsProvider>().clearFilters();
@@ -662,6 +710,9 @@ class MainShell extends StatelessWidget {
       context.read<ClassifiedsProvider>().clearFilters();
       navigationShell.goBranch(0, initialLocation: true);
       context.go('/');
+    } else if (i == 1) {
+      context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+      navigationShell.goBranch(1, initialLocation: true);
     } else {
       navigationShell.goBranch(i, initialLocation: true);
     }

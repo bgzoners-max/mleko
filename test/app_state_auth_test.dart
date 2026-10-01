@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mleko/models/user_model.dart';
 import 'package:mleko/providers/app_state.dart';
+import 'package:mleko/providers/unread_notifications_provider.dart';
 import 'package:mleko/services/auth/auth_service.dart';
 import 'package:mleko/services/orders/orders_service.dart';
 
@@ -91,6 +92,36 @@ void main() {
       appState.setUserForTesting(null);
       expect(appState.user, isNull);
       expect(notified, equals(2));
+    });
+
+    test('unread fasada delegira ka UnreadNotificationsProvider', () {
+      final unread = UnreadNotificationsProvider();
+      final appState = AppState(
+        ordersService: OrdersService(),
+        authService: _FakeAuthService(),
+        unreadNotificationsProvider: unread,
+      );
+
+      var notified = 0;
+      appState.addListener(() => notified++);
+
+      // increment kroz fasadu -> vidljivo i na fasadi i na provideru
+      appState.incrementUnreadCount();
+      expect(appState.unreadNotificationCount, equals(1));
+      expect(unread.unreadCount, equals(1));
+      expect(notified, equals(1));
+
+      // direktna promena na provideru -> fasada prosledjuje notify
+      unread.incrementCount();
+      expect(appState.unreadNotificationCount, equals(2));
+      expect(notified, equals(2));
+
+      appState.resetUnreadCount();
+      expect(appState.unreadNotificationCount, equals(0));
+      expect(unread.unreadCount, equals(0));
+
+      // bind/unbind kroz fasadu ne baca bez Supabase (samo state deo se testira)
+      unread.resetCount();
     });
 
     test('email verification flag management works correctly', () {

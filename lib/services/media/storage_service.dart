@@ -77,19 +77,34 @@ class StorageService {
     return client.storage.from(_bucketProducts).getPublicUrl(path);
   }
 
-  /// Briše fajl iz `product-images` na osnovu public URL-a.
-  /// Koristi se za rollback kada oglas/proizvod nije sačuvan, da ne ostaju
-  /// „orphan“ fajlovi u bucketu.
-  Future<void> deleteFileByPublicUrl(String url) async {
-    final client = Supabase.instance.client;
-    final marker = '/$_bucketProducts/';
+  /// Izdvaja storage putanju iz public URL-a (čista funkcija, testabilna).
+  /// Vraća `null` ako URL ne pripada zadatom bucketu.
+  /// Odbacuje query parametre (npr. `?t=...` cache-buster).
+  static String? extractPathFromPublicUrl(String bucket, String url) {
+    final marker = '/$bucket/';
     final idx = url.indexOf(marker);
-    if (idx < 0) return;
+    if (idx < 0) return null;
     var path = url.substring(idx + marker.length);
     final qIdx = path.indexOf('?');
     if (qIdx >= 0) path = path.substring(0, qIdx);
-    await client.storage.from(_bucketProducts).remove([path]);
+    return path.isEmpty ? null : path;
   }
+
+  /// Briše fajl iz zadatog bucketa na osnovu public URL-a.
+  /// Koristi se za rollback kada oglas/proizvod/galerija nije sačuvan,
+  /// da ne ostaju „orphan“ fajlovi u bucketu.
+  Future<void> deleteFileByBucket(String bucket, String url) async {
+    final path = extractPathFromPublicUrl(bucket, url);
+    if (path == null) return;
+    final client = Supabase.instance.client;
+    await client.storage.from(bucket).remove([path]);
+  }
+
+  /// Briše fajl iz `product-images` na osnovu public URL-a.
+  /// Zadržano radi kompatibilnosti; nova mesta treba da koriste
+  /// [deleteFileByBucket] sa eksplicitnim bucketom.
+  Future<void> deleteFileByPublicUrl(String url) =>
+      deleteFileByBucket(_bucketProducts, url);
 
   Future<String> uploadFarmGalleryImage(String sellerId, List<int> bytes, int index) async {
     final client = Supabase.instance.client;

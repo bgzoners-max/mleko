@@ -17,6 +17,8 @@ import 'package:uuid/uuid.dart';
 import '../../core/notification_types.dart';
 import '../../firebase_options.dart';
 import '../core/logger_service.dart';
+import 'push_notification_channels.dart';
+import 'push_token_repository.dart';
 
 const _channelId = 'mleko_urgent_v2';
 const _channelName = 'Hitno';
@@ -24,23 +26,11 @@ const _channelName = 'Hitno';
 const _ordersChannelId = 'orders_high_v2';
 const _ordersChannelName = 'Porudžbine';
 
-const _defaultChannel = AndroidNotificationChannel(
-  _channelId,
-  _channelName,
-  description: 'Push obaveštenja za poruke',
-  importance: Importance.max,
-  playSound: true,
-  enableVibration: true,
-);
+// Kanali su kanonski definisani u push_notification_channels.dart;
+// ovi aliasi ostaju da lokalni kod ne mora da menja svaku referencu.
+const _defaultChannel = defaultChannel;
 
-const _ordersChannel = AndroidNotificationChannel(
-  _ordersChannelId,
-  _ordersChannelName,
-  description: 'Notifikacije za nove porudžbine i status',
-  importance: Importance.max,
-  playSound: true,
-  enableVibration: true,
-);
+const _ordersChannel = ordersChannel;
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -203,7 +193,10 @@ class PushService {
   PushService._({SupabaseClient? client}) : _customClient = client;
 
   final SupabaseClient? _customClient;
-  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
+
+  @visibleForTesting
+  SupabaseClient get debugClient =>
+      _customClient ?? Supabase.instance.client;
 
   static const _installationIdKey = 'mleko_push_installation_id';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -298,13 +291,9 @@ class PushService {
   Future<void> _removeOtherUsersForInstallation(
     String installationId,
     String userId,
-  ) async {
-    await _client
-        .from('user_push_tokens')
-        .delete()
-        .eq('installation_id', installationId)
-        .neq('user_id', userId);
-  }
+  ) =>
+      PushTokenRepository(client: _customClient)
+          .removeOtherUsersForInstallation(installationId, userId);
 
   static bool _isCurrentRegistration(int generation, String userId) {
     return generation == _registrationGeneration && _registeredUserId == userId;
@@ -545,15 +534,11 @@ class PushService {
     const maxRetries = 3;
     for (int i = 0; i < maxRetries; i++) {
       try {
-        await _client.from('user_push_tokens').upsert(
-          {
-            'user_id': userId,
-            'installation_id': installationId,
-            'token': token,
-            'platform': platform,
-            'updated_at': DateTime.now().toIso8601String(),
-          },
-          onConflict: 'user_id,installation_id',
+        await PushTokenRepository(client: _customClient).upsertToken(
+          userId: userId,
+          installationId: installationId,
+          token: token,
+          platform: platform,
         );
         // Ako je uspešno, izađi iz petlje
         return;
@@ -610,11 +595,11 @@ class PushService {
       await _cancelAllMessageSubscriptions();
 
       if (generation != _registrationGeneration) return;
-      await _client
-          .from('user_push_tokens')
-          .delete()
-          .eq('user_id', userId)
-          .eq('installation_id', installationId);
+      await PushTokenRepository(client: _customClient)
+          .deleteUserInstallationTokens(
+        userId: userId,
+        installationId: installationId,
+      );
     } catch (e, st) {
       LoggerService.error('Failed to unregister push token', e, stackTrace: st);
     }
