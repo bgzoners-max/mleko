@@ -2,15 +2,19 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/conversation_model.dart';
 import '../../models/message_model.dart';
-import '../../models/message_reaction_model.dart';
 import '../../models/app_error.dart';
 import '../core/logger_service.dart';
 import 'chat_room_manager.dart';
+import 'mixins/chat_media_mixin.dart';
+import 'mixins/chat_reactions_mixin.dart';
+import 'mixins/chat_stats_mixin.dart';
+import 'mixins/chat_typing_mixin.dart';
 
 /// Broj poruka u jednoj stranici (najnovijih).
 const _kMsgPageSize = 50;
 
-class ChatService {
+class ChatService
+    with ChatReactionsMixin, ChatTypingMixin, ChatMediaMixin, ChatStatsMixin {
   static final ChatService _instance = ChatService._();
   factory ChatService({SupabaseClient? client}) {
     if (client != null) return ChatService._(client: client);
@@ -21,7 +25,18 @@ class ChatService {
   final SupabaseClient? _customClient;
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
-  static const typingStaleThreshold = Duration(seconds: 6);
+  @override
+  SupabaseClient get client => _client;
+
+  @override
+  ChatRoomManager get roomManager => _roomManager;
+
+  static const typingStaleThreshold = ChatTypingMixin.typingStaleThreshold;
+
+  static void clearSignedUrlCache() => ChatMediaMixin.clearSignedUrlCache();
+
+  static String? extractChatImagePath(String pathOrUrl) =>
+      ChatMediaMixin.extractChatImagePath(pathOrUrl);
 
   Future<String?> _findConversationId(
     String buyerId,
@@ -421,261 +436,6 @@ class ChatService {
     return controller.stream;
   }
 
-  /// Prati korisnike koji kuckaju inkrementalno (payload is_typing).
-  Stream<Set<String>> watchTypingUsers(String conversationId) {
-    final controller = StreamController<Set<String>>.broadcast();
-    final Set<String> typingUsers = {};
-    Timer? cleanupTimer;
-
-    Future<void> fullFetch() async {
-      try {
-        final threshold =
-            DateTime.now().subtract(typingStaleThreshold).toIso8601String();
-        final rows = await _client
-            .from('conversation_typing')
-            .select('user_id, is_typing, updated_at')
-            .eq('conversation_id', conversationId)
-            .eq('is_typing', true)
-            .gte('updated_at', threshold);
-
-        final users = (rows as List)
-            .map((r) => (r as Map<String, dynamic>)['user_id'] as String?)
-            .whereType<String>()
-            .toSet();
-        typingUsers
-          ..clear()
-          ..addAll(users);
-        if (!controller.isClosed) {
-          controller.add(Set.unmodifiable(typingUsers));
-        }
-      } catch (e, st) {
-        LoggerService.error('Failed to watch typing users', e,
-            stackTrace: st, extra: {'conversationId': conversationId});
-      }
-    }
-
-    void onTypingEvent(PostgresChangePayload payload) {
-      try {
-        final record = payload.newRecord;
-        final userId = record['user_id'] as String?;
-        final isTyping = record['is_typing'] as bool? ?? false;
-        if (userId != null) {
-          if (isTyping) {
-            typingUsers.add(userId);
-          } else {
-            typingUsers.remove(userId);
-          }
-          if (!controller.isClosed) {
-            controller.add(Set.unmodifiable(typingUsers));
-          }
-        }
-      } catch (_) {
-        fullFetch();
-      }
-    }
-
-    fullFetch();
-
-    final room = _roomManager.getOrCreateRoom(_client, conversationId);
-    room.refCount++;
-    room.onTypingCallbacks.add(onTypingEvent);
-
-    cleanupTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (typingUsers.isNotEmpty) {
-        fullFetch();
-      }
-    });
-
-    controller.onCancel = () {
-      cleanupTimer?.cancel();
-      room.onTypingCallbacks.remove(onTypingEvent);
-      _roomManager.releaseRoom(_client, conversationId);
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
-
-    return controller.stream;
-  }
-
-  Future<void> setTyping({
-    required String conversationId,
-    required String userId,
-    required bool isTyping,
-  }) async {
-    try {
-      await _client.from('conversation_typing').upsert({
-        'conversation_id': conversationId,
-        'user_id': userId,
-        'is_typing': isTyping,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
-
-  Future<List<MessageReactionModel>> getMessageReactions(
-    String conversationId,
-    String currentUserId,
-  ) async {
-    try {
-      final rows = await _client
-          .from('message_reactions')
-          .select('message_id, reaction, user_id')
-          .eq('conversation_id', conversationId);
-
-      final byMessageAndEmoji = <String, Map<String, Set<String>>>{};
-      for (final row in (rows as List).cast<Map<String, dynamic>>()) {
-        final messageId = row['message_id'] as String?;
-        final reaction = row['reaction'] as String?;
-        final userId = row['user_id'] as String?;
-        if (messageId == null || reaction == null || userId == null) {
-          continue;
-        }
-
-        final emojiMap = byMessageAndEmoji.putIfAbsent(messageId, () => {});
-        emojiMap.putIfAbsent(reaction, () => <String>{}).add(userId);
-      }
-
-      final result = <MessageReactionModel>[];
-      byMessageAndEmoji.forEach((messageId, emojiMap) {
-        emojiMap.forEach((emoji, users) {
-          result.add(
-            MessageReactionModel(
-              messageId: messageId,
-              reaction: emoji,
-              count: users.length,
-              reactedByMe: users.contains(currentUserId),
-            ),
-          );
-        });
-      });
-
-      return result;
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
-
-  Stream<List<MessageReactionModel>> watchMessageReactions(
-    String conversationId,
-    String currentUserId,
-  ) {
-    final controller = StreamController<List<MessageReactionModel>>.broadcast();
-
-    Future<void> refetch() async {
-      try {
-        final list = await getMessageReactions(conversationId, currentUserId);
-        if (!controller.isClosed) {
-          controller.add(list);
-        }
-      } catch (e, st) {
-        LoggerService.error('Failed to watch message reactions', e,
-            stackTrace: st, extra: {'conversationId': conversationId});
-      }
-    }
-
-    refetch();
-
-    final room = _roomManager.getOrCreateRoom(_client, conversationId);
-    room.refCount++;
-    void onEvent(PostgresChangePayload _) => refetch();
-    room.onReactionCallbacks.add(onEvent);
-
-    controller.onCancel = () {
-      room.onReactionCallbacks.remove(onEvent);
-      _roomManager.releaseRoom(_client, conversationId);
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
-
-    return controller.stream;
-  }
-
-  Future<void> toggleMessageReaction({
-    required String conversationId,
-    required String messageId,
-    required String userId,
-    required String reaction,
-  }) async {
-    try {
-      final existing = await _client
-          .from('message_reactions')
-          .select('id, reaction')
-          .eq('message_id', messageId)
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (existing == null) {
-        await _client.from('message_reactions').insert({
-          'conversation_id': conversationId,
-          'message_id': messageId,
-          'user_id': userId,
-          'reaction': reaction,
-        });
-        return;
-      }
-
-      final existingReaction = existing['reaction'] as String?;
-      final id = existing['id'] as String;
-      if (existingReaction == reaction) {
-        await _client.from('message_reactions').delete().eq('id', id);
-      } else {
-        await _client
-            .from('message_reactions')
-            .update({'reaction': reaction}).eq('id', id);
-      }
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
-
-  Future<SellerResponseStats> getSellerResponseStats(String sellerId) async {
-    try {
-      final result = await _client.rpc(
-        'get_seller_response_time_stats',
-        params: {'p_seller_id': sellerId},
-      );
-
-      if (result == null) {
-        return const SellerResponseStats(
-          sampleCount: 0,
-          avgResponseMinutes: null,
-          medianResponseMinutes: null,
-          lastResponseMinutes: null,
-        );
-      }
-
-      Map<String, dynamic>? json;
-      if (result is List && result.isNotEmpty) {
-        final first = result.first;
-        if (first is Map<String, dynamic>) {
-          json = first;
-        } else if (first is Map) {
-          json = Map<String, dynamic>.from(first);
-        }
-      } else if (result is Map<String, dynamic>) {
-        json = result;
-      } else if (result is Map) {
-        json = Map<String, dynamic>.from(result);
-      }
-
-      if (json == null) {
-        return const SellerResponseStats(
-          sampleCount: 0,
-          avgResponseMinutes: null,
-          medianResponseMinutes: null,
-          lastResponseMinutes: null,
-        );
-      }
-      return SellerResponseStats.fromJson(json);
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
-
   // ─── Slanje i čitanje ──────────────────────────────────────────────────────
 
   Future<void> sendMessage(
@@ -696,80 +456,6 @@ class ChatService {
     }
   }
 
-  static final Map<String, String> _signedUrlCache = {};
-
-  /// Čisti keš potpisanih URL-ova slika.
-  static void clearSignedUrlCache() {
-    _signedUrlCache.clear();
-  }
-
-  /// Ekstrahuje putanju objekta iz chat-images URL-a ili direktne putanje.
-  static String? extractChatImagePath(String pathOrUrl) {
-    if (pathOrUrl.isEmpty) return null;
-    final uri = Uri.tryParse(pathOrUrl);
-    if (uri != null && uri.hasScheme) {
-      final segments = uri.pathSegments;
-      final bucketIdx = segments.indexOf('chat-images');
-      if (bucketIdx != -1 && bucketIdx + 1 < segments.length) {
-        return segments.sublist(bucketIdx + 1).join('/');
-      }
-    }
-    final match = RegExp(r'(?:chat-images/)?([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+/[^?#]+)').firstMatch(pathOrUrl);
-    return match?.group(1);
-  }
-
-  /// Kreira ili vraća keširani signed URL za datu privatnu chat sliku.
-  /// Ako URL već ima važeći token, vraća ga bez dodatnih poziva.
-  Future<String> getSignedChatImageUrl(String pathOrUrl) async {
-    final path = extractChatImagePath(pathOrUrl);
-    if (path == null) {
-      return pathOrUrl;
-    }
-
-    final cached = _signedUrlCache[path];
-    if (cached != null) return cached;
-
-    try {
-      final signedUrl = await _client.storage.from('chat-images').createSignedUrl(
-            path,
-            60 * 60 * 24 * 7, // 7 dana
-          );
-      _signedUrlCache[path] = signedUrl;
-      return signedUrl;
-    } catch (e) {
-      LoggerService.warning('Failed to create signed URL for chat image: $e',
-          extra: {'path': path});
-      return pathOrUrl;
-    }
-  }
-
-  /// Otprema sliku u namenski privatni chat-images bucket i vraća potpisani (signed) URL.
-  Future<String> uploadMessageImage(
-    String conversationId,
-    String userId,
-    List<int> bytes,
-  ) async {
-    try {
-      final name = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final path = '$userId/$conversationId/$name';
-
-      await _client.storage.from('chat-images').uploadBinary(
-            path,
-            bytes as dynamic,
-            fileOptions:
-                const FileOptions(contentType: 'image/jpeg', upsert: true),
-          );
-
-      final signedUrl = await _client.storage.from('chat-images').createSignedUrl(
-            path,
-            60 * 60 * 24 * 7, // 7 dana
-          );
-      _signedUrlCache[path] = signedUrl;
-      return signedUrl;
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
 
   Future<void> deleteMessage(String messageId) async {
     try {
