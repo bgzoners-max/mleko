@@ -25,6 +25,19 @@ void main() {
   }
   deployDir.createSync(recursive: true);
 
+  // Inject .vercel/project.json so `vercel deploy --cwd` always targets the
+  // correct project without requiring an interactive `vercel link` step.
+  // Override per-environment by writing a different project.json before calling
+  // `vercel deploy`, or pass --scope and --project flags explicitly.
+  final vercelDir = Directory('${deployDir.path}/.vercel');
+  vercelDir.createSync(recursive: true);
+  File('${vercelDir.path}/project.json').writeAsStringSync(
+    '{"projectId":"prj_0ijRDSsR22CcADS3HzwmJ5XFrlx2",'
+    '"orgId":"team_HC3fIUGj1ZMlVbwoicfiCWfD",'
+    '"projectName":"mleko"}',
+  );
+  stdout.writeln('Wrote .vercel/project.json → mleko (production)');
+
   // 1. Određivanje determinističkog build heša
   final buildHash = _getBuildHash(buildWebDir);
   stdout.writeln('Determined build hash for immutable caching: $buildHash');
