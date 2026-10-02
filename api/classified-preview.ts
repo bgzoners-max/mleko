@@ -7,7 +7,7 @@ import {
   normalizeBaseUrl,
   normalizeImageUrl,
   resolvePublicBaseUrl,
-} from "./_shared/preview-utils";
+} from "./_shared/preview-utils.js";
 
 declare const process: any;
 

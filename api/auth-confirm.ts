@@ -1,7 +1,7 @@
 export const runtime = "edge";
 
 import { createClient, type EmailOtpType } from "@supabase/supabase-js";
-import { resolvePublicBaseUrl } from "./_shared/preview-utils";
+import { resolvePublicBaseUrl } from "./_shared/preview-utils.js";
 
 declare const process: any;
 

@@ -178,9 +178,17 @@ void main() {
     target.parent.createSync(recursive: true);
     if (relativePath == 'package.json') {
       // Remove heavy devDependencies like `supabase` CLI to speed up Vercel build
-      final content = source.readAsStringSync();
-      final sanitized = content.replaceAll(
+      // Also inject "type": "module" so Node.js/Vercel treats compiled .js API
+      // files as ESM (all API files use `export const runtime = "edge"` syntax)
+      var content = source.readAsStringSync();
+      content = content.replaceAll(
           RegExp(r'"devDependencies":\s*\{[^}]*\},?'), '');
+      // Inject "type": "module" if not already present
+      if (!content.contains('"type": "module"') &&
+          !content.contains('"type":"module"')) {
+        content = content.replaceFirst('{', '{\n  "type": "module",');
+      }
+      final sanitized = content;
       target.writeAsStringSync(sanitized);
     } else {
       source.copySync(target.path);
