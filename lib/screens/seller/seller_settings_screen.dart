@@ -403,8 +403,10 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Dodajte fotografije farme, stoke ili proizvodnje.',
-              style: TextStyle(color: Colors.grey.shade700)),
+          Text(
+            'Dodajte fotografije gazdinstva, radionice, lokacije ili delatnosti (opciono).',
+            style: TextStyle(color: Colors.grey.shade700),
+          ),
           const SizedBox(height: 24),
           Wrap(
             spacing: 8,

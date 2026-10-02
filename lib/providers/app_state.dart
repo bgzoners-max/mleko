@@ -140,7 +140,9 @@ class AppState extends ChangeNotifier {
       } else {
         final isWebSignupCallback = kIsWeb &&
             (Uri.base.fragment.contains('type=signup') ||
+                Uri.base.fragment.contains('type=email') ||
                 Uri.base.queryParameters['type'] == 'signup' ||
+                Uri.base.queryParameters['type'] == 'email' ||
                 Uri.base.fragment.contains('type=email_change') ||
                 Uri.base.path.contains('/auth/confirmed'));
 

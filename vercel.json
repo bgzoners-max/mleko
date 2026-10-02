@@ -180,6 +180,7 @@
     { "source": "/", "destination": "/index.html" },
     { "source": "/p/:id", "destination": "/api/product-preview?id=:id" },
     { "source": "/ad/:id", "destination": "/api/classified-preview?id=:id" },
+    { "source": "/auth/confirm", "destination": "/api/auth-confirm" },
     { "source": "/:path((?!api/).*)", "destination": "/index.html" }
   ]
 }

@@ -8,6 +8,7 @@ import '../screens/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/verify_email_screen.dart';
+import '../screens/auth/auth_confirm_screen.dart';
 import '../screens/auth/auth_confirmed_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/tab_search_or_products_screen.dart';
@@ -158,6 +159,7 @@ GoRouter createRouter(AppState appState) {
           loc == '/sellers-map' ||
           loc == '/cart' ||
           loc == '/settings' ||
+          loc.startsWith('/auth/confirm') ||
           isPublicClassifiedRoute ||
           (loc.startsWith('/seller/') && !loc.endsWith('/reviews'));
 
@@ -482,6 +484,17 @@ GoRouter createRouter(AppState appState) {
         ),
       ),
       GoRoute(
+        path: '/auth/confirm',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: AuthConfirmScreen(
+            tokenHash: state.uri.queryParameters['token_hash'],
+            type: state.uri.queryParameters['type'],
+            next: state.uri.queryParameters['next'],
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/auth/confirmed',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
@@ -726,7 +739,7 @@ class MainShell extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= Breakpoints.phone;
     final selectedDestIndex = isGuest
-        ? 0
+        ? (navigationShell.currentIndex == 1 ? 1 : 0)
         : navigationShell.currentIndex.clamp(0, destinations.length - 1);
 
     if (isWide) {

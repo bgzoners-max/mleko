@@ -96,14 +96,34 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Galerija farme',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Text(
+                  'Galerija',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '(opciono)',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.outline,
+                    fontSize: 13,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 2),
-            Text('Fotografije farme, stoke ili proizvodnje.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            Text(
+              'Fotografije gazdinstva, radionice, lokacije ili delatnosti.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(height: 4),
             Wrap(
               spacing: 8,

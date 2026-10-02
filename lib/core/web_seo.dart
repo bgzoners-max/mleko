@@ -256,6 +256,7 @@ void applyRouteSeo(String path) {
       path == '/classifieds/my' ||
       path == '/classifieds/saved-searches' ||
       path == '/verify-email' ||
+      path == '/auth/confirm' ||
       path == '/auth/confirmed' ||
       path == '/login' ||
       path == '/register' ||
