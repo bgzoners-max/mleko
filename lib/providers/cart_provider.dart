@@ -23,6 +23,23 @@ class CartProvider extends ChangeNotifier {
   final Map<String, Future<List<({ProductModel product, double quantity})>>>
       _bySellerCache = {};
 
+  /// Lenjo izgrađen indeks `productId -> sellerId` za O(1) pretrage bez
+  /// linearnog skeniranja svih prodavaca. Resetuje se u [_invalidateCache].
+  Map<String, String>? _productSellerIndex;
+
+  Map<String, String> get _productIndex {
+    final cached = _productSellerIndex;
+    if (cached != null) return cached;
+    final map = <String, String>{};
+    for (final entry in _sellerItems.entries) {
+      for (final productId in entry.value.keys) {
+        // Zadrži prvog prodavca (isti redosled kao stari linearni sken).
+        map.putIfAbsent(productId, () => entry.key);
+      }
+    }
+    return _productSellerIndex = map;
+  }
+
   // Debouncing za _save() da spreči race conditions pri rapid-fire pozivima
   Timer? _saveDebounceTimer;
   static const _saveDebounceDelay = Duration(milliseconds: 100);
@@ -315,6 +332,7 @@ class CartProvider extends ChangeNotifier {
 
   void _invalidateCache([String? sellerId]) {
     _groupedCache = null;
+    _productSellerIndex = null;
     if (sellerId != null) {
       _bySellerCache.remove(sellerId);
     } else {
@@ -495,18 +513,11 @@ class CartProvider extends ChangeNotifier {
     await removeFromSeller(sellerId: p.sellerId, productId: p.id);
   }
 
-  bool contains(String productId) {
-    for (final items in _sellerItems.values) {
-      if (items.containsKey(productId)) return true;
-    }
-    return false;
-  }
+  bool contains(String productId) => _productIndex.containsKey(productId);
 
   double? getQuantity(String productId) {
-    for (final items in _sellerItems.values) {
-      if (items.containsKey(productId)) return items[productId];
-    }
-    return null;
+    final sellerId = _productIndex[productId];
+    return sellerId == null ? null : _sellerItems[sellerId]?[productId];
   }
 
   Future<List<({ProductModel product, double quantity})>> getProductsBySeller(

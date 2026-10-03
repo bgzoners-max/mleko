@@ -291,17 +291,19 @@ class OrderSyncService {
           .order('created_at', ascending: false)
           .limit(20);
 
-      final expectedPhone = _normalize(pending.buyerPhone);
-      final expectedCity = _normalize(pending.buyerCity);
-      final expectedAddress = _normalize(pending.buyerAddress ?? '');
-      final expectedNote = _normalize(pending.note ?? '');
-      final expectedDeliveryMethod = pending.deliveryMethod.dbValue;
-      final expectedDeliveryCity = _normalize(pending.deliveryCity ?? '');
-      final expectedDeliveryPoint = _normalize(pending.deliveryPointLabel ?? '');
-      final expectedDeliveryAddress = _normalize(pending.deliveryAddress ?? '');
+      final expectedSignature = _deliverySignature([
+        pending.buyerPhone,
+        pending.buyerCity,
+        pending.buyerAddress,
+        pending.note,
+        pending.deliveryMethod.dbValue,
+        pending.deliveryCity,
+        pending.deliveryPointLabel,
+        pending.deliveryAddress,
+        pending.deliveryTimeFrom,
+        pending.deliveryTimeTo,
+      ]);
       final expectedDeliveryWeekday = pending.deliveryWeekday;
-      final expectedDeliveryFrom = _normalize(pending.deliveryTimeFrom ?? '');
-      final expectedDeliveryTo = _normalize(pending.deliveryTimeTo ?? '');
       final expectedDeliveryFee = pending.deliveryFeeRsd ?? 0;
 
       for (final row in (rows as List).cast<Map<String, dynamic>>()) {
@@ -310,34 +312,23 @@ class OrderSyncService {
           continue;
         }
 
-        final phone = _normalize(row['buyer_phone'] as String? ?? '');
-        final city = _normalize(row['buyer_city'] as String? ?? '');
-        final address = _normalize(row['buyer_address'] as String? ?? '');
-        final note = _normalize(row['note'] as String? ?? '');
-        final deliveryMethod =
-            _normalize(row['delivery_method'] as String? ?? 'agreement');
-        final deliveryCity = _normalize(row['delivery_city'] as String? ?? '');
-        final deliveryPoint =
-            _normalize(row['delivery_point_label'] as String? ?? '');
-        final deliveryAddress =
-            _normalize(row['delivery_address'] as String? ?? '');
+        final rowSignature = _deliverySignature([
+          row['buyer_phone'] as String?,
+          row['buyer_city'] as String?,
+          row['buyer_address'] as String?,
+          row['note'] as String?,
+          row['delivery_method'] as String? ?? 'agreement',
+          row['delivery_city'] as String?,
+          row['delivery_point_label'] as String?,
+          row['delivery_address'] as String?,
+          row['delivery_time_from'] as String?,
+          row['delivery_time_to'] as String?,
+        ]);
         final deliveryWeekday = (row['delivery_weekday'] as num?)?.toInt();
-        final deliveryFrom =
-            _normalize(row['delivery_time_from'] as String? ?? '');
-        final deliveryTo = _normalize(row['delivery_time_to'] as String? ?? '');
         final deliveryFee = (row['delivery_fee_rsd'] as num?)?.toDouble() ?? 0;
 
-        if (phone == expectedPhone &&
-            city == expectedCity &&
-            address == expectedAddress &&
-            note == expectedNote &&
-            deliveryMethod == expectedDeliveryMethod &&
-            deliveryCity == expectedDeliveryCity &&
-            deliveryPoint == expectedDeliveryPoint &&
-            deliveryAddress == expectedDeliveryAddress &&
+        if (rowSignature == expectedSignature &&
             deliveryWeekday == expectedDeliveryWeekday &&
-            deliveryFrom == expectedDeliveryFrom &&
-            deliveryTo == expectedDeliveryTo &&
             (deliveryFee - expectedDeliveryFee).abs() < 0.0001) {
           return row['id'] as String?;
         }
@@ -352,4 +343,9 @@ class OrderSyncService {
   String _normalize(String input) {
     return input.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
+
+  /// Kanonski potpis dostave za poređenje duplikata bez dugog `&&` lanca.
+  /// Redosled vrednosti mora ostati stabilan jer se koristi za poređenje.
+  String _deliverySignature(List<String?> values) =>
+      values.map((v) => _normalize(v ?? '')).join('\u0001');
 }

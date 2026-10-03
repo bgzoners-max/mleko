@@ -216,12 +216,15 @@ mixin ProductListingMixin {
     final result = <String, ProductModel>{};
     final missingIds = <String>[];
 
-    for (final id in ids) {
-      final cached = await cache.getCachedProduct(id);
+    // Paralelno čitanje keša: `await` u petlji serijalizuje platform pozive,
+    // dok Future.wait čini ukupno trajanje max umesto sum.
+    final cachedProducts = await Future.wait(ids.map(cache.getCachedProduct));
+    for (var i = 0; i < ids.length; i++) {
+      final cached = cachedProducts[i];
       if (cached != null) {
-        result[id] = cached;
+        result[ids[i]] = cached;
       } else {
-        missingIds.add(id);
+        missingIds.add(ids[i]);
       }
     }
 

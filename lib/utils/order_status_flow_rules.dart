@@ -53,37 +53,24 @@ class OrderStatusFlowRules {
       return false;
     }
 
-    switch (role) {
-      case 'seller':
-        if (oldStatus == 'sent') {
-          return newStatus == 'accepted' || newStatus == 'rejected';
-        }
-        if (oldStatus == 'accepted') {
-          return newStatus == 'shipped' || newStatus == 'cancelled_by_seller';
-        }
-        if (oldStatus == 'shipped') {
-          return newStatus == 'cancelled_by_seller';
-        }
-        if (newStatus == 'archived') {
-          return _canPartyManuallyArchive(oldStatus);
-        }
-        return false;
-
-      case 'buyer':
-        if (oldStatus == 'shipped') {
-          return newStatus == 'delivered';
-        }
-        if (newStatus == 'archived') {
-          return _canPartyManuallyArchive(oldStatus);
-        }
-        return false;
-
-      case 'system':
-        return true;
-
-      default:
-        return false;
-    }
+    return switch (role) {
+      'seller' => switch ((oldStatus, newStatus)) {
+          ('sent', 'accepted') || ('sent', 'rejected') => true,
+          ('accepted', 'shipped') ||
+          ('accepted', 'cancelled_by_seller') ||
+          ('shipped', 'cancelled_by_seller') =>
+            true,
+          (_, 'archived') => _canPartyManuallyArchive(oldStatus),
+          _ => false,
+        },
+      'buyer' => switch ((oldStatus, newStatus)) {
+          ('shipped', 'delivered') => true,
+          (_, 'archived') => _canPartyManuallyArchive(oldStatus),
+          _ => false,
+        },
+      'system' => true,
+      _ => false,
+    };
   }
 
   static OrderStatusNotificationTemplate? notificationForNewStatus(

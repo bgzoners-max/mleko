@@ -418,35 +418,40 @@ class ClassifiedsService {
     }
   }
 
+  /// Proverava da je trenutni korisnik prijavljen i poseduje admin prava.
+  /// Centralizuje bezbednosnu proveru koju dele sve admin-only akcije
+  /// (npr. istaknutost i hitnost oglasa).
+  Future<void> _assertAdmin() async {
+    final currentUserId = _client.auth.currentUser?.id;
+    if (currentUserId == null) {
+      throw AppError(
+        message: 'Unauthorized: no authenticated user',
+        userMessage: 'Morate biti prijavljeni za ovu akciju.',
+        type: ErrorType.unauthorized,
+      );
+    }
+
+    final profile = await _client
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', currentUserId)
+        .maybeSingle();
+
+    final isAdmin = profile?['is_admin'] as bool? ?? false;
+    if (!isAdmin) {
+      throw AppError(
+        message: 'Forbidden: admin privileges required',
+        userMessage: 'Nemate dozvolu za ovu akciju.',
+        type: ErrorType.forbidden,
+      );
+    }
+  }
+
   /// Ažurira status istaknutosti oglasa (samo za admine)
   Future<void> updateAdFeatured(String adId, bool isFeatured, {DateTime? until}) async {
     try {
-      // Security: Proveri da je korisnik admin pre ažuriranja featured statusa
-      final currentUserId = _client.auth.currentUser?.id;
-      if (currentUserId == null) {
-        throw AppError(
-          message: 'Unauthorized: no authenticated user',
-          userMessage: 'Morate biti prijavljeni za ovu akciju.',
-          type: ErrorType.unauthorized,
-        );
-      }
-      
-      // Proveri admin prava preko profiles tabele
-      final profile = await _client
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', currentUserId)
-          .maybeSingle();
-      
-      final isAdmin = profile?['is_admin'] as bool? ?? false;
-      if (!isAdmin) {
-        throw AppError(
-          message: 'Forbidden: admin privileges required',
-          userMessage: 'Nemate dozvolu za ovu akciju.',
-          type: ErrorType.forbidden,
-        );
-      }
-      
+      await _assertAdmin();
+
       await _client.from('classified_ads').update({
         'is_featured': isFeatured,
         'featured_until': isFeatured ? until?.toIso8601String() : null,
@@ -460,32 +465,8 @@ class ClassifiedsService {
   /// Ažurira status hitnosti oglasa (samo za admine)
   Future<void> updateAdUrgent(String adId, bool isUrgent) async {
     try {
-      // Security: Proveri da je korisnik admin pre ažuriranja urgent statusa
-      final currentUserId = _client.auth.currentUser?.id;
-      if (currentUserId == null) {
-        throw AppError(
-          message: 'Unauthorized: no authenticated user',
-          userMessage: 'Morate biti prijavljeni za ovu akciju.',
-          type: ErrorType.unauthorized,
-        );
-      }
-      
-      // Proveri admin prava preko profiles tabele
-      final profile = await _client
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', currentUserId)
-          .maybeSingle();
-      
-      final isAdmin = profile?['is_admin'] as bool? ?? false;
-      if (!isAdmin) {
-        throw AppError(
-          message: 'Forbidden: admin privileges required',
-          userMessage: 'Nemate dozvolu za ovu akciju.',
-          type: ErrorType.forbidden,
-        );
-      }
-      
+      await _assertAdmin();
+
       await _client.from('classified_ads').update({
         'is_urgent': isUrgent,
         'updated_at': DateTime.now().toIso8601String(),
@@ -504,7 +485,7 @@ class ClassifiedsService {
     }
   }
 
-  // LRU cache za praćenje pregledanih oglasa u sesiji (max 100 da spreči memory leak)
+  // Dedup pregledanih oglasa u sesiji (FIFO/insertion-order, max 100 da spreči memory leak)
   static const int _maxViewedAdsInSession = 100;
   final Set<String> _viewedAdIdsInSession = <String>{};
 
@@ -512,7 +493,7 @@ class ClassifiedsService {
   Future<void> incrementViews(String id) async {
     if (_viewedAdIdsInSession.contains(id)) return;
     
-    // LRU eviction: ako je Set pun, ukloni najstariji element
+    // FIFO eviction: ako je Set pun, ukloni najstarije dodat element
     if (_viewedAdIdsInSession.length >= _maxViewedAdsInSession) {
       _viewedAdIdsInSession.remove(_viewedAdIdsInSession.first);
     }

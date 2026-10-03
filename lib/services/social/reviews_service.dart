@@ -82,10 +82,13 @@ class ReviewsService {
   /// Izračunava prosečnu ocenu iz liste ocena na strani klijenta.
   /// Prihvata bilo koji `Iterable<int>` — radi i za ReviewModel i za BuyerReviewModel.
   static double? computeAverage(Iterable<int> ratings) {
-    final list = ratings.toList();
-    if (list.isEmpty) return null;
-    final sum = list.fold<int>(0, (acc, r) => acc + r);
-    return sum / list.length;
+    var sum = 0;
+    var count = 0;
+    for (final rating in ratings) {
+      sum += rating;
+      count++;
+    }
+    return count == 0 ? null : sum / count;
   }
 
   Future<double?> getAverageRatingForSeller(String sellerId) async {

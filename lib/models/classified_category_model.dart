@@ -578,22 +578,34 @@ class ClassifiedCategoryModel {
     }
   }
 
-  static int compareSerbian(String a, String b) {
-    String normalize(String s) {
-      return s
-          .toLowerCase()
-          .replaceAll('č', 'c~1')
-          .replaceAll('ć', 'c~2')
-          .replaceAll('dž', 'd~1')
-          .replaceAll('đ', 'd~2')
-          .replaceAll('lj', 'l~1')
-          .replaceAll('nj', 'n~1')
-          .replaceAll('š', 's~1')
-          .replaceAll('ž', 'z~1');
-    }
+  static final Map<String, String> _serbianKeyCache = <String, String>{};
+  static const int _serbianKeyCacheLimit = 2000;
 
-    return normalize(a).compareTo(normalize(b));
+  /// Normalizacija za srpsku abecedu. Memoizovana jer se komparator poziva
+  /// O(n log n) puta tokom sortiranja nad istim imenima kategorija.
+  static String _serbianKey(String s) {
+    final cached = _serbianKeyCache[s];
+    if (cached != null) return cached;
+    final key = s
+        .toLowerCase()
+        .replaceAll('č', 'c~1')
+        .replaceAll('ć', 'c~2')
+        .replaceAll('dž', 'd~1')
+        .replaceAll('đ', 'd~2')
+        .replaceAll('lj', 'l~1')
+        .replaceAll('nj', 'n~1')
+        .replaceAll('š', 's~1')
+        .replaceAll('ž', 'z~1');
+    // Ograniči rast keša; imena kategorija su mala i stabilna.
+    if (_serbianKeyCache.length >= _serbianKeyCacheLimit) {
+      _serbianKeyCache.clear();
+    }
+    _serbianKeyCache[s] = key;
+    return key;
   }
+
+  static int compareSerbian(String a, String b) =>
+      _serbianKey(a).compareTo(_serbianKey(b));
 
   /// Primarno sortiranje po definisanom redosledu iz baze (sortOrder),
   /// a sekundarno po srpskoj abecedi za kategorije sa istim prioritetom.
