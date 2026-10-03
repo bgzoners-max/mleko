@@ -4,11 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/serbian_cities.dart';
-import '../../core/design_system.dart';
 import '../../core/utils/error_messages.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
-import '../../services/media/storage_service.dart';
 import '../../services/services.dart';
 
 const _kSellerTags = [

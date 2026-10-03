@@ -523,22 +523,28 @@
       var currentBuild = '__BUILD_HASH__';
       var lastBuild = localStorage.getItem('dm_build_hash');
       if (currentBuild && currentBuild.indexOf('__') === -1 && lastBuild && lastBuild !== currentBuild) {
-        localStorage.setItem('dm_build_hash', currentBuild);
+        var cleanupTasks = [];
         if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function (regs) {
-            for (var i = 0; i < regs.length; i++) {
-              regs[i].unregister();
-            }
-          });
+          cleanupTasks.push(
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            })
+          );
         }
         if ('caches' in window) {
-          caches.keys().then(function (keys) {
-            for (var j = 0; j < keys.length; j++) {
-              caches.delete(keys[j]);
-            }
-          });
+          cleanupTasks.push(
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            })
+          );
         }
-        window.location.reload();
+        Promise.all(cleanupTasks).then(function () {
+          localStorage.setItem('dm_build_hash', currentBuild);
+          window.location.reload();
+        }).catch(function () {
+          localStorage.setItem('dm_build_hash', currentBuild);
+          window.location.reload();
+        });
       } else if (currentBuild && currentBuild.indexOf('__') === -1 && !lastBuild) {
         localStorage.setItem('dm_build_hash', currentBuild);
       }

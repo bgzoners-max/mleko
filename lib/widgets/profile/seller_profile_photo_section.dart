@@ -4,13 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/design_system.dart';
 import '../../core/profile_display_names.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
-import '../../services/media/storage_service.dart';
 import '../../services/services.dart';
 import 'edit_profile_sheet.dart';
 
