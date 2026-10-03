@@ -107,9 +107,10 @@ class ClassifiedSpecificationsTable extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        Flexible(
+        // Expanded (a ne Flexible.loose) da bi kolona vrednosti uvek
+        // završavala na desnoj ivici kartice, nezavisno od dužine labele.
+        Expanded(
           flex: 2,
-          fit: FlexFit.loose,
           child: Text(
             label,
             style: TextStyle(
