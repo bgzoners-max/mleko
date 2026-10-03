@@ -2194,12 +2194,10 @@ export type Database = {
         Args: { p_seller_id: string }
         Returns: Json
       }
-      get_seller_inbox:
-        | { Args: { p_seller_id: string }; Returns: Json }
-        | {
-            Args: { p_limit?: number; p_offset?: number; p_seller_id: string }
-            Returns: Json
-          }
+      get_seller_inbox: {
+        Args: { p_limit?: number; p_offset?: number; p_seller_id: string }
+        Returns: Json
+      }
       get_seller_loyalty_stats: { Args: { p_seller_id: string }; Returns: Json }
       get_seller_popular_products: {
         Args: { p_limit?: number; p_seller_id: string }

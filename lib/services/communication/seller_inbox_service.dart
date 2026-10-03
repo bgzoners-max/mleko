@@ -9,9 +9,13 @@ import '../core/logger_service.dart';
 class SellerInboxService {
   final _client = Supabase.instance.client;
 
-  Future<List<SellerInboxItem>> getInboxItems(String sellerId) async {
-    final result = await _client
-        .rpc('get_seller_inbox', params: {'p_seller_id': sellerId});
+  Future<List<SellerInboxItem>> getInboxItems(String sellerId,
+      {int limit = 50, int offset = 0}) async {
+    final result = await _client.rpc('get_seller_inbox', params: {
+      'p_seller_id': sellerId,
+      'p_limit': limit,
+      'p_offset': offset,
+    });
     final list = result as List? ?? [];
     return list.map((e) => _parseInboxItem(e as Map<String, dynamic>)).toList();
   }
@@ -46,17 +50,18 @@ class SellerInboxService {
   }
 
   Stream<List<SellerInboxItem>> watchInbox(String sellerId,
-      {Stream<void>? refreshTrigger}) {
+      {int limit = 50, int offset = 0, Stream<void>? refreshTrigger}) {
     final controller = StreamController<List<SellerInboxItem>>.broadcast();
     StreamSubscription? refreshSub;
 
     Future<void> refetch() async {
       try {
-        final list = await getInboxItems(sellerId);
+        final list = await getInboxItems(sellerId, limit: limit, offset: offset);
         if (!controller.isClosed) controller.add(list);
       } catch (e, st) {
         LoggerService.error('Failed to refresh seller inbox', e,
             stackTrace: st);
+        if (!controller.isClosed) controller.addError(e, st);
       }
     }
 

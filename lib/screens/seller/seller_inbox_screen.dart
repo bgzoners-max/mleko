@@ -69,6 +69,7 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
   void _initStream(String userId) {
     _inboxStream = _sellerInboxService.watchInbox(
       userId,
+      limit: _limit,
       refreshTrigger: _refreshController.stream,
     );
   }
