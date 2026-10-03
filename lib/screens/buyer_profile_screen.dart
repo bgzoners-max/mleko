@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/responsive.dart';
+import '../providers/app_state.dart';
 import '../models/buyer_review_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
@@ -125,11 +127,26 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
         final ordersCount = snap.data!['ordersCount'] as int;
         final displayName = user?.displayName ?? user?.farmName ?? 'Kupac';
 
+        final currentUser = context.watch<AppState>().user;
+        final isOwnProfile =
+            currentUser != null && currentUser.id == widget.buyerId;
+
         return Scaffold(
           appBar: AppBar(
             leading: const AppBackButton(fallbackRoute: '/'),
             title: Text(displayName),
-            actions: const [AppHomeButton()],
+            actions: [
+              if (isOwnProfile)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Uredi profil',
+                  onPressed: () async {
+                    await context.push('/profile/edit');
+                    _retry();
+                  },
+                ),
+              const AppHomeButton(),
+            ],
           ),
           body: Align(
             alignment: Alignment.topCenter,

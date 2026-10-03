@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/responsive.dart';
 import '../../models/user_model.dart';
+import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../app_back_button.dart';
 
@@ -36,6 +37,8 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
       (cart) => cart.getSellerDraft(seller.id).length,
     );
     final sellerName = seller.farmName ?? 'Prodavnica';
+    final isOwnProfile =
+        context.select<AppState, bool>((app) => app.user?.id == seller.id);
     final isDesktop = Breakpoints.isDesktop(context);
     final isLargeTablet = Breakpoints.isLargeTablet(context);
     final isSmallTablet = Breakpoints.isSmallTablet(context);
@@ -48,6 +51,12 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
         leading: const AppBackButton(fallbackRoute: '/'),
         title: Text(sellerName),
         actions: [
+          if (isOwnProfile)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Uredi profil',
+              onPressed: () => context.push('/profile/edit'),
+            ),
           if (draftCount > 0)
             Padding(
               padding: const EdgeInsets.only(right: 8),

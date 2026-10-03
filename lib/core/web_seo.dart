@@ -240,7 +240,7 @@ void applyRouteSeo(String path) {
   if (path == '/cart' ||
       path.startsWith('/checkout') ||
       path == '/orders' ||
-      path == '/profile' ||
+      path.startsWith('/profile') ||
       path.startsWith('/buyer') ||
       path == '/settings' ||
       path == '/seller-settings' ||

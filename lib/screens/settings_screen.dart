@@ -165,6 +165,14 @@ class SettingsScreen extends StatelessWidget {
               const Divider(height: 1),
               if (!user.isGuest) ...[
                 ListTile(
+                  leading: const Icon(Icons.badge_outlined),
+                  title: const Text('Podaci profila'),
+                  subtitle: const Text('Izmena imena, broja telefona, adrese i fotografije'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/profile/edit'),
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.notifications_outlined),
                   title: const Text('Obaveštenja'),
                   subtitle: const Text('Podešavanja obaveštenja i dozvole'),

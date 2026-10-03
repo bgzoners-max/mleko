@@ -90,6 +90,17 @@ class BuyerProfileHeader extends StatelessWidget {
                 ),
               ],
             ),
+            if (currentUser != null && currentUser.id == buyerId) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Uredi svoj profil'),
+                  onPressed: () => context.push('/profile/edit'),
+                ),
+              ),
+            ],
             if (canContact) ...[
               const SizedBox(height: 12),
               SizedBox(

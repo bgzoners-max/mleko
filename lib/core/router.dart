@@ -18,6 +18,7 @@ import '../screens/checkout_screen.dart';
 import '../screens/checkout_multi_screen.dart';
 import '../screens/cart_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/edit_profile_screen.dart';
 import '../screens/seller/becoming_seller_screen.dart';
 import '../screens/seller/add_edit_product_screen.dart';
 import '../screens/seller/seller_profile_screen.dart';
@@ -396,6 +397,14 @@ GoRouter createRouter(AppState appState) {
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
           child: const SettingsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const EditProfileScreen(),
         ),
       ),
       GoRoute(

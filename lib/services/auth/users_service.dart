@@ -110,6 +110,9 @@ class UsersService {
       if (updated == null) {
         final insertData = Map<String, dynamic>.from(updateData);
         insertData['id'] = userId;
+        insertData['email'] ??= _client.auth.currentUser?.email;
+        insertData['role'] ??= 'buyer';
+        insertData['is_guest'] ??= false;
         await _client.from('profiles').insert(insertData);
       }
     } catch (e, st) {
@@ -142,10 +145,10 @@ class UsersService {
     }
   }
 
-  Future<void> updateProfileImage(String userId, String imageUrl) async {
+  Future<void> updateProfileImage(String userId, String? imageUrl) async {
     try {
       await _client.from('profiles').update({
-        'profile_image_url': imageUrl,
+        'profile_image_url': (imageUrl == null || imageUrl.trim().isEmpty) ? null : imageUrl,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', userId);
     } catch (e, st) {

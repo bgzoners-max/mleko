@@ -58,8 +58,8 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final role = json['role'] == 'seller' ? UserRole.seller : UserRole.buyer;
     final location = json['location'] as String?;
-    // Kupci čuvaju adresu dostave u DB koloni `location` (nema posebne `address` kolone).
-    final address = role == UserRole.buyer ? location : null;
+    // Kupci i prodavci dele DB kolonu `location` za adresu/lokaciju.
+    final address = (json['address'] as String?) ?? location;
 
     return UserModel(
       id: json['id'] as String,

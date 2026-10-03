@@ -22,6 +22,7 @@ import '../widgets/profile/profile_data_card.dart';
 import '../widgets/profile/panel_placeholder.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/guest_auth_prompt.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -54,6 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'notifications' => '/notifications',
         'settings' => '/settings',
         'becoming-seller' => '/becoming-seller',
+        'edit-profile' => '/profile/edit',
         _ => '/',
       });
     }
@@ -129,9 +131,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(8),
               child: Column(
                 children: [
-                  if (user.isSeller) ...[
+                  if (!user.isGuest) ...[
                     SellerProfilePhotoSection(user: user),
                     const SizedBox(height: 6),
+                  ],
+                  if (user.isSeller) ...[
                     SellerGallerySection(user: user),
                     const SizedBox(height: 6),
                   ],
@@ -177,7 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildNarrow(BuildContext context, UserModel user) {
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final profileCards = [
-      if (user.isSeller) SellerProfilePhotoSection(user: user),
+      if (!user.isGuest) SellerProfilePhotoSection(user: user),
       if (user.isSeller) SellerGallerySection(user: user),
       ProfileDataCard(user: user),
       if (!user.isGuest) BuyerStatsCard(user: user),
@@ -602,7 +606,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const Divider(height: 8, thickness: 0.8),
-          if (!user.isGuest)
+          if (!user.isGuest) ...[
+            ListTile(
+              visualDensity: VisualDensity.compact,
+              leading: const Icon(Icons.badge_outlined),
+              title: const Text('Moji lični podaci / Uredi profil',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Izmena imena, broja telefona, grada i adrese'),
+              selected: _isActive('edit-profile', isWide),
+              onTap: () => _openPanel(
+                  'edit-profile', const EditProfileScreen(),
+                  isWide: isWide),
+            ),
             ListTile(
               visualDensity: VisualDensity.compact,
               leading: const Icon(Icons.chat_bubble_outline),
@@ -612,6 +627,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () => _openPanel('messages', const ConversationsScreen(),
                   isWide: isWide),
             ),
+          ],
           ListTile(
             visualDensity: VisualDensity.compact,
             leading: const Icon(Icons.notifications_outlined),
