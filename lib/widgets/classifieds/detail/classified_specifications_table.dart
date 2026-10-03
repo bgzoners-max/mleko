@@ -98,24 +98,36 @@ class ClassifiedSpecificationsTable extends StatelessWidget {
     IconData? icon,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 16, color: AmazonColors.link),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: 16, color: AmazonColors.link),
+          ),
           const SizedBox(width: 8),
         ],
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: colorScheme.onSurfaceVariant,
+        Flexible(
+          flex: 2,
+          fit: FlexFit.loose,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

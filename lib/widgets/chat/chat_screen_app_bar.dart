@@ -31,6 +31,7 @@ class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                 Text(
                   otherPartyName ?? 'Razgovor',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
@@ -40,6 +41,7 @@ class ChatScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).colorScheme.primary,
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],

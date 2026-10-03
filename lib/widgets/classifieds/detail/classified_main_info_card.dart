@@ -243,23 +243,37 @@ class ClassifiedMainInfoCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text(
-                  ad.priceFormatted,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? const Color(0xFFFF6B6B) : AmazonColors.dealRed,
-                    letterSpacing: -0.5,
+                Expanded(
+                  child: Text(
+                    ad.priceFormatted,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? const Color(0xFFFF6B6B) : AmazonColors.dealRed,
+                      letterSpacing: -0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
-                const Icon(Icons.location_on_outlined, size: 16, color: AmazonColors.link),
-                const SizedBox(width: 4),
-                Text(
-                  ad.city,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                  ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 16, color: AmazonColors.link),
+                    const SizedBox(width: 4),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: Text(
+                        ad.city,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

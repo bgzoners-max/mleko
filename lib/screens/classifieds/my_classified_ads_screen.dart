@@ -474,79 +474,85 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Status bedž
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: ad.isSold
-                                          ? Colors.grey.shade600
-                                          : Colors.green.shade700,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      ad.isSold ? 'PRODATO' : 'AKTIVAN',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  Expanded(
+                                    child: Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        // Status bedž
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: ad.isSold
+                                                ? Colors.grey.shade600
+                                                : Colors.green.shade700,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            ad.isSold ? 'PRODATO' : 'AKTIVAN',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        if (ad.isCurrentlyFeatured)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 7, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFD97706),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.star_rounded, size: 11, color: Colors.white),
+                                                SizedBox(width: 3),
+                                                Text(
+                                                  'ISTAKNUTO',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (ad.isUrgent)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 7, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFDC2626),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.bolt_rounded, size: 11, color: Colors.white),
+                                                SizedBox(width: 2),
+                                                Text(
+                                                  'HITNO',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 9.5,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  if (ad.isCurrentlyFeatured) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 7, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFD97706),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.star_rounded, size: 11, color: Colors.white),
-                                          SizedBox(width: 3),
-                                          Text(
-                                            'ISTAKNUTO',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  if (ad.isUrgent) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 7, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFDC2626),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.bolt_rounded, size: 11, color: Colors.white),
-                                          SizedBox(width: 2),
-                                          Text(
-                                            'HITNO',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  const Spacer(),
+                                  const SizedBox(width: 8),
                                   Text(
                                     ad.priceFormatted,
                                     style: TextStyle(

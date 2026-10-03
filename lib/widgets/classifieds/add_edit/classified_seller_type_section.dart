@@ -74,17 +74,19 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                            color: selected
-                                ? (isDark ? Colors.white : colorScheme.onSurface)
-                                : colorScheme.onSurface,
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                              color: selected
+                                  ? (isDark ? Colors.white : colorScheme.onSurface)
+                                  : colorScheme.onSurface,
+                            ),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Container(
                           width: 20,
                           height: 20,

@@ -522,8 +522,6 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                                   onImageTap: _openImageLightbox,
                                 ),
                                 const SizedBox(height: 24),
-                                ClassifiedDescriptionCard(ad: ad, theme: theme, colorScheme: colorScheme, isDark: isDark),
-                                const SizedBox(height: 20),
                                 ClassifiedSafetyTipsCard(colorScheme: colorScheme, isDark: isDark),
                                 const SizedBox(height: 12),
                                 ClassifiedReportButton(ad: ad, isOwner: isOwner, colorScheme: colorScheme),
@@ -532,7 +530,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                           ),
                           const SizedBox(width: 32),
 
-                          // DESNA KOLONA: Amazon Buy / Contact Box + Karakteristike + Prodavac
+                          // DESNA KOLONA: Amazon Buy / Contact Box + Karakteristike + Opis + Prodavac
                           Expanded(
                             flex: 45,
                             child: Column(
@@ -572,6 +570,8 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                                 ),
                                 const SizedBox(height: 20),
                                 ClassifiedSpecificationsTable(ad: ad, theme: theme, colorScheme: colorScheme, isDark: isDark),
+                                const SizedBox(height: 20),
+                                ClassifiedDescriptionCard(ad: ad, theme: theme, colorScheme: colorScheme, isDark: isDark),
                                 const SizedBox(height: 20),
                                 ClassifiedSellerCard(ad: ad, theme: theme, colorScheme: colorScheme, isDark: isDark),
                               ],

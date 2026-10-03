@@ -147,14 +147,14 @@ class ClassifiedActionButtons extends StatelessWidget {
                   color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
                   width: 1.2,
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
         ],
         Expanded(
           flex: hasPhone ? 1 : 2,
@@ -163,19 +163,22 @@ class ClassifiedActionButtons extends StatelessWidget {
               AppHaptics.medium();
               onChatTap();
             },
-            icon: const Icon(Icons.chat_bubble_outline, color: AmazonColors.darkNavy),
+            icon: const Icon(Icons.chat_bubble_outline, color: AmazonColors.darkNavy, size: 18),
             label: const Text(
               'Pošalji poruku',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AmazonColors.darkNavy,
                 fontWeight: FontWeight.w800,
+                fontSize: 13,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AmazonColors.amberLight,
               foregroundColor: AmazonColors.darkNavy,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
                 side: const BorderSide(color: AmazonColors.amberDark, width: 0.9),

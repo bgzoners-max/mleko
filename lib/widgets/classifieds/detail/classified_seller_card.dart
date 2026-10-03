@@ -78,22 +78,29 @@ class ClassifiedSellerCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 13,
-                          color: colorScheme.onSurfaceVariant,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              ad.city,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 2),
-                        Text(
-                          ad.city,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
