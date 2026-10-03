@@ -9,9 +9,18 @@ class ClassifiedFeedHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = Breakpoints.isDesktop(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      color: AmazonColors.darkNavy,
+      decoration: BoxDecoration(
+        color: isDark ? AmazonColors.darkNavy : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF1E293B) : AmazonColors.borderGray,
+            width: 1,
+          ),
+        ),
+      ),
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 24 : 12,
         vertical: 8,
@@ -20,13 +29,14 @@ class ClassifiedFeedHeader extends StatelessWidget {
         children: [
           InkWell(
             onTap: () => context.go('/'),
+            borderRadius: BorderRadius.circular(6),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'DOMAĆI MARKET',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark ? Colors.white : AmazonColors.darkNavy,
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
                     letterSpacing: 0.5,
@@ -55,21 +65,31 @@ class ClassifiedFeedHeader extends StatelessWidget {
           const Spacer(),
           TextButton.icon(
             onPressed: () => context.go('/'),
-            icon: const Icon(Icons.storefront_outlined, size: 15, color: Color(0xFF86EFAC)),
+            icon: Icon(
+              Icons.storefront_outlined,
+              size: 15,
+              color: isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D),
+            ),
             label: Text(
               isDesktop ? 'Pređi na Pijacu hrane' : 'Pijaca hrane',
-              style: const TextStyle(
-                color: Color(0xFF86EFAC),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF86EFAC) : const Color(0xFF15803D),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFF0FDF4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
-                side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                side: BorderSide(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : const Color(0xFFBBF7D0),
+                ),
               ),
             ),
           ),
