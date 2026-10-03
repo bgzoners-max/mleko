@@ -386,7 +386,7 @@ class _ProductDescription extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Divider(
           height: 1,
@@ -397,6 +397,7 @@ class _ProductDescription extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'Opis proizvoda',
+          textAlign: TextAlign.right,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -408,6 +409,7 @@ class _ProductDescription extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           description,
+          textAlign: TextAlign.right,
           style: TextStyle(
             fontSize: 13,
             height: 1.45,

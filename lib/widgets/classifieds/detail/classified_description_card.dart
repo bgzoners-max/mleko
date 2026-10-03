@@ -29,10 +29,11 @@ class ClassifiedDescriptionCard extends StatelessWidget {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Detaljan opis',
+            textAlign: TextAlign.right,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -42,6 +43,7 @@ class ClassifiedDescriptionCard extends StatelessWidget {
             ad.description.isEmpty
                 ? 'Prodavac nije uneo detaljan opis za ovaj oglas.'
                 : ad.description,
+            textAlign: TextAlign.right,
             style: theme.textTheme.bodyMedium?.copyWith(
               height: 1.5,
               fontSize: 14.5,
