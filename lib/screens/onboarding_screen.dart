@@ -5,21 +5,21 @@ import '../widgets/rustic_illustration.dart';
 
 final _slides = [
   {
-    'title': 'Kupuj direktno',
+    'title': 'Pijaca domaće hrane',
     'subtitle':
-        'Pregledaj ponudu i kupuj direktno od proizvođača, bez posrednika.',
+        'Kupuj sveže mleko, sir, meso, med i zimnicu direktno od proverenih seoskih gazdinstava.',
     'motif': RusticMotif.fullBasket,
   },
   {
-    'title': 'Otkrij lokalno',
+    'title': '100% Besplatni mali oglasi',
     'subtitle':
-        'Pronađi domaće proizvode i ljude koji stoje iza njihove proizvodnje.',
+        'Besplatno oglasi ili pronađi poljoprivrednu mehanizaciju, stoku, alate, vozila i stvari za dom bez provizije.',
     'motif': RusticMotif.field,
   },
   {
-    'title': 'Dogovor po meri',
+    'title': 'Direktan dogovor bez posrednika',
     'subtitle':
-        'Preuzimanje, dostava ili direktan dogovor, u skladu sa ponudom prodavca.',
+        'Interni chat, mapa lokacija, direktan kontakt i 0% provizije — sav novac ide vama.',
     'motif': RusticMotif.delivery,
   },
 ];
