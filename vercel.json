@@ -2,11 +2,6 @@
   "git": {
     "deploymentEnabled": false
   },
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "edge"
-    }
-  },
 
   "headers": [
     {
