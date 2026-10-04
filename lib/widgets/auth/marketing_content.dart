@@ -158,15 +158,13 @@ class MarketingContent extends StatelessWidget {
             );
 
             if (sideBySide) {
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: cardFood),
-                    const SizedBox(width: 14),
-                    Expanded(child: cardClassifieds),
-                  ],
-                ),
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cardFood),
+                  const SizedBox(width: 14),
+                  Expanded(child: cardClassifieds),
+                ],
               );
             } else {
               return Column(
@@ -378,7 +376,7 @@ class _ShowcasePillarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(22),
         borderRadius: BorderRadius.circular(18),
@@ -489,7 +487,7 @@ class _ShowcasePillarCard extends StatelessWidget {
           const SizedBox(height: 9),
           ...bullets.map(
             (b) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -516,8 +514,7 @@ class _ShowcasePillarCard extends StatelessWidget {
               ),
             ),
           ),
-          const Spacer(),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(

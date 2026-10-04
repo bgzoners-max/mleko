@@ -20,6 +20,9 @@ class AuthService {
   String get _authRedirectTo =>
       kIsWeb ? '${Uri.base.origin}/auth/confirmed' : 'io.naseselo.app://auth-callback';
 
+  String get _oAuthRedirectTo =>
+      kIsWeb ? Uri.base.origin : 'io.naseselo.app://auth-callback';
+
   User? get currentSupabaseUser {
     try {
       return _client.auth.currentUser;
@@ -68,6 +71,11 @@ class AuthService {
       return UserModel(
         id: u.id,
         email: u.email,
+        displayName: (u.userMetadata?['display_name'] ??
+                u.userMetadata?['full_name'] ??
+                u.userMetadata?['name']) as String?,
+        profileImageUrl: (u.userMetadata?['avatar_url'] ??
+                u.userMetadata?['picture']) as String?,
         isGuest: false,
       );
     } catch (e, st) {
@@ -79,6 +87,18 @@ class AuthService {
     try {
       await _client.auth
           .signInWithPassword(email: email, password: password);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
+  Future<bool> signInWithGoogle() async {
+    try {
+      final res = await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: _oAuthRedirectTo,
+      );
+      return res;
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

@@ -165,8 +165,11 @@ class AppState extends ChangeNotifier {
             resolvedUser = UserModel(
               id: sessionUserId,
               email: sessionUser?.email,
-              displayName:
-                  sessionUser?.userMetadata?['display_name'] as String?,
+              displayName: (sessionUser?.userMetadata?['display_name'] ??
+                      sessionUser?.userMetadata?['full_name'] ??
+                      sessionUser?.userMetadata?['name']) as String?,
+              profileImageUrl: (sessionUser?.userMetadata?['avatar_url'] ??
+                      sessionUser?.userMetadata?['picture']) as String?,
               isGuest: false,
             );
           }

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
 import '../error_dialog.dart';
+import 'google_icon.dart';
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
 
@@ -22,6 +23,7 @@ class LoginFormState extends State<LoginForm> {
   bool _obscure = true;
   String? _error;
   final bool _guestLoading = false;
+  bool _googleLoading = false;
 
   // Zaštita od brute-force pogađanja lozinki
   int _failedAttempts = 0;
@@ -109,6 +111,30 @@ class LoginFormState extends State<LoginForm> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    if (_isLockedOut) return;
+    setState(() {
+      _googleLoading = true;
+      _error = null;
+    });
+    try {
+      await context.read<AppState>().authService.signInWithGoogle();
+    } on Exception catch (e) {
+      if (mounted) {
+        final errorMsg = _formatAuthError(e);
+        setState(() => _error = errorMsg);
+        final error = AppError.from(e,
+            stackTrace: StackTrace.current, userMessage: errorMsg);
+        await ErrorDialog.show(context,
+            error: error, onRetry: _signInWithGoogle);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+      }
+    }
+  }
+
   Future<void> _guestWithMode(MarketMode mode) async {
     unawaited(context.read<AppSettingsProvider>().setMarketMode(mode));
     await _guest();
@@ -154,6 +180,12 @@ class LoginFormState extends State<LoginForm> {
     }
     if (msg.contains('too many') || msg.contains('rate limit')) {
       return 'Previše pokušaja. Sačekaj nekoliko minuta i pokušaj ponovo.';
+    }
+    if (msg.contains('cancel') ||
+        msg.contains('aborted') ||
+        msg.contains('closed') ||
+        msg.contains('interrupted')) {
+      return 'Prijava putem Google-a je prekinuta.';
     }
     return 'Prijava nije uspela. Pokušaj ponovo.';
   }
@@ -323,7 +355,41 @@ class LoginFormState extends State<LoginForm> {
                         fontWeight: FontWeight.w800, fontSize: 15),
                   ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: (_isLockedOut || isAppLoading || _googleLoading)
+                ? null
+                : _signInWithGoogle,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+              backgroundColor:
+                  isDark ? const Color(0xFF242A25) : Colors.white,
+              foregroundColor:
+                  isDark ? Colors.white : const Color(0xFF1F2937),
+              side: BorderSide(
+                color: isDark ? Colors.white24 : const Color(0xFFD1D5DB),
+                width: 1.2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: _googleLoading
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const GoogleLogo(size: 20),
+            label: const Text(
+              'Nastavi putem Google-a',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               const Expanded(child: Divider()),
