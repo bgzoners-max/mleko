@@ -50,6 +50,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
         ]),
         b.text(
             'Navedene strane mogu imati ulogu obrađivača, primaoca podataka ili nezavisnih rukovalaca, u zavisnosti od prirode konkretne obrade.'),
+        b.sectionBullets(
+            '4a', 'Podaci o ličnosti prikupljeni putem Google prijave (Google User Data)', [
+          'Kada se korisnik prijavi putem Google naloga, platforma pristupa isključivo imenu, email adresi i profilnoj slici korisnika.',
+          'Prikupljeni Google podaci koriste se isključivo radi bezbedne autentifikacije i kreiranja korisničkog naloga.',
+          'Domaći Market u celosti poštuje Google API Services User Data Policy, uključujući Limited Use zahteve.',
+          'Google podaci se nikada ne prodaju, ne iznajmljuju niti dele sa trećim licima ili marketinškim agencijama.',
+          'Korisnik može u svakom trenutku zatražiti trajno brisanje svog naloga i svih povezanih podataka slanjem zahteva na podrska@domacimarket.rs.',
+        ]),
         b.sectionBullets('5', 'Koje podatke možemo obrađivati', [
           'identifikacione i nalogne podatke, kao što su email adresa, korisničko ime, prikazano ime i uloga korisnika',
           'kontakt podatke, kao što su broj telefona, grad i drugi podaci koje korisnik unese u profil ili komunikaciju',

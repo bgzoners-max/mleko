@@ -22,6 +22,8 @@ Future<void> main() async {
     'manifest.json',
     'robots.txt',
     'sitemap.xml',
+    'politika-privatnosti.html',
+    'uslovi-koriscenja.html',
     '.well-known/assetlinks.json',
   ];
 
