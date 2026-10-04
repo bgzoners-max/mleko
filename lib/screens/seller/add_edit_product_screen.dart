@@ -483,6 +483,77 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     return null;
   }
 
+  Future<void> _confirmDelete() async {
+    if (!isEdit || widget.productId == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        bool isDeleting = false;
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              title: const Text('Trajno brisanje proizvoda'),
+              content: Text(
+                'Da li ste sigurni da želite trajno da obrišete proizvod „${_nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'ovaj proizvod'}”? Ova akcija se ne može poništiti.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isDeleting ? null : () => Navigator.pop(ctx, false),
+                  child: const Text('Odustani'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red,
+                  ),
+                  onPressed: isDeleting
+                      ? null
+                      : () async {
+                          setDialogState(() => isDeleting = true);
+                          try {
+                            await context
+                                .read<ProductsService>()
+                                .deleteProduct(widget.productId!);
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx, true);
+                            }
+                          } catch (e) {
+                            setDialogState(() => isDeleting = false);
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text('Greška pri brisanju: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: isDeleting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Trajno obriši'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Proizvod je uspešno obrisan.')),
+      );
+      _exitScreen();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final catProvider = context.watch<CategoriesProvider>();
@@ -496,7 +567,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           onPressed: _loading ? null : _exitScreen,
         ),
         title: Text(isEdit ? 'Izmeni proizvod' : 'Dodaj proizvod'),
-        actions: const [AppHomeButton()],
+        actions: [
+          if (isEdit)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Trajno obriši proizvod',
+              onPressed: _loading ? null : _confirmDelete,
+            ),
+          const AppHomeButton(),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -913,6 +992,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             )
                           : Text(isEdit ? 'Sačuvaj' : 'Objavi'),
                     ),
+                    if (isEdit) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        onPressed: _loading ? null : _confirmDelete,
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Trajno obriši proizvod'),
+                      ),
+                    ],
                   ],
                 ),
               ),
