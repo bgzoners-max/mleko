@@ -63,7 +63,7 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _isHovered ? -3 : 0, 0),
+        transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: borderRadius,
@@ -343,6 +343,46 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
                             ),
                           ),
                         ),
+                      // Brza akcija na hover (desktop)
+                      Positioned(
+                        bottom: 6,
+                        left: 8,
+                        child: AnimatedOpacity(
+                          opacity: _isHovered ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AmazonColors.amber,
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.visibility_outlined, size: 12, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Detalji oglasa',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

@@ -99,7 +99,7 @@ class Breakpoints {
   static double dataContentWidth(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     if (width >= wideDesktop) return 1360;
-    if (width >= tablet) return 1240;
+    if (width >= tablet) return 1280;
     if (width >= largeTablet) return 1040;
     if (width >= smallTablet) return 920;
     if (width >= phone) return 800;
@@ -129,9 +129,10 @@ class Breakpoints {
     return double.infinity;
   }
 
-  /// Broj kolona za product grid
+  /// Broj kolona za product grid (5 kolona na wide desktop 1440px+, 4 na standardnom desktopu)
   static int productGridColumns(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    if (width >= wideDesktop) return 5;
     if (width >= tablet) return 4;
     if (width >= largeTablet) return 3;
     if (width >= phone) return 3;

@@ -219,24 +219,17 @@ class HomeWideLayout extends StatelessWidget {
               // Amazon search bar
               InkWell(
                 onTap: onSearchTap,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  height: 42,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-                      width: 1.2,
+                      width: 1.0,
                     ),
-                    boxShadow: [
-                      if (!isDark)
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 3,
-                          offset: const Offset(0, 1),
-                        ),
-                    ],
+                    boxShadow: AmazonColors.getCardShadow(context),
                   ),
                   child: Row(
                     children: [

@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/design_system.dart';
 import '../../core/haptic.dart';
+import '../../core/responsive.dart';
 import '../../core/web_seo.dart';
 import '../../models/app_error.dart';
 import '../../models/classified_ad_model.dart';
@@ -19,10 +20,12 @@ import '../../services/communication/chat_service.dart';
 import '../../supabase_config.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/app_back_button.dart';
+import '../../widgets/navigation/desktop_header.dart';
 import '../../widgets/classifieds/report_classified_ad_dialog.dart';
 import '../../widgets/classifieds/detail/classified_breadcrumbs.dart';
 import '../../widgets/classifieds/detail/classified_image_gallery.dart';
 import '../../widgets/classifieds/detail/classified_safety_tips_card.dart';
+import '../../widgets/app_footer.dart';
 import '../../widgets/classifieds/detail/classified_report_button.dart';
 import '../../widgets/classifieds/detail/classified_main_info_card.dart';
 import '../../widgets/classifieds/detail/classified_specifications_table.dart';
@@ -387,11 +390,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         final hasPhone = ad.phonePublic ||
             (currentPhone != null && currentPhone.isNotEmpty);
 
+        final isDesktop = MediaQuery.sizeOf(context).width >= Breakpoints.largeTablet;
         final isWide = MediaQuery.sizeOf(context).width >= 900;
 
         return Scaffold(
           backgroundColor: AmazonColors.getCanvas(context),
-          appBar: AppBar(
+          appBar: isDesktop
+              ? null
+              : AppBar(
             leading: const AppBackButton(fallbackRoute: '/classifieds'),
             backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
             foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
@@ -489,15 +495,21 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                     ),
                   ),
                 ),
-          body: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: isWide ? 32 : 16,
-              vertical: 16,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Column(
+          body: Column(
+            children: [
+              if (isDesktop) const DesktopHeader(isStandalone: true),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWide ? 32 : 16,
+                    vertical: 16,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: isWide ? Breakpoints.dataContentWidth(context) : 1200,
+                      ),
+                      child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // 1. Amazon Breadcrumb navigacija
@@ -613,13 +625,19 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
                           const SizedBox(height: 24),
                         ],
                       ),
+                    const SizedBox(height: 16),
+                    const AppFooter(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ],
+    ),
+  );
+},
     );
   }
 

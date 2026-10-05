@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -128,10 +127,59 @@ class _ProductCardState extends State<ProductCard> {
                     backgroundColor: AmazonColors.amber,
                     textColor: AmazonColors.darkNavy,
                   ),
+                if (widget.product.sellerIsVerified)
+                  const _AmazonBadge(
+                    label: 'PROVERENO',
+                    backgroundColor: AmazonColors.link,
+                  ),
               ],
             ),
           ),
         ),
+        // Brza akcija na hover (desktop grid)
+        if (gridMode)
+          Positioned(
+            bottom: 8,
+            left: 12,
+            right: 12,
+            child: AnimatedOpacity(
+              opacity: _isHovered ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              child: Container(
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AmazonColors.amber,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.visibility_outlined, size: 14, color: Colors.white),
+                      SizedBox(width: 5),
+                      Text(
+                        'Pogledaj detalje',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         // Favorite button top-right
         if (widget.onFavoriteToggle != null)
           Positioned(
@@ -464,15 +512,12 @@ class _ProductCardState extends State<ProductCard> {
       ),
     );
 
-    if (kIsWeb) {
-      return MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        cursor: SystemMouseCursors.click,
-        child: card,
-      );
-    }
-    return card;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: card,
+    );
   }
 }
 

@@ -10,6 +10,7 @@ import '../widgets/app_back_button.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/emoji_text.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_footer.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -212,6 +213,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ),
               ],
               SliverToBoxAdapter(child: SizedBox(height: padding)),
+              const SliverToBoxAdapter(child: AppFooter()),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
         ),

@@ -119,9 +119,32 @@ void main() {
       expect(Breakpoints.isPhone(testContext), isFalse);
       expect(Breakpoints.isTablet(testContext), isFalse);
       expect(Breakpoints.isDesktop(testContext), isTrue);
+      expect(Breakpoints.isWideDesktop(testContext), isTrue);
       expect(Breakpoints.horizontalPadding(testContext), equals(32.0));
-      expect(Breakpoints.productGridColumns(testContext), equals(4));
+      expect(Breakpoints.productGridColumns(testContext), equals(5));
       expect(Breakpoints.maxContentWidth(testContext), equals(1200.0));
+    });
+
+    testWidgets('Validates standard desktop breakpoint (1280dp)', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      late BuildContext testContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              testContext = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      expect(Breakpoints.isDesktop(testContext), isTrue);
+      expect(Breakpoints.isWideDesktop(testContext), isFalse);
+      expect(Breakpoints.productGridColumns(testContext), equals(4));
     });
   });
 

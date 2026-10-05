@@ -23,11 +23,13 @@ import '../supabase_config.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/navigation/desktop_header.dart';
 import '../widgets/skeleton.dart';
 
 import '../widgets/product/product_image_gallery.dart';
 import '../widgets/product/product_info_section.dart';
 import '../widgets/product/more_from_seller_section.dart';
+import '../widgets/app_footer.dart';
 import '../widgets/product/product_reviews_section.dart';
 
 Future<void> _shareProduct(BuildContext context, ProductModel product) async {
@@ -174,7 +176,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final galleryWidth =
-            (constraints.maxWidth * 0.44).clamp(320.0, 440.0);
+            (constraints.maxWidth * 0.46).clamp(340.0, 520.0);
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Column(
@@ -187,7 +189,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     width: galleryWidth,
                     child: ProductImageGallery(
                       product: product,
-                      height: 380,
+                      height: 420,
                     ),
                   ),
                   const SizedBox(width: 24),
@@ -212,30 +214,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 reviewsFuture: _reviewsFuture!,
               ),
               const SizedBox(height: 20),
-              const Divider(height: 1, thickness: 1),
-              _buildDesktopFooter(),
+              const AppFooter(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16)),
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _buildDesktopFooter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          TextButton(
-            onPressed: () => context.push('/uslovi-koriscenja'),
-            child: const Text('Uslovi korišćenja'),
-          ),
-          TextButton(
-            onPressed: () => context.push('/politika-privatnosti'),
-            child: const Text('Politika privatnosti'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -270,21 +253,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             reviewsFuture: _reviewsFuture!,
           ),
         ),
+        const SizedBox(height: 16),
+        const AppFooter(),
+        const SizedBox(height: 24),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width >= Breakpoints.largeTablet;
     final isWideLayout = Breakpoints.useTwoPaneLayout(context);
     final maxWidth = isWideLayout
-        ? 1040.0
+        ? Breakpoints.dataContentWidth(context)
         : Breakpoints.maxContentWidth(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
-      appBar: AppBar(
+      appBar: isDesktop
+          ? null
+          : AppBar(
         leading: const AppBackButton(fallbackRoute: '/'),
         backgroundColor:
             isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
@@ -369,46 +359,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           const AppHomeButton(),
         ],
       ),
-      body: FutureBuilder<ProductModel?>(
-        future: _productFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return AppErrorRetry(
-              message: 'Greška pri učitavanju proizvoda.',
-              detail: snapshot.error?.toString(),
-              onRetry: _retry,
-            );
-          }
-          if (!snapshot.hasData) {
-            return const ProductDetailSkeleton();
-          }
-          final product = snapshot.data;
-          if (product == null) {
-            return const AppEmptyState(
-              icon: Icons.search_off_outlined,
-              title: 'Proizvod nije pronađen.',
-              subtitle:
-                  'Moguće je da je proizvod obrisan ili trenutno nije dostupan.',
-            );
-          }
-          _setProductMetadata(product);
-          _maybeScrollToReviewsOnLoad();
-          return Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: RefreshIndicator(
-                onRefresh: () async => _retry(),
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: isWideLayout
-                      ? _buildDesktopLayout(product)
-                      : _buildMobileLayout(product),
-                ),
-              ),
+      body: Column(
+        children: [
+          if (isDesktop) const DesktopHeader(isStandalone: true),
+          Expanded(
+            child: FutureBuilder<ProductModel?>(
+              future: _productFuture,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return AppErrorRetry(
+                    message: 'Greška pri učitavanju proizvoda.',
+                    detail: snapshot.error?.toString(),
+                    onRetry: _retry,
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const ProductDetailSkeleton();
+                }
+                final product = snapshot.data;
+                if (product == null) {
+                  return const AppEmptyState(
+                    icon: Icons.search_off_outlined,
+                    title: 'Proizvod nije pronađen.',
+                    subtitle:
+                        'Moguće je da je proizvod obrisan ili trenutno nije dostupan.',
+                  );
+                }
+                _setProductMetadata(product);
+                _maybeScrollToReviewsOnLoad();
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: RefreshIndicator(
+                      onRefresh: () async => _retry(),
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: isWideLayout
+                            ? _buildDesktopLayout(product)
+                            : _buildMobileLayout(product),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Kartica mape – kompaktno, tap otvara punu mapu
+import '../app_footer.dart';
+
+/// Kartica mape – kompaktno, tap otvara punu mapu sa podnožjem (footer)
 class MapCard extends StatelessWidget {
   const MapCard({super.key});
 
@@ -125,73 +127,11 @@ class MapCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextButton(
-                    onPressed: () => context.push('/about'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('O platformi'),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/support'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Podrška'),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/uslovi-koriscenja'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Uslovi korišćenja'),
-                  ),
-                  TextButton(
-                    onPressed: () => context.push('/politika-privatnosti'),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('Politika privatnosti'),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: Image.asset(
-                  'assets/images/footer_badge.png',
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.broken_image, color: Colors.red),
-                      Text('Error', style: TextStyle(fontSize: 8, color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 12),
+        const AppFooter(),
       ],
     );
   }
 }
+
+

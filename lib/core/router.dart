@@ -567,16 +567,6 @@ GoRouter createRouter(AppState appState) {
         ),
       ),
       GoRoute(
-        path: '/classifieds',
-        pageBuilder: (context, state) {
-          final categoryId = state.uri.queryParameters['category'];
-          return buildPageTransition(
-            state: state,
-            child: ClassifiedsFeedScreen(initialCategoryId: categoryId),
-          );
-        },
-      ),
-      GoRoute(
         path: '/classifieds/ad/:id',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,

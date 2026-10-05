@@ -7,6 +7,7 @@ import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../core/responsive.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_footer.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -46,7 +47,13 @@ class AboutScreen extends StatelessWidget {
                   desktop: 52,
                 ),
               ),
-              child: const _AboutContent(),
+              child: const Column(
+                children: [
+                  _AboutContent(),
+                  SizedBox(height: 24),
+                  AppFooter(),
+                ],
+              ),
             ),
           ),
         ),

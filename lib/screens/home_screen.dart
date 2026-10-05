@@ -21,6 +21,7 @@ import '../services/services.dart';
 import '../utils/image_precache_utils.dart';
 import '../widgets/sticky_search_header_delegate.dart';
 import '../widgets/home/home_wide_layout.dart';
+import '../widgets/home/desktop_hero_banner.dart';
 import '../widgets/home/home_narrow_top_section.dart';
 import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
@@ -117,12 +118,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final isTabletLayout = isTablet && !isWide;
 
     final outerHorizontalPadding =
-        isWide ? 14.0 : (isLargeTablet ? 12.0 : (isSmallTablet ? 10.0 : 8.0));
-    final sectionSpacing = isWide ? 10.0 : 8.0;
+        isWide ? 16.0 : (isLargeTablet ? 12.0 : (isSmallTablet ? 10.0 : 8.0));
+    final sectionSpacing = isWide ? 16.0 : 8.0;
     final compactSpacing = 6.0;
-    final sidePanelSpacing = 10.0;
+    final sidePanelSpacing = isWide ? 14.0 : 10.0;
     final productGridExtent = isWide
-        ? 285.0
+        ? 290.0
         : (isLargeTablet ? 295.0 : (isSmallTablet ? 285.0 : 265.0));
 
     final stream = _homeProductsStream;
@@ -280,7 +281,34 @@ class _HomeScreenState extends State<HomeScreen> {
                               physics: const AlwaysScrollableScrollPhysics(),
                               slivers: [
                                 if (!isWide) _buildStickySearch(context),
-                                if (selectedRegion != null)
+                                if (isWide)
+                                  SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        outerHorizontalPadding,
+                                        14,
+                                        outerHorizontalPadding,
+                                        8,
+                                      ),
+                                      child: DesktopHeroBanner(
+                                        onExploreFood: () {},
+                                        onExploreClassifieds: () {
+                                          context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+                                          context.go('/classifieds');
+                                        },
+                                        onSearchTag: (tag) {
+                                          if (tag.contains('Traktori')) {
+                                            context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+                                            context.read<ClassifiedsProvider>().search(tag);
+                                            context.go('/classifieds');
+                                          } else {
+                                            context.push('/search?q=${Uri.encodeComponent(tag)}');
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                if (selectedRegion != null && !isDesktopWeb)
                                   SliverToBoxAdapter(
                                     child: Padding(
                                       padding: EdgeInsets.fromLTRB(

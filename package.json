@@ -1,8 +1,9 @@
 {
   "scripts": {
+    "build": "node -e \"console.error('ERROR: Do not deploy directly from workspace root! Use npm run deploy:all.'); process.exit(1);\"",
     "deploy:all": "flutter build web --release --no-tree-shake-icons && npm run vercel:deploy",
     "vercel:prepare": "dart run tool/copy_web_shell_assets.dart && dart run tool/prepare_vercel_deploy.dart",
-    "vercel:deploy": "npm run vercel:prepare && node -e \"const fs=require('fs'),path=require('path'),os=require('os'),{execSync}=require('child_process'); const tmp=path.join(os.tmpdir(),'mleko-vercel-deploy'); fs.rmSync(tmp,{recursive:true,force:true}); fs.cpSync('build/vercel-deploy',tmp,{recursive:true}); execSync('npx vercel link --cwd \\\"' + tmp + '\\\" --yes --scope vrvladas-projects --project mleko', {stdio:'inherit'}); execSync('npx vercel deploy --cwd \\\"' + tmp + '\\\" --prod --yes --scope vrvladas-projects', {stdio:'inherit'});\"",
+    "vercel:deploy": "npm run vercel:prepare && npx vercel build --cwd build/vercel-deploy --yes --prod && npx vercel deploy --cwd build/vercel-deploy --prebuilt --prod --yes --scope vrvladas-projects",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",
     "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts",
     "supabase:link:prod": "supabase link --project-ref wvqtujpurhzraptorcvl",

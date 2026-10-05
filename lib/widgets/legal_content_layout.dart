@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/responsive.dart';
 import 'app_back_button.dart';
+import 'app_footer.dart';
 
 /// Zajednički layout za pravne dokumente (Privacy, Terms, itd.)
 class LegalDocumentLayout extends StatelessWidget {
@@ -104,6 +105,9 @@ class LegalDocumentLayout extends StatelessWidget {
                           height: 1.72,
                           color: theme.colorScheme.onSurfaceVariant)),
                   ...children,
+                  const SizedBox(height: 24),
+                  const AppFooter(),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

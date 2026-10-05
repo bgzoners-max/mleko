@@ -14,6 +14,7 @@ import '../widgets/category_icon.dart';
 import '../widgets/product_card.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_footer.dart';
 
 class ChildCategoriesScreen extends StatefulWidget {
   const ChildCategoriesScreen({
@@ -462,6 +463,8 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
 
               // Bottom padding
               const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              const SliverToBoxAdapter(child: AppFooter()),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
         ),
