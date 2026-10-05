@@ -26,9 +26,10 @@ import '../widgets/search/search_results_grid.dart';
 import '../widgets/search/search_tips_banner.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key, this.initialCategory});
+  const SearchScreen({super.key, this.initialCategory, this.initialQuery});
 
   final String? initialCategory;
+  final String? initialQuery;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -76,6 +77,9 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _category = widget.initialCategory;
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+    }
     _historyFuture = _searchHistoryService.getHistory();
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);

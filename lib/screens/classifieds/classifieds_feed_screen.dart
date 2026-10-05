@@ -24,6 +24,7 @@ import '../../widgets/classifieds/classified_subcategory_header.dart';
 import '../../widgets/classifieds/classified_feed_header.dart';
 import '../../widgets/classifieds/classified_search_bar.dart';
 import '../../widgets/classifieds/classified_subcategories_slivers.dart';
+import '../../widgets/app_footer.dart';
 
 class ClassifiedsFeedScreen extends StatefulWidget {
   final Widget? headerWidget;
@@ -168,8 +169,9 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       child: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          // Standalone Amazon Header ako nismo na početnoj (embedded)
-          if (!widget.isEmbedded)
+          // Standalone Amazon Header ako nismo na početnoj (embedded) i nismo na desktopu
+          if (!widget.isEmbedded &&
+              MediaQuery.sizeOf(context).width < Breakpoints.largeTablet)
             const SliverToBoxAdapter(
               child: ClassifiedFeedHeader(),
             ),
@@ -548,6 +550,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
               ),
             ),
 
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+          const SliverToBoxAdapter(child: AppFooter()),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),

@@ -57,6 +57,7 @@ import '../providers/classifieds_provider.dart';
 import 'responsive.dart';
 import 'web_seo.dart';
 import '../widgets/theme_toggle_switch.dart';
+import '../widgets/navigation/desktop_header.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -211,6 +212,7 @@ GoRouter createRouter(AppState appState) {
           state: state,
           child: TabSearchOrProductsScreen(
             initialCategory: state.uri.queryParameters['category'],
+            initialQuery: state.uri.queryParameters['q'],
             openSellerProducts: state.uri.queryParameters['view'] == 'products',
           ),
         ),
@@ -746,12 +748,24 @@ class MainShell extends StatelessWidget {
     final isGuest = user == null || user.isGuest;
     final destinations = isGuest ? _guestDestinations : _destinations;
     final width = MediaQuery.sizeOf(context).width;
-    final isWide = width >= Breakpoints.phone;
+    final isDesktop = width >= Breakpoints.largeTablet;
+    final isTabletRail = !isDesktop && width >= Breakpoints.phone;
     final selectedDestIndex = isGuest
         ? (navigationShell.currentIndex == 1 ? 1 : 0)
         : navigationShell.currentIndex.clamp(0, destinations.length - 1);
 
-    if (isWide) {
+    if (isDesktop) {
+      return Scaffold(
+        body: Column(
+          children: [
+            DesktopHeader(navigationShell: navigationShell),
+            Expanded(child: navigationShell),
+          ],
+        ),
+      );
+    }
+
+    if (isTabletRail) {
       return Scaffold(
         body: Row(
           children: [

@@ -9,10 +9,12 @@ class TabSearchOrProductsScreen extends StatelessWidget {
   const TabSearchOrProductsScreen({
     super.key,
     this.initialCategory,
+    this.initialQuery,
     this.openSellerProducts = false,
   });
 
   final String? initialCategory;
+  final String? initialQuery;
   final bool openSellerProducts;
 
   @override
@@ -22,6 +24,9 @@ class TabSearchOrProductsScreen extends StatelessWidget {
     if (isSeller && openSellerProducts) {
       return const SellerDashboardScreen();
     }
-    return SearchScreen(initialCategory: initialCategory);
+    return SearchScreen(
+      initialCategory: initialCategory,
+      initialQuery: initialQuery,
+    );
   }
 }

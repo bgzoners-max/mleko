@@ -137,106 +137,127 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final isDesktopWeb =
+        MediaQuery.sizeOf(context).width >= Breakpoints.largeTablet;
+
     return Scaffold(
       extendBodyBehindAppBar: false,
       backgroundColor: AmazonColors.getCanvas(context),
-      appBar: AppBar(
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-        surfaceTintColor: Colors.transparent,
-        shape: Border(
-          bottom: BorderSide(
-            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-            width: 1.0,
-          ),
-        ),
-        titleSpacing: 8,
-        title: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
-            context.read<ClassifiedsProvider>().clearFilters();
-            context.go('/');
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.eco_outlined,
-                    size: 22,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    AppConstants.appName,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                      letterSpacing: -0.5,
-                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+      appBar: isDesktopWeb
+          ? null
+          : AppBar(
+              centerTitle: false,
+              elevation: 0,
+              backgroundColor:
+                  isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              foregroundColor: isDark
+                  ? AmazonColors.darkTextPrimary
+                  : AmazonColors.textPrimary,
+              surfaceTintColor: Colors.transparent,
+              shape: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? AmazonColors.darkBorder
+                      : AmazonColors.borderGray,
+                  width: 1.0,
+                ),
+              ),
+              titleSpacing: 8,
+              title: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  context
+                      .read<AppSettingsProvider>()
+                      .setMarketMode(MarketMode.foodMarket);
+                  context.read<ClassifiedsProvider>().clearFilters();
+                  context.go('/');
+                },
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.eco_outlined,
+                          size: 22,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          AppConstants.appName,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            letterSpacing: -0.5,
+                            color: isDark
+                                ? AmazonColors.darkTextPrimary
+                                : AmazonColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const BetaBadge(showInfoIcon: false),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  const BetaBadge(showInfoIcon: false),
-                ],
+                ),
               ),
+              actions: [
+                if (!isGuest)
+                  IconButton(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    constraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
+                    icon: Badge(
+                      isLabelVisible: unreadCount > 0,
+                      label: Text('$unreadCount'),
+                      backgroundColor: AmazonColors.dealRed,
+                      child: const Icon(Icons.notifications_none_rounded,
+                          size: 22),
+                    ),
+                    onPressed: () => context.push('/notifications'),
+                  ),
+                IconButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
+                  icon: Badge(
+                    isLabelVisible: context.watch<CartProvider>().count > 0,
+                    label: Text('${context.watch<CartProvider>().count}'),
+                    backgroundColor: AmazonColors.amber,
+                    textColor: AmazonColors.darkNavy,
+                    child: const Icon(Icons.shopping_cart_outlined, size: 22),
+                  ),
+                  onPressed: () => context.push('/cart'),
+                ),
+                IconButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
+                  icon: const Icon(Icons.location_on_outlined, size: 22),
+                  onPressed: () => _showLocationPicker(context),
+                ),
+                const SizedBox(width: 2),
+                const Center(child: ThemeToggleSwitch()),
+                const SizedBox(width: 6),
+              ],
             ),
-          ),
-        ),
-        actions: [
-          if (!isGuest)
-            IconButton(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              icon: Badge(
-                isLabelVisible: unreadCount > 0,
-                label: Text('$unreadCount'),
-                backgroundColor: AmazonColors.dealRed,
-                child: const Icon(Icons.notifications_none_rounded, size: 22),
-              ),
-              onPressed: () => context.push('/notifications'),
-            ),
-          IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            icon: Badge(
-              isLabelVisible: context.watch<CartProvider>().count > 0,
-              label: Text('${context.watch<CartProvider>().count}'),
-              backgroundColor: AmazonColors.amber,
-              textColor: AmazonColors.darkNavy,
-              child: const Icon(Icons.shopping_cart_outlined, size: 22),
-            ),
-            onPressed: () => context.push('/cart'),
-          ),
-          IconButton(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-            icon: const Icon(Icons.location_on_outlined, size: 22),
-            onPressed: () => _showLocationPicker(context),
-          ),
-          const SizedBox(width: 2),
-          const Center(child: ThemeToggleSwitch()),
-          const SizedBox(width: 6),
-        ],
-      ),
       body: SafeArea(
+        top: !isDesktopWeb,
         child: Column(
           children: [
-            const BetaAnnouncementBanner(),
-            MarketModeSwitcher(
-              currentMode: context.select<AppSettingsProvider, MarketMode>(
-                  (s) => s.marketMode),
-              onModeChanged: (m) =>
-                  context.read<AppSettingsProvider>().setMarketMode(m),
-            ),
+            if (!isDesktopWeb) const BetaAnnouncementBanner(),
+            if (!isDesktopWeb)
+              MarketModeSwitcher(
+                currentMode: context.select<AppSettingsProvider, MarketMode>(
+                    (s) => s.marketMode),
+                onModeChanged: (m) =>
+                    context.read<AppSettingsProvider>().setMarketMode(m),
+              ),
             Expanded(
               child: context.select<AppSettingsProvider, MarketMode>(
                           (s) => s.marketMode) ==
