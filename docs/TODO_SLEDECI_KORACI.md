@@ -22,14 +22,17 @@
 
 Na stolu su sledeće teme:
 
-### Opcija A: 🔔 Push Notifikacije – Produkciona verifikacija
-- **Cilj:** Verifikovati da FCM i Supabase Edge funkcije (`send-push`) pouzdano dostavljaju notifikacije na produkciji.
-- **Koraci:**
-  - Pokrenuti u Supabase SQL Editoru:
-    ```sql
-    SELECT * FROM public.push_health_summary();
-    ```
-  - Proveriti da li je `service_role_key` unet u Supabase Vault i proveriti tok slanja notifikacija za poruke i nove oglase prema [`docs/PUSH_SETUP.md`](./PUSH_SETUP.md).
+3. **🔔 Push Notifikacije – Produkciona verifikacija i popravka (Završeno 06. okt):**
+   - **Vault konfiguracija:** Uneti `functions_base_url` i moderni `service_role_key` (`sb_secret_...`) u Supabase Vault. Rešen uzrok ranije greške `UNAUTHORIZED_LEGACY_JWT` gde je Supabase odbacivao stare HS256 JWT tokene.
+   - **Baza i trigger migracija (`20261006160000`):** Primenjena migracija koja u `send_push_notification` dodaje `apikey` heder i prosleđuje `classified_ad_id` kroz `p_data` payload.
+   - **Edge funkcija `send-push` (v49):** Ažurirana da prima i u FCM payload ubacuje `classified_ad_id` i `ticket_id` za instant otvaranje oglasa/tiketa na klik, i deploy-ovana na produkciju.
+   - **End-to-end verifikacija:** Uspešno testiran kompletan lanac (`notifications` INSERT trigger -> `invoke_send_push` -> `pg_net` -> `send-push` Edge funkcija -> Google Firebase FCM v1 API). `edge_config_ok = true`, `anon_key_present = true`.
+
+---
+
+## 🎯 Preostali prioriteti za rad
+
+Na stolu su sledeće teme:
 
 ### Opcija B: 📱 Android & iOS Native Release (Google Play / App Store)
 - **Cilj:** Pripremiti i potpisati aplikaciju za Play Store.

@@ -262,6 +262,8 @@ Deno.serve(async (req) => {
         type,
         order_id: String(record.order_id ?? ""),
         conversation_id: String(record.conversation_id ?? ""),
+        ticket_id: String(record.ticket_id ?? ""),
+        classified_ad_id: String(record.classified_ad_id ?? ""),
       }
     } else {
       user_id = body.user_id
@@ -272,6 +274,13 @@ Deno.serve(async (req) => {
         type,
         order_id: String(body.order_id ?? ""),
         conversation_id: String(body.conversation_id ?? ""),
+        ticket_id: String(body.ticket_id ?? ""),
+        classified_ad_id: String(body.classified_ad_id ?? ""),
+      }
+      if (body.data && typeof body.data === "object") {
+        for (const [k, v] of Object.entries(body.data)) {
+          if (v != null && !fcmData[k]) fcmData[k] = String(v)
+        }
       }
     }
 
