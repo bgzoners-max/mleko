@@ -70,7 +70,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       return 'Aktivna lista: sve što nije u tvojoj arhivi. Završene porudžbine možeš ručno da arhiviraš.';
     }
     if (_segmentIndex == 1) {
-      return 'U arhivi su samo porudžbine koje ste vi ručno arhivirali.';
+      return 'U arhivi su porudžbine koje ste vi ručno arhivirali. Arhivirane porudžbine se automatski brišu nakon 12 meseci.';
     }
     return 'Koliko često poručuješ i koliki ti je prosečan račun kod svakog prodavca.';
   }
@@ -205,7 +205,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    'Porudžbina prelazi u arhivu tek kada je vi arhivirate.',
+                    'U arhivi su porudžbine koje ste ručno arhivirali. Arhivirane porudžbine se automatski brišu nakon 12 meseci.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey.shade600,
                           fontStyle: FontStyle.italic,
@@ -363,7 +363,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                                 const SizedBox(width: 8),
                                                 Expanded(
                                                   child: Text(
-                                                    'U sekciji „U toku“ vidiš aktivne porudžbine, a u arhivi one koje si sam arhivirao.',
+                                                    'U sekciji „U toku“ vidiš aktivne porudžbine, a u arhivi one koje si sam arhivirao (čuvaju se 12 meseci).',
                                                     style: Theme.of(context)
                                                         .textTheme
                                                         .bodySmall

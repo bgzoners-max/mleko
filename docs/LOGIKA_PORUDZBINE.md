@@ -123,18 +123,19 @@ Napomena: kolona `prefer_call` i dalje postoji u bazi radi kompatibilnosti, ali 
 
 ---
 
-## 6. Automatska arhivacija i brisanje (retention)
+## 6. Arhiviranje i brisanje isteklih porudžbina (retention)
 
-**Funkcija:** `public.handle_order_retention()`
+1. **Ručno arhiviranje (Kupac i Prodavac)**  
+   - Za završene statuse (`delivered`, `rejected`, `cancelled_by_seller`) korisnici mogu samostalno da premeste porudžbinu u arhivu („Arhiviraj“).
+   - Aktivne porudžbine (`sent`, `accepted`, `shipped`) ostaju vidljive u aktivnoj listi dok se obrada ne dovrši.
 
-1. **Arhiviranje (30 dana)**  
-   - Uslov: `status = 'sent'` i `created_at <= now() - interval '30 days'`.  
-   - Akcija: `status = 'arhivirano'`, `archived_at = now()`.
-
-2. **Brisanje (12 meseci)**  
-   - Uslov: `expires_at <= now()`.  
-   - Akcija: `DELETE FROM orders` (redovi sa isteklim `expires_at`).  
-   - `order_items` se brišu automatski zbog **ON DELETE CASCADE**.
+2. **Automatsko brisanje (Retention 12 meseci)**  
+   - **Funkcija:** `public.handle_order_retention()`
+   - Uslov: `status = 'archived'` i `expires_at IS NOT NULL AND expires_at <= now()`.
+   - Akcija:
+     - Pre brisanja orders ažurira i čisti brojače u `public.product_order_summary`.
+     - `DELETE FROM public.orders` briše redove koji su u arhivi i kojima je istekao `expires_at` (12 meseci od kreiranja).
+     - Povezani `order_items` i `order_status_audit_logs` se automatski brišu putem **ON DELETE CASCADE**.
 
 **Zakazano pokretanje (pg_cron):** svaki dan u 03:00 UTC:
 
@@ -146,18 +147,18 @@ SELECT cron.schedule(
 );
 ```
 
-- Korisnik ne bira period; sve je automatski.
-- Jedna porudžbina = jedan prodavac; arhivacija ne menja poslovnu logiku.
+- Korisnik ne bira period; brisanje isteklih arhiviranih porudžbina je automatsko.
+- Jedna porudžbina = jedan prodavac.
 
 ---
 
 ## 7. Prikaz u aplikaciji (kupac i prodavac)
 
-- **Aktivne porudžbine:** upit sa `status = 'sent'` (i eventualno ostali „aktivni” statusi, zavisi od UI).
-- **Arhiva:** upit sa `status = 'arhivirano'`.
-- Listanje: po `buyer_id` ili `seller_id`, sort po `created_at DESC`, sa paginacijom (npr. 20 po stranici).
+- **Aktivne porudžbine:** filter `status != 'archived'` (za kupca i prodavca, sa mogućnošću dodatnog filtriranja po podstatusima: na čekanju, prihvaćeno, poslato, odbijeno, isporučeno, otkazano).
+- **Arhiva:** filter `status = 'archived'`.
+- Listanje: po `buyer_id` ili `seller_id`, sort po `created_at DESC`, sa paginacijom (20 po stranici).
 - Napomena u sekciji Arhiva:  
-  „Porudžbine starije od 30 dana automatski se premeštaju u arhivu. Porudžbine se brišu nakon 12 meseci.”
+  „U arhivi su porudžbine koje ste ručno arhivirali. Arhivirane porudžbine se automatski brišu nakon 12 meseci.”
 
 ---
 

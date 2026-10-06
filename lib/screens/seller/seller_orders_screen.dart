@@ -182,7 +182,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                         Expanded(
                           child: Text(
                             _isArchive
-                                ? 'Ovde su porudžbine koje ste ručno arhivirali. Brisanje nakon isteka roka čuvanja (expires_at), ako je podešeno.'
+                                ? 'Ovde su porudžbine koje ste ručno arhivirali. Arhivirane porudžbine se automatski brišu iz sistema nakon 12 meseci.'
                                 : 'Aktivne porudžbine (bez arhive). Kada kupac pošalje zahtev, vi odlučujete da li ćete ga prihvatiti, poslati ili odbiti.',
                             style: Theme.of(context)
                                 .textTheme
@@ -253,7 +253,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Text(
-                                  'Ista porudžbina može biti arhivirana i od kupca i od vas; ovde vidite samo vašu arhivu.',
+                                  'Ista porudžbina može biti arhivirana i od kupca i od vas; ovde vidite samo vašu arhivu. Arhivirane porudžbine se automatski brišu nakon 12 meseci.',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall

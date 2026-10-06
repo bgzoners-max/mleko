@@ -33,19 +33,24 @@ Na stolu su sledeće teme:
 
 ---
 
+5. **🛒 Tok porudžbina, Korpa & Retention (Završeno 06. okt):**
+   - **Usklađivanje `LOGIKA_PORUDZBINE.md`:** Dokumentacija usklađena sa realnim produkcionim ponašanjem baze (ručno arhiviranje završenih porudžbina + dnevni `pg_cron` retention job u 03:00 UTC koji briše arhivirane porudžbine starije od 12 meseci i čisti agregate).
+   - **UI poruke arhive (`OrdersScreen` & `SellerOrdersScreen`):** Ažurirana objašnjenja za kupce i prodavce sa jasnom napomenom o 12 meseci čuvanja u arhivi pre trajnog uklanjanja.
+   - **Kartica prodavca u korpi (`CartSellerGroupCard`):** Poboljšana napomena o minimalnom iznosu (pojašnjeno da se minimum odnosi na termine lične dostave domaćina, dok su kurir i lično preuzimanje takođe opcije na checkout-u).
+
+---
+
 ## 🎯 Preostali prioriteti za rad
 
 Na stolu su sledeće teme:
 
-### Opcija B: 📱 Android & iOS Native Release (Google Play / App Store)
-- **Cilj:** Pripremiti i potpisati aplikaciju za Play Store.
+### Opcija B: 📱 Android Release Potpisivanje (Google Play Store)
+- **Cilj:** Pripremiti i potpisati aplikaciju upload keystore-om umesto debug ključa.
 - **Koraci:**
   - Pratiti uputstvo u [`docs/ANDROID_RELEASE_SIGNING.md`](./ANDROID_RELEASE_SIGNING.md).
-  - Kreirati lokalni keystore i `android/key.properties`.
-  - Pokrenuti `flutter build appbundle --release` i testirati generisani `.aab` paket.
-
-### Opcija E: 💼 Prodajne i analitičke funkcije
-- **Cilj:** Dodatna unapređenja toka naručivanja prema [`docs/LOGIKA_PORUDZBINE.md`](./LOGIKA_PORUDZBINE.md).
+  - Kreirati lokalni `android/app/upload-keystore.jks` i `android/key.properties`.
+  - Sinhronizovati otisak u `web/.well-known/assetlinks.json` preko `dart run tool/sync_assetlinks.dart`.
+  - Pokrenuti `flutter build appbundle --release -PrequireReleaseSigning=true` i verifikovati generisani `.aab` paket.
 
 ---
 

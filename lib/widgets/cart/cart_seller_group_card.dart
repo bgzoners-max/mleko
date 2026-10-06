@@ -258,7 +258,9 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Minimum označava najmanji iznos za jednu porudžbinu. Kad dostigneš cilj, dugme „Naruči“ postaje dostupno za nastavak.',
+                      isMet
+                          ? 'Dostignut je minimum za ličnu dostavu domaćina. Možeš nastaviti na izbor termina ili drugog načina dostave.'
+                          : 'Prikazani minimum važi za ličnu dostavu domaćina. Na sledećem koraku možeš izabrati i kurirsku dostavu ili lično preuzimanje.',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
