@@ -108,9 +108,10 @@ void setClassifiedAdSeo(ClassifiedAdModel ad) {
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
       'url': '$publicBaseUrl/classifieds/ad/${ad.id}',
-      'itemCondition': ad.condition == 'new'
-          ? 'https://schema.org/NewCondition'
-          : 'https://schema.org/UsedCondition',
+      if (ad.condition == 'new')
+        'itemCondition': 'https://schema.org/NewCondition',
+      if (ad.condition == 'used')
+        'itemCondition': 'https://schema.org/UsedCondition',
     },
     if (ad.sellerName != null)
       'seller': {

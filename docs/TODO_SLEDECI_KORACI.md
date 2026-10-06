@@ -1,33 +1,26 @@
 # 📌 Zabeleška za sledeću sesiju (Handover & Sledeći koraci)
 
-**Datum ažuriranja:** 05. oktobar 2026.  
+**Datum ažuriranja:** 06. oktobar 2026.  
 **Projekat:** Domaći Market ([domacimarket.rs](https://www.domacimarket.rs))  
-**Git grana:** `master` (čisto radno stablo, verifikovano i sinhronizovano sa `origin/master`)
+**Git grana:** `master`
 
 ---
 
 ## 🏁 Trenutno stanje projekta (Gde smo stali)
 
-Uspešno je završena i puštena u produkciju kompletna **Desktop transformacija (Faze 1–5)**:
-1. **Faza 1: Desktop Header & Mega Nav:**
-   - Implementiran top utility bar, search sa izborom regiona, prečice (korpa, poruke, porudžbine, notifikacije, dark/light tema) i Bitter tipografija.
-2. **Faza 2: Desktop Hero sekcija & Široki layout:**
-   - Ruralni fotorealistični baner sa Bitter naslovom, 3 trust bedža, direktnim CTA dugmićima i tagovima kategorija. Širina layouta podešena na 1280–1360px.
-3. **Faza 3: Kartice proizvoda i oglasa (Hover efekti & 5-kolonski grid):**
-   - Dodat "PROVERENO" bedž, hover animacija uzdizanja (`-4px`), plutajući bedževi "Pogledaj detalje" i "Detalji oglasa", i integracija novog headera na detaljima oglasa/proizvoda.
-4. **Faza 4: Desktop bočni filter panel & Grid feed:**
-   - `ClassifiedsDesktopSidebar` sa stablom kategorija i brojem oglasa, cenovnim filterom (EUR), brzim rasponima, filterom po gradovima, stanju, tipu prodavca i promocijama (hitno / istaknuto).
-   - Dvo-kolonski feed na `ClassifiedsFeedScreen` sa sortiranjem i uklanjanjem aktivnih filtera.
-5. **Faza 5: Poliranje, Testovi i Release:**
-   - 22/22 widget testova prolaze (`flutter test`).
-   - `flutter analyze` prolazi bez ijedne greške ili upozorenja (0 issues).
-   - Aplikacija je izgrađena i deploy-ovana na Vercel produkciju na `https://www.domacimarket.rs`.
+1. **Desktop transformacija (Faze 1–5):**
+   - Header, Hero sekcija, Kartice i 5-kolonski grid, Sidebar filteri i sortirani feed su kompletirani i pušteni u produkciju.
+2. **🌐 SEO, Dinamički Sitemap & OpenGraph deljenje na mrežama (Završeno 06. okt):**
+   - **Dinamički `sitemap.xml` (`api/sitemap.ts`):** Edge funkcija koja automatski dohvata sve aktivne male oglase i proizvode iz Supabase-a sa `lastmod` datumom, uz keširanje od 1h (`s-maxage=3600`) i stabilan fallback.
+   - **OpenGraph za direktne linkove:** Dodati pametni Vercel rewrites sa proverom User-Agent hedera za botove (Viber, WhatsApp, Facebook, Telegram, Discord, Googlebot, Applebot...) za direktne adrese `/classifieds/ad/:id` i `/product/:id`. Sada i linkovi kopirani direktno iz browser bara generišu bogate kartice sa slikom, cenom i opisom.
+   - **Usklađivanje stanja ('not_applicable'):** Ispravljen Schema.org JSON-LD i OpenGraph kod tako da se životinjama, sadnicama, voću i uslugama ne dodeljuje netačan `UsedCondition`.
+   - **Verifikacija:** Svi testovi prolaze (432/432), `flutter analyze` čisto (0 issues), `npm run type-check` čisto (0 errors).
 
 ---
 
-## 🎯 Prioriteti i opcije za sledeći put
+## 🎯 Preostali prioriteti za rad
 
-Kada nastavimo, na stolu su sledeće teme prema želji i prioritetu:
+Na stolu su sledeće teme:
 
 ### Opcija A: 🔔 Push Notifikacije – Produkciona verifikacija
 - **Cilj:** Verifikovati da FCM i Supabase Edge funkcije (`send-push`) pouzdano dostavljaju notifikacije na produkciji.
@@ -44,12 +37,6 @@ Kada nastavimo, na stolu su sledeće teme prema želji i prioritetu:
   - Pratiti uputstvo u [`docs/ANDROID_RELEASE_SIGNING.md`](./ANDROID_RELEASE_SIGNING.md).
   - Kreirati lokalni keystore i `android/key.properties`.
   - Pokrenuti `flutter build appbundle --release` i testirati generisani `.aab` paket.
-
-### Opcija C: 🌐 SEO, OpenGraph & Deljenje na mrežama
-- **Cilj:** Kada se link oglasa ili proizvoda pošalje na Viber, WhatsApp, Facebook ili Telegram, prikazuje se lepa kartica sa slikom, cenom i naslovom.
-- **Koraci:**
-  - Konfiguracija dinamičkih meta tagova / OpenGraph protokola na web shell-u.
-  - Generisanje `sitemap.xml` i provera indeksiranja na Google Search Console za `domacimarket.rs`.
 
 ### Opcija D: 📲 PWA Mobilno iskustvo
 - **Cilj:** Poboljšati instalaciju i rad web aplikacije na telefonima.

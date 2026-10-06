@@ -66,12 +66,14 @@ export function resolvePublicBaseUrl(origin?: string): string {
 
 const BOT_USER_AGENTS = [
   "googlebot",
+  "google-inspectiontool",
   "bingbot",
   "yandexbot",
   "duckduckbot",
   "baiduspider",
   "facebookexternalhit",
   "facebot",
+  "meta-externalagent",
   "twitterbot",
   "rogerbot",
   "linkedinbot",
@@ -88,6 +90,10 @@ const BOT_USER_AGENTS = [
   "telegrambot",
   "discordbot",
   "applebot",
+  "skypeuripreview",
+  "petalbot",
+  "bytespider",
+  "threads",
 ];
 
 /**
@@ -176,6 +182,8 @@ export function buildHtml({
   <meta property="og:description" content="${escapedDescription}">
   <meta property="og:url" content="${escapedPreviewUrl}">
   <meta property="og:image" content="${escapedImageUrl}">
+  <meta property="og:image:secure_url" content="${escapedImageUrl}">
+  <meta property="og:image:alt" content="${escapedTitle}">
   <meta property="og:site_name" content="${escapedOgSiteName}">
   <meta property="og:locale" content="sr_RS">
 
@@ -183,6 +191,7 @@ export function buildHtml({
   <meta name="twitter:title" content="${escapedTitle}">
   <meta name="twitter:description" content="${escapedDescription}">
   <meta name="twitter:image" content="${escapedImageUrl}">
+  <meta name="twitter:image:alt" content="${escapedTitle}">
 
   ${jsonLdScript}
 </head>

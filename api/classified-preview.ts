@@ -182,9 +182,11 @@ export async function GET(request: Request): Promise<Response> {
           price: ad.price != null ? ad.price : 0,
           availability,
           url: canonicalUrl,
-          itemCondition: ad.condition === "new"
-            ? "https://schema.org/NewCondition"
-            : "https://schema.org/UsedCondition",
+          ...(ad.condition === "new"
+            ? { itemCondition: "https://schema.org/NewCondition" }
+            : ad.condition === "used"
+            ? { itemCondition: "https://schema.org/UsedCondition" }
+            : {}),
         },
       }
       : undefined;

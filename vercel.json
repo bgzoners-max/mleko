@@ -177,12 +177,34 @@
   ],
   "rewrites": [
     { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/politika-privatnosti", "destination": "/politika-privatnosti.html" },
     { "source": "/uslovi-koriscenja", "destination": "/uslovi-koriscenja.html" },
     { "source": "/", "destination": "/index.html" },
     { "source": "/p/:id", "destination": "/api/product-preview?id=:id" },
     { "source": "/ad/:id", "destination": "/api/classified-preview?id=:id" },
+    {
+      "source": "/classifieds/ad/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([bB]ot|[cC]rawler|[sS]pider|facebookexternalhit|[fF]acebot|[wW]hats[aA]pp|[vV]iber|[tT]elegram|[sS]lack|[dD]iscord|[tT]witter|[aA]pplebot|[lL]inked[iI]n).*"
+        }
+      ],
+      "destination": "/api/classified-preview?id=:id"
+    },
+    {
+      "source": "/product/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*([bB]ot|[cC]rawler|[sS]pider|facebookexternalhit|[fF]acebot|[wW]hats[aA]pp|[vV]iber|[tT]elegram|[sS]lack|[dD]iscord|[tT]witter|[aA]pplebot|[lL]inked[iI]n).*"
+        }
+      ],
+      "destination": "/api/product-preview?id=:id"
+    },
     { "source": "/auth/confirm", "destination": "/api/auth-confirm" },
     { "source": "/:path((?!api/).*)", "destination": "/index.html" }
   ]
