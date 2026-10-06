@@ -280,23 +280,6 @@ class _DesktopHeaderState extends State<DesktopHeader> {
     }
   }
 
-  void _onCategoryItemTap(String label) {
-    if (label.contains('Sve kategorije')) {
-      context.push('/categories');
-      return;
-    }
-
-    if (label.contains('Mehanizacija') || label.contains('životinje')) {
-      // Pređi na male oglase
-      _onNavigateTo(1, route: '/classifieds', mode: MarketMode.classifieds);
-      return;
-    }
-
-    // Za hranu
-    _onNavigateTo(0, route: '/', mode: MarketMode.foodMarket);
-    context.push('/search?category=${Uri.encodeComponent(label)}');
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -326,8 +309,6 @@ class _DesktopHeaderState extends State<DesktopHeader> {
 
     final bgMain = isDark ? AmazonColors.darkCard : Colors.white;
     final borderMain = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
-    final bgSub = isDark ? const Color(0xFF131B15) : const Color(0xFFF9FAF8);
-    final borderSub = isDark ? const Color(0xFF222C24) : const Color(0xFFE8ECE8);
 
     return Container(
       decoration: BoxDecoration(
@@ -397,23 +378,6 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-
-          // 3. SUB-NAV MEGA STRIP (Brze kategorije hrane i oglasa)
-          Container(
-            decoration: BoxDecoration(
-              color: bgSub,
-              border: Border(
-                top: BorderSide(color: borderSub, width: 1.0),
-                bottom: BorderSide(color: borderSub, width: 1.0),
-              ),
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1360),
-                child: _buildCategoriesStrip(context, isDark: isDark),
               ),
             ),
           ),
@@ -984,58 +948,6 @@ class _DesktopHeaderState extends State<DesktopHeader> {
           ),
         ),
       ],
-    );
-  }
-
-  // --- 6. Sub-Nav Mega Strip (Kategorije) ---
-  Widget _buildCategoriesStrip(BuildContext context, {required bool isDark}) {
-    final categories = const [
-      ('🥛', 'Mleko & Sirevi'),
-      ('🍯', 'Med & Pčelarstvo'),
-      ('🥩', 'Meso & Prerađevine'),
-      ('🍓', 'Voće & Povrće'),
-      ('🫙', 'Zimnica & Džemovi'),
-      ('🍷', 'Domaća pića'),
-      ('🚜', 'Poljoprivreda & Mehanizacija'),
-      ('🐾', 'Domaće životinje'),
-      ('📂', 'Sve kategorije →'),
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: Row(
-        children: categories.map((cat) {
-          final isAll = cat.$2.contains('Sve kategorije');
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: InkWell(
-              onTap: () => _onCategoryItemTap(cat.$2),
-              borderRadius: BorderRadius.circular(6),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(cat.$1, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(width: 5),
-                    Text(
-                      cat.$2,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: isAll ? FontWeight.w800 : FontWeight.w600,
-                        color: isAll
-                            ? AmazonColors.green
-                            : (isDark ? Colors.white70 : const Color(0xFF334155)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 }

@@ -45,6 +45,9 @@ Na stolu su sledeće teme:
    - **Problem:** Tamno zelena slova i ikonice (`#2E7D32` i `#245938`) su se u tamnoj temi stopile sa tamnozelenom/crnom pozadinom (`#121714` i `#1B241E`), čineći aktivne tabove, kategorije, bedževe i linkove nečitljivim.
    - **Rešenje:** Uveden `AmazonColors.lightGreen` (`#81C784`, kontrast >8.5:1, WCAG AAA) i `AmazonColors.lightYellow` (`#FFD54F`). Zamenjena tamnozelena slova svetlo zelenim na svim ključnim mestima: aktivni navigacioni tabovi zaglavlja, birač regiona, nazivi kategorija na karticama proizvoda, linkovi "Promeni", "Vidi sve", "Poništi filtere", baneri porudžbina i bedž "BESPLATNO".
    - **Verifikacija:** Svi testovi prošli (432/432), `flutter analyze` 0 grešaka, izmene puštene na produkciju (`domacimarket.rs`).
+8. **🧹 Čišćenje Desktop Zaglavlja – Uklanjanje suvišnog horizontalnog skrola kategorija (Završeno 06. okt):**
+   - **Problem:** Horizontalni skrol sa kategorijama ("Poljoprivreda & Mehanizacija", itd.) u gornjem meniju zauzimao je vertikalni prostor i stvarao neudobno horizontalno skrolovanje mišem, dok su sve te iste kategorije već dostupne u bočnom levom panelu (sidebar) i u glavnom gridu na stranici.
+   - **Rešenje:** Uklonjen `_buildCategoriesStrip` i pripadajući horizontalni skrol kontejner iz `DesktopHeader`. Zaglavlje je time znatno čistije, kompaktnije i preglednije.
 
 ---
 
