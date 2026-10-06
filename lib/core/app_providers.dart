@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
+import '../providers/auth_session_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
+import '../providers/sync_provider.dart';
+import '../providers/unread_notifications_provider.dart';
 import '../services/catalog/products_service.dart';
 import '../services/communication/communication_services.dart';
 import '../services/orders/order_services.dart';
@@ -58,6 +61,9 @@ class AppProviders extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AppState>.value(value: appState),
+        ChangeNotifierProvider<AuthSessionProvider>.value(value: appState.authSession),
+        ChangeNotifierProvider<SyncProvider>.value(value: appState.sync),
+        ChangeNotifierProvider<UnreadNotificationsProvider>.value(value: appState.unreadNotifications),
         ChangeNotifierProvider<AppSettingsProvider>.value(value: appSettings),
         ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
         ChangeNotifierProvider<CategoriesProvider>.value(value: categoriesProvider),

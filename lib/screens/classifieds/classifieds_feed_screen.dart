@@ -24,7 +24,7 @@ import '../../widgets/classifieds/classified_subcategory_header.dart';
 import '../../widgets/classifieds/classified_feed_header.dart';
 import '../../widgets/classifieds/classified_search_bar.dart';
 import '../../widgets/classifieds/classified_subcategories_slivers.dart';
-import '../../widgets/classifieds/classifieds_desktop_sidebar.dart';
+import '../../widgets/classifieds/classifieds_desktop_feed_view.dart';
 import '../../widgets/app_footer.dart';
 
 class ClassifiedsFeedScreen extends StatefulWidget {
@@ -570,212 +570,17 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     );
 
     final canvasColor = AmazonColors.getCanvas(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    final desktopContent = Material(
-      color: canvasColor,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: Breakpoints.dataContentWidth(context),
-          ),
-          child: RefreshIndicator(
-            onRefresh: classifieds.refresh,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Opcioni header (MarketModeSwitcher)
-                  if (widget.headerWidget != null) ...[
-                    widget.headerWidget!,
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Suptilni progress bar tokom refresh-a
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: isRefreshing ? 3 : 0,
-                    child: isRefreshing
-                        ? LinearProgressIndicator(
-                            minHeight: 3,
-                            backgroundColor: colorScheme.surfaceContainerHighest,
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-
-                  // Glavni 2-kolonski raspored: Levi Desktop Sidebar (270px) + Desni Feed
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── LEVA KOLONA: FILTRI SIDEBAR ──
-                      SizedBox(
-                        width: 270,
-                        child: ClassifiedsDesktopSidebar(
-                          classifieds: classifieds,
-                          searchController: _searchController,
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-
-                      // ── DESNA KOLONA: PRETRAGA, SORT & GRID OGLASA ──
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (user?.isAdmin == true) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: InkWell(
-                                  onTap: () => context.push('/admin/classifieds'),
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.shade50,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.amber.shade300),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.shield_outlined, size: 18, color: Colors.amber.shade900),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            'Admin panel: Moderacija prijavljenih oglasa',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.amber.shade900,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(Icons.chevron_right, size: 18, color: Colors.amber.shade900),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-
-                            // Search bar
-                            ClassifiedSearchBar(
-                              classifieds: classifieds,
-                              searchController: _searchController,
-                              onSearchChanged: _onSearchChanged,
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Controls bar: Broj pronađenih oglasa + Sort dropdown
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  classifieds.loading
-                                      ? 'Učitavanje oglasa...'
-                                      : 'Pronađeno ${classifieds.ads.length} oglasa',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                                  ),
-                                ),
-                                ClassifiedSortDropdown(classifieds: classifieds),
-                              ],
-                            ),
-
-                            // Aktivni filteri (pills sa opcijom uklanjanja)
-                            if (isFiltered) ...[
-                              const SizedBox(height: 8),
-                              ClassifiedActiveFilters(
-                                classifieds: classifieds,
-                                colorScheme: colorScheme,
-                                searchController: _searchController,
-                              ),
-                            ],
-                            const SizedBox(height: 14),
-
-                            // Stanja: Loading / Greška / Prazno / Grid
-                            if (classifieds.loading)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 60),
-                                child: Center(child: CircularProgressIndicator()),
-                              )
-                            else if (classifieds.error != null && classifieds.ads.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 40),
-                                child: AppEmptyState(
-                                  icon: Icons.error_outline,
-                                  title: 'Greška pri učitavanju',
-                                  subtitle: classifieds.error,
-                                  ctaLabel: 'Pokušaj ponovo',
-                                  ctaIcon: Icons.refresh,
-                                  onCtaPressed: classifieds.refresh,
-                                ),
-                              )
-                            else if (classifieds.ads.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 40),
-                                child: AppEmptyState(
-                                  icon: Icons.search_off_outlined,
-                                  title: 'Nema oglasa za izabrane filtere',
-                                  subtitle: isFiltered
-                                      ? 'Pokušajte sa promenom kategorije, cene ili lokacije.'
-                                      : (isGuest
-                                          ? 'Trenutno nema objavljenih oglasa.'
-                                          : 'Budite prvi koji će postaviti oglas!'),
-                                  ctaLabel: isFiltered
-                                      ? 'Poništi filtere'
-                                      : (isGuest ? null : 'Postavi oglas'),
-                                  ctaIcon: isFiltered
-                                      ? Icons.refresh
-                                      : (isGuest ? null : Icons.add_circle_outline),
-                                  onCtaPressed: isFiltered
-                                      ? () {
-                                          _searchController.clear();
-                                          classifieds.clearAllFilters();
-                                        }
-                                      : (isGuest
-                                          ? null
-                                          : () => context.push('/classifieds/new')),
-                                ),
-                              )
-                            else ...[
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: Breakpoints.isWideDesktop(context) ? 4 : 3,
-                                  childAspectRatio: 0.74,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                ),
-                                itemCount: classifieds.ads.length,
-                                itemBuilder: (ctx, i) => ClassifiedAdCard(ad: classifieds.ads[i]),
-                              ),
-                              if (classifieds.loadingMore)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24),
-                                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 36),
-                  const AppFooter(),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    final desktopContent = ClassifiedsDesktopFeedView(
+      classifieds: classifieds,
+      user: user,
+      searchController: _searchController,
+      scrollController: _scrollController,
+      isRefreshing: isRefreshing,
+      isFiltered: isFiltered,
+      isGuest: isGuest,
+      headerWidget: widget.headerWidget,
+      onSearchChanged: _onSearchChanged,
     );
 
     final content = isDesktop

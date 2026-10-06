@@ -51,13 +51,14 @@ import '../screens/classifieds/add_edit_classified_ad_screen.dart';
 import '../screens/classifieds/my_classified_ads_screen.dart';
 import '../screens/classifieds/saved_searches_screen.dart';
 import '../models/category.dart';
-import '../providers/app_settings_provider.dart';
 import '../providers/app_state.dart';
-import '../providers/classifieds_provider.dart';
-import 'responsive.dart';
-import 'web_seo.dart';
-import '../widgets/theme_toggle_switch.dart';
-import '../widgets/navigation/desktop_header.dart';
+import '../widgets/navigation/main_shell.dart';
+import 'router_guard.dart';
+import 'router_transitions.dart';
+
+export '../widgets/navigation/main_shell.dart';
+export 'router_guard.dart';
+export 'router_transitions.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -66,145 +67,12 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 /// Poštuje sistemsko smanjenje animacija (pristupačnost): kada je na uređaju
 /// uključeno "Remove animations" / "Reduce motion", vraća običnu stranicu
 /// bez Fade+Slide+Scale tranzicije.
-Page<T> buildPageTransition<T>({
-  required GoRouterState state,
-  required Widget child,
-}) {
-  applyRouteSeo(state.uri.path);
-  return CustomTransitionPage<T>(
-    key: state.pageKey,
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      if (MediaQuery.disableAnimationsOf(context)) {
-        return child;
-      }
-      // Suptilna "Shared Axis" tranzicija (Fade + Slide + Scale)
-      final fadeAnimation = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeInOut,
-      );
-
-      final slideAnimation = Tween<Offset>(
-        begin: const Offset(0.0, 0.03), // Blagi pomak odozdo
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      ));
-
-      final scaleAnimation = Tween<double>(
-        begin: 0.98, // Blago skaliranje
-        end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      ));
-
-      return FadeTransition(
-        opacity: fadeAnimation,
-        child: SlideTransition(
-          position: slideAnimation,
-          child: ScaleTransition(
-            scale: scaleAnimation,
-            child: child,
-          ),
-        ),
-      );
-    },
-    transitionDuration: const Duration(milliseconds: 300),
-  );
-}
-
 GoRouter createRouter(AppState appState) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     refreshListenable: appState,
     initialLocation: kIsWeb ? '/' : '/splash',
-    redirect: (context, state) {
-      final loc = state.uri.path;
-      if (appState.isLoading) return null;
-      if (appState.user == null && !appState.authChecked) return null;
-
-      if (loc == '/splash') return null;
-      if (loc.startsWith('/onboarding')) return null;
-      if (loc == '/verify-email') return null;
-      if (loc == '/terms' ||
-          loc == '/uslovi-koriscenja' ||
-          loc == '/politika-privatnosti') {
-        return null;
-      }
-      if (loc == '/about') return null;
-      if (loc == '/support') return null;
-
-      // Email just confirmed — steer to success screen before anything else
-      if (appState.justConfirmedEmail && loc != '/auth/confirmed') {
-        return '/auth/confirmed';
-      }
-      if (loc == '/auth/confirmed') return null;
-
-      if (loc.startsWith('/login') || loc.startsWith('/register')) {
-        if (appState.user != null && !appState.user!.isGuest) return '/';
-        return null;
-      }
-
-      // Javne rute koje posetilac bez naloga (gost) može slobodno da pregleda
-      final isPublicClassifiedRoute = loc.startsWith('/classifieds') &&
-          !loc.startsWith('/classifieds/new') &&
-          !loc.startsWith('/classifieds/edit') &&
-          !loc.startsWith('/classifieds/my') &&
-          !loc.startsWith('/classifieds/saved-searches');
-
-      final isPublicRoute = loc == '/' ||
-          loc.startsWith('/search') ||
-          loc.startsWith('/product/') ||
-          loc.startsWith('/categories') ||
-          loc == '/sellers-map' ||
-          loc == '/cart' ||
-          loc == '/settings' ||
-          loc.startsWith('/auth/confirm') ||
-          isPublicClassifiedRoute ||
-          (loc.startsWith('/seller/') && !loc.endsWith('/reviews'));
-
-      if (isPublicRoute) {
-        return null;
-      }
-
-      // Sve ostale rute (profil, porudžbine, dodavanje oglasa itd.) zahtevaju prijavu
-      final isGuest = appState.user == null || appState.user!.isGuest;
-      if (isGuest) {
-        final returnTo = Uri.encodeComponent(state.uri.toString());
-        return '/login?returnTo=$returnTo';
-      }
-
-      // Admin stranice — samo korisnici sa is_admin = true
-      if (loc.startsWith('/admin/')) {
-        final u = appState.user;
-        if (u == null || !u.isAdmin) return '/';
-      }
-
-      // Stranica recenzija — samo vlasnik prodavnice (kupci i gosti na javni profil).
-      final sellerReviewsMatch =
-          RegExp(r'^/seller/([^/]+)/reviews$').firstMatch(loc);
-      if (sellerReviewsMatch != null) {
-        final sid = sellerReviewsMatch.group(1)!;
-        final u = appState.user;
-        if (u == null || u.isGuest || !u.isSeller || u.id != sid) {
-          return '/seller/$sid';
-        }
-      }
-
-      final buyerReviewsMatch =
-          RegExp(r'^/buyer/([^/]+)/reviews$').firstMatch(loc);
-      if (buyerReviewsMatch != null) {
-        final bid = buyerReviewsMatch.group(1)!;
-        final u = appState.user;
-        if (u == null || u.isGuest || u.isSeller || u.id != bid) {
-          return '/buyer/$bid';
-        }
-      }
-
-      return null;
-    },
+    redirect: (context, state) => routerRedirect(context, state, appState),
     routes: [
       GoRoute(
         path: '/search',
@@ -677,127 +545,4 @@ GoRouter createRouter(AppState appState) {
       ),
     ],
   );
-}
-
-class MainShell extends StatelessWidget {
-  final StatefulNavigationShell navigationShell;
-
-  const MainShell({super.key, required this.navigationShell});
-
-  // Redosled mora da prati StatefulShellBranch redosled:
-  // 0=Pocetna, 1=Oglasi, 2=Porudzbine, 3=Poruke, 4=Profil.
-  static const _destinations = [
-    (icon: Icons.cottage, label: 'Početna'),
-    (icon: Icons.storefront, label: 'Oglasi'),
-    (icon: Icons.receipt_long, label: 'Porudžbine'),
-    (icon: Icons.chat_bubble_outline, label: 'Poruke'),
-    (icon: Icons.person, label: 'Profil'),
-  ];
-
-  static const _guestDestinations = [
-    (icon: Icons.cottage, label: 'Početna'),
-    (icon: Icons.storefront, label: 'Oglasi'),
-    (icon: Icons.login_rounded, label: 'Prijavi se'),
-  ];
-
-  void _onDestinationSelected(BuildContext context, int i, {required bool isGuest}) {
-    if (isGuest) {
-      if (i == 1) {
-        // Tab Oglasi: ocisti filtere oglasa i sinhronizuj MarketMode.
-        context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
-        navigationShell.goBranch(1, initialLocation: true);
-        return;
-      }
-      if (i == 0) {
-        context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
-        context.read<ClassifiedsProvider>().clearFilters();
-        navigationShell.goBranch(0, initialLocation: true);
-        context.go('/');
-      } else {
-        context.push('/login');
-      }
-      return;
-    }
-
-    if (i == 0) {
-      context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
-      context.read<ClassifiedsProvider>().clearFilters();
-      navigationShell.goBranch(0, initialLocation: true);
-      context.go('/');
-    } else if (i == 1) {
-      context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
-      navigationShell.goBranch(1, initialLocation: true);
-    } else {
-      navigationShell.goBranch(i, initialLocation: true);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
-    final isGuest = user == null || user.isGuest;
-    final destinations = isGuest ? _guestDestinations : _destinations;
-    final width = MediaQuery.sizeOf(context).width;
-    final isDesktop = width >= Breakpoints.largeTablet;
-    final isTabletRail = !isDesktop && width >= Breakpoints.phone;
-    final selectedDestIndex = isGuest
-        ? (navigationShell.currentIndex == 1 ? 1 : 0)
-        : navigationShell.currentIndex.clamp(0, destinations.length - 1);
-
-    if (isDesktop) {
-      return Scaffold(
-        body: Column(
-          children: [
-            DesktopHeader(navigationShell: navigationShell),
-            Expanded(child: navigationShell),
-          ],
-        ),
-      );
-    }
-
-    if (isTabletRail) {
-      return Scaffold(
-        body: Row(
-          children: [
-            NavigationRail(
-              selectedIndex: selectedDestIndex,
-              onDestinationSelected: (i) =>
-                  _onDestinationSelected(context, i, isGuest: isGuest),
-              labelType: NavigationRailLabelType.all,
-              trailing: const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: ThemeToggleSwitch(),
-              ),
-              destinations: destinations.map((d) {
-                return NavigationRailDestination(
-                  icon: Icon(d.icon),
-                  label: Text(d.label),
-                );
-              }).toList(),
-            ),
-            const VerticalDivider(width: 1),
-            Expanded(child: navigationShell),
-          ],
-        ),
-      );
-    }
-
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: navigationShell,
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedDestIndex,
-        onDestinationSelected: (i) =>
-            _onDestinationSelected(context, i, isGuest: isGuest),
-        destinations: destinations.map((d) {
-          return NavigationDestination(
-            icon: Icon(d.icon),
-            label: d.label,
-          );
-        }).toList(),
-      ),
-    );
-  }
 }

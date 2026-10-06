@@ -2,250 +2,112 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
-    show AuthChangeEvent, AuthState, PostgresChangePayload;
+    show PostgresChangePayload;
 import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
-import '../services/media/image_cache_service.dart';
+import 'auth_session_provider.dart';
+import 'sync_provider.dart';
 import 'unread_notifications_provider.dart';
 
-/// Fasada preko novih izdvojenih providera — javni API ostaje nepromenjen.
-///
-/// Korak 1 split-a god-objecta:
-/// - unread state + realtime kanal → [UnreadNotificationsProvider]
-/// - auth / connectivity / sync ostaju ovde dok se ne izdvoje u koraku 2
-///   (AuthSessionProvider, SyncProvider).
+/// Kompozitna fasada preko izdvojenih providera aplikacije:
+/// - [AuthSessionProvider]: korisnička sesija, tokeni, profil, login/logout
+/// - [SyncProvider]: offline status, sync manager, red čekanja porudžbina
+/// - [UnreadNotificationsProvider]: brojač, debounce i realtime kanal notifikacija
 ///
 /// Svi postojeći pozivaoci (`context.watch<AppState>().user`,
 /// `appState.syncManager`, `appState.incrementUnreadCount()`...) rade bez
-/// izmena jer fasada delegira ka unutrašnjim instancama.
+/// izmena jer fasada u potpunosti delegira ka unutrašnjim instancama.
 class AppState extends ChangeNotifier {
-  final AuthService _auth;
-  final ConnectivityService _connectivity = ConnectivityService();
-  final OrderQueueService _orderQueue = OrderQueueService();
-  final OrdersService _ordersService;
-  late final SyncManager _syncManager;
+  /// Izdvojeni provider za korisničku sesiju i auth.
+  late final AuthSessionProvider authSession;
+
+  /// Izdvojeni provider za offline sinhronizaciju i red čekanja.
+  late final SyncProvider sync;
 
   /// Izdvojeni unread provider — poseduje brojač, debounce i realtime kanal.
   late final UnreadNotificationsProvider unreadNotifications;
 
-  StreamSubscription? _authSubscription;
-  late final VoidCallback _connectivityListener;
-  int _authEventVersion = 0;
+  UserModel? get user => authSession.user;
+  bool get authChecked => authSession.authChecked;
+  bool get isLoading => authSession.isLoading;
+  bool get justConfirmedEmail => authSession.justConfirmedEmail;
+  AuthService get authService => authSession.authService;
 
-  UserModel? _user;
-  bool _authChecked = false;
-  bool _loading = false;
-  bool _pendingEmailVerification = false;
-  bool _justConfirmedEmail = false;
-
-  UserModel? get user => _user;
-  bool get authChecked => _authChecked;
-  bool get isLoading => _loading;
-  bool get justConfirmedEmail => _justConfirmedEmail;
-
-  void markPendingEmailVerification() {
-    _pendingEmailVerification = true;
-  }
-
-  void clearJustConfirmedEmail() {
-    _justConfirmedEmail = false;
-    notifyListeners();
-  }
+  void markPendingEmailVerification() => authSession.markPendingEmailVerification();
+  void clearJustConfirmedEmail() => authSession.clearJustConfirmedEmail();
 
   @visibleForTesting
-  void setUserForTesting(UserModel? user) {
-    _user = user;
-    notifyListeners();
-  }
+  void setUserForTesting(UserModel? user) => authSession.setUserForTesting(user);
 
   @visibleForTesting
-  int get authEventVersion => _authEventVersion;
+  int get authEventVersion => authSession.authEventVersion;
 
   @visibleForTesting
   bool isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) =>
-      _isCurrentAuthEvent(authVersion, expectedUserId: expectedUserId);
+      authSession.isCurrentAuthEvent(authVersion, expectedUserId: expectedUserId);
 
-  // Test-only pristup debounce timeru izdvojenog providera.
-  // Namerno nije @visibleForTesting na strani potrošača jer se koristi
-  // i u produkcijskom AppState getteru.
   Timer? get unreadDebounceTimer => unreadNotifications.debugDebounceTimer;
 
   @visibleForTesting
   void scheduleLoadUnreadCountForTesting([Duration delay = const Duration(milliseconds: 300)]) =>
       unreadNotifications.scheduleReloadForTesting(delay);
 
-  bool get isOnline => _connectivity.isOnline;
-  bool get isOffline => _connectivity.isOffline;
-  AuthService get authService => _auth;
-  ConnectivityService get connectivity => _connectivity;
-  OrderQueueService get orderQueue => _orderQueue;
-  SyncManager get syncManager => _syncManager;
+  bool get isOnline => sync.isOnline;
+  bool get isOffline => sync.isOffline;
+  ConnectivityService get connectivity => sync.connectivity;
+  OrderQueueService get orderQueue => sync.orderQueue;
+  SyncManager get syncManager => sync.syncManager;
 
-  /// Delegirano ka [UnreadNotificationsProvider] — postojeći pozivaoci
-  /// (`watch<AppState>().unreadNotificationCount`) rade bez izmena,
-  /// ali više ne izazivaju rebuild celog AppState-a kada se pretplate
-  /// direktno na [unreadNotifications].
   int get unreadNotificationCount => unreadNotifications.unreadCount;
-  Stream<PostgresChangePayload> get notificationEvents =>
-      unreadNotifications.events;
+  Stream<PostgresChangePayload> get notificationEvents => unreadNotifications.events;
 
   AppState({
     required OrdersService ordersService,
     AuthService? authService,
     UnreadNotificationsProvider? unreadNotificationsProvider,
-  })  : _auth = authService ?? AuthService(),
-        _ordersService = ordersService {
+    AuthSessionProvider? authSessionProvider,
+    SyncProvider? syncProvider,
+  }) {
     unreadNotifications =
         unreadNotificationsProvider ?? UnreadNotificationsProvider();
-    // Fasada prosleđuje promene brojača svojim listener-ima radi
-    // kompatibilnosti (badge u router-u sluša AppState).
-    unreadNotifications.addListener(_forwardUnreadNotifications);
-    _syncManager = SyncManager(
-      queueService: _orderQueue,
-      ordersService: _ordersService,
-      connectivity: _connectivity,
-    );
 
-    _initAuth();
-    _initConnectivity();
+    authSession = authSessionProvider ??
+        AuthSessionProvider(
+          authService: authService,
+          unreadNotificationsProvider: unreadNotifications,
+        );
+
+    sync = syncProvider ??
+        SyncProvider(
+          ordersService: ordersService,
+        );
+
+    // Fasada prosleđuje notifikacije svojim listener-ima radi pune kompatibilnosti.
+    unreadNotifications.addListener(_forwardChange);
+    authSession.addListener(_forwardChange);
+    sync.addListener(_forwardChange);
   }
 
-  void _initAuth() {
-    final initialSupabaseUser = _auth.currentSupabaseUser;
-    if (initialSupabaseUser != null && !initialSupabaseUser.isAnonymous) {
-      _user = UserModel(
-        id: initialSupabaseUser.id,
-        email: initialSupabaseUser.email,
-        displayName:
-            initialSupabaseUser.userMetadata?['display_name'] as String?,
-        isGuest: false,
-      );
-      _authChecked = true;
-    }
-
-    _authSubscription =
-        _auth.authStateChanges.listen((AuthState authState) async {
-      final authVersion = ++_authEventVersion;
-      final sessionUserId = authState.session?.user.id;
-
-      if (authState.session == null || authState.session?.user.isAnonymous == true) {
-        await _auth.ensureCleanSession();
-        await PushService.clearRegistrationState();
-        if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
-        _user = null;
-        unreadNotifications.unbind();
-        // Očisti image cache na logout (privatnost + memorija)
-        await ImageCacheService().clearAllCaches();
-        if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
-      } else {
-        final isWebSignupCallback = kIsWeb &&
-            (Uri.base.fragment.contains('type=signup') ||
-                Uri.base.fragment.contains('type=email') ||
-                Uri.base.queryParameters['type'] == 'signup' ||
-                Uri.base.queryParameters['type'] == 'email' ||
-                Uri.base.fragment.contains('type=email_change') ||
-                Uri.base.path.contains('/auth/confirmed'));
-
-        if ((_pendingEmailVerification || isWebSignupCallback) &&
-            authState.event == AuthChangeEvent.signedIn) {
-          _justConfirmedEmail = true;
-          _pendingEmailVerification = false;
-        }
-
-        UserModel? resolvedUser;
-        try {
-          resolvedUser = await _auth.getCurrentUser();
-        } catch (e) {
-          LoggerService.warning(
-            'Failed to load full user profile on auth change',
-            extra: {'error': e.toString()},
-          );
-          if (sessionUserId != null) {
-            final sessionUser = authState.session?.user;
-            resolvedUser = UserModel(
-              id: sessionUserId,
-              email: sessionUser?.email,
-              displayName: (sessionUser?.userMetadata?['display_name'] ??
-                      sessionUser?.userMetadata?['full_name'] ??
-                      sessionUser?.userMetadata?['name']) as String?,
-              profileImageUrl: (sessionUser?.userMetadata?['avatar_url'] ??
-                      sessionUser?.userMetadata?['picture']) as String?,
-              isGuest: false,
-            );
-          }
-        }
-
-        if (!_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
-          return;
-        }
-
-        _user = resolvedUser;
-        if (_user != null && !_user!.isGuest) {
-          unreadNotifications.bindUser(_user!.id);
-          await PushService().registerToken(_user!.id);
-
-          if (!_isCurrentAuthEvent(authVersion,
-              expectedUserId: sessionUserId)) {
-            return;
-          }
-        } else {
-          await PushService.clearRegistrationState();
-          if (!_isCurrentAuthEvent(authVersion,
-              expectedUserId: sessionUserId)) {
-            return;
-          }
-          unreadNotifications.unbind();
-        }
-      }
-      _authChecked = true;
-      notifyListeners();
-    });
-  }
-
-  bool _isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) {
-    if (authVersion != _authEventVersion) return false;
-    final currentUserId = _auth.currentSupabaseUser?.id;
-    return currentUserId == expectedUserId;
-  }
-
-  void _initConnectivity() {
-    _connectivityListener = () {
-      notifyListeners();
-    };
-    _connectivity.addListener(_connectivityListener);
+  void _forwardChange() {
+    notifyListeners();
   }
 
   void resetUnreadCount() => unreadNotifications.resetCount();
-
   void incrementUnreadCount() => unreadNotifications.incrementCount();
-
   void decrementUnreadCount() => unreadNotifications.decrementCount();
 
-  void _forwardUnreadNotifications() {
-    // Kompatibilnost: postojeći listener-i AppState (badge, main.dart sync)
-    // i dalje dobijaju notify kada se brojač promeni u izdvojenom provideru.
-    notifyListeners();
-  }
+  void setLoading(bool v) => authSession.setLoading(v);
+  Future<void> refreshUser() => authSession.refreshUser();
 
   @override
   void dispose() {
-    unreadNotifications.removeListener(_forwardUnreadNotifications);
+    unreadNotifications.removeListener(_forwardChange);
+    authSession.removeListener(_forwardChange);
+    sync.removeListener(_forwardChange);
+
     unreadNotifications.dispose();
-    _authSubscription?.cancel();
-    _connectivity.removeListener(_connectivityListener);
-    _connectivity.dispose();
-    _syncManager.dispose();
-    unawaited(PushService.dispose());
+    authSession.dispose();
+    sync.dispose();
     super.dispose();
-  }
-
-  void setLoading(bool v) {
-    _loading = v;
-    notifyListeners();
-  }
-
-  Future<void> refreshUser() async {
-    _user = await _auth.getCurrentUser();
-    notifyListeners();
   }
 }

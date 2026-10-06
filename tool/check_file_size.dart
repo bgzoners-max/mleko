@@ -8,7 +8,6 @@ const int lineThreshold = 700;
 const List<String> ignoreFiles = [
   // Blizu granice (713-726 linija) — nisu bili deo ovog refaktora.
   // Sledeci ciklus: razbiti ispod 700 i ukloniti sa ove liste.
-  'lib/core/router.dart',
   'lib/screens/about_screen.dart',
   'lib/screens/classifieds/my_classified_ads_screen.dart',
   'lib/screens/search_screen.dart',
@@ -19,7 +18,6 @@ const List<String> ignoreFiles = [
   'lib/screens/seller/add_edit_product_screen.dart',
   'lib/screens/seller/seller_orders_screen.dart',
   'lib/services/communication/chat_service.dart',
-  'lib/widgets/skeleton.dart',
   'lib/widgets/checkout/checkout_multi_form.dart',
   'lib/widgets/classifieds/classified_ad_card.dart',
 ];
