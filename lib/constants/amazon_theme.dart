@@ -45,6 +45,10 @@ class AmazonColors {
   static const Color darkTextPrimary = Color(0xFFF1F5F2);
   static const Color darkTextSecondary = Color(0xFF98A69A);
 
+  // ── Svetle varijante za visoku čitljivost u tamnoj temi (WCAG AAA) ──
+  static const Color lightGreen = Color(0xFF81C784); // Svetlo zelena za tamnu temu (kontrast >8.5:1)
+  static const Color lightYellow = Color(0xFFFFD54F); // Svetlo žuta / toplo zlato
+
   // Helper metode za dinamički odabir svetlo/tamno
   static Color getCanvas(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark ? darkCanvas : canvasLight;
@@ -64,6 +68,14 @@ class AmazonColors {
 
   static Color getTextSecondary(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark ? darkTextSecondary : textSecondary;
+  }
+
+  static Color getLink(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? lightGreen : link;
+  }
+
+  static Color getGreen(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? lightGreen : green;
   }
 
   /// Meka, difuzna organska senka za kartice

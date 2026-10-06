@@ -457,10 +457,21 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                         classifieds.clearAttributeFilters();
                         classifieds.search(null);
                       },
-                      icon: const Icon(Icons.close, size: 14, color: AmazonColors.link),
-                      label: const Text(
+                      icon: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AmazonColors.lightGreen
+                            : AmazonColors.link,
+                      ),
+                      label: Text(
                         'Poništi filtere',
-                        style: TextStyle(fontSize: 12, color: AmazonColors.link),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AmazonColors.lightGreen
+                              : AmazonColors.link,
+                        ),
                       ),
                     ),
                   ],

@@ -107,6 +107,9 @@ class _SellerBadgeHeader extends StatelessWidget {
         final farmDisplayName =
             seller?.farmName ?? seller?.displayName ?? 'Domaćinstvo';
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final linkColor = isDark ? AmazonColors.lightGreen : AmazonColors.link;
+
         return InkWell(
           onTap: () => context.push('/seller/$sellerId'),
           borderRadius: BorderRadius.circular(6),
@@ -115,17 +118,17 @@ class _SellerBadgeHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.storefront_outlined,
                   size: 15,
-                  color: AmazonColors.link,
+                  color: linkColor,
                 ),
                 const SizedBox(width: 5),
                 Flexible(
                   child: Text(
                     farmDisplayName,
-                    style: const TextStyle(
-                      color: AmazonColors.link,
+                    style: TextStyle(
+                      color: linkColor,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
@@ -137,10 +140,10 @@ class _SellerBadgeHeader extends StatelessWidget {
                   const SizedBox(width: 4),
                   const Icon(Icons.verified, size: 14, color: Colors.blue),
                 ],
-                const Icon(
+                Icon(
                   Icons.chevron_right,
                   size: 15,
-                  color: AmazonColors.link,
+                  color: linkColor,
                 ),
               ],
             ),

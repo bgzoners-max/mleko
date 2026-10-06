@@ -40,6 +40,8 @@ class _ProductSellerBannerState extends State<ProductSellerBanner> {
         final seller = snap.data;
         final name = seller?.farmName ?? seller?.displayName ?? '';
         if (name.isEmpty) return const SizedBox.shrink();
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final linkColor = isDark ? AmazonColors.lightGreen : AmazonColors.link;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -50,20 +52,20 @@ class _ProductSellerBannerState extends State<ProductSellerBanner> {
                 borderRadius: BorderRadius.circular(4),
                 child: Row(
                   children: [
-                    const Icon(Icons.store_outlined,
-                        size: 16, color: AmazonColors.link),
+                    Icon(Icons.store_outlined,
+                        size: 16, color: linkColor),
                     const SizedBox(width: 6),
                     Text(
                       name,
-                      style: const TextStyle(
-                        color: AmazonColors.link,
+                      style: TextStyle(
+                        color: linkColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 13.5,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right,
-                        size: 16, color: AmazonColors.link),
+                    Icon(Icons.chevron_right,
+                        size: 16, color: linkColor),
                   ],
                 ),
               ),

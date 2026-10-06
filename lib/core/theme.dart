@@ -466,7 +466,7 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       brightness: Brightness.dark,
       primary: Color(0xFFE89844), // Topli medeni ćilibar (brend: AmazonColors.amberLight)
       onPrimary: Color(0xFF142419),
-      secondary: Color(0xFFE89844),
+      secondary: Color(0xFF81C784), // Svetlo zelena (brend: AmazonColors.lightGreen)
       onSecondary: Color(0xFF142419),
       error: Color(0xFFF2B8B5),
       onError: Color(0xFF601410),

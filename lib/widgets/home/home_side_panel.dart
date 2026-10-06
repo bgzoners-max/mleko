@@ -156,7 +156,7 @@ class SidePanelCard extends StatelessWidget {
             child: Row(
               children: [
                 Icon(icon,
-                    size: 17, color: AmazonColors.link),
+                    size: 17, color: isDark ? AmazonColors.lightGreen : AmazonColors.link),
                 const SizedBox(width: 8),
                 Text(
                   title,
@@ -272,9 +272,9 @@ class TopProductsList extends StatelessWidget {
               ),
               subtitle: Text(
                 '$count prodaja',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AmazonColors.link,
+                  color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                   fontWeight: FontWeight.w600,
                 ),
               ),

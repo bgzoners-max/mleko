@@ -67,10 +67,10 @@ class _MoreFromSellerSectionState extends State<MoreFromSellerSection> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.inventory_2_outlined,
                       size: 20,
-                      color: AmazonColors.link,
+                      color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                     ),
                     const SizedBox(width: 8),
                     Text(

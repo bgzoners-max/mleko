@@ -148,6 +148,7 @@ class BuyerOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final o = order;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // counterpartyName je batch-učitan u servisu — nema N+1 FutureBuilder
     final sellerName = o.counterpartyName ?? 'Prodavac';
     return Card(
@@ -236,14 +237,14 @@ class BuyerOrderCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: isDark ? const Color(0xFF1B2F21) : Colors.green.shade50,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(color: isDark ? const Color(0xFF2E633B) : Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.check_circle,
-                          color: Colors.green.shade700, size: 24),
+                          color: isDark ? AmazonColors.lightGreen : Colors.green.shade700, size: 24),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -254,7 +255,7 @@ class BuyerOrderCard extends StatelessWidget {
                                   : 'Prodavac je potvrdio porudžbinu',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: Colors.green.shade800,
+                            color: isDark ? AmazonColors.lightGreen : Colors.green.shade800,
                           ),
                         ),
                       ),

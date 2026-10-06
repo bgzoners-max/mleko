@@ -58,19 +58,19 @@ class ClassifiedSubcategoryHeader extends StatelessWidget {
                       InkWell(
                         onTap: () => classifieds.selectCategory(parentCategory.id),
                         borderRadius: BorderRadius.circular(6),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.arrow_back_ios_new, size: 11, color: AmazonColors.link),
-                              SizedBox(width: 4),
+                              Icon(Icons.arrow_back_ios_new, size: 11, color: isDark ? AmazonColors.lightGreen : AmazonColors.link),
+                              const SizedBox(width: 4),
                               Text(
                                 'Nazad',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: AmazonColors.link,
+                                  color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                                 ),
                               ),
                             ],
@@ -111,10 +111,10 @@ class ClassifiedSubcategoryHeader extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             child: Text(
                               crumbs[i].name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
-                                color: AmazonColors.link,
+                                color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                               ),
                             ),
                           ),

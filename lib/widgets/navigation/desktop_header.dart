@@ -120,12 +120,12 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AmazonColors.green.withValues(alpha: 0.12),
+                          color: (isDark ? AmazonColors.lightGreen : AmazonColors.green).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.location_on_rounded,
-                          color: AmazonColors.green,
+                          color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
                           size: 22,
                         ),
                       ),
@@ -203,8 +203,8 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                             ),
                           ),
                           if (currentRegion == null)
-                            const Icon(Icons.check_circle_rounded,
-                                color: AmazonColors.green, size: 20),
+                            Icon(Icons.check_circle_rounded,
+                                color: isDark ? AmazonColors.lightGreen : AmazonColors.green, size: 20),
                         ],
                       ),
                     ),
@@ -240,7 +240,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                               Icon(
                                 Icons.pin_drop_outlined,
                                 size: 16,
-                                color: isSel ? AmazonColors.green : (isDark ? Colors.white70 : Colors.black87),
+                                color: isSel ? (isDark ? AmazonColors.lightGreen : AmazonColors.green) : (isDark ? Colors.white70 : Colors.black87),
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -249,13 +249,13 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                                   fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
                                   fontSize: 13,
                                   color: isSel
-                                      ? AmazonColors.green
+                                      ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
                                       : (isDark ? Colors.white : AmazonColors.darkNavy),
                                 ),
                               ),
                               if (isSel) ...[
                                 const SizedBox(width: 6),
-                                const Icon(Icons.check, size: 16, color: AmazonColors.green),
+                                Icon(Icons.check, size: 16, color: isDark ? AmazonColors.lightGreen : AmazonColors.green),
                               ],
                             ],
                           ),
@@ -663,7 +663,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
         borderRadius: BorderRadius.circular(21),
         border: Border.all(
           color: _isSearchFocused
-              ? AmazonColors.green
+              ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
               : (isDark ? const Color(0xFF2C3E2F) : const Color(0xFFD6DFD6)),
           width: _isSearchFocused ? 1.5 : 1.0,
         ),
@@ -674,7 +674,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
           Icon(
             Icons.search_rounded,
             size: 20,
-            color: _isSearchFocused ? AmazonColors.green : (isDark ? Colors.white60 : Colors.black54),
+            color: _isSearchFocused ? (isDark ? AmazonColors.lightGreen : AmazonColors.green) : (isDark ? Colors.white60 : Colors.black54),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -725,7 +725,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.location_on, size: 13, color: AmazonColors.green),
+                  Icon(Icons.location_on, size: 13, color: isDark ? AmazonColors.lightGreen : AmazonColors.green),
                   const SizedBox(width: 4),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 80),
@@ -879,13 +879,13 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                 ),
               ),
               if (user?.isSeller == true)
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 4,
                   child: Row(
                     children: [
-                      Icon(Icons.agriculture_rounded, size: 18, color: AmazonColors.green),
-                      SizedBox(width: 10),
-                      Text('Gazdinstvo / Prodavnica', style: TextStyle(fontWeight: FontWeight.w700)),
+                      Icon(Icons.agriculture_rounded, size: 18, color: isDark ? AmazonColors.lightGreen : AmazonColors.green),
+                      const SizedBox(width: 10),
+                      const Text('Gazdinstvo / Prodavnica', style: TextStyle(fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
@@ -1067,7 +1067,7 @@ class _DesktopNavTabState extends State<_DesktopNavTab> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    const activeColor = AmazonColors.green;
+    final activeColor = isDark ? AmazonColors.lightGreen : AmazonColors.green;
     final inactiveColor = isDark ? Colors.white70 : AmazonColors.darkNavy;
 
     return MouseRegion(
@@ -1088,7 +1088,7 @@ class _DesktopNavTabState extends State<_DesktopNavTab> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: widget.isActive
-                  ? (isDark ? const Color(0xFF2E4D38) : const Color(0xFFC8E6C9))
+                  ? (isDark ? const Color(0xFF2E633B) : const Color(0xFFC8E6C9))
                   : Colors.transparent,
               width: 1,
             ),

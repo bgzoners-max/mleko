@@ -345,10 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         child: Row(
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.location_on_outlined,
                                               size: 16,
-                                              color: AmazonColors.link,
+                                              color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                                             ),
                                             const SizedBox(width: 6),
                                             Expanded(
@@ -380,12 +380,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                               onPressed: () =>
                                                   _showLocationPicker(context),
-                                              child: const Text(
+                                              child: Text(
                                                 'Promeni',
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w700,
-                                                  color: AmazonColors.link,
+                                                  color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                                                 ),
                                               ),
                                             ),
@@ -544,12 +544,12 @@ class _HomeScreenState extends State<HomeScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           onPressed: () => context.push('/categories'),
-          child: const Text(
+          child: Text(
             'Vidi sve',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AmazonColors.link,
+              color: Theme.of(context).brightness == Brightness.dark ? AmazonColors.lightGreen : AmazonColors.link,
             ),
           ),
         ),

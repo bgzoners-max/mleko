@@ -102,10 +102,10 @@ List<Widget> buildClassifiedSubcategoriesSlivers(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Text(
                       isGroupSelected ? 'Poništi filter' : 'Svi (${group.name})',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: AmazonColors.link,
+                        color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                       ),
                     ),
                   ),

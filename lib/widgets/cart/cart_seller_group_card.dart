@@ -88,6 +88,7 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
         : 1.0;
     final remaining = widget.minOrder != null ? widget.minOrder! - total : 0.0;
     final isMet = remaining <= 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 24),
@@ -146,13 +147,14 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color:
-                          isMet ? Colors.green.shade50 : Colors.orange.shade50,
+                      color: isMet
+                          ? (isDark ? const Color(0xFF1B2F21) : Colors.green.shade50)
+                          : (isDark ? const Color(0xFF2C2216) : Colors.orange.shade50),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isMet
-                            ? Colors.green.shade200
-                            : Colors.orange.shade200,
+                            ? (isDark ? const Color(0xFF2E633B) : Colors.green.shade200)
+                            : (isDark ? const Color(0xFF5C3C18) : Colors.orange.shade200),
                       ),
                     ),
                     child: Row(
@@ -163,8 +165,8 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                               : Icons.info_outline,
                           size: 16,
                           color: isMet
-                              ? Colors.green.shade700
-                              : Colors.orange.shade800,
+                              ? (isDark ? AmazonColors.lightGreen : Colors.green.shade700)
+                              : (isDark ? AmazonColors.amberLight : Colors.orange.shade800),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -175,8 +177,8 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                             style: TextStyle(
                               fontSize: 12,
                               color: isMet
-                                  ? Colors.green.shade800
-                                  : Colors.orange.shade800,
+                                  ? (isDark ? AmazonColors.lightGreen : Colors.green.shade800)
+                                  : (isDark ? AmazonColors.amberLight : Colors.orange.shade800),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -196,8 +198,8 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isMet
-                              ? Colors.green.shade700
-                              : Colors.orange.shade800,
+                              ? (isDark ? AmazonColors.lightGreen : Colors.green.shade700)
+                              : (isDark ? AmazonColors.amberLight : Colors.orange.shade800),
                         ),
                       ),
                       if (!isMet)

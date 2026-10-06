@@ -149,7 +149,7 @@ class ClassifiedConditionChips extends StatelessWidget {
             onTap: () => classifieds.selectCondition('new'),
             label: 'Novo',
             icon: Icons.check_circle_outline,
-            activeColor: AmazonColors.green,
+            activeColor: isDark ? AmazonColors.lightGreen : AmazonColors.green,
           ),
           const SizedBox(width: 5),
           buildChipItem(
@@ -157,7 +157,7 @@ class ClassifiedConditionChips extends StatelessWidget {
             onTap: () => classifieds.selectCondition('used'),
             label: 'Polovno',
             icon: Icons.inventory_2_outlined,
-            activeColor: AmazonColors.navNavy,
+            activeColor: isDark ? AmazonColors.amberLight : AmazonColors.navNavy,
           ),
           const SizedBox(width: 6),
           Container(

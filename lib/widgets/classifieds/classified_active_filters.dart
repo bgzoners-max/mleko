@@ -223,18 +223,18 @@ class ClassifiedActiveFilters extends StatelessWidget {
               searchController.clear();
               classifieds.clearAllFilters();
             },
-            icon: const Icon(Icons.close, size: 12, color: AmazonColors.link),
+            icon: Icon(Icons.close, size: 12, color: isDark ? AmazonColors.lightGreen : AmazonColors.link),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            label: const Text(
+            label: Text(
               'Poništi sve',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AmazonColors.link,
+                color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
               ),
             ),
           ),

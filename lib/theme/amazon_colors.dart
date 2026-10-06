@@ -19,4 +19,6 @@ class AmazonColors {
   static const Color darkCanvas = Color(0xFF121212);
   static const Color dealRed = Color(0xFFCC0C39);
   static const Color link = Color(0xFF007185);
+  static const Color lightGreen = Color(0xFF81C784);
+  static const Color lightYellow = Color(0xFFFFD54F);
 }

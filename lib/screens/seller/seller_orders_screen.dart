@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../constants/amazon_theme.dart';
 import '../../core/utils/error_messages.dart';
 import '../../models/order_item_model.dart';
 import '../../models/order_model.dart';
@@ -374,6 +375,7 @@ class _SellerOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final o = order;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // counterpartyName je batch-učitan u servisu — nema N+1 FutureBuilder
     final buyerName = o.counterpartyName ?? 'Kupac';
     return Card(
@@ -512,14 +514,14 @@ class _SellerOrderCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: isDark ? const Color(0xFF1B2F21) : Colors.green.shade50,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(color: isDark ? const Color(0xFF2E633B) : Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.check_circle,
-                          color: Colors.green.shade700, size: 24),
+                          color: isDark ? AmazonColors.lightGreen : Colors.green.shade700, size: 24),
                       const SizedBox(width: 8),
                       Text(
                         o.status == OrderStatus.delivered
@@ -529,7 +531,7 @@ class _SellerOrderCard extends StatelessWidget {
                                 : 'Potvrđeno',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.green.shade800,
+                          color: isDark ? AmazonColors.lightGreen : Colors.green.shade800,
                         ),
                       ),
                     ],

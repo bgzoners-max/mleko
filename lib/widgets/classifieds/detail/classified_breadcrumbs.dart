@@ -42,10 +42,12 @@ class ClassifiedBreadcrumbs extends StatelessWidget {
           Icon(Icons.chevron_right, size: 14, color: colorScheme.onSurfaceVariant),
           Text(
             ad.categoryName!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AmazonColors.link,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AmazonColors.lightGreen
+                  : AmazonColors.link,
             ),
           ),
         ],

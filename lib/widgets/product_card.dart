@@ -238,13 +238,13 @@ class _ProductCardState extends State<ProductCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Kategorija (warm forest moss)
+          // 1. Kategorija (warm forest moss / light green in dark mode)
           Text(
             widget.product.category.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AmazonColors.link,
+              color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
               letterSpacing: 0.5,
             ),
             maxLines: 1,
@@ -273,11 +273,11 @@ class _ProductCardState extends State<ProductCard> {
               ),
               if (widget.product.sellerIsVerified) ...[
                 const SizedBox(width: 4),
-                const _VerifiedPulse(
+                _VerifiedPulse(
                   child: Icon(
                     Icons.verified,
                     size: 14,
-                    color: AmazonColors.link,
+                    color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
                   ),
                 ),
               ],

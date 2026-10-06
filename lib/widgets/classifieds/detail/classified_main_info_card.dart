@@ -183,7 +183,7 @@ class ClassifiedMainInfoCard extends StatelessWidget {
                           ? Colors.red.shade900.withValues(alpha: 0.15)
                           : ad.isArchived
                               ? Colors.grey.shade800.withValues(alpha: 0.15)
-                              : Colors.green.shade800.withValues(alpha: 0.12),
+                              : (isDark ? AmazonColors.green.withValues(alpha: 0.25) : Colors.green.shade800.withValues(alpha: 0.12)),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -201,7 +201,7 @@ class ClassifiedMainInfoCard extends StatelessWidget {
                             ? Colors.red.shade900
                             : ad.isArchived
                                 ? Colors.grey.shade800
-                                : Colors.green.shade800,
+                                : (isDark ? AmazonColors.lightGreen : Colors.green.shade800),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -259,7 +259,7 @@ class ClassifiedMainInfoCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 16, color: AmazonColors.link),
+                    Icon(Icons.location_on_outlined, size: 16, color: isDark ? AmazonColors.lightGreen : AmazonColors.link),
                     const SizedBox(width: 4),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 120),

@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/map_tiles.dart';
 import '../core/responsive.dart';
 import '../widgets/app_back_button.dart';
+import '../constants/amazon_theme.dart';
 import '../widgets/navigation/desktop_header.dart';
 
 /// Mapa seoskih gazdinstava – prikazuje domaćinstva na mapi sa interaktivnim profilima i geolokacijom.
@@ -423,8 +424,8 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.storefront_rounded,
-              color: Color(0xFF2E7D32), size: 20),
+          Icon(Icons.storefront_rounded,
+              color: isDark ? AmazonColors.lightGreen : const Color(0xFF2E7D32), size: 20),
           const SizedBox(width: 8),
           Text(
             '${sellers.length} seoskih gazdinstava',

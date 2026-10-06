@@ -326,24 +326,27 @@ class _SellerChatPrompt extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final linkColor = isDark ? AmazonColors.lightGreen : AmazonColors.link;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.chat_bubble_outline_rounded,
               size: 15,
-              color: AmazonColors.link,
+              color: linkColor,
             ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Text(
               'Imaš pitanje? Pošalji poruku prodavcu',
               style: TextStyle(
-                color: AmazonColors.link,
+                color: linkColor,
                 fontWeight: FontWeight.w600,
                 fontSize: 12.5,
               ),

@@ -573,13 +573,13 @@ class _ClassifiedAdCardState extends State<ClassifiedAdCard> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
         decoration: BoxDecoration(
-          color: AmazonColors.green.withValues(alpha: 0.12),
+          color: (isDark ? AmazonColors.lightGreen : AmazonColors.green).withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: const Text(
+        child: Text(
           'BESPLATNO',
           style: TextStyle(
-            color: AmazonColors.green,
+            color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
             fontWeight: FontWeight.w900,
             fontSize: 12,
             letterSpacing: 0.4,

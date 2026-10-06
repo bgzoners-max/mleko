@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/amazon_theme.dart';
 import '../models/order_model.dart';
 import '../models/seller_delivery_models.dart';
 
@@ -12,13 +13,15 @@ class OrderDeliverySummary extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!order.hasSellerDelivery) return const SizedBox.shrink();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: isDark ? const Color(0xFF1B2F21) : Colors.green.shade50,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: isDark ? const Color(0xFF2E633B) : Colors.green.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,14 +29,14 @@ class OrderDeliverySummary extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.local_shipping_outlined,
-                  size: 18, color: Colors.green.shade800),
+                  size: 18, color: isDark ? AmazonColors.lightGreen : Colors.green.shade800),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   order.deliveryMethodLabel,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Colors.green.shade900,
+                    color: isDark ? AmazonColors.lightGreen : Colors.green.shade900,
                   ),
                 ),
               ),
