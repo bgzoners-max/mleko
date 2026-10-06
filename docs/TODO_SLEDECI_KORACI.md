@@ -41,6 +41,10 @@ Na stolu su sledeće teme:
    - **Ispravka rute i taba:** Klik na tab "Seoska gazdinstva" u desktop navigaciji (`DesktopHeader`) sada direktno otvara interaktivnu mapu (`/sellers-map`), umesto preusmeravanja na početni feed pijace hrane.
    - **Desktop prikaz mape (`SellersMapScreen`):** Integrisan `DesktopHeader(isStandalone: true)` na desktop rezolucijama, postavljen jasan naslov ("Seoska gazdinstva na mapi"), dodat bedž sa brojem gazdinstava i dugme za automatsko centriranje svih markera ("Centriraj sve").
    - **Ispravka `permission denied for table profiles`:** U Supabase pogledu `public.public_profiles` eksplicitno isključen `security_invoker` (`ALTER VIEW ... SET (security_invoker = false);`) čime je rešen problem gde javni posetioci i kupci nisu mogli da učitaju stranicu profila prodavca (`/seller/:id`).
+7. **🌙 Čitljivost u tamnoj temi – Svetlo zelena / Žuta (Završeno 06. okt):**
+   - **Problem:** Tamno zelena slova i ikonice (`#2E7D32` i `#245938`) su se u tamnoj temi stopile sa tamnozelenom/crnom pozadinom (`#121714` i `#1B241E`), čineći aktivne tabove, kategorije, bedževe i linkove nečitljivim.
+   - **Rešenje:** Uveden `AmazonColors.lightGreen` (`#81C784`, kontrast >8.5:1, WCAG AAA) i `AmazonColors.lightYellow` (`#FFD54F`). Zamenjena tamnozelena slova svetlo zelenim na svim ključnim mestima: aktivni navigacioni tabovi zaglavlja, birač regiona, nazivi kategorija na karticama proizvoda, linkovi "Promeni", "Vidi sve", "Poništi filtere", baneri porudžbina i bedž "BESPLATNO".
+   - **Verifikacija:** Svi testovi prošli (432/432), `flutter analyze` 0 grešaka, izmene puštene na produkciju (`domacimarket.rs`).
 
 ---
 
