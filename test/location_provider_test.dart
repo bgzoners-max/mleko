@@ -68,5 +68,29 @@ void main() {
 
       provider.dispose();
     });
+
+    test('sets, saves and clears location with coordinates and city', () async {
+      final provider = LocationProvider();
+
+      await provider.setLocation(
+        region: 'Šumadija',
+        latitude: 44.01,
+        longitude: 20.91,
+        city: 'Kragujevac',
+      );
+
+      expect(provider.selectedRegion, 'Šumadija');
+      expect(provider.latitude, 44.01);
+      expect(provider.longitude, 20.91);
+      expect(provider.city, 'Kragujevac');
+
+      await provider.clearRegion();
+      expect(provider.selectedRegion, isNull);
+      expect(provider.latitude, isNull);
+      expect(provider.longitude, isNull);
+      expect(provider.city, isNull);
+
+      provider.dispose();
+    });
   });
 }

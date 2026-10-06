@@ -515,5 +515,31 @@ void main() {
 
       cart.dispose();
     });
+
+    test('addForSeller with injected ProductModel and cache invalidation', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      final product = (await service.getProduct('p-1'))!;
+      await cart.addForSeller(
+        sellerId: product.sellerId,
+        productId: product.id,
+        quantity: 1.0,
+        product: product,
+      );
+
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), 1.0);
+
+      final items = await cart.getProductsBySeller('s-1');
+      expect(items.length, 1);
+      expect(items.first.product.id, 'p-1');
+
+      // Invalidate cache and force refresh
+      cart.invalidateProductsCache('s-1');
+      final refreshedItems = await cart.getProductsBySeller('s-1', forceRefresh: true);
+      expect(refreshedItems.length, 1);
+
+      cart.dispose();
+    });
   });
 }

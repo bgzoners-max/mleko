@@ -3,19 +3,21 @@ import 'package:mleko/services/services.dart';
 
 class FavoritesProvider extends ChangeNotifier {
   final FavoritesService _service;
-  List<String> _ids = [];
+  Set<String> _ids = {};
   bool _loaded = false;
   String? _loadedUserId;
 
   FavoritesProvider({FavoritesService? service})
       : _service = service ?? FavoritesService();
 
-  List<String> get ids => List.unmodifiable(_ids);
+  List<String> get ids => List.unmodifiable(_ids.toList());
+  Set<String> get idSet => Set.unmodifiable(_ids);
+  int get count => _ids.length;
   bool get isLoaded => _loaded;
 
   Future<void> load(String? userId) async {
     if (userId == null) {
-      _ids = [];
+      _ids = {};
       _loaded = true;
       _loadedUserId = null;
       notifyListeners();
@@ -23,11 +25,12 @@ class FavoritesProvider extends ChangeNotifier {
     }
     if (_loaded && _loadedUserId == userId) return;
     try {
-      _ids = await _service.getFavoriteProductIds(userId);
+      final fetched = await _service.getFavoriteProductIds(userId);
+      _ids = fetched.toSet();
       _loadedUserId = userId;
     } catch (e, st) {
       LoggerService.error('Failed to load favorites', e, stackTrace: st);
-      _ids = [];
+      _ids = {};
     } finally {
       _loaded = true;
       notifyListeners();
@@ -35,7 +38,7 @@ class FavoritesProvider extends ChangeNotifier {
   }
 
   void clear() {
-    _ids = [];
+    _ids = {};
     _loaded = false;
     _loadedUserId = null;
     notifyListeners();

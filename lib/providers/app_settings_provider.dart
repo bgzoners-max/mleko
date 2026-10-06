@@ -49,16 +49,19 @@ class AppSettingsProvider extends ChangeNotifier {
     }
   }
 
-  AppSettingsProvider() {
-    // Pokrećemo async load ali ne čekamo (fire-and-forget)
-    // Ovo je OK jer settings imaju default vrednosti i _load() će ih ažurirati
-    _load();
+  bool _isLoaded = false;
+  Future<void>? _loadFuture;
+
+  bool get isLoaded => _isLoaded;
+
+  AppSettingsProvider({bool autoload = true}) {
+    if (autoload) {
+      _loadFuture = _load();
+    }
   }
 
-  /// Eksplicitno čekanje da se settings učitaju (za kritične operacije)
-  Future<void> ensureLoaded() async {
-    await _load();
-  }
+  /// Eksplicitno čekanje da se settings učitaju (za pre prvog frejma i splash)
+  Future<void> ensureLoaded() => _loadFuture ??= _load();
 
   /// Ključevi koji ukazuju da je aplikacija već korišćena pre ovog bootstrap-a
   /// (nadogradnja sa starije verzije). Namerno **ne** uključujemo `mleko_cache_*`
@@ -117,9 +120,11 @@ class AppSettingsProvider extends ChangeNotifier {
 
       // Finalna sinhronizacija internog stanja sa dozvoljenim granicama
       _fontScale = fontScale;
-      notifyListeners();
     } catch (_) {
       // keep field defaults
+    } finally {
+      _isLoaded = true;
+      notifyListeners();
     }
   }
 

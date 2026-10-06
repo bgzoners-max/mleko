@@ -226,6 +226,7 @@ void main() async {
 
   final appState = AppState(ordersService: ordersService);
   final appSettings = AppSettingsProvider();
+  await appSettings.ensureLoaded();
   final cartProvider = CartProvider(productsService: productsService);
   final categoriesProvider = CategoriesProvider();
   final favoritesProvider = FavoritesProvider();

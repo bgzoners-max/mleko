@@ -67,6 +67,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
         sellerId: widget.product.sellerId,
         productId: widget.product.id,
         quantity: _quantity,
+        product: widget.product,
       ),
     );
 

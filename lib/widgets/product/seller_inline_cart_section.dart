@@ -115,6 +115,7 @@ class SellerInlineCartSection extends StatelessWidget {
                                       sellerId: sellerId,
                                       productId: p.id,
                                       quantity: next,
+                                      product: p,
                                     );
                                   },
                           ),
@@ -129,6 +130,7 @@ class SellerInlineCartSection extends StatelessWidget {
                                 sellerId: sellerId,
                                 productId: p.id,
                                 quantity: next,
+                                product: p,
                               );
                             },
                           ),

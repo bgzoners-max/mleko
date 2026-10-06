@@ -330,6 +330,9 @@ class CartProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  /// Invalidira keširane proizvode (po prodavcu ili kompletno) radi osvežavanja podataka.
+  void invalidateProductsCache([String? sellerId]) => _invalidateCache(sellerId);
+
   void _invalidateCache([String? sellerId]) {
     _groupedCache = null;
     _productSellerIndex = null;
@@ -344,19 +347,20 @@ class CartProvider extends ChangeNotifier {
     required String sellerId,
     required String productId,
     double quantity = 1,
+    ProductModel? product,
   }) async {
     if (quantity <= 0) return;
     await _initFuture;
 
-    final product = await _productsService.getProduct(productId);
+    final resolvedProduct = product ?? await _productsService.getProduct(productId);
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     final currentQty = sellerDraft[productId] ?? 0.0;
     var targetQty = currentQty + quantity;
 
-    if (product != null) {
-      final step = product.quantityStep;
-      final minQty = product.minOrderKg;
+    if (resolvedProduct != null) {
+      final step = resolvedProduct.quantityStep;
+      final minQty = resolvedProduct.minOrderKg;
 
       if (!QuantityEngine.isValidQuantity(
         quantity: targetQty,
@@ -364,9 +368,9 @@ class CartProvider extends ChangeNotifier {
         step: step,
       )) {
         throw AppError(
-          message: 'Invalid quantity for ${product.name}',
+          message: 'Invalid quantity for ${resolvedProduct.name}',
           userMessage:
-              '${product.name}: količina mora biti od minimuma (${product.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, product.unitType)}.',
+              '${resolvedProduct.name}: količina mora biti od minimuma (${resolvedProduct.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, resolvedProduct.unitType)}.',
           type: ErrorType.validation,
         );
       }
@@ -393,6 +397,7 @@ class CartProvider extends ChangeNotifier {
     required String sellerId,
     required String productId,
     required double quantity,
+    ProductModel? product,
   }) async {
     await _initFuture;
     if (quantity <= 0) {
@@ -400,12 +405,12 @@ class CartProvider extends ChangeNotifier {
       return;
     }
 
-    final product = await _productsService.getProduct(productId);
+    final resolvedProduct = product ?? await _productsService.getProduct(productId);
     var targetQty = quantity;
 
-    if (product != null) {
-      final step = product.quantityStep;
-      final minQty = product.minOrderKg;
+    if (resolvedProduct != null) {
+      final step = resolvedProduct.quantityStep;
+      final minQty = resolvedProduct.minOrderKg;
 
       if (!QuantityEngine.isValidQuantity(
         quantity: targetQty,
@@ -413,9 +418,9 @@ class CartProvider extends ChangeNotifier {
         step: step,
       )) {
         throw AppError(
-          message: 'Invalid quantity for ${product.name}',
+          message: 'Invalid quantity for ${resolvedProduct.name}',
           userMessage:
-              '${product.name}: količina mora biti od minimuma (${product.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, product.unitType)}.',
+              '${resolvedProduct.name}: količina mora biti od minimuma (${resolvedProduct.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, resolvedProduct.unitType)}.',
           type: ErrorType.validation,
         );
       }
@@ -497,14 +502,22 @@ class CartProvider extends ChangeNotifier {
     final p = await _productsService.getProduct(productId);
     if (p == null) return;
     await addForSeller(
-        sellerId: p.sellerId, productId: p.id, quantity: quantity);
+      sellerId: p.sellerId,
+      productId: p.id,
+      quantity: quantity,
+      product: p,
+    );
   }
 
   Future<void> setQuantity(String productId, double quantity) async {
     final p = await _productsService.getProduct(productId);
     if (p == null) return;
     await setQuantityForSeller(
-        sellerId: p.sellerId, productId: p.id, quantity: quantity);
+      sellerId: p.sellerId,
+      productId: p.id,
+      quantity: quantity,
+      product: p,
+    );
   }
 
   Future<void> remove(String productId) async {
@@ -521,8 +534,13 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<List<({ProductModel product, double quantity})>> getProductsBySeller(
-      String sellerId) async {
+    String sellerId, {
+    bool forceRefresh = false,
+  }) async {
     await _initFuture;
+    if (forceRefresh) {
+      _invalidateCache(sellerId);
+    }
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null || sellerDraft.isEmpty) return [];
     return _bySellerCache.putIfAbsent(sellerId, () async {

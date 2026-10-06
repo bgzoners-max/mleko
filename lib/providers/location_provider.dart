@@ -7,18 +7,30 @@ import '../core/location_utils.dart';
 import '../services/core/logger_service.dart';
 
 const String _keyRegion = 'mleko_selected_region';
+const String _keyLatitude = 'mleko_selected_lat';
+const String _keyLongitude = 'mleko_selected_lng';
+const String _keyCity = 'mleko_selected_city';
 
-/// Čuva izabranu lokaciju (region) – GPS automatska detekcija sa fallback na ručni izbor.
+/// Čuva izabranu lokaciju (region, grad, koordinate) – GPS detekcija sa fallbackom na ručni izbor.
 class LocationProvider extends ChangeNotifier {
+  late final Future<void> _loadFuture;
+  Future<void> get loadFuture => _loadFuture;
+
   LocationProvider() {
     _regionNotifier = ValueNotifier<String?>(_selectedRegion);
-    _loadSaved();
+    _loadFuture = _loadSaved();
   }
 
   String? _selectedRegion;
+  double? _latitude;
+  double? _longitude;
+  String? _city;
   late final ValueNotifier<String?> _regionNotifier;
 
   String? get selectedRegion => _selectedRegion;
+  double? get latitude => _latitude;
+  double? get longitude => _longitude;
+  String? get city => _city;
   ValueNotifier<String?> get regionNotifier => _regionNotifier;
 
   bool _gpsTried = false;
@@ -28,6 +40,9 @@ class LocationProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_keyRegion);
+      _latitude = prefs.getDouble(_keyLatitude);
+      _longitude = prefs.getDouble(_keyLongitude);
+      _city = prefs.getString(_keyCity);
       if (saved != null && AppConstants.regions.contains(saved)) {
         _selectedRegion = saved;
         _regionNotifier.value = saved;
@@ -39,7 +54,12 @@ class LocationProvider extends ChangeNotifier {
   }
 
   Future<bool> tryDetectFromGps({bool force = false}) async {
-    if (_gpsTried && !force) return _selectedRegion != null;
+    await _loadFuture;
+    if (force) {
+      _gpsTried = false;
+    } else if (_gpsTried) {
+      return _selectedRegion != null;
+    }
     _gpsTried = true;
 
     try {
@@ -63,12 +83,20 @@ class LocationProvider extends ChangeNotifier {
           timeLimit: Duration(seconds: 10),
         ),
       );
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+
       final region = nearestRegionFromCoordinates(
         position.latitude,
         position.longitude,
       );
       if (region != null) {
-        await setRegion(region);
+        await setLocation(
+          region: region,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          city: _city,
+        );
         return true;
       }
     } catch (e) {
@@ -79,27 +107,64 @@ class LocationProvider extends ChangeNotifier {
     return false;
   }
 
-  Future<void> setRegion(String region) async {
-    if (region == _selectedRegion) return;
+  Future<void> setLocation({
+    required String region,
+    double? latitude,
+    double? longitude,
+    String? city,
+  }) async {
+    await _loadFuture;
     if (!AppConstants.regions.contains(region)) return;
     _selectedRegion = region;
+    _latitude = latitude;
+    _longitude = longitude;
+    _city = city;
     _regionNotifier.value = region;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyRegion, region);
+      if (latitude != null) {
+        await prefs.setDouble(_keyLatitude, latitude);
+      } else {
+        await prefs.remove(_keyLatitude);
+      }
+      if (longitude != null) {
+        await prefs.setDouble(_keyLongitude, longitude);
+      } else {
+        await prefs.remove(_keyLongitude);
+      }
+      if (city != null && city.isNotEmpty) {
+        await prefs.setString(_keyCity, city);
+      } else {
+        await prefs.remove(_keyCity);
+      }
     } catch (e) {
-      LoggerService.error('LocationProvider: failed to save region', e);
+      LoggerService.error('LocationProvider: failed to save location', e);
     }
   }
 
+  Future<void> setRegion(String region) => setLocation(
+        region: region,
+        latitude: _latitude,
+        longitude: _longitude,
+        city: _city,
+      );
+
   Future<void> clearRegion() async {
+    await _loadFuture;
     _selectedRegion = null;
+    _latitude = null;
+    _longitude = null;
+    _city = null;
     _regionNotifier.value = null;
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keyRegion);
+      await prefs.remove(_keyLatitude);
+      await prefs.remove(_keyLongitude);
+      await prefs.remove(_keyCity);
     } catch (e) {
       LoggerService.error('LocationProvider: failed to clear region', e);
     }

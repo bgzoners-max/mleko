@@ -67,6 +67,9 @@ class AppState extends ChangeNotifier {
     UnreadNotificationsProvider? unreadNotificationsProvider,
     AuthSessionProvider? authSessionProvider,
     SyncProvider? syncProvider,
+    ConnectivityService? connectivityService,
+    OrderQueueService? orderQueueService,
+    SyncManager? syncManager,
   }) {
     unreadNotifications =
         unreadNotificationsProvider ?? UnreadNotificationsProvider();
@@ -80,6 +83,9 @@ class AppState extends ChangeNotifier {
     sync = syncProvider ??
         SyncProvider(
           ordersService: ordersService,
+          connectivityService: connectivityService,
+          orderQueueService: orderQueueService,
+          syncManager: syncManager,
         );
 
     // Fasada prosleđuje notifikacije svojim listener-ima radi pune kompatibilnosti.

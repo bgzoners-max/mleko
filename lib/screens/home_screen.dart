@@ -498,6 +498,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             ListTile(
+              leading: Icon(Icons.my_location,
+                  color: Theme.of(ctx).colorScheme.primary),
+              title: const Text('Pokušaj GPS ponovo'),
+              subtitle: const Text('Automatski odredi najbliži region'),
+              onTap: () => Navigator.pop(ctx, '__gps_retry__'),
+            ),
+            ListTile(
               leading: Icon(Icons.location_off,
                   color: Theme.of(ctx).colorScheme.outline),
               title: const Text('Prikaži sve regione'),
@@ -518,7 +525,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (chosen != null && context.mounted) {
-      if (chosen.isEmpty) {
+      if (chosen == '__gps_retry__') {
+        final detected = await loc.tryDetectFromGps(force: true);
+        if (!detected && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Lokacija nije dostupna. Izaberite region ručno.'),
+            ),
+          );
+        }
+      } else if (chosen.isEmpty) {
         unawaited(loc.clearRegion());
       } else {
         await loc.setRegion(chosen);

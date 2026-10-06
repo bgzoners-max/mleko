@@ -258,6 +258,7 @@ class _SellerAddToOrderSheetState extends State<SellerAddToOrderSheet> {
                 sellerId: widget.sellerId,
                 productId: p.id,
                 quantity: _quantity,
+                product: p,
               );
               unawaited(AnalyticsService().logAddToCart(p, _quantity));
               Navigator.of(context).pop();

@@ -18,10 +18,13 @@ void main() {
       expect(provider.ids, isEmpty);
 
       expect(provider.isFavorite('p-1'), isFalse);
+      expect(provider.idSet, isEmpty);
+      expect(provider.count, 0);
 
       provider.clear();
       expect(provider.isLoaded, isFalse);
       expect(provider.ids, isEmpty);
+      expect(provider.count, 0);
 
       provider.dispose();
     });

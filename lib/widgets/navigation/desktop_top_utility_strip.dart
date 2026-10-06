@@ -73,54 +73,85 @@ Future<void> openLocationDialog(BuildContext context) async {
                   ],
                 ),
                 const SizedBox(height: 20),
-                InkWell(
-                  onTap: () => Navigator.pop(ctx, ''),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: currentRegion == null
-                          ? AmazonColors.green.withValues(alpha: isDark ? 0.2 : 0.08)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: currentRegion == null
-                            ? AmazonColors.green
-                            : (isDark ? Colors.white12 : Colors.grey.shade300),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('🇷🇸', style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => Navigator.pop(ctx, '__gps_retry__'),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isDark ? Colors.white12 : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                'Cela Srbija (Svi regioni)',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13.5,
-                                  color: isDark ? Colors.white : AmazonColors.darkNavy,
-                                ),
+                              Icon(
+                                Icons.my_location_rounded,
+                                size: 18,
+                                color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
                               ),
-                              Text(
-                                'Prikaz svih domaćih proizvođača bez geografskog filtera',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: isDark ? Colors.white54 : Colors.black54,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Pokušaj GPS ponovo',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: isDark ? Colors.white : AmazonColors.darkNavy,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        if (currentRegion == null)
-                          Icon(Icons.check_circle_rounded,
-                              color: isDark ? AmazonColors.lightGreen : AmazonColors.green, size: 20),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => Navigator.pop(ctx, ''),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: currentRegion == null
+                                ? AmazonColors.green.withValues(alpha: isDark ? 0.2 : 0.08)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: currentRegion == null
+                                  ? AmazonColors.green
+                                  : (isDark ? Colors.white12 : Colors.grey.shade300),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('🇷🇸', style: TextStyle(fontSize: 16)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Cela Srbija',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: isDark ? Colors.white : AmazonColors.darkNavy,
+                                  ),
+                                ),
+                              ),
+                              if (currentRegion == null)
+                                Icon(Icons.check_circle_rounded,
+                                    color: isDark ? AmazonColors.lightGreen : AmazonColors.green, size: 18),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 const Divider(height: 1),
@@ -185,7 +216,16 @@ Future<void> openLocationDialog(BuildContext context) async {
   );
 
   if (selected != null && context.mounted) {
-    if (selected.isEmpty) {
+    if (selected == '__gps_retry__') {
+      final detected = await loc.tryDetectFromGps(force: true);
+      if (!detected && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lokacija nije dostupna. Izaberite region ručno.'),
+          ),
+        );
+      }
+    } else if (selected.isEmpty) {
       unawaited(loc.clearRegion());
     } else {
       await loc.setRegion(selected);
