@@ -118,6 +118,83 @@ class _ClassifiedImageGalleryState extends State<ClassifiedImageGallery> {
                 ),
               ),
 
+              // Leva strelica
+              if (hasMultiple && _currentImageIndex > 0)
+                Positioned(
+                  left: 10,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOutCubic,
+                          );
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.chevron_left_rounded, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Desna strelica
+              if (hasMultiple && _currentImageIndex < widget.ad.images.length - 1)
+                Positioned(
+                  right: 10,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Material(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeOutCubic,
+                          );
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.chevron_right_rounded, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Brojač slika (1 / N)
+              if (hasMultiple)
+                Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_currentImageIndex + 1} / ${widget.ad.images.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+
               // Oznaka "PRODATO"
               if (widget.ad.isSold)
                 Positioned.fill(

@@ -27,6 +27,9 @@ Na stolu su sledeće teme:
    - **Baza i trigger migracija (`20261006160000`):** Primenjena migracija koja u `send_push_notification` dodaje `apikey` heder i prosleđuje `classified_ad_id` kroz `p_data` payload.
    - **Edge funkcija `send-push` (v49):** Ažurirana da prima i u FCM payload ubacuje `classified_ad_id` i `ticket_id` za instant otvaranje oglasa/tiketa na klik, i deploy-ovana na produkciju.
    - **End-to-end verifikacija:** Uspešno testiran kompletan lanac (`notifications` INSERT trigger -> `invoke_send_push` -> `pg_net` -> `send-push` Edge funkcija -> Google Firebase FCM v1 API). `edge_config_ok = true`, `anon_key_present = true`.
+4. **📲 PWA Mobilno iskustvo & Galerija slika (Završeno 06. okt):**
+   - **PWA Install Banner (`web/index.html`):** Dodat prilagođeni, moderni plutajući baner sa podrškom za `beforeinstallprompt` i pametnim 7-dnevnim odlaganjem ako korisnik klikne na zatvori.
+   - **Galerija slika na oglasima (`ClassifiedImageGallery`):** Dodat brojač slika (`1 / N` pill bedž) i strelice za brzu navigaciju levo/desno preko fotografija.
 
 ---
 
@@ -41,16 +44,8 @@ Na stolu su sledeće teme:
   - Kreirati lokalni keystore i `android/key.properties`.
   - Pokrenuti `flutter build appbundle --release` i testirati generisani `.aab` paket.
 
-### Opcija D: 📲 PWA Mobilno iskustvo
-- **Cilj:** Poboljšati instalaciju i rad web aplikacije na telefonima.
-- **Koraci:**
-  - Dodavanje prilagođenog "Instaliraj aplikaciju" banera (`beforeinstallprompt`) umesto generičkog browser prompta.
-  - Provera dodirnih gestova (swipe u galeriji slika na oglasima).
-
 ### Opcija E: 💼 Prodajne i analitičke funkcije
-- **Cilj:** Dodati metriku i alate za prodavce:
-  - Brojač pregleda oglasa i brojač klikova na "Pozovi prodavca".
-  - Dodatna unapređenja toka naručivanja prema [`docs/LOGIKA_PORUDZBINE.md`](./LOGIKA_PORUDZBINE.md).
+- **Cilj:** Dodatna unapređenja toka naručivanja prema [`docs/LOGIKA_PORUDZBINE.md`](./LOGIKA_PORUDZBINE.md).
 
 ---
 
