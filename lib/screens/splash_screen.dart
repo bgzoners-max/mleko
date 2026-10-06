@@ -27,6 +27,12 @@ class _SplashScreenState extends State<SplashScreen> {
     final appState = context.read<AppState>();
     if (appState.justConfirmedEmail) {
       context.go('/auth/confirmed');
+      return;
+    }
+
+    final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
+    if (returnTo != null && returnTo.isNotEmpty) {
+      context.go(returnTo);
     } else {
       context.go('/');
     }

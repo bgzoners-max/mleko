@@ -6,9 +6,6 @@ import '../providers/app_state.dart';
 /// Centralna zaštita i preusmeravanje ruta (Guest flow, Auth guards, Admin, Email potvrda).
 String? routerRedirect(BuildContext context, GoRouterState state, AppState appState) {
   final loc = state.uri.path;
-  if (appState.isLoading) return null;
-  if (appState.user == null && !appState.authChecked) return null;
-
   if (loc == '/splash') return null;
   if (loc.startsWith('/onboarding')) return null;
   if (loc == '/verify-email') return null;
@@ -25,11 +22,6 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
     return '/auth/confirmed';
   }
   if (loc == '/auth/confirmed') return null;
-
-  if (loc.startsWith('/login') || loc.startsWith('/register')) {
-    if (appState.user != null && !appState.user!.isGuest) return '/';
-    return null;
-  }
 
   // Javne rute koje posetilac bez naloga (gost) može slobodno da pregleda
   final isPublicClassifiedRoute = loc.startsWith('/classifieds') &&
@@ -51,6 +43,18 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
 
   if (isPublicRoute) {
     return null;
+  }
+
+  if (loc.startsWith('/login') || loc.startsWith('/register')) {
+    if (appState.user != null && !appState.user!.isGuest) return '/';
+    return null;
+  }
+
+  // Zaštićena ruta: ako sesija još nije proverena ili je u toku loading,
+  // ne dozvoljavamo fleš zaštićenog ekrana, već privremeno preusmeravamo na splash sa returnTo.
+  if (!appState.authChecked || appState.isLoading) {
+    final returnTo = Uri.encodeComponent(state.uri.toString());
+    return '/splash?returnTo=$returnTo';
   }
 
   // Sve ostale rute (profil, porudžbine, dodavanje oglasa itd.) zahtevaju prijavu

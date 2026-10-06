@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+const double kDesktopBreakpoint = 1200;
+
 /// Breakpoints za responsive layout
-/// Phone: < 600, Tablet: 600-1200, Desktop: > 1200
+/// Phone: < 600, Tablet: 600-1200, Desktop: >= 1200
 class Breakpoints {
   Breakpoints._();
 
@@ -9,7 +11,8 @@ class Breakpoints {
   static const double phone = 600;
   static const double smallTablet = 768;
   static const double largeTablet = 1024;
-  static const double tablet = 1200;
+  static const double tablet = kDesktopBreakpoint;
+  static const double desktop = kDesktopBreakpoint;
   static const double wideDesktop = 1440;
 
   /// Maksimalna širina za modalne prozore i sheet-ove na tablet/desktop ekranima

@@ -262,8 +262,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isDesktop = width >= Breakpoints.largeTablet;
+    final isDesktop = Breakpoints.isDesktop(context);
     final isWideLayout = Breakpoints.useTwoPaneLayout(context);
     final maxWidth = isWideLayout
         ? Breakpoints.dataContentWidth(context)

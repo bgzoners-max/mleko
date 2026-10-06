@@ -421,13 +421,6 @@ GoRouter createRouter(AppState appState) {
         },
       ),
       GoRoute(
-        path: '/conversations',
-        pageBuilder: (context, state) => buildPageTransition(
-          state: state,
-          child: const ConversationsScreen(),
-        ),
-      ),
-      GoRoute(
         path: '/chat/:id',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,

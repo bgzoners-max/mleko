@@ -138,8 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final isDesktopWeb =
-        MediaQuery.sizeOf(context).width >= Breakpoints.largeTablet;
+    final isDesktopWeb = Breakpoints.isDesktop(context);
 
     return Scaffold(
       extendBodyBehindAppBar: false,

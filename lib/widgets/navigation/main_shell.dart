@@ -31,35 +31,49 @@ class MainShell extends StatelessWidget {
     (icon: Icons.login_rounded, label: 'Prijavi se'),
   ];
 
+  static int _mapGuestBranchToDestination(int branchIndex) {
+    switch (branchIndex) {
+      case 0:
+        return 0; // Početna
+      case 1:
+        return 1; // Oglasi
+      default:
+        return 0;
+    }
+  }
+
   void _onDestinationSelected(BuildContext context, int i, {required bool isGuest}) {
     if (isGuest) {
-      if (i == 1) {
-        // Tab Oglasi: ocisti filtere oglasa i sinhronizuj MarketMode.
-        context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
-        navigationShell.goBranch(1, initialLocation: true);
-        return;
-      }
-      if (i == 0) {
-        context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
-        context.read<ClassifiedsProvider>().clearFilters();
-        navigationShell.goBranch(0, initialLocation: true);
-        context.go('/');
-      } else {
-        context.push('/login');
+      switch (i) {
+        case 0:
+          context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+          context.read<ClassifiedsProvider>().clearFilters();
+          navigationShell.goBranch(0, initialLocation: true);
+          break;
+        case 1:
+          context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+          navigationShell.goBranch(1, initialLocation: true);
+          break;
+        case 2:
+          context.push('/login');
+          break;
       }
       return;
     }
 
-    if (i == 0) {
-      context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
-      context.read<ClassifiedsProvider>().clearFilters();
-      navigationShell.goBranch(0, initialLocation: true);
-      context.go('/');
-    } else if (i == 1) {
-      context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
-      navigationShell.goBranch(1, initialLocation: true);
-    } else {
-      navigationShell.goBranch(i, initialLocation: true);
+    switch (i) {
+      case 0:
+        context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+        context.read<ClassifiedsProvider>().clearFilters();
+        navigationShell.goBranch(0, initialLocation: true);
+        break;
+      case 1:
+        context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+        navigationShell.goBranch(1, initialLocation: true);
+        break;
+      default:
+        navigationShell.goBranch(i, initialLocation: true);
+        break;
     }
   }
 
@@ -69,10 +83,10 @@ class MainShell extends StatelessWidget {
     final isGuest = user == null || user.isGuest;
     final destinations = isGuest ? _guestDestinations : _destinations;
     final width = MediaQuery.sizeOf(context).width;
-    final isDesktop = width >= Breakpoints.largeTablet;
+    final isDesktop = width >= kDesktopBreakpoint;
     final isTabletRail = !isDesktop && width >= Breakpoints.phone;
     final selectedDestIndex = isGuest
-        ? (navigationShell.currentIndex == 1 ? 1 : 0)
+        ? _mapGuestBranchToDestination(navigationShell.currentIndex)
         : navigationShell.currentIndex.clamp(0, destinations.length - 1);
 
     if (isDesktop) {

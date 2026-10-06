@@ -231,8 +231,7 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isDesktop = width >= Breakpoints.largeTablet;
+    final isDesktop = Breakpoints.isDesktop(context);
 
     return Scaffold(
       appBar: isDesktop

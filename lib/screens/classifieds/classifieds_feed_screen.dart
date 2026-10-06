@@ -171,8 +171,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         controller: _scrollController,
         slivers: [
           // Standalone Amazon Header ako nismo na početnoj (embedded) i nismo na desktopu
-          if (!widget.isEmbedded &&
-              MediaQuery.sizeOf(context).width < Breakpoints.largeTablet)
+          if (!widget.isEmbedded && !Breakpoints.isDesktop(context))
             const SliverToBoxAdapter(
               child: ClassifiedFeedHeader(),
             ),

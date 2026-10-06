@@ -390,7 +390,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         final hasPhone = ad.phonePublic ||
             (currentPhone != null && currentPhone.isNotEmpty);
 
-        final isDesktop = MediaQuery.sizeOf(context).width >= Breakpoints.largeTablet;
+        final isDesktop = Breakpoints.isDesktop(context);
         final isWide = MediaQuery.sizeOf(context).width >= 900;
 
         return Scaffold(
