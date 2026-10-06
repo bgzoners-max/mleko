@@ -37,6 +37,10 @@ Na stolu su sledeće teme:
    - **Usklađivanje `LOGIKA_PORUDZBINE.md`:** Dokumentacija usklađena sa realnim produkcionim ponašanjem baze (ručno arhiviranje završenih porudžbina + dnevni `pg_cron` retention job u 03:00 UTC koji briše arhivirane porudžbine starije od 12 meseci i čisti agregate).
    - **UI poruke arhive (`OrdersScreen` & `SellerOrdersScreen`):** Ažurirana objašnjenja za kupce i prodavce sa jasnom napomenom o 12 meseci čuvanja u arhivi pre trajnog uklanjanja.
    - **Kartica prodavca u korpi (`CartSellerGroupCard`):** Poboljšana napomena o minimalnom iznosu (pojašnjeno da se minimum odnosi na termine lične dostave domaćina, dok su kurir i lično preuzimanje takođe opcije na checkout-u).
+6. **🗺️ Seoska gazdinstva & Mapa domaćinstava (Završeno 06. okt):**
+   - **Ispravka rute i taba:** Klik na tab "Seoska gazdinstva" u desktop navigaciji (`DesktopHeader`) sada direktno otvara interaktivnu mapu (`/sellers-map`), umesto preusmeravanja na početni feed pijace hrane.
+   - **Desktop prikaz mape (`SellersMapScreen`):** Integrisan `DesktopHeader(isStandalone: true)` na desktop rezolucijama, postavljen jasan naslov ("Seoska gazdinstva na mapi"), dodat bedž sa brojem gazdinstava i dugme za automatsko centriranje svih markera ("Centriraj sve").
+   - **Ispravka `permission denied for table profiles`:** U Supabase pogledu `public.public_profiles` eksplicitno isključen `security_invoker` (`ALTER VIEW ... SET (security_invoker = false);`) čime je rešen problem gde javni posetioci i kupci nisu mogli da učitaju stranicu profila prodavca (`/seller/:id`).
 
 ---
 
