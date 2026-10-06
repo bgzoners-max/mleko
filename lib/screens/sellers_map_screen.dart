@@ -8,8 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/map_tiles.dart';
 import '../core/responsive.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/navigation/desktop_header.dart';
 
-/// Mapa prodavaca – prikazuje prodavce na mapi sa interaktivnim profilima i geolokacijom.
+/// Mapa seoskih gazdinstava – prikazuje domaćinstva na mapi sa interaktivnim profilima i geolokacijom.
 class SellersMapScreen extends StatefulWidget {
   const SellersMapScreen({super.key});
 
@@ -229,22 +230,27 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width >= Breakpoints.largeTablet;
+
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Prodavci na mapi'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.center_focus_strong),
-            tooltip: 'Prikaži sve prodavce',
-            onPressed: () async {
-              final list = await _sellersFuture;
-              _fitBounds(list);
-            },
-          ),
-          const AppHomeButton(),
-        ],
-      ),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Seoska gazdinstva na mapi'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.center_focus_strong),
+                  tooltip: 'Prikaži sva gazdinstva',
+                  onPressed: () async {
+                    final list = await _sellersFuture;
+                    _fitBounds(list);
+                  },
+                ),
+                const AppHomeButton(),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _locatingUser ? null : _goToMyLocation,
         tooltip: 'Moja lokacija',
@@ -256,117 +262,190 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
               )
             : const Icon(Icons.my_location),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _sellersFuture,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline,
-                        size: 48, color: Colors.red.shade400),
-                    const SizedBox(height: 16),
-                    Text('Greška pri učitavanju: ${snap.error}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey.shade700)),
-                  ],
-                ),
-              ),
-            );
-          }
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final list = snap.data ?? [];
+      body: Column(
+        children: [
+          if (isDesktop) const DesktopHeader(isStandalone: true),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _sellersFuture,
+              builder: (context, snap) {
+                if (snap.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline,
+                              size: 48, color: Colors.red.shade400),
+                          const SizedBox(height: 16),
+                          Text('Greška pri učitavanju: ${snap.error}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey.shade700)),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final list = snap.data ?? [];
 
-          if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.map_outlined,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text('Prodavci još nemaju lokacije na mapi',
-                      style: TextStyle(color: Colors.grey.shade600)),
-                  const SizedBox(height: 8),
-                  Text('Prodavci mogu dodati koordinate u profilu',
-                      style:
-                          TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                ],
-              ),
-            );
-          }
+                if (list.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.map_outlined,
+                            size: 64, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text('Još uvek nema ucrtanih gazdinstava na mapi',
+                            style: TextStyle(color: Colors.grey.shade600)),
+                        const SizedBox(height: 8),
+                        Text('Gazdinstva mogu dodati koordinate u svom profilu',
+                            style: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 12)),
+                      ],
+                    ),
+                  );
+                }
 
-          final validSellers = list.where((e) {
-            final lat = _parseDouble(e['lat']);
-            final lng = _parseDouble(e['lng']);
-            return lat != null && lng != null;
-          }).toList();
+                final validSellers = list.where((e) {
+                  final lat = _parseDouble(e['lat']);
+                  final lng = _parseDouble(e['lng']);
+                  return lat != null && lng != null;
+                }).toList();
 
-          final markers = validSellers.map((e) {
-            final lat = _parseDouble(e['lat'])!;
-            final lng = _parseDouble(e['lng'])!;
-            final farmName =
-                (e['farm_name'] ?? e['location'] ?? '') as String;
+                final markers = validSellers.map((e) {
+                  final lat = _parseDouble(e['lat'])!;
+                  final lng = _parseDouble(e['lng'])!;
+                  final farmName =
+                      (e['farm_name'] ?? e['location'] ?? '') as String;
 
-            return Marker(
-              point: LatLng(lat, lng),
-              width: 80,
-              height: 64,
-              child: GestureDetector(
-                onTap: () => _showSellerPreview(context, e),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
+                  return Marker(
+                    point: LatLng(lat, lng),
+                    width: 80,
+                    height: 64,
+                    child: GestureDetector(
+                      onTap: () => _showSellerPreview(context, e),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              farmName,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Icon(
+                            Icons.location_on,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 36,
                           ),
                         ],
                       ),
-                      child: Text(
-                        farmName,
-                        style: const TextStyle(
-                            fontSize: 10, fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ),
-                    Icon(
-                      Icons.location_on,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 36,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList();
+                  );
+                }).toList();
 
-          return FlutterMap(
-            mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: _srbijaCentar,
-              initialZoom: 6.5,
+                return Stack(
+                  children: [
+                    FlutterMap(
+                      mapController: _mapController,
+                      options: const MapOptions(
+                        initialCenter: _srbijaCentar,
+                        initialZoom: 6.5,
+                      ),
+                      children: [
+                        AppMapTiles.buildTileLayer(),
+                        MarkerLayer(markers: markers),
+                        AppMapTiles.buildAttribution(),
+                      ],
+                    ),
+                    if (isDesktop)
+                      Positioned(
+                        top: 16,
+                        left: 20,
+                        child: _buildDesktopMapControls(context, validSellers),
+                      ),
+                  ],
+                );
+              },
             ),
-            children: [
-              AppMapTiles.buildTileLayer(),
-              MarkerLayer(markers: markers),
-              AppMapTiles.buildAttribution(),
-            ],
-          );
-        },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopMapControls(
+    BuildContext context,
+    List<Map<String, dynamic>> sellers,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: (isDark ? const Color(0xFF1B241D) : Colors.white)
+            .withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.white12 : Colors.black12,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.storefront_rounded,
+              color: Color(0xFF2E7D32), size: 20),
+          const SizedBox(width: 8),
+          Text(
+            '${sellers.length} seoskih gazdinstava',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 14),
+          FilledButton.tonalIcon(
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => _fitBounds(sellers),
+            icon: const Icon(Icons.center_focus_strong, size: 16),
+            label: const Text('Centriraj sve',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
+        ],
       ),
     );
   }

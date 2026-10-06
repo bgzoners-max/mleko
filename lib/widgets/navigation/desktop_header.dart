@@ -308,9 +308,21 @@ class _DesktopHeaderState extends State<DesktopHeader> {
     final unreadCount = context.select<AppState, int>((s) => s.unreadNotificationCount);
     final selectedRegion = context.select<LocationProvider, String?>((p) => p.selectedRegion);
 
+    String currentPath = '';
+    try {
+      currentPath = GoRouterState.of(context).uri.path;
+    } catch (_) {
+      try {
+        currentPath = GoRouter.of(context).routeInformationProvider.value.uri.path;
+      } catch (_) {
+        currentPath = '';
+      }
+    }
+
+    final isSellersMap = currentPath == '/sellers-map';
     final currentIndex = widget.navigationShell?.currentIndex ?? 0;
-    final isFoodMarket = (currentIndex == 0 && appSettings.marketMode == MarketMode.foodMarket);
-    final isClassifieds = (currentIndex == 1 || appSettings.marketMode == MarketMode.classifieds);
+    final isFoodMarket = (currentIndex == 0 && appSettings.marketMode == MarketMode.foodMarket && !isSellersMap);
+    final isClassifieds = ((currentIndex == 1 || appSettings.marketMode == MarketMode.classifieds) && !isSellersMap);
 
     final bgMain = isDark ? AmazonColors.darkCard : Colors.white;
     final borderMain = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
@@ -358,6 +370,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
                       isDark: isDark,
                       isFoodMarket: isFoodMarket,
                       isClassifieds: isClassifieds,
+                      isSellersMap: isSellersMap,
                     ),
 
                     const SizedBox(width: 16),
@@ -597,6 +610,7 @@ class _DesktopHeaderState extends State<DesktopHeader> {
     required bool isDark,
     required bool isFoodMarket,
     required bool isClassifieds,
+    required bool isSellersMap,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -619,9 +633,9 @@ class _DesktopHeaderState extends State<DesktopHeader> {
         _DesktopNavTab(
           label: 'Seoska gazdinstva',
           icon: Icons.map_outlined,
-          isActive: false,
+          isActive: isSellersMap,
           onTap: () {
-            _onNavigateTo(0, route: '/', mode: MarketMode.foodMarket);
+            context.go('/sellers-map');
           },
         ),
         const SizedBox(width: 6),
