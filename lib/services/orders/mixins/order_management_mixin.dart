@@ -261,11 +261,6 @@ mixin OrderManagementMixin {
           .from('orders')
           .update({
             'status': OrderStatus.archived.dbValue,
-            'archived_at': DateTime.now().toUtc().toIso8601String(),
-            'expires_at': DateTime.now()
-                .toUtc()
-                .add(const Duration(days: 365))
-                .toIso8601String(),
           })
           .eq('id', orderId)
           .eq('buyer_id', buyerId);
@@ -280,14 +275,19 @@ mixin OrderManagementMixin {
           .from('orders')
           .update({
             'status': OrderStatus.archived.dbValue,
-            'archived_at': DateTime.now().toUtc().toIso8601String(),
-            'expires_at': DateTime.now()
-                .toUtc()
-                .add(const Duration(days: 365))
-                .toIso8601String(),
           })
           .eq('id', orderId)
           .eq('seller_id', sellerId);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
+  /// Arhiviranje preko server-side RPC-a koji verifikuje učesnika i
+  /// postavlja `archived_at = now()` i `expires_at = now() + interval '12 months'`
+  Future<void> archiveOrder(String orderId) async {
+    try {
+      await client.rpc('archive_order', params: {'p_order_id': orderId});
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

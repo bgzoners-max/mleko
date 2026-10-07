@@ -260,10 +260,15 @@ Deno.serve(async (req) => {
       type = record.type ?? ""
       fcmData = {
         type,
+        notification_id: String(record.id ?? ""),
+        created_at: String(record.created_at ?? ""),
         order_id: String(record.order_id ?? ""),
         conversation_id: String(record.conversation_id ?? ""),
         ticket_id: String(record.ticket_id ?? ""),
         classified_ad_id: String(record.classified_ad_id ?? ""),
+      }
+      if (record.route) {
+        fcmData.route = String(record.route)
       }
     } else {
       user_id = body.user_id
@@ -272,10 +277,15 @@ Deno.serve(async (req) => {
       type = body.type ?? ""
       fcmData = {
         type,
+        notification_id: String(body.notification_id ?? body.id ?? ""),
+        created_at: String(body.created_at ?? ""),
         order_id: String(body.order_id ?? ""),
         conversation_id: String(body.conversation_id ?? ""),
         ticket_id: String(body.ticket_id ?? ""),
         classified_ad_id: String(body.classified_ad_id ?? ""),
+      }
+      if (body.route) {
+        fcmData.route = String(body.route)
       }
       if (body.data && typeof body.data === "object") {
         for (const [k, v] of Object.entries(body.data)) {

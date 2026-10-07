@@ -18,6 +18,7 @@ import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/checkout/checkout_product_summary_card.dart';
 import '../widgets/checkout/checkout_single_buyer_form.dart';
+import '../widgets/checkout/checkout_validation_utils.dart';
 import '../widgets/skeleton.dart';
 import '../services/core/analytics_service.dart';
 import 'dart:async';
@@ -205,24 +206,17 @@ class _CheckoutFormState extends State<_CheckoutForm> {
           'Količina mora biti od minimuma i u koracima od ${ProductModel.formatQuantityWithUnit(step, normalizedUnit)}.');
       return;
     }
-    final missing = <String>[];
-    if (_deliveryMethod == DeliveryMethod.courier) {
-      if (_addressController.text.trim().isEmpty) {
-        missing.add('adresu');
-      }
-      if (_cityController.text.trim().isEmpty) {
-        missing.add('grad');
-      }
-      if (_postalCodeController.text.trim().isEmpty) {
-        missing.add('poštanski broj');
-      }
-    }
-    if (_phoneController.text.trim().isEmpty) missing.add('kontakt telefon');
-    if (missing.isNotEmpty) {
-      final joined = missing.length == 1
-          ? missing.first
-          : '${missing.sublist(0, missing.length - 1).join(', ')} i ${missing.last}';
-      setState(() => _error = 'Niste uneli $joined.');
+    final validationError =
+        CheckoutValidationUtils.validateBuyerDeliveryFields(
+      deliveryMethod: _deliveryMethod,
+      phone: _phoneController.text,
+      city: _cityController.text,
+      address: _addressController.text,
+      postalCode: _postalCodeController.text,
+      requirePostalCode: true,
+    );
+    if (validationError != null) {
+      setState(() => _error = validationError);
       return;
     }
     final user = context.read<AppState>().user;

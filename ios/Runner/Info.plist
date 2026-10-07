@@ -63,5 +63,10 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>mleko.periodic.order.sync</string>
+		<string>workmanager.background.task</string>
+	</array>
 </dict>
 </plist>

@@ -17,6 +17,9 @@ class SyncManager extends ChangeNotifier {
   int _syncedCount = 0;
   List<PendingOrder> _pendingOrders = [];
 
+  /// Future lanac (mutex) koji garantuje da se sinhronizacije izvršavaju striktno serijski
+  Future<void> _syncChain = Future.value();
+
   bool get isSyncing => _isSyncing;
   String? get syncError => _syncError;
   int get syncedCount => _syncedCount;
@@ -41,7 +44,7 @@ class SyncManager extends ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    if (_connectivity.isOnline && !_isSyncing) {
+    if (_connectivity.isOnline) {
       syncPendingOrders();
     }
   }
@@ -61,11 +64,22 @@ class SyncManager extends ChangeNotifier {
     }
   }
 
-  /// Sinhronizuj sve pending porudžbine sa serverom
-  Future<void> syncPendingOrders() async {
-    if (_isSyncing || _connectivity.isOffline) {
+  /// Sinhronizuj sve pending porudžbine sa serverom koristeći Future mutex lanac
+  Future<void> syncPendingOrders() {
+    if (_connectivity.isOffline) {
       LoggerService.debug(
-          'Sync skipped: isSyncing=$_isSyncing, isOnline=${_connectivity.isOnline}');
+          'Sync skipped: connectivity is offline');
+      return Future.value();
+    }
+
+    final task = _syncChain.then((_) => _executeSync());
+    _syncChain = task.catchError((_) {});
+    return task;
+  }
+
+  Future<void> _executeSync() async {
+    if (_connectivity.isOffline) {
+      LoggerService.debug('Sync skipped in queue: connectivity is offline');
       return;
     }
 

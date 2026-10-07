@@ -238,11 +238,8 @@ class _RegisterFormState extends State<_RegisterForm> {
   // inline field errors
   String? _emailError;
   String? _phoneError;
-  bool _checkingEmail = false;
   bool _checkingPhone = false;
 
-  // Klijentski keš za proverene emailove i telefone (sprečava suvišne RPC pozive pri kretanju kroz formu)
-  final Map<String, bool> _checkedEmails = {};
   final Map<String, bool> _checkedPhones = {};
 
   // form-level submit error
@@ -282,29 +279,8 @@ class _RegisterFormState extends State<_RegisterForm> {
       return;
     }
 
-    if (_checkedEmails.containsKey(email)) {
-      setState(() => _emailError =
-          _checkedEmails[email] == true ? 'Ova email adresa je već registrovana.' : null);
-      return;
-    }
-
-    setState(() {
-      _checkingEmail = true;
-      _emailError = null;
-    });
-    try {
-      final exists =
-          await context.read<AppState>().authService.checkEmailExists(email);
-      _checkedEmails[email] = exists;
-      if (mounted) {
-        setState(() => _emailError =
-            exists ? 'Ova email adresa je već registrovana.' : null);
-      }
-    } catch (_) {
-      // silent — server check failed ili rate-limited, submit će proveriti
-    } finally {
-      if (mounted) setState(() => _checkingEmail = false);
-    }
+    // Anti-enumeration: ne proveravamo bazu na focus change da ne izlažemo orakl
+    setState(() => _emailError = null);
   }
 
   Future<void> _onPhoneFocusChange() async {
@@ -392,8 +368,12 @@ class _RegisterFormState extends State<_RegisterForm> {
         if (raw.contains('already registered') ||
             raw.contains('user already registered') ||
             (raw.contains('23505') && raw.contains('email'))) {
+          // Anti-enumeration: ujednačena poruka koja ne potvrđuje postojanje
           userFriendly =
-              'Korisnik sa ovom email adresom već postoji. Prijavite se na svoj nalog.';
+              'Ukoliko nalog sa ovom email adresom već postoji, poslat je email sa instrukcijama. Proverite svoje prijemno sanduče.';
+          context.read<AppState>().markPendingEmailVerification();
+          context.go('/verify-email', extra: email);
+          return;
         } else if (raw.contains('phone') &&
             (raw.contains('23505') || raw.contains('unique'))) {
           userFriendly = 'Korisnik sa ovim brojem telefona već postoji.';
@@ -510,22 +490,12 @@ class _RegisterFormState extends State<_RegisterForm> {
           decoration: InputDecoration(
             labelText: 'Email *',
             errorText: null,
-            suffixIcon: _checkingEmail
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : _emailError != null
-                    ? const Icon(Icons.error, color: Colors.red)
-                    : null,
+            suffixIcon: _emailError != null
+                ? const Icon(Icons.error, color: Colors.red)
+                : null,
           ),
         ),
-        if (_checkingEmail) _checkingIndicator(),
-        if (!_checkingEmail && _emailError != null)
+        if (_emailError != null)
           _fieldError(_emailError!, isEmailTaken: isEmailTaken),
         const SizedBox(height: 12),
 

@@ -11,10 +11,10 @@ class _MockClassifiedsService extends ClassifiedsService {
   int getAdsCallsCount = 0;
 
   @override
-  Future<List<ClassifiedCategoryModel>> getCachedCategories() async => [];
+  Future<List<ClassifiedCategoryModel>> getCachedCategories({bool allowExpired = true}) async => [];
 
   @override
-  Future<List<ClassifiedCategoryModel>> getCategories() async => [];
+  Future<List<ClassifiedCategoryModel>> getCategories({bool forceRefresh = false}) async => [];
 
   @override
   Future<List<ClassifiedAdModel>> getAds({

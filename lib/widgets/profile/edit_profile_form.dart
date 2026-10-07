@@ -237,20 +237,21 @@ class _EditProfileFormState extends State<EditProfileForm> {
       final postalCodeTrimmed = _postalCodeCtrl.text.trim();
       final addressTrimmed = _addressCtrl.text.trim();
 
-      await usersService.upsertProfile(
-        user.id,
+      final updatedUser = user.copyWith(
         farmName: farmNameTrimmed.isNotEmpty ? farmNameTrimmed : null,
         displayName: displayNameTrimmed.isNotEmpty ? displayNameTrimmed : null,
         phone: phoneTrimmed.isNotEmpty ? phoneTrimmed : null,
         city: cityTrimmed.isNotEmpty ? cityTrimmed : null,
         postalCode: postalCodeTrimmed.isNotEmpty ? postalCodeTrimmed : null,
-        location: addressTrimmed.isNotEmpty ? addressTrimmed : null,
+        address: addressTrimmed.isNotEmpty ? addressTrimmed : null,
+        location: user.isSeller
+            ? (addressTrimmed.isNotEmpty ? addressTrimmed : null)
+            : null,
         phonePublic: _phonePublic,
+        sellerTags: user.isSeller ? _selectedTags : user.sellerTags,
       );
 
-      if (user.isSeller) {
-        await usersService.updateSellerTags(user.id, _selectedTags);
-      }
+      await usersService.updateProfile(updatedUser, previous: user);
 
       await appState.refreshUser();
 

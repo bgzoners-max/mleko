@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,6 +74,20 @@ class PendingOrder {
   });
 
   bool get isPending => synced == null;
+
+  /// Eksponencijalni backoff razmak po formuli: min(2^retryCount * 5s, 1h)
+  Duration get retryBackoff {
+    if (retryCount <= 0) return Duration.zero;
+    final exp = retryCount > 15 ? 15 : retryCount;
+    final seconds = math.min((math.pow(2, exp) * 5).toInt(), 3600);
+    return Duration(seconds: seconds);
+  }
+
+  /// Proverava da li je prošao interval eksponencijalnog backoff-a
+  bool get isReadyForRetry {
+    if (retryCount <= 0 || lastAttemptAt == null) return true;
+    return DateTime.now().isAfter(lastAttemptAt!.add(retryBackoff));
+  }
 
   PendingOrder copyWith({
     DateTime? synced,
@@ -191,6 +206,7 @@ class PendingOrder {
 /// Servis za offline queue - čuvaj orders kada nema interneta
 class OrderQueueService {
   static const _storageKey = 'mleko_pending_orders';
+  static const int maxQueueLength = 50;
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   static final List<void Function()> _listeners = [];
@@ -258,11 +274,25 @@ class OrderQueueService {
           return;
         }
 
+        // Očisti već sinhronizovane pre provere limita radi zaštite storage prostora
+        orders.removeWhere((o) => !o.isPending);
+
+        if (orders.length >= maxQueueLength) {
+          throw AppError(
+            message: 'Order queue limit reached ($maxQueueLength)',
+            userMessage:
+                'Dostignut je maksimalan broj porudžbina na čekanju ($maxQueueLength). Povežite se na internet.',
+            type: ErrorType.validation,
+          );
+        }
+
         orders.add(order);
         await _saveOrders(prefs, orders);
         _notifyListeners();
         LoggerService.info('Added pending order to queue',
             extra: {'orderId': order.id});
+      } on AppError {
+        rethrow;
       } catch (e) {
         throw AppError(
           message: 'Failed to add pending order: $e',

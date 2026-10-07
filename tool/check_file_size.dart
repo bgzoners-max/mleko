@@ -6,17 +6,9 @@ const int lineThreshold = 700;
 // Cilj je postepeno refaktorisati ove fajlove i uklanjati ih sa ove liste.
 // Novi fajlovi (ili rastući fajlovi) ne smeju preći [lineThreshold]!
 const List<String> ignoreFiles = [
-  // Blizu granice (713-726 linija) — nisu bili deo ovog refaktora.
-  // Sledeci ciklus: razbiti ispod 700 i ukloniti sa ove liste.
-  'lib/screens/about_screen.dart',
-  'lib/screens/classifieds/my_classified_ads_screen.dart',
-  'lib/screens/search_screen.dart',
-
   // Jos uvek preko limita — refaktorisati u sledecoj fazi.
   'lib/screens/admin/admin_push_health_screen.dart',
   'lib/screens/admin/classifieds_moderation_screen.dart',
-  'lib/screens/seller/add_edit_product_screen.dart',
-  'lib/screens/seller/seller_orders_screen.dart',
   'lib/services/communication/chat_service.dart',
   'lib/widgets/checkout/checkout_multi_form.dart',
   'lib/widgets/classifieds/classified_ad_card.dart',

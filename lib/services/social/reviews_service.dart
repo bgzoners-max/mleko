@@ -92,13 +92,37 @@ class ReviewsService {
   }
 
   Future<double?> getAverageRatingForSeller(String sellerId) async {
-    final reviews = await getReviewsForSeller(sellerId);
-    return computeAverage(reviews.map((r) => r.rating));
+    final stats = await getSellerStats(sellerId);
+    return stats.avgRating;
   }
 
   Future<double?> getAverageRatingForProduct(String productId) async {
-    final reviews = await getReviewsForProduct(productId);
-    return computeAverage(reviews.map((r) => r.rating));
+    try {
+      // 1. Primarno koristi trigger-održavanu tabelu agregata bez povlačenja svih pojedinačnih redova
+      final summary = await _client
+          .from('product_review_summary')
+          .select('avg_rating, review_count')
+          .eq('product_id', productId)
+          .maybeSingle();
+      if (summary != null) {
+        final count = (summary['review_count'] as num?)?.toInt() ?? 0;
+        if (count == 0) return null;
+        return (summary['avg_rating'] as num?)?.toDouble();
+      }
+      // 2. Fallback na RPC agregat
+      final res = await _client.rpc(
+        'get_product_stats',
+        params: {'p_product_id': productId},
+      );
+      if (res != null && res is Map) {
+        final count = (res['review_count'] as num?)?.toInt() ?? 0;
+        if (count == 0) return null;
+        return (res['avg_rating'] as num?)?.toDouble();
+      }
+      return null;
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
   }
 
   Future<List<BuyerReviewModel>> getReviewsForBuyer(String buyerId) async {

@@ -58,6 +58,14 @@ class OrderSyncService {
           extra: {'pendingCount': pendingOrders.length, 'source': source});
 
       for (final pending in pendingOrders) {
+        if (!pending.isReadyForRetry) {
+          LoggerService.debug(
+            'Order sync skipped: exponential backoff active for ${pending.id} '
+            '(retries: ${pending.retryCount}, backoff: ${pending.retryBackoff.inSeconds}s)',
+          );
+          continue;
+        }
+
         try {
           // Pre-flight provera autentifikacije:
           // RPC funkcija na bazi (create_order_with_items) strogo zahteva auth.uid() = p_buyer_id.
@@ -96,6 +104,7 @@ class OrderSyncService {
           final duplicateOrderId = await _findDuplicateOrderId(pending);
           if (duplicateOrderId != null) {
             await _queueService.markAsSynced(pending.id);
+            await _queueService.cleanSyncedOrders();
             syncedCount++;
             duplicateCount++;
             LoggerService.warning(
@@ -127,6 +136,7 @@ class OrderSyncService {
             deliverySelection: deliverySelection,
           );
           await _queueService.markAsSynced(pending.id);
+          await _queueService.cleanSyncedOrders();
           syncedCount++;
 
           LoggerService.info('Pending order synced',

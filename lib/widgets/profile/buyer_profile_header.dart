@@ -254,6 +254,12 @@ class _ContactBuyerButtonState extends State<_ContactBuyerButton> {
     final currentUser = context.read<AppState>().user;
     final chatService = context.read<ChatService>();
     if (currentUser == null) return;
+    if (currentUser.id == widget.buyerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ne možete započeti razgovor sa samim sobom.')),
+      );
+      return;
+    }
     setState(() => _loading = true);
     try {
       final convId = await chatService.getOrCreateConversation(

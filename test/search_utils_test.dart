@@ -26,5 +26,50 @@ void main() {
       final manyTokens = nameSearchTokens('1 2 3 4 5 6 7 8 9 10 11');
       expect(manyTokens.length, 8);
     });
+
+    test('latinizeSearchText converts Serbian diacritics to Latin ASCII', () {
+      expect(latinizeSearchText('Kačkavalj'), 'kackavalj');
+      expect(latinizeSearchText('Čokolada'), 'cokolada');
+      expect(latinizeSearchText('Pršuta'), 'prsuta');
+      expect(latinizeSearchText('Žitarice'), 'zitarice');
+      expect(latinizeSearchText('Đerdap'), 'djerdap');
+      expect(latinizeSearchText('Domaći Sir'), 'domaci sir');
+    });
+
+    test('stripDiacritics normalizes dj and d for loose matching', () {
+      expect(stripDiacritics('Đerdap'), 'derdap');
+      expect(stripDiacritics('Djerdap'), 'derdap');
+      expect(stripDiacritics('Kačkavalj'), 'kackavalj');
+    });
+
+    test('matchesSearchToken handles diacritics and cackavalj -> kačkavalj typo', () {
+      // Dijakritici: kackavalj nalazi Kačkavalj
+      expect(matchesSearchToken('Kačkavalj pirotski', 'kackavalj'), isTrue);
+      expect(matchesSearchToken('Pirotski kačkavalj', 'kackavalj'), isTrue);
+      expect(matchesSearchToken('Kačkavalj', 'kačkavalj'), isTrue);
+
+      // cackavalj nalazi kačkavalj (fonetski / c umesto k i č)
+      expect(matchesSearchToken('Kačkavalj stari', 'cackavalj'), isTrue);
+
+      // Pršuta, čvarci, domaći
+      expect(matchesSearchToken('Zlatiborska pršuta', 'prsuta'), isTrue);
+      expect(matchesSearchToken('Domaći duvan čvarci', 'cvarci'), isTrue);
+      expect(matchesSearchToken('Domaće kiselo mleko', 'domace'), isTrue);
+
+      // Đerdap: sa dj ili d
+      expect(matchesSearchToken('Kozji sir Đerdap', 'djerdap'), isTrue);
+      expect(matchesSearchToken('Kozji sir Đerdap', 'derdap'), isTrue);
+      expect(matchesSearchToken('Kozji sir Đerdap', 'đerdap'), isTrue);
+
+      // Negativni slučajevi (ne sme lažno da spaja nepovezane reči)
+      expect(matchesSearchToken('Sveže jagode', 'jabuke'), isFalse);
+      expect(matchesSearchToken('Kravlji sir', 'med'), isFalse);
+    });
+
+    test('matchesAllSearchTokens enforces AND matching', () {
+      final tokens = ['domaci', 'kackavalj'];
+      expect(matchesAllSearchTokens('Domaći stari kačkavalj', tokens), isTrue);
+      expect(matchesAllSearchTokens('Domaći mladi sir', tokens), isFalse);
+    });
   });
 }

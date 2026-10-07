@@ -13,10 +13,10 @@ import 'package:provider/provider.dart';
 
 class MockClassifiedsService implements ClassifiedsService {
   @override
-  Future<List<ClassifiedCategoryModel>> getCachedCategories() async => [];
+  Future<List<ClassifiedCategoryModel>> getCachedCategories({bool allowExpired = true}) async => [];
 
   @override
-  Future<List<ClassifiedCategoryModel>> getCategories() async => [
+  Future<List<ClassifiedCategoryModel>> getCategories({bool forceRefresh = false}) async => [
         const ClassifiedCategoryModel(
           id: 'zivotinje',
           name: 'Domaće životinje',

@@ -8,6 +8,7 @@ import '../core/haptic.dart';
 import '../core/responsive.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/app_footer.dart';
+import '../widgets/about/about_section_helpers.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -151,7 +152,7 @@ class _AboutContent extends StatelessWidget {
         const SizedBox(height: 28),
 
         // 2. KO SMO MI I ZAŠTO POSTOJIMO
-        _buildSectionCard(
+        aboutSectionCard(
           context: context,
           cardBg: cardBg,
           borderColor: borderColor,
@@ -180,10 +181,10 @@ class _AboutContent extends StatelessWidget {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _buildPillTag(context, Icons.verified_user_outlined, '100% Bez posrednika'),
-                  _buildPillTag(context, Icons.payments_outlined, '0% Provizije (sav novac ide prodavcu)'),
-                  _buildPillTag(context, Icons.campaign_outlined, '100% Besplatno oglašavanje'),
-                  _buildPillTag(context, Icons.map_outlined, 'Lokalno i širom Srbije'),
+                  aboutPillTag(context, Icons.verified_user_outlined, '100% Bez posrednika'),
+                  aboutPillTag(context, Icons.payments_outlined, '0% Provizije (sav novac ide prodavcu)'),
+                  aboutPillTag(context, Icons.campaign_outlined, '100% Besplatno oglašavanje'),
+                  aboutPillTag(context, Icons.map_outlined, 'Lokalno i širom Srbije'),
                 ],
               ),
             ],
@@ -193,7 +194,7 @@ class _AboutContent extends StatelessWidget {
         const SizedBox(height: 28),
 
         // 3. VELIKA SEKCIJA 1: PIJACA DOMAĆE HRANE
-        _buildComprehensiveSectionCard(
+        aboutComprehensiveSectionCard(
           context: context,
           cardBg: cardBg,
           borderColor: const Color(0xFF2E7D32).withValues(alpha: isDark ? 0.4 : 0.25),
@@ -206,67 +207,67 @@ class _AboutContent extends StatelessWidget {
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSubsectionHeader(
+              aboutSubsectionHeader(
                 context,
                 Icons.shopping_basket_outlined,
                 'Šta možete pronaći i naručiti:',
                 const Color(0xFF2E7D32),
               ),
               const SizedBox(height: 10),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Mleko i mlečni proizvodi:',
                 'Sveže kravlje i kozje mleko, zreli zlatiborski, sjenički i pirotski sirevi, mladi sir, punomasni kajmak, surutka.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Suvo i sveže domaće meso:',
                 'Goveđa i svinjska pršuta, domaća slanina, čvarci, mast, sremski i vojvođanski kulen, sušene kobasice bez veštačkih aditiva.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Prirodni med i pčelinji proizvodi:',
                 'Bagremov, livadski, lipov i šumski med, propolis kapi, polen, matični mleč i saće direktno od registrovanih pčelara.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Domaća zimnica i prerađevine:',
                 'Tradicionalni cepkani i mleveni ajvar, pinđur, lovačka salata, turšija, kiseli kupus, džemovi bez konzervansa, slatka i sirupi.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Brašno, žitarice i vodenice:',
                 'Belo i žuto kukuruzno brašno mleveno na vodeničnom kamenu, integralno pšenično, ražano i speltino brašno.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Sezonsko voće, povrće i orasi:',
                 'Domaći paradajz, paprika, krompir, jabuke, kruške, maline, borovnice, orasi i lešnici ubranih u punoj zrelosti.',
               ),
               const SizedBox(height: 16),
-              _buildSubsectionHeader(
+              aboutSubsectionHeader(
                 context,
                 Icons.verified_outlined,
                 'Kako funkcioniše i po čemu se razlikuje:',
                 const Color(0xFF2E7D32),
               ),
               const SizedBox(height: 10),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Nema industrijskih magacina:',
                 'Hrana ne stoji mesecima po policama — priprema se, pakuje i šalje sveže tek nakon što potvrdite porudžbinu kod domaćina.',
               ),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Interaktivna mapa i lokalna ponuda:',
                 'Jednim dodirom pronađite gazdinstva u vašem gradu ili susednim selima za lično preuzimanje ili direktnu dostavu.',
               ),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Prilagođene seoske mere:',
                 'Naručivanje po meri domaćina: u kilogramima, gramima, teglama, litrima, vezama ili porodičnim paketima.',
               ),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Profili domaćina i transparentnost:',
                 'Svako gazdinstvo ima profil sa fotografijama imanja, pričom o tradiciji proizvodnje i proverenim ocenama kupaca.',
@@ -310,7 +311,7 @@ class _AboutContent extends StatelessWidget {
         const SizedBox(height: 28),
 
         // 4. VELIKA SEKCIJA 2: NACIONALNI MALI OGLASI
-        _buildComprehensiveSectionCard(
+        aboutComprehensiveSectionCard(
           context: context,
           cardBg: cardBg,
           borderColor: const Color(0xFFD97724).withValues(alpha: isDark ? 0.4 : 0.3),
@@ -323,77 +324,77 @@ class _AboutContent extends StatelessWidget {
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSubsectionHeader(
+              aboutSubsectionHeader(
                 context,
                 Icons.grid_view_rounded,
                 'Obuhvatne kategorije malih oglasa:',
                 const Color(0xFFD97724),
               ),
               const SizedBox(height: 10),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Poljoprivreda i mehanizacija:',
                 'Traktori (IMT, Rakovica, Zetor, John Deere...), priključne mašine, plugovi, rotacione freze, sejalice, berači, kombajni, prikolice, sadnice, stočna hrana, bale sena, pčelarska oprema.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Domaće životinje i stoka:',
                 'Krave, telad, junad, ovce, jagnjad, koze, prasad, svinje, živina, konji, priplodni materijal i domaće rase.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Vozila, transport i delovi:',
                 'Polovni automobili, dostavni kombiji, teretna vozila, traktorske i auto-prikolice, gume, felne i auto-delovi.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Alati, mašine i zanatstvo:',
                 'Profesionalni i hobi alati, motorne testere, trimeri, bušilice, brusilice, aparati za varenje, kompresori, agregati i oprema za radionice.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Bela tehnika, grejanje i dom:',
                 'Šporeti na drva (Smederevci, Alfa Plam), peći na pelet, kotlovi za grejanje, frižideri, zamrzivači, nameštaj i baštenska oprema.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Sve za decu i porodicu:',
                 'Dečija kolica, auto-sedišta, hranilice, kreveci, bicikli, igračke, bebi oprema i odeća.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Zdravlje, lepota i rukotvorine:',
                 'Prirodni melemi, domaći sapuni, tinkture, ručno tkani ćilimi, nošnje, unikatno pletivo i drvorez.',
               ),
-              _buildCategoryBullet(
+              aboutCategoryBullet(
                 context,
                 'Nekretnine i zemljište:',
                 'Seoska domaćinstva, vikendice, seoske kuće, obradive njive, placevi, šume i poljoprivredno zemljište.',
               ),
               const SizedBox(height: 16),
-              _buildSubsectionHeader(
+              aboutSubsectionHeader(
                 context,
                 Icons.thumb_up_alt_outlined,
                 'Prednosti i pravila za oglašivače:',
                 const Color(0xFFD97724),
               ),
               const SizedBox(height: 10),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 '100% Besplatna objava:',
                 'Postavljanje oglasa ne zahteva platne kartice, pretplate niti skrivene naknade. Svaki građanin može slobodno oglasiti ono što prodaje.',
               ),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Besplatno obnavljanje (Refresh):',
                 'Kada istekne definisani period, oglas možete besplatno osvežiti i vratiti na vrh pretrage jednim klikom — bez ikakvih doplaćivanja.',
               ),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Fleksibilno određivanje cene:',
                 'Podrška za fiksne cene (u RSD ili EUR), cene po dogovoru, zamenu za drugu robu ili poklanjanje onima kojima je potrebno.',
               ),
-              _buildAdvantageRow(
+              aboutAdvantageRow(
                 context,
                 'Zaštita privatnosti i telefona:',
                 'Sami birate da li želite da vaš broj telefona bude javno prikazan ili da komunicirate isključivo kroz naš bezbedan interni chat.',
@@ -437,7 +438,7 @@ class _AboutContent extends StatelessWidget {
         const SizedBox(height: 28),
 
         // 5. MOGUĆNOSTI I TEHNOLOGIJA U SLUŽBI ČOVEKA
-        _buildSectionCard(
+        aboutSectionCard(
           context: context,
           cardBg: cardBg,
           borderColor: borderColor,
@@ -461,35 +462,35 @@ class _AboutContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              _buildFeatureRow(
+              aboutFeatureRow(
                 context,
                 Icons.chat_outlined,
                 'Direktan interni chat sa slikama',
                 'Dogovarajte se sa kupcima i prodavcima direktno u aplikaciji u realnom vremenu — razmenjujte slike, detalje o preuzimanju i stanju robe bez napuštanja platforme.',
               ),
               const Divider(height: 24),
-              _buildFeatureRow(
+              aboutFeatureRow(
                 context,
                 Icons.map_outlined,
                 'Interaktivna mapa Srbije',
                 'Jednim klikom pronađite proizvođače hrane i oglase u vašoj neposrednoj geografskoj okolini, pogledajte tačnu lokaciju i dogovorite posetu.',
               ),
               const Divider(height: 24),
-              _buildFeatureRow(
+              aboutFeatureRow(
                 context,
                 Icons.shield_outlined,
                 'Maksimalna zaštita privatnosti i protiv botova',
                 'Brojevi telefona i podaci o adresi zaštićeni su od automatskih web botova i scraping-a. Vi imate punu kontrolu nad tim šta delite javno.',
               ),
               const Divider(height: 24),
-              _buildFeatureRow(
+              aboutFeatureRow(
                 context,
                 Icons.star_outline_rounded,
                 'Sistem obostranih recenzija i ugleda',
                 'Gradimo zajednicu poverenja u kojoj savesni prodavci i savesni kupci stiču vidljiv ugled i pozitivne preporuke ostalih članova.',
               ),
               const Divider(height: 24),
-              _buildFeatureRow(
+              aboutFeatureRow(
                 context,
                 Icons.devices_outlined,
                 'Brza PWA aplikacija za sve ekrane',
@@ -502,7 +503,7 @@ class _AboutContent extends StatelessWidget {
         const SizedBox(height: 28),
 
         // 6. NAŠ MANIFEST
-        _buildSectionCard(
+        aboutSectionCard(
           context: context,
           cardBg: cardBg,
           borderColor: borderColor,
@@ -518,21 +519,21 @@ class _AboutContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildManifestItem(
+              aboutManifestItem(
                 context,
                 '1',
                 'Sav novac ide onome ko stvara i nudi (0% provizije)',
                 'Domaći Market ne uzima procenat od vaše domaće hrane niti proviziju od prodatih stvari sa oglasa. Svaki dinar ide direktno domaćinu i prodavcu.',
               ),
               const SizedBox(height: 14),
-              _buildManifestItem(
+              aboutManifestItem(
                 context,
                 '2',
                 'Čuvanje domaće proizvodnje i srpskog sela',
                 'Podržavamo opstanak seoskih porodica, negovanje starih sorti i recepata, i slobodan protok dobara između sela i grada bez nametnutih ucenjivačkih marži.',
               ),
               const SizedBox(height: 14),
-              _buildManifestItem(
+              aboutManifestItem(
                 context,
                 '3',
                 'Transparentnost, poštenje i data reč',
@@ -628,347 +629,6 @@ class _AboutContent extends StatelessWidget {
                     label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionCard({
-    required BuildContext context,
-    required Color cardBg,
-    required Color borderColor,
-    required Widget child,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: AmazonColors.getCardShadow(context),
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildComprehensiveSectionCard({
-    required BuildContext context,
-    required Color cardBg,
-    required Color borderColor,
-    required Color accentColor,
-    required String tagText,
-    required IconData badgeIcon,
-    required String title,
-    required String subtitle,
-    required Widget content,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.4),
-        boxShadow: AmazonColors.getCardShadow(context),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(badgeIcon, size: 24, color: accentColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  tagText,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                    color: accentColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            title,
-            style: GoogleFonts.bitter(
-              fontSize: 21,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          content,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubsectionHeader(
-    BuildContext context,
-    IconData icon,
-    String title,
-    Color color,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryBullet(
-    BuildContext context,
-    String label,
-    String description,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 6),
-            child: Icon(Icons.circle, size: 6, color: AmazonColors.amber),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.45,
-                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-                ),
-                children: [
-                  TextSpan(
-                    text: '$label ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                    ),
-                  ),
-                  TextSpan(text: description),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdvantageRow(
-    BuildContext context,
-    String label,
-    String text,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 3),
-            child: Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2E7D32)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.45,
-                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-                ),
-                children: [
-                  TextSpan(
-                    text: '$label ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                    ),
-                  ),
-                  TextSpan(text: text),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPillTag(BuildContext context, IconData icon, String text) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1B241E) : const Color(0xFFE8EFEA),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF245938).withValues(alpha: 0.3),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: const Color(0xFF245938)),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isDark ? const Color(0xFF99D19C) : const Color(0xFF1B5E20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureRow(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String description,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF245938).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 20, color: const Color(0xFF245938)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.45,
-                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildManifestItem(
-    BuildContext context,
-    String number,
-    String title,
-    String description,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD97724).withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFFD97724).withValues(alpha: 0.5),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            number,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFFD97724),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.45,
-                  color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-                ),
               ),
             ],
           ),

@@ -10,6 +10,14 @@ String resolveBaseUrl([String? origin]) {
   return 'https://domacimarket.rs';
 }
 
+bool isWebOnline() {
+  try {
+    return html.window.navigator.onLine ?? true;
+  } catch (_) {
+    return true;
+  }
+}
+
 void setPageMetadata({
   required String title,
   String? description,

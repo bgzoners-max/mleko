@@ -153,16 +153,9 @@ class AuthService {
       final result = await _client.rpc('check_email_exists',
           params: {'p_email': trimmed});
       return result as bool;
-    } catch (e, st) {
-      final errStr = e.toString().toLowerCase();
-      if (errStr.contains('prekoračen') ||
-          errStr.contains('p0001') ||
-          errStr.contains('rate limit')) {
-        // Ako je dostignut rate limit, registracija ne treba da bude blokirana;
-        // submit korak (signUp) će proveriti jedinstvenost.
-        return false;
-      }
-      throw AppError.from(e, stackTrace: st);
+    } catch (e) {
+      // Anti-enumeration: bilo da je rate-limited ili greška, ne izlažemo stanje
+      return false;
     }
   }
 
@@ -219,18 +212,27 @@ class AuthService {
     }
   }
 
-  Future<void> updateProfile(UserModel user) async {
+  /// Ažurira profil korisnika uz očuvanje svih polja.
+  /// Ako je prosleđen [previous], šalje se samo Diff izmena.
+  Future<void> updateProfile(UserModel user, {UserModel? previous}) async {
     try {
-      await _users.upsertProfile(
-        user.id,
-        displayName: user.displayName,
-        phone: user.phone,
-        city: user.city,
-        role: user.role == UserRole.seller ? 'seller' : 'buyer',
-        farmName: user.farmName,
-        location: user.location,
-        profileImageUrl: user.profileImageUrl,
-      );
+      await _users.updateProfile(user, previous: previous);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
+  Future<void> updateBuyerProfile(BuyerProfile profile) async {
+    try {
+      await _users.updateBuyerProfile(profile);
+    } catch (e, st) {
+      throw AppError.from(e, stackTrace: st);
+    }
+  }
+
+  Future<void> updateSellerProfile(SellerProfile profile) async {
+    try {
+      await _users.updateSellerProfile(profile);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

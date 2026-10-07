@@ -165,11 +165,10 @@ class LoginFormState extends State<LoginForm> {
         msg.contains('wrong') ||
         msg.contains('credentials') ||
         msg.contains('email not confirmed') ||
-        msg.contains('user not found')) {
+        msg.contains('user not found') ||
+        msg.contains('email already') ||
+        msg.contains('already registered')) {
       return 'Pogrešan email ili lozinka.';
-    }
-    if (msg.contains('email already') || msg.contains('already registered')) {
-      return 'Nalog sa ovim email-om već postoji.';
     }
     if (msg.contains('network') ||
         msg.contains('socketexception') ||
@@ -313,7 +312,8 @@ class LoginFormState extends State<LoginForm> {
                           .sendPasswordReset(_email.text.trim());
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Link za reset je poslat na email')),
+                            content: Text(
+                                'Ukoliko nalog sa ovom adresom postoji, link za reset je poslat na email')),
                       );
                     },
               child: Text(

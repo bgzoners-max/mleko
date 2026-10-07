@@ -18,6 +18,12 @@ class ProductCard extends StatefulWidget {
   final double? avgRating;
   final int? reviewCount;
 
+  /// Da li je omogućen Hero prelaz. Podrazumevano `false` radi sprečavanja konflikta
+  /// dupliranih Hero tagova kada se isti proizvod pojavi na više mesta na ekranu
+  /// (npr. grid feed + "popularno" carousel).
+  final bool enableHero;
+  final String? heroTag;
+
   const ProductCard({
     super.key,
     required this.product,
@@ -26,6 +32,8 @@ class ProductCard extends StatefulWidget {
     this.isPopular = false,
     this.avgRating,
     this.reviewCount,
+    this.enableHero = false,
+    this.heroTag,
   });
 
   @override
@@ -69,18 +77,24 @@ class _ProductCardState extends State<ProductCard> {
             errorWidget: const RusticImagePlaceholder(),
           );
 
+    final effectiveHeroTag =
+        widget.heroTag ?? 'product_image_${widget.product.id}_0';
+
     final image = Stack(
       fit: gridMode ? StackFit.expand : StackFit.loose,
       children: [
-        Hero(
-          tag: 'product_image_${widget.product.id}_0',
-          child: AnimatedScale(
-            scale: _isHovered ? 1.04 : 1.0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            child: gridMode
-                ? SizedBox.expand(child: imageChild)
-                : AspectRatio(aspectRatio: 1.25, child: imageChild),
+        HeroMode(
+          enabled: widget.enableHero,
+          child: Hero(
+            tag: effectiveHeroTag,
+            child: AnimatedScale(
+              scale: _isHovered ? 1.04 : 1.0,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: gridMode
+                  ? SizedBox.expand(child: imageChild)
+                  : AspectRatio(aspectRatio: 1.25, child: imageChild),
+            ),
           ),
         ),
         Positioned(
@@ -560,67 +574,16 @@ class _AmazonBadge extends StatelessWidget {
   }
 }
 
-/// Jednokratni "pop" (0.7 → 1.12 → 1.0) na verified bedžu kada se kartica
-/// pojavi — dovoljno da privuče pogled, bez beskonačnog pulsiranja koje zamara.
-/// Poštuje korisničko podešavanje "Animacije".
-class _VerifiedPulse extends StatefulWidget {
+/// Statički verified badge bez AnimationController-a i tickera po kartici.
+/// Sprečava dženk na slabijim uređajima u gridovima sa mnogo kartica.
+class _VerifiedPulse extends StatelessWidget {
   final Widget child;
 
   const _VerifiedPulse({required this.child});
 
   @override
-  State<_VerifiedPulse> createState() => _VerifiedPulseState();
-}
-
-class _VerifiedPulseState extends State<_VerifiedPulse>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _scale;
-  bool _started = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 620),
-    );
-    _scale = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween(begin: 0.7, end: 1.12).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 45,
-      ),
-      TweenSequenceItem(
-        tween: Tween(begin: 1.12, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 55,
-      ),
-    ]).animate(_controller);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    // Nullable lookup — bezbedno i van punog app stabla (izolovani testovi).
-    final enabled =
-        context.read<AppSettingsProvider?>()?.animationsEnabled ?? false;
-    if (enabled) {
-      _controller.forward();
-    } else {
-      _controller.value = 1;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ScaleTransition(scale: _scale, child: widget.child);
+    return child;
   }
 }
 

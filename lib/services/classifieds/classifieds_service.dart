@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -24,7 +25,34 @@ class ClassifiedsService {
   final SupabaseClient? _customClient;
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
-  static const String _categoriesCacheKey = 'cached_classified_categories_raw_json';
+  static const String _categoriesCacheKey = 'cached_classified_categories_payload_v2';
+  static const int _categoriesCacheVersion = 2;
+  static const Duration _categoriesCacheTtl = Duration(hours: 24);
+
+  // Brojači neuspelih RPC poziva za telemetriju
+  static int _failedViewsRpcCount = 0;
+  static int _failedInteractionsRpcCount = 0;
+
+  static int get failedViewsRpcCount => _failedViewsRpcCount;
+  static int get failedInteractionsRpcCount => _failedInteractionsRpcCount;
+  static int get totalRpcFailures => _failedViewsRpcCount + _failedInteractionsRpcCount;
+
+  @visibleForTesting
+  static void resetFailureCountsForTesting() {
+    _failedViewsRpcCount = 0;
+    _failedInteractionsRpcCount = 0;
+  }
+
+  @visibleForTesting
+  static Future<void> clearCategoriesCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_categoriesCacheKey);
+    await prefs.remove('cached_classified_categories_raw_json');
+  }
+
+  @visibleForTesting
+  static List<ClassifiedCategoryModel> buildCategoryTreeForTesting(List<dynamic> rawList) =>
+      _buildCategoryTree(rawList);
 
   static List<ClassifiedCategoryModel> _buildCategoryTree(List<dynamic> rawList) {
     final all = rawList
@@ -43,11 +71,10 @@ class ClassifiedsService {
     ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
       final rawChildren = childrenByParent[node.id] ?? [];
       final nestedChildren = rawChildren.map((c) {
-        // Ako je roditelju isConditionApplicable == false, ili je dete na listi neprikladnih,
-        // nasleđuje isConditionApplicable = false (zaštita od zastarelog keša)
-        final effectiveApplicable = node.isConditionApplicable &&
-            ClassifiedAdModel.isConditionApplicableForCategory(categoryId: c.id) &&
-            c.isConditionApplicable;
+        // Kanon je server (isConditionApplicable iz baze/view-a).
+        // Zaštita u stablu obezbeđuje konzistentnost u slučaju zastarelog keša
+        // (ako je roditelj neprimenljiv, podkategorija takođe ne može imati stanje).
+        final effectiveApplicable = node.isConditionApplicable && c.isConditionApplicable;
         final updatedChild = c.isConditionApplicable != effectiveApplicable
             ? c.copyWith(isConditionApplicable: effectiveApplicable)
             : c;
@@ -63,8 +90,16 @@ class ClassifiedsService {
   }
 
   /// Učitava sve kategorije i grupiše podkategorije u roditelje.
-  /// Rezultat se kešira u SharedPreferences za offline i instant start.
-  Future<List<ClassifiedCategoryModel>> getCategories() async {
+  /// Rezultat se kešira u SharedPreferences uz verziju i TTL (24h).
+  /// Ako je [forceRefresh] false i keš je svež (< 24h), vraća keširane podatke bez mrežnog poziva.
+  Future<List<ClassifiedCategoryModel>> getCategories({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      final cached = await getCachedCategories(allowExpired: false);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+    }
+
     try {
       final res = await _client
           .from('classified_categories')
@@ -74,7 +109,12 @@ class ClassifiedsService {
       final rawList = res as List;
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_categoriesCacheKey, jsonEncode(rawList));
+        final payload = {
+          'version': _categoriesCacheVersion,
+          'fetched_at': DateTime.now().toIso8601String(),
+          'data': rawList,
+        };
+        await prefs.setString(_categoriesCacheKey, jsonEncode(payload));
       } catch (cacheErr) {
         LoggerService.warning(
           '[ClassifiedsService] Categories cache write failed',
@@ -84,7 +124,8 @@ class ClassifiedsService {
 
       return _buildCategoryTree(rawList);
     } catch (e, st) {
-      final cached = await getCachedCategories();
+      // Offline fallback: probaj keš čak i ako je istekao (allowExpired: true)
+      final cached = await getCachedCategories(allowExpired: true);
       if (cached.isNotEmpty) {
         return cached;
       }
@@ -93,13 +134,38 @@ class ClassifiedsService {
   }
 
   /// Vraća kategorije iz lokalnog keša (SharedPreferences).
-  Future<List<ClassifiedCategoryModel>> getCachedCategories() async {
+  /// [allowExpired] određuje da li se vraća keš stariji od 24h (npr. za offline start).
+  Future<List<ClassifiedCategoryModel>> getCachedCategories({bool allowExpired = true}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final rawJson = prefs.getString(_categoriesCacheKey);
       if (rawJson != null && rawJson.isNotEmpty) {
-        final decoded = jsonDecode(rawJson) as List;
-        return _buildCategoryTree(decoded);
+        final decoded = jsonDecode(rawJson);
+        if (decoded is Map<String, dynamic>) {
+          final version = decoded['version'] as int? ?? 1;
+          if (version != _categoriesCacheVersion) {
+            // Zastarela verzija keša
+            return const [];
+          }
+
+          final fetchedAtStr = decoded['fetched_at'] as String?;
+          if (fetchedAtStr != null && !allowExpired) {
+            final fetchedAt = DateTime.tryParse(fetchedAtStr);
+            if (fetchedAt != null &&
+                DateTime.now().difference(fetchedAt) > _categoriesCacheTtl) {
+              // Keš je istekao (> 24h)
+              return const [];
+            }
+          }
+
+          final rawData = decoded['data'] as List?;
+          if (rawData != null) {
+            return _buildCategoryTree(rawData);
+          }
+        } else if (decoded is List && allowExpired) {
+          // Kompatibilnost sa starim keš formatom
+          return _buildCategoryTree(decoded);
+        }
       }
     } catch (e) {
       LoggerService.warning(
@@ -513,8 +579,17 @@ class ClassifiedsService {
       }
 
       await _client.rpc('increment_classified_ad_views', params: params);
-    } catch (_) {
-      // Tihi fallback ako RPC nije dostupan
+    } catch (e, st) {
+      _failedViewsRpcCount++;
+      LoggerService.warning(
+        '[ClassifiedsService] increment_classified_ad_views failed (total failures: $_failedViewsRpcCount)',
+        extra: {
+          'ad_id': id,
+          'error': e.toString(),
+          'failed_count': _failedViewsRpcCount,
+          'stack': st.toString(),
+        },
+      );
     }
   }
 
@@ -528,8 +603,18 @@ class ClassifiedsService {
           'p_type': type,
         },
       );
-    } catch (_) {
-      // Best-effort telemetrija — ne prekidamo korisnički tok
+    } catch (e, st) {
+      _failedInteractionsRpcCount++;
+      LoggerService.warning(
+        '[ClassifiedsService] increment_classified_ad_interaction failed (total failures: $_failedInteractionsRpcCount)',
+        extra: {
+          'ad_id': adId,
+          'type': type,
+          'error': e.toString(),
+          'failed_count': _failedInteractionsRpcCount,
+          'stack': st.toString(),
+        },
+      );
     }
   }
 

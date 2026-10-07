@@ -30,6 +30,7 @@ class _FakeUsersService extends Fake implements UsersService {
     Object? phone = _undefined,
     Object? city = _undefined,
     Object? postalCode = _undefined,
+    Object? address = _undefined,
     String? role,
     bool? isGuest,
     Object? farmName = _undefined,
@@ -38,6 +39,10 @@ class _FakeUsersService extends Fake implements UsersService {
     double? lat,
     double? lng,
     bool? phonePublic,
+    Object? sellerStory = _undefined,
+    List<String>? farmGalleryUrls,
+    List<String>? sellerTags,
+    List<String>? sellerQuickReplies,
   }) async {
     lastUpsertParams = {
       'userId': userId,
@@ -45,8 +50,24 @@ class _FakeUsersService extends Fake implements UsersService {
       'phone': phone,
       'city': city,
       'postalCode': postalCode,
+      'address': address,
       'location': location,
       'phonePublic': phonePublic,
+    };
+  }
+
+  @override
+  Future<void> updateProfile(UserModel user, {UserModel? previous}) async {
+    lastUpsertParams = {
+      'userId': user.id,
+      'displayName': user.displayName,
+      'phone': user.phone,
+      'city': user.city,
+      'postalCode': user.postalCode,
+      'address': user.address,
+      'location': user.location ?? user.address,
+      'phonePublic': user.phonePublic,
+      'sellerTags': user.sellerTags,
     };
   }
 

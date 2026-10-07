@@ -4,6 +4,7 @@ import '../../../models/order_item_model.dart';
 import '../../../models/order_model.dart';
 import '../../../models/order_status_audit_log_model.dart';
 import '../../../models/product_model.dart';
+import '../../communication/realtime_channel_manager.dart';
 import '../../core/logger_service.dart';
 
 const int kPageSize = 20;
@@ -225,8 +226,10 @@ mixin OrderQueryMixin {
     required Future<List<OrderModel>> Function() fetcher,
     Stream<void>? refreshTrigger,
   }) {
-    final controller = StreamController<List<OrderModel>>.broadcast();
     StreamSubscription? refreshSub;
+    void Function()? releaseChannel;
+
+    late final StreamController<List<OrderModel>> controller;
 
     Future<void> refetch() async {
       try {
@@ -239,32 +242,42 @@ mixin OrderQueryMixin {
       }
     }
 
-    refetch();
+    controller = StreamController<List<OrderModel>>.broadcast(
+      onListen: () {
+        refetch();
 
-    final channel = client.channel(channelName);
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'orders',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: filterColumn,
-            value: filterValue,
-          ),
-          callback: (_) => refetch(),
-        )
-        .subscribe();
+        releaseChannel = RealtimeChannelManager().acquire(
+          client: client,
+          channelName: channelName,
+          onEvent: refetch,
+          createChannel: (c, notify) {
+            final ch = c.channel(channelName);
+            ch.onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'orders',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: filterColumn,
+                value: filterValue,
+              ),
+              callback: (_) => notify(),
+            );
+            return ch;
+          },
+        );
 
-    refreshSub = refreshTrigger?.listen((_) => refetch());
-
-    controller.onCancel = () {
-      refreshSub?.cancel();
-      client.removeChannel(channel);
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
+        refreshSub = refreshTrigger?.listen((_) => refetch());
+      },
+      onCancel: () {
+        refreshSub?.cancel();
+        releaseChannel?.call();
+        releaseChannel = null;
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      },
+    );
 
     return controller.stream;
   }

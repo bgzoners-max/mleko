@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show InternetAddress, SocketException;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import '../../core/web_seo.dart' show isWebOnline;
 import 'logger_service.dart';
 
 /// Prati internet konekciju - proverava status interfejsa, stvarnu dostupnost (reachability)
@@ -11,7 +12,7 @@ class ConnectivityService extends ChangeNotifier {
   final Future<bool> Function()? _customReachabilityChecker;
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
-  bool _isOnline = true;
+  bool _isOnline;
   bool _isCheckingReachability = false;
 
   bool get isOnline => _isOnline;
@@ -20,8 +21,10 @@ class ConnectivityService extends ChangeNotifier {
   ConnectivityService({
     Connectivity? connectivity,
     Future<bool> Function()? reachabilityChecker,
+    bool initialOnline = false,
   })  : _connectivity = connectivity ?? Connectivity(),
-        _customReachabilityChecker = reachabilityChecker {
+        _customReachabilityChecker = reachabilityChecker,
+        _isOnline = initialOnline {
     _initConnectivity();
   }
 
@@ -57,7 +60,7 @@ class ConnectivityService extends ChangeNotifier {
     await checkReachability();
   }
 
-  /// Proverava stvarnu dostupnost interneta (ping/DNS) umesto pukog statusa adaptera.
+  /// Proverava stvarnu dostupnost interneta (ping/DNS ili navigator.onLine na webu).
   Future<bool> checkReachability() async {
     if (_isCheckingReachability) return _isOnline;
     _isCheckingReachability = true;
@@ -67,8 +70,8 @@ class ConnectivityService extends ChangeNotifier {
       if (_customReachabilityChecker != null) {
         reachable = await _customReachabilityChecker();
       } else if (kIsWeb) {
-        // Na webu pretraživač sam upravlja socketima i CORS pravilima
-        reachable = true;
+        // Na webu čitamo status browsera preko navigator.onLine
+        reachable = isWebOnline;
       } else {
         try {
           // Brz DNS lookup ka Google DNS sa kratkim timeout-om

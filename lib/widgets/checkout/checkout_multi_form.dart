@@ -19,6 +19,7 @@ import 'checkout_address_form.dart';
 import 'checkout_bottom_nav.dart';
 import 'checkout_delivery_options.dart';
 import 'checkout_item_card.dart';
+import 'checkout_validation_utils.dart';
 
 class CheckoutMultiForm extends StatefulWidget {
   final String sellerId;
@@ -409,28 +410,17 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
     return 'Porudžbina nije mogla biti poslata. Pokušaj ponovo.';
   }
 
-  String _missingFieldsError(List<String> fields) {
-    if (fields.length == 1) return 'Niste uneli ${fields.first}.';
-    final all =
-        '${fields.sublist(0, fields.length - 1).join(', ')} i ${fields.last}';
-    return 'Niste uneli $all.';
-  }
-
   Future<void> _submit() async {
-    final missing = <String>[];
-    if (_deliveryMethod == DeliveryMethod.courier) {
-      if (_addressController.text.trim().isEmpty) missing.add('adresu');
-      if (_cityController.text.trim().isEmpty) missing.add('grad');
-    }
-    if (_phoneController.text.trim().isEmpty) missing.add('kontakt telefon');
-    if (missing.isNotEmpty) {
-      setState(() => _error = _missingFieldsError(missing));
-      return;
-    }
-    if (_deliveryMethod == DeliveryMethod.sellerDelivery &&
-        _deliverySelection == null) {
-      setState(() => _error =
-          'Izaberi grad, lokaciju i termin za ličnu dostavu domaćina.');
+    final validationError =
+        CheckoutValidationUtils.validateBuyerDeliveryFields(
+      deliveryMethod: _deliveryMethod,
+      phone: _phoneController.text,
+      city: _cityController.text,
+      address: _addressController.text,
+      deliverySelection: _deliverySelection,
+    );
+    if (validationError != null) {
+      setState(() => _error = validationError);
       return;
     }
     final user = context.read<AppState>().user;

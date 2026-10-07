@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/product_model.dart';
+import '../../communication/realtime_channel_manager.dart';
 import '../../core/logger_service.dart';
 import '../../core/retry_utils.dart';
 import '../product_cache_service.dart';
@@ -33,12 +34,14 @@ mixin ProductListingMixin {
     return (items: products, hasMore: products.length >= limit);
   }
 
-  /// Stream proizvoda prodavca – Realtime umesto polling-a
+  /// Stream proizvoda prodavca – Realtime umesto polling-a sa deljenim kanalom i lazy pretplatom
   Stream<List<ProductModel>> getProductsBySeller(String sellerId,
       {Stream<void>? refreshTrigger}) {
-    final controller = StreamController<List<ProductModel>>.broadcast();
-    final cache = ProductCacheService();
     StreamSubscription? refreshSub;
+    void Function()? releaseChannel;
+    final cache = ProductCacheService();
+
+    late final StreamController<List<ProductModel>> controller;
 
     Future<void> refetch() async {
       try {
@@ -74,43 +77,53 @@ mixin ProductListingMixin {
       }
     }
 
-    cache
-        .getCachedProducts(ProductCacheService.sellerKey(sellerId))
-        .then((cachedProducts) {
-      if (cachedProducts != null && cachedProducts.isNotEmpty) {
+    controller = StreamController<List<ProductModel>>.broadcast(
+      onListen: () {
+        cache
+            .getCachedProducts(ProductCacheService.sellerKey(sellerId))
+            .then((cachedProducts) {
+          if (cachedProducts != null && cachedProducts.isNotEmpty) {
+            if (!controller.isClosed) {
+              controller.add(cachedProducts);
+            }
+          }
+          refetch();
+        }).catchError((_) {
+          refetch();
+        });
+
+        releaseChannel = RealtimeChannelManager().acquire(
+          client: client,
+          channelName: 'products-seller-$sellerId',
+          onEvent: refetch,
+          createChannel: (c, notify) {
+            final ch = c.channel('products-seller-$sellerId');
+            ch.onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'products',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'seller_id',
+                value: sellerId,
+              ),
+              callback: (_) => notify(),
+            );
+            return ch;
+          },
+        );
+
+        refreshSub = refreshTrigger?.listen((_) => refetch());
+      },
+      onCancel: () {
+        refreshSub?.cancel();
+        releaseChannel?.call();
+        releaseChannel = null;
         if (!controller.isClosed) {
-          controller.add(cachedProducts);
+          controller.close();
         }
-      }
-      refetch();
-    }).catchError((e) {
-      refetch();
-    });
-
-    final channel = client.channel('products-seller-$sellerId');
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'products',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'seller_id',
-            value: sellerId,
-          ),
-          callback: (_) => refetch(),
-        )
-        .subscribe();
-
-    refreshSub = refreshTrigger?.listen((_) => refetch());
-
-    controller.onCancel = () {
-      refreshSub?.cancel();
-      client.removeChannel(channel);
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
+      },
+    );
 
     return controller.stream;
   }

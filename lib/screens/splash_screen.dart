@@ -21,10 +21,21 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initApp() async {
     final authService = AuthService();
-    await authService.ensureCleanSession();
+    final cleanSessionFuture = authService.ensureCleanSession();
 
     if (!mounted) return;
     final appState = context.read<AppState>();
+
+    // Brza provera dostupnosti mreže u splashu sa 1.5s timeout-om
+    await Future.wait([
+      cleanSessionFuture,
+      appState.connectivity.checkReachability().timeout(
+        const Duration(milliseconds: 1500),
+        onTimeout: () => appState.connectivity.isOnline,
+      ),
+    ]);
+
+    if (!mounted) return;
     if (appState.justConfirmedEmail) {
       context.go('/auth/confirmed');
       return;

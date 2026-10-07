@@ -28,6 +28,9 @@ void setPageMetadata({
 /// Dinamički origin / javni base URL za konzistentnost sa Vercel Edge funkcijama
 String get publicBaseUrl => impl.resolveBaseUrl();
 
+/// Status internet konekcije na webu preko `navigator.onLine`
+bool get isWebOnline => impl.isWebOnline();
+
 /// SEO za pojedinačni proizvod (Google Schema.org Product Rich Snippet)
 void setProductSeo(ProductModel product) {
   final cleanDesc = product.description.trim().isNotEmpty

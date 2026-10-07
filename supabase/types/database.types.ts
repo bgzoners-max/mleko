@@ -773,7 +773,7 @@ export type Database = {
         Row: {
           id: string
           order_id: string
-          product_id: string
+          product_id: string | null
           product_name: string
           quantity_kg: number
           total_price: number | null
@@ -783,7 +783,7 @@ export type Database = {
         Insert: {
           id?: string
           order_id: string
-          product_id: string
+          product_id?: string | null
           product_name: string
           quantity_kg: number
           total_price?: number | null
@@ -793,7 +793,7 @@ export type Database = {
         Update: {
           id?: string
           order_id?: string
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           quantity_kg?: number
           total_price?: number | null
@@ -1168,6 +1168,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           city: string | null
           created_at: string | null
           display_name: string | null
@@ -1192,6 +1193,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           city?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -1216,6 +1218,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           city?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -1727,6 +1730,7 @@ export type Database = {
       }
       public_profiles: {
         Row: {
+          address: string | null
           city: string | null
           created_at: string | null
           display_name: string | null
@@ -1750,6 +1754,7 @@ export type Database = {
           seller_tags: string[] | null
         }
         Insert: {
+          address?: string | null
           city?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -1773,6 +1778,7 @@ export type Database = {
           seller_tags?: string[] | null
         }
         Update: {
+          address?: string | null
           city?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -1830,6 +1836,18 @@ export type Database = {
           notifications_7d: number | null
           token_count: number | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      v_classified_categories: {
+        Row: {
+          created_at: string | null
+          icon_name: string | null
+          id: string | null
+          is_condition_applicable: boolean | null
+          name: string | null
+          parent_id: string | null
+          sort_order: number | null
         }
         Relationships: []
       }
@@ -1904,6 +1922,7 @@ export type Database = {
         Returns: undefined
       }
       archive_and_expire_orders: { Args: never; Returns: undefined }
+      archive_order: { Args: { p_order_id: string }; Returns: undefined }
       audit_product_ordering: {
         Args: { p_limit?: number }
         Returns: {
@@ -2020,6 +2039,7 @@ export type Database = {
       get_favorite_sellers_with_profiles: {
         Args: { p_user_id: string }
         Returns: {
+          address: string | null
           city: string | null
           created_at: string | null
           display_name: string | null
@@ -2118,6 +2138,7 @@ export type Database = {
           product_id: string
         }[]
       }
+      get_product_stats: { Args: { p_product_id: string }; Returns: Json }
       get_products_from_favorite_sellers: {
         Args: { p_user_id: string }
         Returns: {
@@ -2221,6 +2242,7 @@ export type Database = {
         Returns: Json
       }
       handle_order_retention: { Args: never; Returns: undefined }
+      immutable_unaccent: { Args: { t: string }; Returns: string }
       increment_classified_ad_interaction: {
         Args: { ad_id: string; p_type: string }
         Returns: undefined
@@ -2232,6 +2254,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_service_role: { Args: never; Returns: boolean }
       is_seller_verified: { Args: { p_seller_id: string }; Returns: boolean }
+      mark_conversation_read: {
+        Args: { p_conversation_id: string; p_limit?: number }
+        Returns: number
+      }
       moderate_classified_ad: {
         Args: {
           p_action: string
@@ -2242,6 +2268,7 @@ export type Database = {
         Returns: Json
       }
       normalize_listing_key: { Args: { input_value: string }; Returns: string }
+      normalize_search_text: { Args: { t: string }; Returns: string }
       push_health_summary: {
         Args: never
         Returns: {

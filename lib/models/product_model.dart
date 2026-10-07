@@ -133,6 +133,14 @@ class ProductModel {
     );
   }
 
+  /// Alias za [pricePerKg]. Predstavlja cenu po jedinici definisanoj u [unitType]
+  /// (npr. RSD/kg, RSD/L, RSD/kom, RSD/veza, RSD/pak).
+  ///
+  /// Baza podataka koristi kolonu `price_per_kg` iz istorijskih razloga, ali za proizvode
+  /// sa jedinicama kom, L, veza, pak ova vrednost predstavlja cenu po toj celoj jedinici
+  /// (npr. tegla meda, boca soka, veza sremuša ili pakovanje jaja).
+  double get pricePerUnit => pricePerKg;
+
   bool get isVolumeUnit => unitType == unitL;
 
   /// Oznaka valute za prikaz — domaći ton ("din.").

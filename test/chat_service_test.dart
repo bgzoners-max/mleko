@@ -325,4 +325,162 @@ void main() {
       expect(signCalls, equals(1));
     });
   });
+
+  group('Chat Hardening: Self-Chat, Scoped Orders, and Bounded markAsRead', () {
+    test('self-conversation throws validation AppError when buyerId == sellerId', () async {
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key');
+      final service = ChatService(client: supabase);
+
+      expect(
+        () => service.getOrCreateConversation('same-user', 'same-user'),
+        throwsA(predicate((e) =>
+            e is AppError &&
+            e.type == ErrorType.validation &&
+            (e.userMessage?.contains('samim sobom') ?? false))),
+      );
+    });
+
+    test('getOrCreateConversation with orderId uses onConflict=order_id', () async {
+      String? onConflict;
+      String? sentPayload;
+
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
+          sentPayload = body;
+          onConflict = req.url.queryParameters['on_conflict'];
+          return http.Response(
+            jsonEncode({'id': 'conv-scoped-order-1'}),
+            201,
+            headers: {'content-type': 'application/vnd.pgrst.object+json'},
+          );
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = ChatService(client: supabase);
+
+      final id = await service.getOrCreateConversation(
+        'buyer1',
+        'seller1',
+        orderId: 'order-scoped-123',
+      );
+
+      expect(id, equals('conv-scoped-order-1'));
+      expect(sentPayload, contains('"order_id":"order-scoped-123"'));
+      expect(onConflict, equals('order_id'));
+    });
+
+    test('fallback does not overwrite order_id if conversation already has an order_id', () async {
+      bool patchCalled = false;
+
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        // 1. POST fails with 409
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
+          return http.Response(
+            jsonEncode({'code': '23505', 'message': 'duplicate key'}),
+            409,
+          );
+        }
+        // 2. GET find fallback finds existing conversation
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'GET') {
+          return http.Response(
+            jsonEncode({'id': 'existing-conv-with-order', 'order_id': 'original-order-111'}),
+            200,
+            headers: {'content-type': 'application/vnd.pgrst.object+json'},
+          );
+        }
+        // 3. PATCH should NOT be called because order_id is already present
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'PATCH') {
+          patchCalled = true;
+          return http.Response('{}', 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = ChatService(client: supabase);
+
+      final id = await service.getOrCreateConversation(
+        'buyer1',
+        'seller1',
+        orderId: 'new-order-222',
+        updateOrderIdIfPresent: true,
+      );
+
+      expect(id, equals('existing-conv-with-order'));
+      expect(patchCalled, isFalse);
+    });
+
+    test('markAsRead calls server-side RPC mark_conversation_read with limit', () async {
+      String? rpcBody;
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/mark_conversation_read') && req.method == 'POST') {
+          rpcBody = body;
+          return http.Response('5', 200); // 5 messages updated
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = ChatService(client: supabase);
+
+      await service.markAsRead('conv-123', 'user-1', limit: 150);
+
+      expect(rpcBody, contains('"p_conversation_id":"conv-123"'));
+      expect(rpcBody, contains('"p_limit":150'));
+    });
+
+    test('markAsRead falls back to bounded update when RPC code is 42883', () async {
+      bool rpcAttempted = false;
+      bool fetchConvAttempted = false;
+      bool fetchMessagesAttempted = false;
+      bool updateMessagesAttempted = false;
+
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/mark_conversation_read') && req.method == 'POST') {
+          rpcAttempted = true;
+          return http.Response(
+            jsonEncode({'code': '42883', 'message': 'function mark_conversation_read does not exist'}),
+            404,
+          );
+        }
+        if (req.url.path.contains('/rest/v1/conversations') && req.method == 'GET') {
+          fetchConvAttempted = true;
+          return http.Response(
+            jsonEncode({'buyer_id': 'user-1', 'seller_id': 'user-2'}),
+            200,
+            headers: {'content-type': 'application/vnd.pgrst.object+json'},
+          );
+        }
+        if (req.url.path.contains('/rest/v1/messages') && req.method == 'GET') {
+          fetchMessagesAttempted = true;
+          expect(req.url.queryParameters['limit'], equals('100'));
+          return http.Response(
+            jsonEncode([{'id': 'msg-1'}, {'id': 'msg-2'}]),
+            200,
+          );
+        }
+        if (req.url.path.contains('/rest/v1/messages') && req.method == 'PATCH') {
+          updateMessagesAttempted = true;
+          final idParam = req.url.queryParameters['id'] ?? '';
+          expect(idParam, contains('msg-1'));
+          expect(idParam, contains('msg-2'));
+          return http.Response('', 204);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = ChatService(client: supabase);
+
+      await service.markAsRead('conv-123', 'user-1', limit: 100);
+
+      expect(rpcAttempted, isTrue);
+      expect(fetchConvAttempted, isTrue);
+      expect(fetchMessagesAttempted, isTrue);
+      expect(updateMessagesAttempted, isTrue);
+    });
+  });
 }
+

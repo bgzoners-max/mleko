@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/home/seller_inbox_item.dart';
 import '../core/logger_service.dart';
 
+import 'realtime_channel_manager.dart';
+
 /// Jedinstveni inbox za prodavca – porudžbine + razgovori, sortirano po datumu
 class SellerInboxService {
   final _client = Supabase.instance.client;
@@ -51,8 +53,10 @@ class SellerInboxService {
 
   Stream<List<SellerInboxItem>> watchInbox(String sellerId,
       {int limit = 50, int offset = 0, Stream<void>? refreshTrigger}) {
-    final controller = StreamController<List<SellerInboxItem>>.broadcast();
     StreamSubscription? refreshSub;
+    void Function()? releaseChannel;
+
+    late final StreamController<List<SellerInboxItem>> controller;
 
     Future<void> refetch() async {
       try {
@@ -65,41 +69,52 @@ class SellerInboxService {
       }
     }
 
-    refetch();
+    controller = StreamController<List<SellerInboxItem>>.broadcast(
+      onListen: () {
+        refetch();
 
-    final channel = _client.channel('seller-inbox-$sellerId');
-    channel
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'orders',
-          filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'seller_id',
-              value: sellerId),
-          callback: (_) => refetch(),
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'conversations',
-          filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'seller_id',
-              value: sellerId),
-          callback: (_) => refetch(),
-        )
-        .subscribe();
+        releaseChannel = RealtimeChannelManager().acquire(
+          client: _client,
+          channelName: 'seller-inbox-$sellerId',
+          onEvent: refetch,
+          createChannel: (c, notify) {
+            final ch = c.channel('seller-inbox-$sellerId');
+            ch
+                .onPostgresChanges(
+                  event: PostgresChangeEvent.all,
+                  schema: 'public',
+                  table: 'orders',
+                  filter: PostgresChangeFilter(
+                      type: PostgresChangeFilterType.eq,
+                      column: 'seller_id',
+                      value: sellerId),
+                  callback: (_) => notify(),
+                )
+                .onPostgresChanges(
+                  event: PostgresChangeEvent.all,
+                  schema: 'public',
+                  table: 'conversations',
+                  filter: PostgresChangeFilter(
+                      type: PostgresChangeFilterType.eq,
+                      column: 'seller_id',
+                      value: sellerId),
+                  callback: (_) => notify(),
+                );
+            return ch;
+          },
+        );
 
-    refreshSub = refreshTrigger?.listen((_) => refetch());
-
-    controller.onCancel = () {
-      refreshSub?.cancel();
-      _client.removeChannel(channel);
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
+        refreshSub = refreshTrigger?.listen((_) => refetch());
+      },
+      onCancel: () {
+        refreshSub?.cancel();
+        releaseChannel?.call();
+        releaseChannel = null;
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      },
+    );
 
     return controller.stream;
   }

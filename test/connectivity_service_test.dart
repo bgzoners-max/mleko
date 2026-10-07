@@ -30,9 +30,22 @@ void main() {
       service.dispose();
     });
 
+    test('initially offline (false) by default until reachability proves connection', () {
+      final service = ConnectivityService(
+        reachabilityChecker: () async => true,
+      );
+
+      // Na samom startu status je false dok se ne dokaže mrežna dostupnost
+      expect(service.isOnline, isFalse);
+      expect(service.isOffline, isTrue);
+
+      service.dispose();
+    });
+
     test('reportNetworkFailure on SocketException immediately marks offline', () {
       final service = ConnectivityService(
         reachabilityChecker: () async => true,
+        initialOnline: true,
       );
 
       expect(service.isOnline, isTrue);
@@ -58,6 +71,7 @@ void main() {
     test('reportNetworkFailure ignores non-network exceptions', () {
       final service = ConnectivityService(
         reachabilityChecker: () async => true,
+        initialOnline: true,
       );
 
       expect(service.isOnline, isTrue);

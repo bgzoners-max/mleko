@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../core/constants.dart';
+import '../../widgets/search/search_widgets.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
 import 'package:mleko/services/services.dart';
@@ -14,9 +14,6 @@ import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
 import '../utils/image_precache_utils.dart';
-import '../widgets/app_empty_state.dart';
-import '../widgets/rustic_illustration.dart';
-import '../widgets/product_card.dart';
 import '../widgets/search/search_filter_bar.dart';
 import '../widgets/search/search_filter_sidebar.dart';
 import '../widgets/search/search_history_panel.dart';
@@ -343,62 +340,6 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  Widget _buildProductCard(BuildContext context, int i, dynamic user) {
-    final p = _products[i];
-    final rating = _ratings[p.id];
-    return user != null && !user.isGuest
-        ? Selector<FavoritesProvider, bool>(
-            selector: (_, fav) => fav.isFavorite(p.id),
-            builder: (_, isFavorite, __) {
-              final favorites = context.read<FavoritesProvider>();
-              return ProductCard(
-                product: p,
-                isFavorite: isFavorite,
-                onFavoriteToggle: () => favorites.toggle(user.id, p.id),
-                isPopular: (_salesCounts[p.id] ?? 0) >=
-                    AppConstants.popularProductMinSales,
-                avgRating: rating?.avg,
-                reviewCount: rating?.count,
-              );
-            },
-          )
-        : ProductCard(
-            product: p,
-            isFavorite: null,
-            onFavoriteToggle: null,
-            isPopular: (_salesCounts[p.id] ?? 0) >=
-                AppConstants.popularProductMinSales,
-            avgRating: rating?.avg,
-            reviewCount: rating?.count,
-          );
-  }
-
-  Widget _buildEmptyState() {
-    final hasFilters =
-        _category != null || _region != null || _availableNow == true;
-    final subtitle = hasFilters
-        ? 'Probaj da ukloniš aktivne filtere ili promeniš pojam pretrage.'
-        : 'Probaj drugi naziv ili pogledaj celu ponudu.';
-    return AppEmptyState(
-      motif: RusticMotif.search,
-      icon: Icons.search_off,
-      title: 'Ništa nismo pronašli',
-      subtitle: subtitle,
-      ctaLabel: 'Pogledaj sve proizvode',
-      ctaIcon: Icons.list,
-      onCtaPressed: () {
-        _searchController.clear();
-        setState(() {
-          _category = null;
-          _region = null;
-          _availableNow = null;
-          _debouncedQuery = '';
-        });
-        _loadFirstPage();
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
@@ -531,7 +472,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 _applySearchImmediate(h);
                               },
                               onRemoveHistory: (h) async {
-                                await _searchHistoryService.removeFromHistory(h);
+                                await _searchHistoryService
+                                    .removeFromHistory(h);
                                 if (mounted) {
                                   setState(() {
                                     _historyFuture =
@@ -578,9 +520,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                 scrollController: _scrollController,
                                 onRefresh: _onRefresh,
                                 onRetry: _loadFirstPage,
-                                itemBuilder: (ctx, i) =>
-                                    _buildProductCard(ctx, i, user),
-                                emptyStateWidget: _buildEmptyState(),
+                                itemBuilder: (ctx, i) => SearchProductCard(
+                                    screen: this, i: i, user: user),
+                                emptyStateWidget:
+                                    SearchEmptyState(screen: this),
                                 crossAxisCount: wideGridColumns,
                                 mainAxisExtent: wideGridExtent,
                                 spacing: stackedGridSpacing,
@@ -683,8 +626,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 });
                                 _onFilterChanged();
                               },
-                              icon: const Icon(Icons.clear_all_rounded,
-                                  size: 18),
+                              icon:
+                                  const Icon(Icons.clear_all_rounded, size: 18),
                               label: const Text('Očisti filtere'),
                             ),
                           ),
@@ -705,8 +648,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           onRefresh: _onRefresh,
                           onRetry: _loadFirstPage,
                           itemBuilder: (ctx, i) =>
-                              _buildProductCard(ctx, i, user),
-                          emptyStateWidget: _buildEmptyState(),
+                              SearchProductCard(screen: this, i: i, user: user),
+                          emptyStateWidget: SearchEmptyState(screen: this),
                           crossAxisCount:
                               mobileResultsAsGrid ? stackedResultColumns : 2,
                           mainAxisExtent:

@@ -180,8 +180,7 @@ mixin ProductSearchMixin {
         return true;
       }
 
-      final name = p.name.toLowerCase();
-      return tokens.every((t) => name.contains(t));
+      return matchesAllSearchTokens(p.name, tokens);
     }).toList();
 
     filtered.sort((a, b) => compareProducts(a, b, sort));

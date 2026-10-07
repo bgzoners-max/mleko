@@ -78,25 +78,27 @@ class ClassifiedsProvider extends ChangeNotifier {
     return _subscriptions.any((s) => s.categoryId == categoryId);
   }
 
-  Future<void> loadCategories() async {
+  Future<void> loadCategories({bool forceRefresh = false}) async {
     // Kategorije se učitavaju jednom po sesiji; osvežavaju se preko refresh().
-    if (_categoriesLoaded) return;
+    if (_categoriesLoaded && !forceRefresh) return;
 
     // 1. Instant start iz lokalnog keša (offline spremnost i brzina)
-    try {
-      final cached = await _service.getCachedCategories();
-      if (cached.isNotEmpty) {
-        _categories = cached;
-        notifyListeners();
+    if (!forceRefresh) {
+      try {
+        final cached = await _service.getCachedCategories();
+        if (cached.isNotEmpty) {
+          _categories = cached;
+          notifyListeners();
+        }
+      } catch (e, st) {
+        LoggerService.debug('getCachedCategories error',
+            extra: {'error': e.toString(), 'stackTrace': st.toString()});
       }
-    } catch (e, st) {
-      LoggerService.debug('getCachedCategories error',
-          extra: {'error': e.toString(), 'stackTrace': st.toString()});
     }
 
-    // 2. Učitavanje i sinhronizacija sa bazom
+    // 2. Učitavanje i sinhronizacija sa bazom (forceRefresh invalidira TTL keš)
     try {
-      final items = await _service.getCategories();
+      final items = await _service.getCategories(forceRefresh: forceRefresh);
       if (items.isNotEmpty) {
         items.sort(ClassifiedCategoryModel.compareCategories);
         _categories = items;
@@ -586,6 +588,10 @@ class ClassifiedsProvider extends ChangeNotifier {
   Future<void> refresh() async {
     // Force-reload categories in case they changed (reset guard first).
     _categoriesLoaded = false;
-    await Future.wait([loadCategories(), loadInitialAds(), loadSubscriptions()]);
+    await Future.wait([
+      loadCategories(forceRefresh: true),
+      loadInitialAds(),
+      loadSubscriptions(),
+    ]);
   }
 }

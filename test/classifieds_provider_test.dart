@@ -31,10 +31,10 @@ class FakeClassifiedsService implements ClassifiedsService {
   Completer<List<ClassifiedAdModel>>? controlledCompleter;
 
   @override
-  Future<List<ClassifiedCategoryModel>> getCachedCategories() async => categoriesToReturn;
+  Future<List<ClassifiedCategoryModel>> getCachedCategories({bool allowExpired = true}) async => categoriesToReturn;
 
   @override
-  Future<List<ClassifiedCategoryModel>> getCategories() async => categoriesToReturn;
+  Future<List<ClassifiedCategoryModel>> getCategories({bool forceRefresh = false}) async => categoriesToReturn;
 
   @override
   Future<Map<String, int>> getCategoryAdCounts() async => countsToReturn;

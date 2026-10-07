@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:mleko/models/app_error.dart';
 import 'package:mleko/services/core/connectivity_service.dart';
 import 'package:mleko/services/orders/order_queue_service.dart';
 import 'package:mleko/services/orders/order_sync_service.dart';
@@ -174,6 +175,121 @@ void main() {
       // Remove o2 -> queue empty
       await queueService.removePendingOrder('ord-dup-2');
       expect(await queueService.getPendingCount(onlyUnsynced: false), 0);
+    });
+
+    test('PendingOrder exponential backoff calculates expected delay and ready status', () {
+      final now = DateTime.now();
+      final baseOrder = PendingOrder(
+        id: 'ord-backoff',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        productId: 'p-1',
+        productName: 'Mleko',
+        quantityKg: 2.0,
+        unitType: 'L',
+        buyerCity: 'Beograd',
+        buyerPhone: '0612345678',
+        preferCall: false,
+        pickupOptions: const [],
+        createdAt: DateTime(2026, 1, 1),
+      );
+
+      // retryCount 0 -> zero backoff and ready
+      expect(baseOrder.retryBackoff, equals(Duration.zero));
+      expect(baseOrder.isReadyForRetry, isTrue);
+
+      // retryCount 1 -> 2^1 * 5s = 10s
+      final retry1 = baseOrder.copyWith(
+        retryCount: 1,
+        lastAttemptAt: now.subtract(const Duration(seconds: 5)),
+      );
+      expect(retry1.retryBackoff, equals(const Duration(seconds: 10)));
+      expect(retry1.isReadyForRetry, isFalse);
+
+      final retry1Ready = baseOrder.copyWith(
+        retryCount: 1,
+        lastAttemptAt: now.subtract(const Duration(seconds: 12)),
+      );
+      expect(retry1Ready.isReadyForRetry, isTrue);
+
+      // retryCount 3 -> 2^3 * 5s = 40s
+      final retry3 = baseOrder.copyWith(
+        retryCount: 3,
+        lastAttemptAt: now.subtract(const Duration(seconds: 25)),
+      );
+      expect(retry3.retryBackoff, equals(const Duration(seconds: 40)));
+      expect(retry3.isReadyForRetry, isFalse);
+
+      // retryCount 10 -> capped at 3600s (1h)
+      final retry10 = baseOrder.copyWith(retryCount: 10);
+      expect(retry10.retryBackoff, equals(const Duration(hours: 1)));
+    });
+
+    test('OrderQueueService enforces maxQueueLength of 50', () async {
+      final queueService = OrderQueueService();
+      SharedPreferences.setMockInitialValues({});
+
+      for (var i = 0; i < OrderQueueService.maxQueueLength; i++) {
+        await queueService.addPendingOrder(PendingOrder(
+          id: 'ord-cap-$i',
+          buyerId: 'b-1',
+          sellerId: 's-1',
+          productId: 'p-$i',
+          productName: 'Proizvod $i',
+          quantityKg: 1.0,
+          unitType: 'kg',
+          buyerCity: 'Novi Sad',
+          buyerPhone: '0611111111',
+          preferCall: false,
+          pickupOptions: const [],
+          createdAt: DateTime.now(),
+        ));
+      }
+
+      expect(await queueService.getPendingCount(onlyUnsynced: true),
+          equals(OrderQueueService.maxQueueLength));
+
+      // Attempting to add 51st item should throw AppError
+      expect(
+        () => queueService.addPendingOrder(PendingOrder(
+          id: 'ord-cap-overflow',
+          buyerId: 'b-1',
+          sellerId: 's-1',
+          productId: 'p-overflow',
+          productName: 'Overflow proizvod',
+          quantityKg: 1.0,
+          unitType: 'kg',
+          buyerCity: 'Novi Sad',
+          buyerPhone: '0611111111',
+          preferCall: false,
+          pickupOptions: const [],
+          createdAt: DateTime.now(),
+        )),
+        throwsA(isA<AppError>()),
+      );
+
+      // Once synced items are marked and cleaned, new items can be added again
+      await queueService.markAsSynced('ord-cap-0');
+      await queueService.cleanSyncedOrders();
+
+      expect(await queueService.getPendingCount(onlyUnsynced: true), equals(49));
+
+      await queueService.addPendingOrder(PendingOrder(
+        id: 'ord-cap-after-clean',
+        buyerId: 'b-1',
+        sellerId: 's-1',
+        productId: 'p-after-clean',
+        productName: 'Dozvoljen proizvod',
+        quantityKg: 1.0,
+        unitType: 'kg',
+        buyerCity: 'Novi Sad',
+        buyerPhone: '0611111111',
+        preferCall: false,
+        pickupOptions: const [],
+        createdAt: DateTime.now(),
+      ));
+
+      expect(await queueService.getPendingCount(onlyUnsynced: true), equals(50));
     });
   });
 

@@ -10,3 +10,5 @@ void setPageMetadata({
 }) {}
 
 String resolveBaseUrl([String? origin]) => origin ?? 'https://domacimarket.rs';
+
+bool isWebOnline() => true;

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -12,7 +11,6 @@ import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 import '../../utils/number_input_utils.dart';
 import '../../utils/product_helpers.dart';
-import '../../widgets/grouped_category_dropdown.dart';
 import '../../providers/categories_provider.dart';
 import '../../models/category.dart';
 import '../../models/product_model.dart';
@@ -21,7 +19,9 @@ import '../../providers/app_state.dart';
 import '../../services/media/image_compression_service.dart';
 import '../../services/services.dart';
 import '../../widgets/app_back_button.dart';
-import '../../widgets/cupertino_category_picker.dart';
+import '../../widgets/seller/product_basic_info_section.dart';
+import '../../widgets/seller/product_delivery_section.dart';
+import '../../widgets/seller/product_images_section.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   final String? productId;
@@ -558,7 +558,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Widget build(BuildContext context) {
     final catProvider = context.watch<CategoriesProvider>();
     final groups = catProvider.groups;
-    final hasGroupedCategories = groups != null && groups.isNotEmpty;
     final maxFormWidth = Breakpoints.formContentWidth(context);
     return Scaffold(
       appBar: AppBar(
@@ -593,390 +592,62 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    hasGroupedCategories
-                        ? GroupedCategoryDropdown(
-                            groups: groups,
-                            value: _category,
-                            onChanged: (v) {
-                              setState(() {
-                                _category = v;
-                                if (v != null && isVolumeCategory(v)) {
-                                  _unitType = ProductModel.unitL;
-                                }
-                              });
-                            },
-                            validator: (v) => v == null || v.isEmpty
-                                ? 'Izaberite kategoriju'
-                                : null,
-                          )
-                        : CupertinoCategoryPicker(
-                            initialCategory: _category,
-                            onCategoryChanged: (v) {
-                              setState(() {
-                                _category = v;
-                                if (v != null && isVolumeCategory(v)) {
-                                  _unitType = ProductModel.unitL;
-                                }
-                              });
-                            },
-                          ),
+                    ProductBasicInfoSection(
+                      groups: groups,
+                      category: _category,
+                      onCategoryChanged: (v) =>
+                          setState(() => _category = v),
+                      unitType: _unitType,
+                      onUnitTypeChanged: (v) =>
+                          setState(() => _unitType = v),
+                      nameController: _nameController,
+                      priceController: _priceController,
+                      minOrderController: _minOrderController,
+                      orderStepController: _orderStepController,
+                      availableController: _availableController,
+                      quantityHintBuilder: _formatQuantityHint,
+                      onChanged: () => setState(() {}),
+                    ),
+// BASIC-SECTION-END
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: _unitType,
-                      decoration: const InputDecoration(labelText: 'Jedinica'),
-                      items: const [
-                        DropdownMenuItem(
-                            value: ProductModel.unitKg,
-                            child: Text('Kilogrami / grami (kg / g)')),
-                        DropdownMenuItem(
-                            value: ProductModel.unitL,
-                            child: Text('Litri / mililitri (L / ml)')),
-                        DropdownMenuItem(
-                            value: ProductModel.unitPiece,
-                            child: Text('Komadi (kom)')),
-                        DropdownMenuItem(
-                            value: ProductModel.unitVeza,
-                            child: Text('Veza / vezica (veza)')),
-                        DropdownMenuItem(
-                            value: ProductModel.unitPak,
-                            child: Text('Pakovanje (pak)')),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => _unitType = v ?? ProductModel.unitKg),
+                    ProductImagesSection(
+                      imageUrls: _imageUrls,
+                      newImageBytes: _newImageBytes,
+                      onRemoveExisting: _removeExistingImage,
+                      onRemoveNew: _removeNewImage,
+                      onPickImage: _pickImage,
                     ),
                     const SizedBox(height: 16),
-                    TextField(
-                        controller: _nameController,
-                        decoration:
-                            const InputDecoration(labelText: 'Naziv *')),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _priceController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: switch (_unitType) {
-                          ProductModel.unitL => 'Cena po litru (RSD) *',
-                          ProductModel.unitPiece => 'Cena po komadu (RSD) *',
-                          ProductModel.unitVeza => 'Cena po vezi (RSD) *',
-                          ProductModel.unitPak => 'Cena po pakovanju (RSD) *',
-                          _ => 'Cena po kg (RSD) *',
-                        },
-                      ),
+                    ProductDeliverySection(
+                      location: _location,
+                      onLocationChanged: (v) => setState(() => _location = v),
+                      pickupOptions: _pickupOptions,
+                      onPickupOptionToggled: (opt) => setState(() {
+                        if (_pickupOptions.contains(opt)) {
+                          _pickupOptions.remove(opt);
+                        } else {
+                          _pickupOptions.add(opt);
+                        }
+                      }),
+                      deliveryPointsLoading: _deliveryPointsLoading,
+                      sellerDeliveryPoints: _sellerDeliveryPoints,
+                      deliveryMode: _deliveryMode,
+                      onDeliveryModeChanged: (v) => setState(() => _deliveryMode = v),
+                      selectedDeliveryPointIds: _selectedDeliveryPointIds,
+                      onDeliveryPointToggled: (id) => setState(() {
+                        if (_selectedDeliveryPointIds.contains(id)) {
+                          _selectedDeliveryPointIds.remove(id);
+                        } else {
+                          _selectedDeliveryPointIds.add(id);
+                        }
+                      }),
+                      descriptionController: _descriptionController,
+                      isDomestic: _isDomestic,
+                      onDomesticChanged: (v) => setState(() => _isDomestic = v),
+                      availableNow: _availableNow,
+                      onAvailableNowChanged: (v) => setState(() => _availableNow = v),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
-                      controller: _minOrderController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: switch (_unitType) {
-                          ProductModel.unitL =>
-                            'Minimalna porudžbina (L ili ml, npr. 0.75 ili 750) *',
-                          ProductModel.unitPiece =>
-                            'Minimalna porudžbina (komada, npr. 10) *',
-                          ProductModel.unitVeza =>
-                            'Minimalna porudžbina (veza, npr. 1 ili 5) *',
-                          ProductModel.unitPak =>
-                            'Minimalna porudžbina (pakovanja, npr. 1 ili 2) *',
-                          _ =>
-                            'Minimalna porudžbina (kg ili g, npr. 0.1 ili 100g) *',
-                        },
-                        helperText: _formatQuantityHint(
-                            _minOrderController.text, _unitType),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _orderStepController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: switch (_unitType) {
-                          ProductModel.unitL =>
-                            'Korak porudžbine (L ili ml, npr. 0.5 ili 500) - opciono',
-                          ProductModel.unitPiece =>
-                            'Korak porudžbine (komada, npr. 1 ili 5) - opciono',
-                          ProductModel.unitVeza =>
-                            'Korak porudžbine (veza, npr. 1 ili 2) - opciono',
-                          ProductModel.unitPak =>
-                            'Korak porudžbine (pakovanja, npr. 1 ili 2) - opciono',
-                          _ =>
-                            'Korak porudžbine (kg ili g, npr. 0.1 ili 100g) - opciono',
-                        },
-                        helperText: _formatQuantityHint(
-                                _orderStepController.text, _unitType) ??
-                            'Količina za koju se porudžbina menja (mora biti ≤ minimalnoj količini)',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _availableController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: switch (_unitType) {
-                          ProductModel.unitL => 'Dostupna količina (L ili ml)',
-                          ProductModel.unitPiece => 'Dostupna količina (komada)',
-                          ProductModel.unitVeza => 'Dostupna količina (veza)',
-                          ProductModel.unitPak => 'Dostupna količina (pakovanja)',
-                          _ => 'Dostupna količina (kg)',
-                        },
-                        helperText: _formatQuantityHint(
-                            _availableController.text, _unitType),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _descriptionController,
-                      maxLines: 3,
-                      maxLength: AppConstants.maxProductDescriptionLength,
-                      decoration: const InputDecoration(
-                          labelText: 'Opis (max 300 karaktera)'),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                        'Slike proizvoda (max ${AppConstants.maxProductImages})',
-                        style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 120,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          ..._imageUrls.asMap().entries.map((e) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: CachedNetworkImage(
-                                        imageUrl: e.value,
-                                        width: 100,
-                                        memCacheWidth: 200,
-                                        memCacheHeight: 200,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close,
-                                            color: Colors.white, size: 20),
-                                        style: IconButton.styleFrom(
-                                            backgroundColor: Colors.black54),
-                                        onPressed: () =>
-                                            _removeExistingImage(e.key),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )),
-                          ..._newImageBytes.asMap().entries.map((e) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.memory(e.value,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover),
-                                    ),
-                                    Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: IconButton(
-                                        icon: const Icon(Icons.close,
-                                            color: Colors.white, size: 20),
-                                        style: IconButton.styleFrom(
-                                            backgroundColor: Colors.black54),
-                                        onPressed: () => _removeNewImage(e.key),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )),
-                          if (_totalImages < AppConstants.maxProductImages)
-                            GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  border:
-                                      Border.all(color: Colors.grey.shade400),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(Icons.add_photo_alternate,
-                                    size: 40, color: Colors.grey.shade400),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      key: ValueKey(_location),
-                      initialValue: _location,
-                      decoration:
-                          const InputDecoration(labelText: 'Lokacija *'),
-                      items: AppConstants.regions
-                          .map(
-                              (r) => DropdownMenuItem(value: r, child: Text(r)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _location = v),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Način preuzimanja *',
-                        style: Theme.of(context).textTheme.labelLarge),
-                    ...AppConstants.pickupOptions.map((opt) => CheckboxListTile(
-                          title: Text(opt),
-                          value: _pickupOptions.contains(opt),
-                          onChanged: (v) {
-                            setState(() {
-                              if (v == true) {
-                                _pickupOptions.add(opt);
-                              } else {
-                                _pickupOptions.remove(opt);
-                              }
-                            });
-                          },
-                        )),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Lična dostava domaćina za ovaj proizvod',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    if (_deliveryPointsLoading)
-                      const LinearProgressIndicator()
-                    else ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.green.shade100),
-                        ),
-                        child: Text(
-                          'Izaberite kako ovaj proizvod koristi vašu ličnu dostavu. Ako prodajete isti proizvod samo u određenom gradu ili na određenoj adresi, koristite opciju "Samo na izabranim lokacijama".',
-                          style: TextStyle(
-                            color: Colors.green.shade900,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // ignore: deprecated_member_use
-                      RadioListTile<ProductDeliveryMode>(
-                        value: ProductDeliveryMode.none,
-                        // ignore: deprecated_member_use
-                        groupValue: _deliveryMode,
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Bez lične dostave domaćina'),
-                        subtitle: const Text(
-                          'Koristite ovo ako proizvod nije za vašu organizovanu dostavu. Kupac se može dogovoriti sa vama direktno, ali ne bira vaše definisane punktove i termine.',
-                        ),
-                        // ignore: deprecated_member_use
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() => _deliveryMode = value);
-                        },
-                      ),
-                      // ignore: deprecated_member_use
-                      RadioListTile<ProductDeliveryMode>(
-                        value: ProductDeliveryMode.allSellerPoints,
-                        // ignore: deprecated_member_use
-                        groupValue: _deliveryMode,
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Na svim mojim lokacijama'),
-                        subtitle: const Text(
-                          'Koristite ovo ako ovaj proizvod može da ide na svaki vaš aktivan punkt dostave. Kupac bira bilo koji grad, adresu i termin koje ste već definisali.',
-                        ),
-                        // ignore: deprecated_member_use
-                        onChanged: _sellerDeliveryPoints.isEmpty
-                            ? null
-                            : (value) {
-                                if (value == null) return;
-                                setState(() => _deliveryMode = value);
-                              },
-                      ),
-                      // ignore: deprecated_member_use
-                      RadioListTile<ProductDeliveryMode>(
-                        value: ProductDeliveryMode.selectedPoints,
-                        // ignore: deprecated_member_use
-                        groupValue: _deliveryMode,
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Samo na izabranim lokacijama'),
-                        subtitle: const Text(
-                          'Koristite ovo kada proizvod nosite samo na određene gradove ili adrese. Ispod zatim čekirate tačne punktove na kojima je proizvod dostupan.',
-                        ),
-                        // ignore: deprecated_member_use
-                        onChanged: _sellerDeliveryPoints.isEmpty
-                            ? null
-                            : (value) {
-                                if (value == null) return;
-                                setState(() => _deliveryMode = value);
-                              },
-                      ),
-                      if (_sellerDeliveryPoints.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, bottom: 8),
-                          child: Text(
-                            'Još nemate definisane lokacije lične dostave. Prvo ih dodajte u Seller Settings, pa se vratite ovde da uključite dostavu po proizvodu.',
-                            style: TextStyle(color: Colors.orange.shade800),
-                          ),
-                        ),
-                      if (_deliveryMode == ProductDeliveryMode.selectedPoints &&
-                          _sellerDeliveryPoints.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, bottom: 8),
-                          child: Text(
-                            'Čekirajte samo one lokacije na kojima kupac stvarno može da poruči ovaj proizvod.',
-                            style: TextStyle(color: Colors.grey.shade700),
-                          ),
-                        ),
-                      if (_deliveryMode == ProductDeliveryMode.selectedPoints &&
-                          _sellerDeliveryPoints.isNotEmpty)
-                        ..._sellerDeliveryPoints.map(
-                          (point) => CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(point.summaryLabel),
-                            subtitle: Text(
-                              point.isActive
-                                  ? '${point.city} • ${point.activeSlots.length} aktivnih termina'
-                                  : '${point.city} • neaktivna lokacija',
-                            ),
-                            value: _selectedDeliveryPointIds.contains(point.id),
-                            onChanged: (selected) {
-                              setState(() {
-                                if (selected == true) {
-                                  _selectedDeliveryPointIds.add(point.id);
-                                } else {
-                                  _selectedDeliveryPointIds.remove(point.id);
-                                }
-                              });
-                            },
-                          ),
-                        ),
-                    ],
-                    SwitchListTile(
-                      title: const Text('Domaće / Porodično gazdinstvo'),
-                      value: _isDomestic,
-                      onChanged: (v) => setState(() => _isDomestic = v),
-                    ),
-                    SwitchListTile(
-                      title: const Text('Dostupno sada'),
-                      value: _availableNow,
-                      onChanged: (v) => setState(() => _availableNow = v),
-                    ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       Text(_error!, style: const TextStyle(color: Colors.red)),

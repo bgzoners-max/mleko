@@ -39,6 +39,68 @@ class NotificationHandlerService {
   }
 
 
+  /// Lista dozvoljenih regex uzoraka za rute iz push notifikacija za standardne korisnike.
+  static final List<RegExp> _allowedUserRoutePatterns = [
+    RegExp(r'^/orders(/(active|archived|[a-zA-Z0-9_\-]+))?$'),
+    RegExp(r'^/chat/[a-zA-Z0-9_\-]+$'),
+    RegExp(r'^/conversations$'),
+    RegExp(r'^/classifieds(/(my|saved-searches))?$'),
+    RegExp(r'^/classifieds/ad/[a-zA-Z0-9_\-]+$'),
+    RegExp(r'^/notifications$'),
+    RegExp(r'^/support(/ticket/[a-zA-Z0-9_\-]+)?$'),
+    RegExp(r'^/(seller|buyer)/[a-zA-Z0-9_\-]+(/reviews)?$'),
+    RegExp(r'^/product/[a-zA-Z0-9_\-]+$'),
+    RegExp(r'^/categories(/[a-zA-Z0-9_\-]+)?$'),
+    RegExp(r'^/favorites$'),
+    RegExp(r'^/favorite-sellers$'),
+    RegExp(r'^/settings$'),
+    RegExp(r'^/profile$'),
+    RegExp(r'^/cart$'),
+    RegExp(r'^/sellers-map$'),
+  ];
+
+  /// Lista dozvoljenih regex uzoraka za admin rute iz push notifikacija.
+  static final List<RegExp> _allowedAdminRoutePatterns = [
+    RegExp(r'^/admin/tickets(/[a-zA-Z0-9_\-]+)?$'),
+    RegExp(r'^/admin/push-health$'),
+    RegExp(r'^/admin/classifieds$'),
+  ];
+
+  /// Proverava da li je zadata ruta bezbedna i dozvoljena za navigaciju iz push payload-a.
+  static bool isAllowedRoute(String? route, {bool isAdmin = false}) {
+    if (route == null || route.isEmpty) return false;
+
+    // Odbaci eksterne šeme (http://, https://, javascript:) i protokol-relativne (//)
+    final uri = Uri.tryParse(route);
+    if (uri == null ||
+        uri.hasScheme ||
+        uri.hasAuthority ||
+        !uri.path.startsWith('/') ||
+        uri.path.startsWith('//')) {
+      return false;
+    }
+
+    final path = uri.normalizePath().path;
+
+    // Provera standardnih korisničkih ruta
+    for (final pattern in _allowedUserRoutePatterns) {
+      if (pattern.hasMatch(path)) {
+        return true;
+      }
+    }
+
+    // Provera admin ruta (samo ako korisnik ima admin privilegije)
+    if (isAdmin) {
+      for (final pattern in _allowedAdminRoutePatterns) {
+        if (pattern.hasMatch(path)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   /// Glavna metoda za obradu podataka iz notifikacije (FCM data payload).
   /// 
   /// Koristi `go` za glavne ekrane (zamenjuje ceo stack) i `push` za detaljne
@@ -46,12 +108,21 @@ class NotificationHandlerService {
   void handleNotification(Map<String, dynamic> data) {
     LoggerService.debug('NotificationHandler: Handling data', extra: data);
 
-    // 1. Podrška za direktno prosleđivanje rute iz Supabase/FCM-a (deep link)
+    final isAdmin = appState.user?.isAdmin == true;
+
+    // 1. Podrška za direktno prosleđivanje rute iz Supabase/FCM-a (deep link) uz striktan whitelist
     final route = data['route'] as String?;
     if (route != null && route.isNotEmpty) {
-      // Za deep linkove koristimo go jer pretpostavljamo da je ruta kompletna
-      router.go(route);
-      return;
+      if (isAllowedRoute(route, isAdmin: isAdmin)) {
+        router.go(route);
+        return;
+      } else {
+        LoggerService.warning(
+          'NotificationHandler: Disallowed or unsafe route rejected from push payload',
+          extra: {'route': route, 'isAdmin': isAdmin},
+        );
+        // Ne dozvoljavamo arbitrarnu rutu; nastavljamo sa obradom po tipu ako postoji
+      }
     }
 
     // 2. Logika bazirana na tipu notifikacije (legacy/strukturno)
@@ -63,8 +134,15 @@ class NotificationHandlerService {
       // Glavni ekran - koristi go
       router.go('/orders');
     } else if (type == 'support_ticket_created') {
-      // Glavni ekran - koristi go
-      router.go('/admin/tickets');
+      if (isAdmin) {
+        // Samo administratori idu na pregled tiketa
+        router.go('/admin/tickets');
+      } else {
+        LoggerService.warning(
+          'NotificationHandler: Non-admin received support_ticket_created, redirecting to /support',
+        );
+        router.go('/support');
+      }
     } else if (type == 'new_message') {
       if (conversationId != null) {
         // Detaljni ekran (chat) - koristi push da bi korisnik mogao da se vrati

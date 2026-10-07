@@ -94,6 +94,12 @@ class SellerOrderDraftBar extends StatelessWidget {
                       ),
                     ),
                     onPressed: () async {
+                      if (user.id == sellerId) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Ne možete započeti razgovor sa samim sobom.')),
+                        );
+                        return;
+                      }
                       try {
                         final convId = await context.read<ChatService>()
                             .getOrCreateConversation(user.id, sellerId);

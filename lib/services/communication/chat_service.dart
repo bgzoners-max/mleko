@@ -43,8 +43,20 @@ class ChatService
     String sellerId, {
     String? productId,
     String? adId,
+    String? orderId,
   }) async {
     try {
+      if (orderId != null) {
+        final existingByOrder = await _client
+            .from('conversations')
+            .select('id')
+            .eq('order_id', orderId)
+            .maybeSingle();
+        if (existingByOrder != null) {
+          return existingByOrder['id'] as String?;
+        }
+      }
+
       var query = _client
           .from('conversations')
           .select('id')
@@ -69,11 +81,10 @@ class ChatService
   // ─── Razgovori ─────────────────────────────────────────────────────────────
 
   /// Pronađi ili kreiraj razgovor između kupca i prodavca vezan za konkretan
-  /// proizvod ([productId]) ili oglas ([adId]).
+  /// proizvod ([productId]), oglas ([adId]) ili porudžbinu ([orderId]).
   ///
-  /// Svaki proizvod/predmet ima svoj zaseban razgovor.
-  /// Polje `orderId` predstavlja kontekst najrelevantnije/poslednje porudžbine
-  /// koja se prikazuje u zaglavlju razgovora.
+  /// Ako je prosleđen [orderId], razgovor je scoped na tu porudžbinu i neće
+  /// pregaziti zaglavlje postojećih razgovora.
   Future<String> getOrCreateConversation(
     String buyerId,
     String sellerId, {
@@ -82,6 +93,14 @@ class ChatService
     String? orderId,
     bool updateOrderIdIfPresent = true,
   }) async {
+    if (buyerId == sellerId) {
+      throw AppError(
+        message: 'Buyer and seller cannot be the same user',
+        userMessage: 'Ne možete započeti razgovor sa samim sobom.',
+        type: ErrorType.validation,
+      );
+    }
+
     try {
       final shouldUpdateOrderId = orderId != null && updateOrderIdIfPresent;
       final payload = <String, dynamic>{
@@ -92,11 +111,13 @@ class ChatService
         if (shouldUpdateOrderId) 'order_id': orderId,
       };
 
-      final onConflict = productId != null
-          ? 'buyer_id,seller_id,product_id'
-          : adId != null
-              ? 'buyer_id,seller_id,ad_id'
-              : 'buyer_id,seller_id';
+      final onConflict = orderId != null
+          ? 'order_id'
+          : productId != null
+              ? 'buyer_id,seller_id,product_id'
+              : adId != null
+                  ? 'buyer_id,seller_id,ad_id'
+                  : 'buyer_id,seller_id';
 
       final res = await _client
           .from('conversations')
@@ -114,14 +135,24 @@ class ChatService
         sellerId,
         productId: productId,
         adId: adId,
+        orderId: orderId,
       );
       if (existingId == null) {
         throw AppError.from(e, stackTrace: st);
       }
       if (orderId != null && updateOrderIdIfPresent) {
-        await _client
+        final existingConv = await _client
             .from('conversations')
-            .update({'order_id': orderId}).eq('id', existingId);
+            .select('order_id')
+            .eq('id', existingId)
+            .maybeSingle();
+        final currentOrderId = existingConv?['order_id'] as String?;
+        // Ne overwrite-ovati order_id ako već postoji definisana porudžbina
+        if (currentOrderId == null) {
+          await _client
+              .from('conversations')
+              .update({'order_id': orderId}).eq('id', existingId);
+        }
       }
       return existingId;
     } catch (e, st) {
@@ -172,10 +203,12 @@ class ChatService
     String userId, {
     Stream<void>? refreshTrigger,
   }) {
-    final controller = StreamController<List<ConversationModel>>.broadcast();
     StreamSubscription? refreshSub;
     RealtimeChannel? channel;
     List<String> lastConvIds = [];
+    Timer? debounceTimer;
+
+    late final StreamController<List<ConversationModel>> controller;
 
     Future<void> refetch() async {
       try {
@@ -188,7 +221,10 @@ class ChatService
         if (idsChanged && channel != null) {
           lastConvIds = convIds;
           unawaited(_client.removeChannel(channel!));
-          channel = _subscribeConversations(userId, convIds, refetch);
+          channel = _subscribeConversations(userId, convIds, () {
+            debounceTimer?.cancel();
+            debounceTimer = Timer(const Duration(milliseconds: 300), refetch);
+          });
           channel!.subscribe();
         } else {
           lastConvIds = convIds;
@@ -199,32 +235,33 @@ class ChatService
       }
     }
 
-    Timer? debounceTimer;
     void onEvent() {
       debounceTimer?.cancel();
       debounceTimer = Timer(const Duration(milliseconds: 300), refetch);
     }
 
-    void initChannel() {
-      refetch().then((_) {
-        if (controller.isClosed) return;
-        channel = _subscribeConversations(userId, lastConvIds, onEvent);
-        channel!.subscribe();
-      });
-    }
+    controller = StreamController<List<ConversationModel>>.broadcast(
+      onListen: () {
+        refetch().then((_) {
+          if (controller.isClosed) return;
+          channel = _subscribeConversations(userId, lastConvIds, onEvent);
+          channel!.subscribe();
+        });
 
-    initChannel();
-
-    refreshSub = refreshTrigger?.listen((_) => refetch());
-
-    controller.onCancel = () {
-      debounceTimer?.cancel();
-      refreshSub?.cancel();
-      if (channel != null) _client.removeChannel(channel!);
-      if (!controller.isClosed) {
-        controller.close();
-      }
-    };
+        refreshSub = refreshTrigger?.listen((_) => refetch());
+      },
+      onCancel: () {
+        debounceTimer?.cancel();
+        refreshSub?.cancel();
+        if (channel != null) {
+          unawaited(_client.removeChannel(channel!));
+          channel = null;
+        }
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      },
+    );
 
     return controller.stream;
   }
@@ -500,16 +537,32 @@ class ChatService
 
   Future<void> markAsRead(
     String conversationId,
-    String currentUserId,
-  ) async {
+    String currentUserId, {
+    int limit = 200,
+  }) async {
     try {
-      // Security: Proveri da je korisnik član konverzacije pre označavanja kao pročitano
+      // 1. Primarno: Server-side RPC sa limitom i atomic auth proverom
+      try {
+        await _client.rpc(
+          'mark_conversation_read',
+          params: {
+            'p_conversation_id': conversationId,
+            'p_limit': limit,
+          },
+        );
+        return;
+      } on PostgrestException catch (e) {
+        // Ako funkcija još ne postoji u bazi (kod 42883), pređi na fallback
+        if (e.code != '42883') rethrow;
+      }
+
+      // 2. Fallback: PostgREST update sa autorizacijom i ograničenim brojem redova
       final conversation = await _client
           .from('conversations')
           .select('buyer_id, seller_id')
           .eq('id', conversationId)
           .maybeSingle();
-      
+
       if (conversation == null) {
         throw AppError(
           message: 'Conversation not found',
@@ -517,10 +570,10 @@ class ChatService
           type: ErrorType.notFound,
         );
       }
-      
+
       final buyerId = conversation['buyer_id'] as String?;
       final sellerId = conversation['seller_id'] as String?;
-      
+
       if (currentUserId != buyerId && currentUserId != sellerId) {
         throw AppError(
           message: 'Unauthorized: user is not a member of this conversation',
@@ -528,13 +581,27 @@ class ChatService
           type: ErrorType.forbidden,
         );
       }
-      
-      await _client
+
+      final unreadRows = await _client
           .from('messages')
-          .update({'read_at': DateTime.now().toIso8601String()})
+          .select('id')
           .eq('conversation_id', conversationId)
           .neq('sender_id', currentUserId)
-          .isFilter('read_at', null);
+          .isFilter('read_at', null)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      final unreadIds = (unreadRows as List)
+          .map((r) => r['id'] as String?)
+          .whereType<String>()
+          .toList();
+
+      if (unreadIds.isNotEmpty) {
+        await _client
+            .from('messages')
+            .update({'read_at': DateTime.now().toIso8601String()})
+            .inFilter('id', unreadIds);
+      }
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

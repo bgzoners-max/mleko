@@ -68,6 +68,79 @@ void main() {
       expect(msgId, isNot(equals(diffBodyId)));
     });
 
+    test('computeNotificationId does not collapse distinct messages with identical body and empty orderId', () {
+      // Problem: Prethodni kod Object.hash(type, orderId, title, body) je spajao
+      // sve poruke sa istim naslovom i telom ("Nova poruka") jer je orderId bio prazan.
+      final msgSellerA = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        conversationId: 'conv-seller-a',
+      );
+
+      final msgSellerB = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        conversationId: 'conv-seller-b',
+      );
+
+      // Različiti razgovori moraju imati različite ID-eve u tray-u
+      expect(msgSellerA, isNot(equals(msgSellerB)));
+
+      // Uzastopne poruke u istom razgovoru sa istim tekstom, ali različitim vremenom (created_at)
+      final msgTime1 = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        conversationId: 'conv-seller-a',
+        createdAt: '2026-10-07T12:00:00Z',
+      );
+
+      final msgTime2 = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        conversationId: 'conv-seller-a',
+        createdAt: '2026-10-07T12:05:00Z',
+      );
+
+      expect(msgTime1, isNot(equals(msgTime2)));
+    });
+
+    test('computeNotificationId deduplicates exact retries via database notificationId', () {
+      final retry1 = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        notificationId: 'db-notif-uuid-1234',
+      );
+
+      final retry2 = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        notificationId: 'db-notif-uuid-1234',
+      );
+
+      final differentNotif = PushService.computeNotificationId(
+        type: 'new_message',
+        orderId: '',
+        title: 'Nova poruka',
+        body: 'Pozdrav!',
+        notificationId: 'db-notif-uuid-5678',
+      );
+
+      expect(retry1, equals(retry2));
+      expect(retry1, isNot(equals(differentNotif)));
+    });
+
     test('computeNotificationId handles Serbian Cyrillic and Latin diacritics safely', () {
       final latinId = PushService.computeNotificationId(
         type: 'new_order',
@@ -187,6 +260,46 @@ void main() {
 
       final custom = PushService(client: null);
       expect(custom, isNotNull);
+    });
+  });
+
+  group('PushRouter & Modular Components Safety', () {
+    setUp(() async {
+      await PushRouter.cancelMessageSubscriptions();
+    });
+
+    test('setForegroundHandler and setMessageOpenedHandler handle rapid double invocation safely', () async {
+      final router = PushRouter();
+
+      // Poziv 2x uzastopno ne sme baciti exception niti ući u race condition sa stream otkazivanjem
+      router.setForegroundHandler((_) {});
+      router.setForegroundHandler((_) {});
+
+      router.setMessageOpenedHandler((_) {});
+      router.setMessageOpenedHandler((_) {});
+
+      expect(PushRouter.hasForegroundHandler, isTrue);
+      expect(PushRouter.hasMessageOpenedHandler, isTrue);
+
+      await PushRouter.cancelMessageSubscriptions();
+      expect(PushRouter.hasForegroundHandler, isFalse);
+      expect(PushRouter.hasMessageOpenedHandler, isFalse);
+    });
+
+    test('LocalNotificationRenderer computeNotificationId is accessible and deterministic', () {
+      final id1 = LocalNotificationRenderer.computeNotificationId(
+        type: 'new_order',
+        orderId: 'ord-100',
+        title: 'Porudžbina',
+        body: 'Nova stavka',
+      );
+      final id2 = LocalNotificationRenderer.computeNotificationId(
+        type: 'new_order',
+        orderId: 'ord-100',
+        title: 'Porudžbina',
+        body: 'Nova stavka',
+      );
+      expect(id1, equals(id2));
     });
   });
 }
