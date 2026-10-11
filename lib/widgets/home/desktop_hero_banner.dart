@@ -120,7 +120,7 @@ class DesktopHeroBanner extends StatelessWidget {
                       style: AppFonts.display(
                         Colors.white,
                         fontSize: isCompactDesktop ? 26 : 32,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         height: 1.18,
                         letterSpacing: -0.5,
                       ),
@@ -251,7 +251,7 @@ class DesktopHeroBanner extends StatelessWidget {
           ),
         ),
 
-        // Sekundarno dugme: Mali oglasi & poljoprivreda
+        // Sekundarno dugme: Mali oglasi
         OutlinedButton.icon(
           onPressed: () {
             if (onExploreClassifieds != null) {
@@ -261,9 +261,9 @@ class DesktopHeroBanner extends StatelessWidget {
               context.go('/classifieds');
             }
           },
-          icon: const Icon(Icons.agriculture_outlined, size: 18),
+          icon: const Icon(Icons.storefront_outlined, size: 18),
           label: const Text(
-            'Mali oglasi & mehanizacija',
+            'Mali oglasi',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13.5,

@@ -15,6 +15,8 @@ class ClassifiedTitleField extends StatelessWidget {
           decoration: const InputDecoration(
             labelText: 'Naslov oglasa *',
             hintText: 'npr. Traktor IMT 539, bušilica Bosch, iPhone 14...',
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) return 'Unesite naslov oglasa.';
@@ -22,7 +24,7 @@ class ClassifiedTitleField extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
       ],
     );
   }

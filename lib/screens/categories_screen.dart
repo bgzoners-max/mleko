@@ -8,7 +8,6 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/category_icon.dart';
-import '../widgets/emoji_text.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_footer.dart';
 
@@ -129,9 +128,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     padding: EdgeInsets.fromLTRB(padding, padding, padding, 8),
                     child: Row(
                       children: [
-                        EmojiText(
-                          section.emoji,
-                          style: const TextStyle(fontSize: 20),
+                        CategoryIcon(
+                          iconName: section.icon,
+                          size: 24,
+                          color: isDark ? AmazonColors.darkAmberCta : AmazonColors.darkNavy,
                         ),
                         const SizedBox(width: 8),
                         Text(

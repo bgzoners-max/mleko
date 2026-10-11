@@ -236,6 +236,17 @@ class SupportService {
     }
   }
 
+  /// Dohvati pojedinačni tiket po ID-u
+  Future<SupportTicketModel?> fetchTicketById(String id) async {
+    final data = await _client
+        .from('support_tickets')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+    if (data == null) return null;
+    return SupportTicketModel.fromJson(data);
+  }
+
   /// Korisnik: lista vlastitih tiketa
   Future<List<SupportTicketModel>> fetchMyTickets() async {
     final data = await _client

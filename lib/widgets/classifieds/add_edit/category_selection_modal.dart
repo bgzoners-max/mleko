@@ -7,11 +7,13 @@ class CategorySelectionResult {
   final String id;
   final String name;
   final bool? isConditionApplicable;
+  final List<ClassifiedCategoryModel> breadcrumbs;
 
   CategorySelectionResult({
     required this.id,
     required this.name,
     this.isConditionApplicable,
+    this.breadcrumbs = const [],
   });
 }
 
@@ -39,8 +41,6 @@ class CategorySelectionModal {
 
                 if (modalPath.isNotEmpty) {
                   final current = modalPath.last;
-                  final currentBreadcrumb =
-                      modalPath.map((e) => e.name).join(' > ');
 
                   headerWidget = Padding(
                     padding: const EdgeInsets.fromLTRB(8, 12, 16, 8),
@@ -72,30 +72,42 @@ class CategorySelectionModal {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     children: [
-                      OutlinedButton.icon(
-                        icon: Icon(current.iconData, size: 18),
-                        label: Text(
-                          modalPath.length == 1
-                              ? 'Izaberi celu kategoriju: ${current.name}'
-                              : 'Izaberi celu podkategoriju: ${current.name}',
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.3),
+                          ),
                         ),
-                        style: OutlinedButton.styleFrom(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(
-                            ctx,
-                            CategorySelectionResult(
-                              id: current.id,
-                              name: currentBreadcrumb,
-                              isConditionApplicable: current.isConditionApplicable,
+                        child: Row(
+                          children: [
+                            Icon(current.iconData,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                modalPath.length == 1
+                                    ? 'Izaberite podkategoriju za ${current.name}:'
+                                    : 'Izaberite marku ili tip (ili "Ostalo"):',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                       if (current.subcategories.isNotEmpty) ...[
                         const SizedBox(height: 14),
@@ -127,32 +139,6 @@ class CategorySelectionModal {
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  TextButton(
-                                    style: TextButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.pop(
-                                        ctx,
-                                        CategorySelectionResult(
-                                          id: group.id,
-                                          name: [
-                                            ...modalPath.map((e) => e.name),
-                                            group.name
-                                          ].join(' > '),
-                                          isConditionApplicable:
-                                              group.isConditionApplicable,
-                                        ),
-                                      );
-                                    },
-                                    child: Text(
-                                      'Izaberi: ${group.name}',
-                                      style: const TextStyle(fontSize: 11),
                                     ),
                                   ),
                                 ],
@@ -187,6 +173,11 @@ class CategorySelectionModal {
                                         name: fullPath,
                                         isConditionApplicable:
                                             brand.isConditionApplicable,
+                                        breadcrumbs: [
+                                          ...modalPath,
+                                          group,
+                                          brand,
+                                        ],
                                       ),
                                     );
                                   },
@@ -254,6 +245,7 @@ class CategorySelectionModal {
                                         name: fullPath,
                                         isConditionApplicable:
                                             sub.isConditionApplicable,
+                                        breadcrumbs: [...modalPath, sub],
                                       ),
                                     );
                                   },
@@ -303,6 +295,7 @@ class CategorySelectionModal {
                                         name: fullPath,
                                         isConditionApplicable:
                                             sub.isConditionApplicable,
+                                        breadcrumbs: [...modalPath, sub],
                                       ),
                                     );
                                   }
@@ -369,6 +362,7 @@ class CategorySelectionModal {
                                 name: cat.name,
                                 isConditionApplicable:
                                     cat.isConditionApplicable,
+                                breadcrumbs: [cat],
                               ),
                             );
                           }

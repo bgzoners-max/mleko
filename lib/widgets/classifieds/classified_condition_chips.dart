@@ -176,14 +176,6 @@ class ClassifiedConditionChips extends StatelessWidget {
         ),
         const SizedBox(width: 5),
         buildChipItem(
-          isSelected: classifieds.onlyFeatured,
-          onTap: () => classifieds.setOnlyFeatured(!classifieds.onlyFeatured),
-          label: 'Istaknuto',
-          icon: Icons.star_rounded,
-          activeColor: AmazonColors.amberDark,
-        ),
-        const SizedBox(width: 5),
-        buildChipItem(
           isSelected: classifieds.onlyUrgent,
           onTap: () => classifieds.setOnlyUrgent(!classifieds.onlyUrgent),
           label: 'Hitno',

@@ -77,7 +77,7 @@ class _DesktopNavTabState extends State<DesktopNavTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
-                    color: AmazonColors.amber,
+                    color: isDark ? AmazonColors.darkAmberCta : AmazonColors.amber,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(

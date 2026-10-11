@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// Supabase konfiguracija sa podrškom za višestruka okruženja (`local`, `staging`, `prod`)
 /// preko `--dart-define=APP_ENV=...` i pojedinačne varijable (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SHARE_BASE_URL`).
 ///
-/// Kanonski javni domen produkcije je `https://domacimarket.rs`.
+/// Kanonski javni domen produkcije je `https://www.domacimarket.rs`.
 ///
 /// Bezbednost i izolacija:
 /// - U debug režimu ([kReleaseMode] == false), aplikacija NAMERNO ne pada automatski na produkcijsku bazu
@@ -18,7 +18,7 @@ class SupabaseConfig {
   static const String _prodUrl = 'https://wvqtujpurhzraptorcvl.supabase.co';
   static const String _prodAnonKey =
       'sb_publishable_fctLgkfcyV3HtMIHkO6lvw_NdmiBrsX';
-  static const String _prodShareBaseUrl = 'https://domacimarket.rs';
+  static const String _prodShareBaseUrl = 'https://www.domacimarket.rs';
 
   // Lokalni parametri (standardni lokalni Supabase stack)
   static const String _localUrl = 'http://127.0.0.1:54321';

@@ -33,6 +33,13 @@ class ClassifiedFeedHeader extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Image.asset(
+                  'assets/images/domaci_market_logo_v2.png',
+                  width: 26,
+                  height: 26,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 7),
                 Text(
                   'DOMAĆI MARKET',
                   style: TextStyle(

@@ -502,25 +502,17 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
                                             MainAxisAlignment.end,
                                         children: [
                                           if (!ad.isSold) ...[
-                                            IconButton(
-                                              tooltip: ad.isCurrentlyFeatured
-                                                  ? 'Istaknut oglas'
-                                                  : 'Istakni oglas (Uskoro)',
-                                              icon: Icon(
-                                                ad.isCurrentlyFeatured
-                                                    ? Icons.star_rounded
-                                                    : Icons
-                                                        .star_outline_rounded,
-                                                color: ad.isCurrentlyFeatured
-                                                    ? const Color(0xFFD97706)
-                                                    : colorScheme
-                                                        .onSurfaceVariant
-                                                        .withValues(alpha: 0.5),
-                                                size: 20,
+                                            if (ad.isCurrentlyFeatured)
+                                              IconButton(
+                                                tooltip: 'Istaknut oglas (Ukloni)',
+                                                icon: const Icon(
+                                                  Icons.star_rounded,
+                                                  color: Color(0xFFD97706),
+                                                  size: 20,
+                                                ),
+                                                onPressed: () =>
+                                                    showFeaturedInfo(context, ad, () => _removeFeatured(ad)),
                                               ),
-                                              onPressed: () =>
-                                                  showFeaturedInfo(context, ad, () => _removeFeatured(ad)),
-                                            ),
                                             IconButton(
                                               tooltip: ad.isUrgent
                                                   ? 'Ukloni hitnost'

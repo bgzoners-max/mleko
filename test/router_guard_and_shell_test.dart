@@ -18,7 +18,10 @@ void main() {
   group('Navigation & Breakpoints Alignment', () {
     test('kDesktopBreakpoint is exactly 1200 and matches Breakpoints.desktop', () {
       expect(kDesktopBreakpoint, 1200);
+      expect(kDesktop, 1200);
+      expect(kWide, 1440);
       expect(Breakpoints.desktop, 1200);
+      expect(Breakpoints.wideDesktop, 1440);
       expect(Breakpoints.tablet, 1200);
     });
 

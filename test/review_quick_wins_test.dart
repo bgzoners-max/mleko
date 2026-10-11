@@ -70,6 +70,16 @@ void main() {
       );
     });
 
+    test('radi za Cloudflare R2 javne URL-ove', () {
+      expect(
+        StorageService.extractPathFromPublicUrl(
+          'product-images',
+          'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev/product-images/uid/slika.webp?t=999',
+        ),
+        'uid/slika.webp',
+      );
+    });
+
     test('vraca null za pogresan bucket ili praznu putanju', () {
       expect(
         StorageService.extractPathFromPublicUrl(

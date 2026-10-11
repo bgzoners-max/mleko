@@ -147,15 +147,54 @@ class ClassifiedCategoryModel {
     'motorola',
     'realme',
     'vivo',
+    'infinix',
+    'tecno',
     'google',
-    'huawei',
-    'sony',
     'nothing',
+    'cmf_nothing',
+    'huawei',
     'asus',
+    'asus_rog',
+    'asus_zenfone',
+    'sony',
     'zte',
+    'nubia',
+    'tcl',
+    'smartfoni_ostalo',
+    'ostali_smartfoni',
     'nokia_hmd',
     'cat',
   };
+
+  /// Proverava da li je dati ID kategorije brend mobilnog telefona
+  static bool isPhoneBrand(String? id) =>
+      id != null && _phoneBrandIds.contains(id.toLowerCase());
+
+  /// Vraća hijerarhijsku putanju kategorija od korena do traženog ID-ja (npr. [Telefoni, Smartfoni, Redmi])
+  static List<ClassifiedCategoryModel> findPath(
+    String targetId,
+    List<ClassifiedCategoryModel> nodes,
+  ) {
+    final path = <ClassifiedCategoryModel>[];
+    _findPathRecursive(targetId, nodes, path);
+    return path;
+  }
+
+  static bool _findPathRecursive(
+    String targetId,
+    List<ClassifiedCategoryModel> nodes,
+    List<ClassifiedCategoryModel> currentPath,
+  ) {
+    for (final node in nodes) {
+      currentPath.add(node);
+      if (node.id == targetId) return true;
+      if (_findPathRecursive(targetId, node.subcategories, currentPath)) {
+        return true;
+      }
+      currentPath.removeLast();
+    }
+    return false;
+  }
 
   static const Set<String> _tractorBrandIds = {
     'traktori_imt_imr',
@@ -256,6 +295,8 @@ class ClassifiedCategoryModel {
         return Icons.countertops;
       case 'cruelty_free':
         return Icons.cruelty_free;
+      case 'cottage':
+        return Icons.cottage;
       case 'curtains':
         return Icons.curtains;
       case 'cyclone':
@@ -266,6 +307,8 @@ class ClassifiedCategoryModel {
         return Icons.delete;
       case 'developer_board':
         return Icons.developer_board;
+      case 'devices':
+        return Icons.devices;
       case 'diamond':
         return Icons.diamond;
       case 'dialpad':
@@ -442,6 +485,8 @@ class ClassifiedCategoryModel {
         return Icons.receipt_long;
       case 'reorder':
         return Icons.reorder;
+      case 'restaurant':
+        return Icons.restaurant;
       case 'roofing':
         return Icons.roofing;
       case 'router':

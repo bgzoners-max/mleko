@@ -1,17 +1,19 @@
 // generate_status.dart
 import 'dart:io';
 
-void main() {
+void main(List<String> args) {
   final statusFile = File('STATUS.md');
   final testDir = Directory('test');
   final lcovFile = File('coverage/lcov.info');
   final migrationsDir = Directory('supabase/migrations');
+  final force = args.contains('--force');
 
   int testCount = 0;
   if (testDir.existsSync()) {
-    final testFiles = testDir.listSync(recursive: true).where((e) => e.path.endsWith('_test.dart'));
-    testCount = testFiles.length; // Ovo broji test fajlove, ali možemo računati da je svaki fajl 1+ test, ili možemo izvući broj testova iz coverage-a (otežano)
-    // Actually, to get number of tests requires parsing dart files. We can just list test files for now.
+    final testFiles = testDir
+        .listSync(recursive: true)
+        .where((e) => e.path.endsWith('_test.dart'));
+    testCount = testFiles.length;
   }
 
   double coverage = 0.0;
@@ -33,7 +35,39 @@ void main() {
 
   int migrationCount = 0;
   if (migrationsDir.existsSync()) {
-    migrationCount = migrationsDir.listSync().where((e) => e.path.endsWith('.sql')).length;
+    migrationCount = migrationsDir
+        .listSync()
+        .where((e) => e.path.endsWith('.sql'))
+        .length;
+  }
+
+  final coverageStr = coverage.toStringAsFixed(2);
+
+  // Ako STATUS.md već postoji i nije prosleđen --force, proveravamo da li su se metrike promenile.
+  // Ako su metrike identične, ne menjamo timestamp kako CI `git diff --quiet -- STATUS.md` ne bi lažno padao.
+  if (!force && statusFile.existsSync()) {
+    final existingContent = statusFile.readAsStringSync();
+    final testMatch =
+        RegExp(r'- \*\*Test fajlovi\*\*:\s*(\d+)').firstMatch(existingContent);
+    final covMatch = RegExp(r'- \*\*Pokrivenost koda \(Coverage\)\*\*:\s*([\d\.]+)%')
+        .firstMatch(existingContent);
+    final migMatch = RegExp(r'- \*\*Broj SQL migracija\*\*:\s*(\d+)')
+        .firstMatch(existingContent);
+
+    if (testMatch != null && covMatch != null && migMatch != null) {
+      final existingTests = int.tryParse(testMatch.group(1)!);
+      final existingCov = covMatch.group(1);
+      final existingMigs = int.tryParse(migMatch.group(1)!);
+
+      if (existingTests == testCount &&
+          existingCov == coverageStr &&
+          existingMigs == migrationCount) {
+        stdout.writeln(
+          'STATUS.md je već ažuran (metrike nepromenjene: $testCount test fajlova, $coverageStr% coverage, $migrationCount migracija).',
+        );
+        return;
+      }
+    }
   }
 
   final sb = StringBuffer();
@@ -42,11 +76,14 @@ void main() {
   sb.writeln('');
   sb.writeln('## Status');
   sb.writeln('- **Test fajlovi**: $testCount');
-  sb.writeln('- **Pokrivenost koda (Coverage)**: ${coverage.toStringAsFixed(2)}%');
+  sb.writeln('- **Pokrivenost koda (Coverage)**: $coverageStr%');
   sb.writeln('- **Broj SQL migracija**: $migrationCount');
   sb.writeln('');
   sb.writeln('Ovaj fajl je auto-generisan.');
 
   statusFile.writeAsStringSync(sb.toString());
-  stdout.writeln('STATUS.md uspešno generisan.');
+  stdout.writeln(
+    'STATUS.md uspešno generisan ($testCount test fajlova, $coverageStr% coverage, $migrationCount migracija).',
+  );
 }
+

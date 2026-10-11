@@ -49,8 +49,12 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
       _error = null;
     });
     try {
-      final tickets = await _service.fetchAllTickets();
-      final ticket = tickets.firstWhere((t) => t.id == widget.ticketId);
+      final ticket = await _service.fetchTicketById(widget.ticketId);
+      if (ticket == null) {
+        if (!mounted) return;
+        setState(() => _error = 'Tiket nije pronađen.');
+        return;
+      }
       if (!mounted) return;
       setState(() => _ticket = ticket);
       _sub = _service.watchTicketMessages(widget.ticketId).listen((msgs) {

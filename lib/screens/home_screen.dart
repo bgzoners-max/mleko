@@ -27,6 +27,7 @@ import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
 import '../widgets/home/market_mode_switcher.dart';
 import '../widgets/beta_announcement_banner.dart';
+import '../widgets/app_footer.dart';
 import '../widgets/theme_toggle_switch.dart';
 import 'classifieds/classifieds_feed_screen.dart';
 
@@ -181,12 +182,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.eco_outlined,
-                          size: 22,
-                          color: Theme.of(context).colorScheme.primary,
+                        Image.asset(
+                          'assets/images/domaci_market_logo_v2.png',
+                          width: 30,
+                          height: 30,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.storefront_rounded,
+                            size: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 7),
                         Text(
                           AppConstants.appName,
                           maxLines: 1,
@@ -457,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             selectedRegion: selectedRegion,
                             onSearchTap: () => _openSearch(context),
                           ),
+                        AppFooter.sliver(),
                       ],
                     ),
                   ),

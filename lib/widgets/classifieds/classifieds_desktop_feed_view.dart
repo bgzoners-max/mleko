@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/amazon_theme.dart';
 import '../../core/responsive.dart';
 import '../../models/user_model.dart';
+import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../app_empty_state.dart';
 import '../app_footer.dart';
@@ -45,6 +47,16 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final canvasColor = AmazonColors.getCanvas(context);
+    final isAppOffline = context.watch<AppState>().isOffline;
+    final isNetworkErr = classifieds.error != null &&
+        (isAppOffline ||
+            classifieds.error!.toLowerCase().contains('socket') ||
+            classifieds.error!.toLowerCase().contains('network') ||
+            classifieds.error!.toLowerCase().contains('offline') ||
+            classifieds.error!.toLowerCase().contains('konekcij') ||
+            classifieds.error!.toLowerCase().contains('connection') ||
+            classifieds.error!.toLowerCase().contains('host lookup') ||
+            classifieds.error!.toLowerCase().contains('timeout'));
 
     return Material(
       color: canvasColor,
@@ -171,11 +183,23 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
                             ],
                             const SizedBox(height: 14),
 
-                            // Stanja: Loading / Greška / Prazno / Grid
+                            // Stanja: Loading / Nema interneta / Greška / Prazno / Grid
                             if (classifieds.loading)
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 60),
                                 child: Center(child: CircularProgressIndicator()),
+                              )
+                            else if (classifieds.ads.isEmpty && (isAppOffline || isNetworkErr))
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 40),
+                                child: AppEmptyState(
+                                  icon: Icons.wifi_off_rounded,
+                                  title: 'Nema internet veze',
+                                  subtitle: 'Proverite vašu internet vezu i pokušajte ponovo da učitate oglase.',
+                                  ctaLabel: 'Pokušaj ponovo',
+                                  ctaIcon: Icons.refresh,
+                                  onCtaPressed: classifieds.refresh,
+                                ),
                               )
                             else if (classifieds.error != null && classifieds.ads.isEmpty)
                               Padding(

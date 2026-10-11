@@ -52,8 +52,7 @@ class ClassifiedCityButton extends StatelessWidget {
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 130),
+            Flexible(
               child: Text(
                 labelText,
                 maxLines: 1,

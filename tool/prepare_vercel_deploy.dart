@@ -137,9 +137,35 @@ void main() {
       RegExp(r'var\s+buster\s*=\s*Date\.now\(\);'),
       'var buster = "$buildHash";',
     );
+    // Ukloni sourceMappingURL komentare da Lighthouse i browseri ne traže
+    // nepostojeće .map fajlove i ne prijavljuju SyntaxError u PageSpeed
+    content = content.replaceAll(
+      RegExp(r'//[#@]\s*sourceMappingURL=\S+'),
+      '',
+    );
     targetBootstrap.writeAsStringSync(content);
-    stdout.writeln('Injected build hash into flutter_bootstrap.js');
+    stdout.writeln('Injected build hash into flutter_bootstrap.js and stripped source map references');
   }
+
+  // 5b. Ukloni sourceMappingURL iz svih preostalih .js fajlova
+  for (final entity in targetPublicDir.listSync(recursive: true)) {
+    if (entity is File && entity.path.endsWith('.js')) {
+      final js = entity.readAsStringSync();
+      if (js.contains('sourceMappingURL=')) {
+        entity.writeAsStringSync(
+          js.replaceAll(RegExp(r'//[#@]\s*sourceMappingURL=\S+'), ''),
+        );
+      }
+    }
+  }
+
+  // 5c. Kreiraj validne prazne source map JSON fajlove za slučaj da Lighthouse/DevTools
+  // direktno pošalje GET zahtev (sprečava Vercel SPA rewrite na index.html i SyntaxError)
+  const emptySourceMap = '{"version":3,"file":"script.js","sources":[],"mappings":""}';
+  File('${targetPublicDir.path}/flutter.js.map').writeAsStringSync(emptySourceMap);
+  File('${targetPublicDir.path}/flutter_bootstrap.js.map').writeAsStringSync(emptySourceMap);
+  File('${targetPublicDir.path}/main.dart.js.map').writeAsStringSync(emptySourceMap);
+  stdout.writeln('Created fallback source map stubs for production audit compliance');
 
   // 6. Post-procesiranje index.html: ubrizgavanje preload taga i heša u flutter_bootstrap.js
   final targetIndexHtml = File('${targetPublicDir.path}/index.html');

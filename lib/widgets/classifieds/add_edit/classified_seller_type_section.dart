@@ -120,9 +120,11 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
       );
     }
 
+    final isWide = MediaQuery.sizeOf(context).width >= 600;
+
     return Card(
       elevation: 0,
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -132,7 +134,7 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
       ),
       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -148,6 +150,7 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
                   'Tip oglašivača * (Zakonska deklaracija)',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
               ],
@@ -156,29 +159,58 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
             Text(
               'Prema Zakonu o zaštiti potrošača i Zakonu o elektronskoj trgovini, oglašivač je dužan da se izjasni da li nastupa kao fizičko ili pravno lice / trgovac.',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11.5,
                 color: colorScheme.onSurfaceVariant,
                 height: 1.35,
               ),
             ),
-            const SizedBox(height: 14),
-            buildTypeCard(
-              type: 'individual',
-              title: 'Fizičko lice',
-              subtitle:
-                  'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
-              icon: Icons.person_outline_rounded,
-              selected: !isBusiness,
-            ),
-            const SizedBox(height: 10),
-            buildTypeCard(
-              type: 'business',
-              title: 'Pravno lice / Trgovac',
-              subtitle:
-                  'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo koje nastupa u okviru svoje delatnosti.',
-              icon: Icons.storefront_outlined,
-              selected: isBusiness,
-            ),
+            const SizedBox(height: 12),
+            if (isWide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: buildTypeCard(
+                      type: 'individual',
+                      title: 'Fizičko lice',
+                      subtitle:
+                          'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
+                      icon: Icons.person_outline_rounded,
+                      selected: !isBusiness,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: buildTypeCard(
+                      type: 'business',
+                      title: 'Pravno lice / Trgovac',
+                      subtitle:
+                          'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo u okviru delatnosti.',
+                      icon: Icons.storefront_outlined,
+                      selected: isBusiness,
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              buildTypeCard(
+                type: 'individual',
+                title: 'Fizičko lice',
+                subtitle:
+                    'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
+                icon: Icons.person_outline_rounded,
+                selected: !isBusiness,
+              ),
+              const SizedBox(height: 8),
+              buildTypeCard(
+                type: 'business',
+                title: 'Pravno lice / Trgovac',
+                subtitle:
+                    'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo koje nastupa u okviru svoje delatnosti.',
+                icon: Icons.storefront_outlined,
+                selected: isBusiness,
+              ),
+            ],
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),

@@ -79,7 +79,7 @@ Widget aboutComprehensiveSectionCard({
           title,
           style: GoogleFonts.bitter(
             fontSize: 21,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
           ),
         ),

@@ -126,6 +126,7 @@ mixin ProductSearchMixin {
       unawaited(ProductCacheService().cacheProducts(
         ProductCacheService.searchKey(safeSearch),
         products,
+        ttl: ProductCacheService.searchCacheTTL,
       ));
     }
 
@@ -365,6 +366,8 @@ mixin ProductSearchMixin {
           }
         }
       }
+
+      unawaited(cache.invalidateSearchCache());
 
       if (realtimeThrottle.tryAcquire()) {
         unawaited(refetch());

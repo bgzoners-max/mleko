@@ -2,6 +2,9 @@
   "scripts": {
     "build": "node -e \"console.error('ERROR: Do not deploy directly from workspace root! Use npm run deploy:all.'); process.exit(1);\"",
     "deploy:all": "flutter build web --release --no-tree-shake-icons && npm run vercel:deploy",
+    "pages:prepare": "dart run tool/copy_web_shell_assets.dart && dart run tool/prepare_cloudflare_deploy.dart",
+    "pages:deploy": "npm run pages:prepare && npx wrangler pages deploy build/cloudflare-deploy --project-name domacimarket --branch main",
+    "deploy:pages": "flutter build web --release --no-tree-shake-icons && npm run pages:deploy",
     "vercel:prepare": "dart run tool/copy_web_shell_assets.dart && dart run tool/prepare_vercel_deploy.dart",
     "vercel:deploy": "npm run vercel:prepare && npx vercel build --cwd build/vercel-deploy --yes --prod && npx vercel deploy --cwd build/vercel-deploy --prebuilt --prod --yes --scope vrvladas-projects",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",

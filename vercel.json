@@ -94,6 +94,19 @@
         }
       ]
     },
+    {
+      "source": "/(.*)\\.map",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=UTF-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
 
     {
       "source": "/flutter_service_worker.js",
@@ -175,9 +188,16 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/cdn-cgi/l/email-protection(.*)",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
-    { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
     { "source": "/politika-privatnosti", "destination": "/politika-privatnosti.html" },
     { "source": "/uslovi-koriscenja", "destination": "/uslovi-koriscenja.html" },
     { "source": "/", "destination": "/index.html" },

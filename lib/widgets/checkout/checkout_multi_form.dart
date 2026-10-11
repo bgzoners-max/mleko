@@ -261,9 +261,10 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
 
   void _selectDeliveryPoint(String? pointId) {
     if (pointId == null) return;
-    final point = _pointsForSelectedCity.firstWhere(
-      (entry) => entry.id == pointId,
-    );
+    final point = _pointsForSelectedCity
+        .where((entry) => entry.id == pointId)
+        .firstOrNull;
+    if (point == null) return;
     setState(() {
       _selectedDeliveryPoint = point;
       _selectedDeliverySlot =
@@ -274,9 +275,10 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
 
   void _selectDeliverySlot(String? slotId) {
     if (slotId == null || _selectedDeliveryPoint == null) return;
-    final slot = _selectedDeliveryPoint!.activeSlots.firstWhere(
-      (entry) => entry.id == slotId,
-    );
+    final slot = _selectedDeliveryPoint!.activeSlots
+        .where((entry) => entry.id == slotId)
+        .firstOrNull;
+    if (slot == null) return;
     setState(() => _selectedDeliverySlot = slot);
   }
 
@@ -577,6 +579,17 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
 
     if (result.isSuccess) {
       unawaited(AppHaptics.success());
+      if (!isOnline && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Porudžbina je sačuvana offline. Biće poslata čim se uspostavi internet veza.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
       context.go('/orders');
     } else {
       setState(() {

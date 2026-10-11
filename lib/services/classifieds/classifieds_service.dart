@@ -68,6 +68,19 @@ class ClassifiedsService {
       }
     }
 
+    // Bezbednosna garancija: osiguraj da pod 'smartfoni' uvek postoji 'smartfoni_ostalo' (Ostale marke)
+    final smartfoniChildren = childrenByParent['smartfoni'];
+    if (smartfoniChildren != null &&
+        !smartfoniChildren.any((c) => c.id == 'smartfoni_ostalo')) {
+      smartfoniChildren.add(const ClassifiedCategoryModel(
+        id: 'smartfoni_ostalo',
+        name: 'Ostale marke',
+        iconName: 'smartphone',
+        parentId: 'smartfoni',
+        sortOrder: 999,
+      ));
+    }
+
     ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
       final rawChildren = childrenByParent[node.id] ?? [];
       final nestedChildren = rawChildren.map((c) {

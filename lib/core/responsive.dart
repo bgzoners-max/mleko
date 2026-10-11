@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 const double kDesktopBreakpoint = 1200;
+const double kDesktop = 1200;
+const double kWide = 1440;
 
 /// Breakpoints za responsive layout
 /// Phone: < 600, Tablet: 600-1200, Desktop: >= 1200
@@ -11,9 +13,11 @@ class Breakpoints {
   static const double phone = 600;
   static const double smallTablet = 768;
   static const double largeTablet = 1024;
-  static const double tablet = kDesktopBreakpoint;
-  static const double desktop = kDesktopBreakpoint;
-  static const double wideDesktop = 1440;
+  static const double desktop = kDesktop;
+  static const double wideDesktop = kWide;
+
+  @Deprecated('Use Breakpoints.desktop instead')
+  static const double tablet = desktop;
 
   /// Maksimalna širina za modalne prozore i sheet-ove na tablet/desktop ekranima
   static const double modalMaxWidth = 640;
@@ -23,7 +27,7 @@ class Breakpoints {
   /// Tablet: +2-3px boost, Desktop: +4-5px boost
   static double scaleFontSize(double baseFontSize, BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= tablet) {
+    if (width >= desktop) {
       // Desktop: veći boost
       return baseFontSize + (baseFontSize < 16 ? 4 : 5);
     } else if (width >= phone) {
@@ -52,7 +56,7 @@ class Breakpoints {
 
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    return width >= phone && width < tablet;
+    return width >= phone && width < desktop;
   }
 
   static bool isSmallTablet(BuildContext context) {
@@ -62,7 +66,7 @@ class Breakpoints {
 
   static bool isLargeTablet(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    return width >= largeTablet && width < tablet;
+    return width >= largeTablet && width < desktop;
   }
 
   static bool isTabletOrLarger(BuildContext context) =>
@@ -72,26 +76,22 @@ class Breakpoints {
       MediaQuery.orientationOf(context) == Orientation.landscape;
 
   static bool isDesktop(BuildContext context) =>
-      MediaQuery.sizeOf(context).width >= tablet;
+      MediaQuery.sizeOf(context).width >= desktop;
 
   static bool isWideDesktop(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= wideDesktop;
 
   static bool useDesktopSplitView(BuildContext context) =>
-      MediaQuery.sizeOf(context).width >= 1280;
+      MediaQuery.sizeOf(context).width >= desktop;
 
-  /// Dvopanelni raspored za data-heavy ekrane.
-  /// Desktop ga uvek koristi, a veliki tableti samo u landscape orijentaciji.
-  static bool useTwoPaneLayout(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    if (width >= 1280) return true;
-    return width >= largeTablet && isLandscape(context);
-  }
+  /// Dvopanelni raspored za data-heavy ekrane (svi desktop ekrani >= 1200).
+  static bool useTwoPaneLayout(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= desktop;
 
   /// Maksimalna širina sadržaja na tablet/desktop (centrirano)
   static double maxContentWidth(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= tablet) return 1200;
+    if (width >= desktop) return 1200;
     if (width >= largeTablet) return 1040;
     if (width >= smallTablet) return 920;
     if (width >= phone) return 800;
@@ -102,7 +102,7 @@ class Breakpoints {
   static double dataContentWidth(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     if (width >= wideDesktop) return 1360;
-    if (width >= tablet) return 1280;
+    if (width >= desktop) return 1200;
     if (width >= largeTablet) return 1040;
     if (width >= smallTablet) return 920;
     if (width >= phone) return 800;
@@ -113,7 +113,7 @@ class Breakpoints {
   /// Telefon ostaje fluidan, tablet dobija umeren okvir, a desktop 800px.
   static double formContentWidth(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= tablet) return 800;
+    if (width >= desktop) return 800;
     if (width >= largeTablet) return 720;
     if (width >= smallTablet) return 680;
     if (width >= phone) return 640;
@@ -127,7 +127,7 @@ class Breakpoints {
     double? desktopWidth,
   }) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= tablet) return desktopWidth ?? tabletWidth;
+    if (width >= desktop) return desktopWidth ?? tabletWidth;
     if (width >= phone) return tabletWidth;
     return double.infinity;
   }
@@ -136,7 +136,7 @@ class Breakpoints {
   static int productGridColumns(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     if (width >= wideDesktop) return 5;
-    if (width >= tablet) return 4;
+    if (width >= desktop) return 4;
     if (width >= largeTablet) return 3;
     if (width >= phone) return 3;
     return 2;
@@ -145,7 +145,7 @@ class Breakpoints {
   /// Broj kolona za category chips (koliko stane u jedan red)
   static int categoryChipsPerRow(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= tablet) return 8;
+    if (width >= desktop) return 8;
     if (width >= largeTablet) return 6;
     if (width >= smallTablet) return 5;
     if (width >= phone) return 5;

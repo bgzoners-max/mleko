@@ -261,20 +261,26 @@ class AppFooter extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: AmazonColors.amber.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: AmazonColors.amber.withValues(alpha: 0.35),
-                  width: 1,
+            Image.asset(
+              'assets/images/domaci_market_logo_v2.png',
+              width: 38,
+              height: 38,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: AmazonColors.amber.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AmazonColors.amber.withValues(alpha: 0.35),
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: const Icon(
-                Icons.storefront_rounded,
-                color: AmazonColors.amber,
-                size: 20,
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: AmazonColors.amber,
+                  size: 20,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -518,7 +524,6 @@ class AppFooter extends StatelessWidget {
   Widget _buildBottomBar(BuildContext context, Color textSecondary) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 620;
         final copyright = Text(
           '© 2026 Domaći Market · Sva prava zadržana.',
           style: TextStyle(
@@ -535,23 +540,18 @@ class AppFooter extends StatelessWidget {
           ),
         );
 
-        if (isNarrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        return SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 6,
             children: [
               copyright,
-              const SizedBox(height: 6),
               tag,
             ],
-          );
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            copyright,
-            tag,
-          ],
+          ),
         );
       },
     );

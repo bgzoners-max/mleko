@@ -48,5 +48,5 @@ Disallow: /classifieds/my
 Disallow: /verify-email
 Disallow: /auth/confirmed
 
-# Mapa sajta (XML Sitemap)
-Sitemap: https://domacimarket.rs/sitemap.xml
+# Mapa sajta (XML Sitemap — dinamički generisana za Google i pretraživače)
+Sitemap: https://www.domacimarket.rs/sitemap.xml

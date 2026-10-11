@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../services/core/logger_service.dart';
 
 class QuantityEngine {
   const QuantityEngine._();
@@ -37,6 +38,9 @@ class QuantityEngine {
     if (orderStep != null && orderStep > 0) {
       return orderStep;
     }
+    LoggerService.warning(
+      'QuantityEngine.resolveStep: Nedostaje eksplicitni orderStep ($orderStep); fallback na minQuantity ($minQuantity). Prema REPO_BIBLE.md, order_step je obavezan u šemi baze.',
+    );
     if (minQuantity > 0) {
       return minQuantity;
     }

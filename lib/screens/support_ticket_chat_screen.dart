@@ -48,8 +48,12 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
       _error = null;
     });
     try {
-      final tickets = await _service.fetchMyTickets();
-      final ticket = tickets.firstWhere((t) => t.id == widget.ticketId);
+      final ticket = await _service.fetchTicketById(widget.ticketId);
+      if (ticket == null) {
+        if (!mounted) return;
+        setState(() => _error = 'Tiket nije pronađen.');
+        return;
+      }
       if (!mounted) return;
       setState(() => _ticket = ticket);
       _sub = _service.watchTicketMessages(widget.ticketId).listen((msgs) {

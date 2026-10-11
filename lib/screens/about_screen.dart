@@ -130,7 +130,7 @@ class _AboutContent extends StatelessWidget {
                 'Domaći Market — Pijaca domaće hrane & 100% besplatni mali oglasi',
                 style: GoogleFonts.bitter(
                   fontSize: isTablet ? 27 : 21,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
                   height: 1.25,
                   letterSpacing: -0.2,
@@ -163,7 +163,7 @@ class _AboutContent extends StatelessWidget {
                 'Ko smo mi i šta gradimo?',
                 style: GoogleFonts.bitter(
                   fontSize: 21,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),
@@ -449,7 +449,7 @@ class _AboutContent extends StatelessWidget {
                 'Moderna tehnologija u službi poštene trgovine',
                 style: GoogleFonts.bitter(
                   fontSize: 21,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),
@@ -514,7 +514,7 @@ class _AboutContent extends StatelessWidget {
                 'Naš manifest — Zašto nam je stalo?',
                 style: GoogleFonts.bitter(
                   fontSize: 21,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),
@@ -572,7 +572,7 @@ class _AboutContent extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.bitter(
                   fontSize: isTablet ? 23 : 19,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),

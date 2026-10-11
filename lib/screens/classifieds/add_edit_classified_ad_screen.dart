@@ -11,6 +11,7 @@ import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 
 import '../../models/classified_ad_model.dart';
+import '../../models/classified_category_model.dart';
 
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
@@ -31,7 +32,6 @@ import '../../widgets/classifieds/add_edit/classified_submit_button.dart';
 import '../../widgets/classifieds/add_edit/classified_price_section.dart';
 import '../../widgets/classifieds/add_edit/classified_contact_section.dart';
 import '../../widgets/classifieds/add_edit/classified_category_selector.dart';
-import '../../widgets/classifieds/add_edit/classified_condition_selector.dart';
 import '../../widgets/classifieds/add_edit/classified_title_field.dart';
 import '../../widgets/classifieds/add_edit/classified_description_field.dart';
 import '../../widgets/classifieds/add_edit/classified_guest_empty_state.dart';
@@ -64,6 +64,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   bool _phonePublic = true;
   String? _selectedCategoryName;
   bool? _selectedCategoryConditionApplicable;
+  List<ClassifiedCategoryModel> _selectedCategoryBreadcrumbs = [];
   Map<String, dynamic> _attributes = {};
   bool _isFeatured = false;
   DateTime? _featuredUntil;
@@ -136,12 +137,15 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     String id,
     String name, {
     bool? isConditionApplicable,
+    List<ClassifiedCategoryModel> breadcrumbs = const [],
   }) {
     setState(() {
+      _selectedCategoryBreadcrumbs = breadcrumbs;
       if (_selectedCategoryId != id) {
-        final newAttrs = ClassifiedAttributesEngine.getAttributesForCategory(id)
-            .map((a) => a.key)
-            .toSet();
+        final newAttrs = ClassifiedAttributesEngine.getAttributesForCategory(
+          id,
+          breadcrumbs: breadcrumbs,
+        ).map((a) => a.key).toSet();
         _attributes.removeWhere((k, _) => !newAttrs.contains(k));
       }
       _selectedCategoryId = id;
@@ -169,6 +173,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _phoneController.text = ad.phone ?? '';
         _selectedCategoryId = ad.categoryId;
         _selectedCategoryName = ad.categoryName;
+        final allCategories =
+            context.read<ClassifiedsProvider>().categories;
+        _selectedCategoryBreadcrumbs =
+            ClassifiedCategoryModel.findPath(ad.categoryId, allCategories);
         _currency = ad.currency;
         _priceType = ad.priceType;
         final catModel =
@@ -377,6 +385,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         result.id,
         result.name,
         isConditionApplicable: result.isConditionApplicable,
+        breadcrumbs: result.breadcrumbs,
       );
     }
   }
@@ -559,11 +568,13 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: isTablet ? 32 : 16,
-          vertical: 16,
+          vertical: 14,
         ),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
+            constraints: BoxConstraints(
+              maxWidth: (isTablet || Breakpoints.isDesktop(context)) ? 780 : 640,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -582,10 +593,11 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     imageProcessingStatus: _imageProcessingStatus,
                     imageProcessingProgress: _imageProcessingProgress,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
                   ClassifiedTitleField(controller: _titleController),
 
+                  // Kategorija (puna širina za čist i čitljiv prikaz stabla kategorije)
                   ClassifiedCategorySelector(
                     selectedCategoryId: _selectedCategoryId,
                     selectedCategoryName: _selectedCategoryName,
@@ -594,25 +606,24 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                   ),
                   const SizedBox(height: 12),
 
+                  // Stanje predmeta i Način formiranja cene (u istom redu na desktopu)
                   ClassifiedPriceSection(
+                    isConditionApplicable: _isConditionApplicable,
+                    condition: _condition,
+                    onConditionChanged: (v) => setState(() => _condition = v ?? 'used'),
                     priceType: _priceType,
                     currency: _currency,
                     priceController: _priceController,
                     onPriceTypeChanged: (v) => setState(() => _priceType = v ?? 'fixed'),
                     onCurrencyChanged: (v) => setState(() => _currency = v ?? 'RSD'),
                   ),
-                  const SizedBox(height: 16),
-
-                  ClassifiedConditionSelector(
-                    isConditionApplicable: _isConditionApplicable,
-                    condition: _condition,
-                    onChanged: (v) => setState(() => _condition = v ?? 'used'),
-                  ),
+                  const SizedBox(height: 12),
 
                   ClassifiedAttributesWrapper(
                     theme: theme,
                     colorScheme: colorScheme,
                     categoryId: _selectedCategoryId,
+                    breadcrumbs: _selectedCategoryBreadcrumbs,
                     currentAttributes: _attributes,
                     onChanged: (key, val) {
                       setState(() {
@@ -625,16 +636,54 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     },
                   ),
 
-                  // Grad / Lokacija sa automatskim predlozima
-                  ClassifiedCityAutocomplete(controller: _cityController),
-                  const SizedBox(height: 16),
-
-                  ClassifiedContactSection(
-                    phoneController: _phoneController,
-                    phonePublic: _phonePublic,
-                    onPhonePublicChanged: (v) => setState(() => _phonePublic = v),
-                  ),
-                  const SizedBox(height: 16),
+                  // Grad / Lokacija i Kontakt telefon
+                  if (isTablet || Breakpoints.isDesktop(context)) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ClassifiedCityAutocomplete(controller: _cityController),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Kontakt telefon',
+                              hintText: 'npr. 064 123 4567',
+                              prefixIcon: Icon(Icons.phone_outlined, size: 18),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SwitchListTile.adaptive(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Prikaži telefon javno u oglasu',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: const Text(
+                        'Ako isključite, kupci vas mogu kontaktirati samo preko poruka na sajtu.',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                      value: _phonePublic,
+                      onChanged: (v) => setState(() => _phonePublic = v),
+                    ),
+                  ] else ...[
+                    ClassifiedCityAutocomplete(controller: _cityController),
+                    const SizedBox(height: 10),
+                    ClassifiedContactSection(
+                      phoneController: _phoneController,
+                      phonePublic: _phonePublic,
+                      onPhonePublicChanged: (v) => setState(() => _phonePublic = v),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
 
                   ClassifiedDescriptionField(controller: _descController),
 
@@ -650,25 +699,14 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     },
                   ),
 
-                  // Sekcija za promociju oglasa
+                  // Sekcija za hitnu prodaju
                   ClassifiedPromotionSection(
                     theme: theme,
                     colorScheme: colorScheme,
-                    isFeatured: _isFeatured,
                     isUrgent: _isUrgent,
-                    onFeaturedChanged: (val) {
-                      setState(() {
-                        _isFeatured = val;
-                        if (val && _featuredUntil == null) {
-                          _featuredUntil = DateTime.now().add(const Duration(days: 30));
-                        } else if (!val) {
-                          _featuredUntil = null;
-                        }
-                      });
-                    },
                     onUrgentChanged: (val) => setState(() => _isUrgent = val),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // Dugme za objavu
                   ClassifiedSubmitButton(
@@ -677,7 +715,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
                     uploadStatusText: _uploadStatusText,
                     onSubmit: _submit,
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),

@@ -23,6 +23,14 @@ void main() {
       expect(cat.iconData, Icons.agriculture);
     });
 
+    test('all 16 fallback categories have non-fallback iconData', () {
+      expect(ClassifiedCategoryModel.fallbackCategories.length, equals(16));
+      for (final cat in ClassifiedCategoryModel.fallbackCategories) {
+        expect(cat.iconData, isNot(equals(Icons.category)),
+            reason: 'Category ${cat.name} (${cat.id}) has unmapped icon');
+      }
+    });
+
     test('parses subcategory with parent_id', () {
       final json = {
         'id': 'traktori',

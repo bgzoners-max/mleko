@@ -16,30 +16,36 @@ class ClassifiedCategorySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Kategorija *'),
-          subtitle: Text(
-            selectedCategoryId != null
-                ? (selectedCategoryName ?? selectedCategoryId!)
-                : 'Kliknite da izaberete kategoriju',
-            style: TextStyle(
-              color: selectedCategoryId != null
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              fontWeight: selectedCategoryId != null
-                  ? FontWeight.bold
-                  : FontWeight.normal,
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Kategorija *',
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          suffixIcon: Icon(
+            Icons.arrow_drop_down,
+            color: colorScheme.onSurfaceVariant,
           ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: onTap,
         ),
-        const Divider(),
-      ],
+        child: Text(
+          selectedCategoryId != null
+              ? (selectedCategoryName ?? selectedCategoryId!)
+              : 'Kliknite da izaberete kategoriju',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            color: selectedCategoryId != null
+                ? colorScheme.onSurface
+                : colorScheme.onSurfaceVariant,
+            fontWeight: selectedCategoryId != null
+                ? FontWeight.w600
+                : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }

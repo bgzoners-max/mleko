@@ -1,41 +1,86 @@
-# Migration squash — plan (NIJE IZVRŠEN, čeka staging verifikaciju)
+# Migration squash — plan i status
 
-> Status (2026-10-01): **plan dokumentovan, squash NIJE izvršen**.
-> Razlog: Docker nije dostupan lokalno (`supabase start` ne radi bez
-> Docker Desktop-a), pa baseline dump i `db reset` verifikacija nisu mogući
-> bez staging Supabase projekta. Brisati migracije naslepo = rizik od
-> `Remote migration versions not found in local` i divergencije prod šeme.
+> **Status (2026-10-08):**
+> 1. Istorija od **221 linearne migracije** je sačuvana trajnim Git tagom: `migrations-pre-squash`.
+> 2. P0 seed čišćenje je primenjeno kroz `20261008180000_purge_legacy_seed_test_users.sql` i zaštićeno CI alatom `tool/check_no_seed_data_in_migrations.dart`.
+> 3. Sam fizički squash u jedan baseline fajl čeka pokretanje u kontrolisanom okruženju sa Docker-om (lokalni Docker Desktop, Staging baza ili GitHub Actions), kako bi se izbegao rizik od `Remote migration versions not found in local` na produkcijskoj bazi.
 
-## Kontekst
+---
 
-- `supabase/migrations/`: 210 fajlova, ~15541 linija, ~670KB.
-- Istorija je linearna (bez grananja), od `20260226100000_initial_schema.sql`
-  do `20261001110000_scoped_item_conversations.sql`.
-- Repo već dokumentuje proceduru u `docs/MIGRATIONS_SOLO.md` (§ Strategija
-  konsolidacije) i `docs/STAGING_ENVIRONMENT.md` (§ 4 Supabase Staging baza).
-- CI (`db-integration-checks`) radi `supabase start` + `db reset` + SQL testove
-  + drift-check `database.types.ts` — to je kapija za squash.
+## 1. Kontekst
 
-## Predloženi koraci (redom, svaki se verifikuje pre sledećeg)
+- `supabase/migrations/`: **221 SQL fajl**, linearna istorija od `20260226100000_initial_schema.sql` do `20261008180000_purge_legacy_seed_test_users.sql`.
+- Git tag: `migrations-pre-squash` (omogućava `git checkout migrations-pre-squash` u svakom trenutku radi uvida u istoriju pojedinačnih DDL izmena).
+- CI mehanizam zaštite:
+  - `tool/check_no_seed_data_in_migrations.dart` + `test/no_seed_in_migrations_test.dart` garantuju odsustvo seed naloga u migracijama.
+  - `db-integration-checks` u `.github/workflows/ci.yml` automatski startuje Supabase, resetuje bazu, pokreće SQL testove i proverava `database.types.ts` schema drift.
 
-1. **Staging Supabase projekat** (po `docs/STAGING_ENVIRONMENT.md` § 4):
-   `supabase link --project-ref <STAGING_REF>` → `supabase db push`
-   (svih 210 migracija) → `UPDATE edge_config SET functions_base_url`.
-2. **Baseline dump sa staging-a** (NE sa prod, da se ne optereti prod):
-   `supabase db dump --linked --schema-only -f supabase/baseline_schema.sql`
-   (očekivano ~600-700KB konsolidovanog DDL-a).
-3. **Lokalna verifikacija** (zahteva Docker): `supabase db reset --local`
-   sa samo baseline fajlom → svi SQL testovi iz `supabase/tests/` moraju proći
-   → `npm run supabase:types:local` → diff `database.types.ts` mora biti prazan.
-4. **Zamena**: `supabase/migrations/*.sql` → `supabase/migrations_archive/`,
-   novi `supabase/migrations/20261002000000_baseline_schema.sql`.
-5. **Repair istorije** na staging + prod (samo nakon § 2-3 zelenih):
-   `supabase migration repair --status applied <svih 210 verzija>`.
-6. **CI provera**: full `ci.yml` (flutter-checks + db-integration-checks) zelen
-   na feature grani → merge u `staging` → smoke na staging URL-u →
-   merge u `master`.
+---
 
-## Rollback
+## 2. Operativni koraci za izvršenje squasha
 
-- `migrations_archive/` ostaje u gitu; povratak = `git revert` baseline commit-a.
-- Nikada ne brisati `migrations_archive/` pre 30 dana nakon uspešnog prod push-a.
+Squash se sprovodi u jednom kontrolisanom koraku kada je dostupan Docker ili Staging instanca:
+
+### Korak A: Dump trenutne čiste šeme (Baseline)
+```bash
+# Opcija 1 — Ako je povezan Staging projekat (preporučeno, nula rizika po prod):
+npx supabase link --project-ref <STAGING_PROJECT_REF>
+npx supabase db push
+npx supabase db dump --linked --schema-only -f supabase/baseline_schema.sql
+
+# Opcija 2 — Ako je aktivan lokalni Docker:
+npx supabase db reset --local --yes
+npx supabase db dump --local --schema-only -f supabase/baseline_schema.sql
+```
+
+### Korak B: Arhiviranje i zamena migracija
+```bash
+# 1. Kreiranje arhivskog direktorijuma
+mkdir -p supabase/migrations_archive
+
+# 2. Premeštanje postojećih 221 migracija u arhivu
+mv supabase/migrations/*.sql supabase/migrations_archive/
+
+# 3. Postavljanje baseline šeme kao jedine početne migracije
+mv supabase/baseline_schema.sql supabase/migrations/20261008190000_baseline_schema.sql
+```
+
+### Korak C: Lokalna i CI verifikacija
+```bash
+# 1. Reset sa novom baseline migracijom
+npx supabase db reset --local --yes
+
+# 2. Pokretanje integration SQL testova
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/order_status_flow_integration.sql
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/create_order_rpc_integration.sql
+
+# 3. Regeneracija tipova i provera schema drift-a
+npm run supabase:types:local
+git diff --exit-code supabase/types/database.types.ts
+```
+
+### Korak D: Repair istorije na udaljenim bazama (Staging & Prod)
+> **KRITIČNO:** Supabase CLI pamti verzije migracija u tabeli `supabase_migrations.schema_migrations`.
+> Bez repair-a, sledeći `supabase db push` bi prijavio: `Remote migration versions not found in local`.
+
+```bash
+# Na staging bazi:
+npx supabase migration repair --status reverted <stare_verzije>
+npx supabase migration repair --status applied 20261008190000
+
+# Na produkcijskoj bazi (nakon uspešne verifikacije na stagingu):
+npx supabase migration repair --status reverted <stare_verzije>
+npx supabase migration repair --status applied 20261008190000
+```
+
+---
+
+## 3. Sigurnost i Rollback
+
+- Istorija je u potpunosti zaštićena tagom `migrations-pre-squash` i folderom `supabase/migrations_archive/`.
+- Povratak na staro stanje u slučaju bilo kakvog problema:
+  ```bash
+  git checkout migrations-pre-squash -- supabase/migrations/
+  ```
+- Arhivski folder `supabase/migrations_archive/` se zadržava u repozitorijumu najmanje 30 dana nakon primene na produkciji.
+

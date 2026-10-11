@@ -26,10 +26,9 @@ export function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
 }
 
-const DEFAULT_CANONICAL_ORIGIN = "https://domacimarket.rs";
+const DEFAULT_CANONICAL_ORIGIN = "https://www.domacimarket.rs";
 
 const WHITELISTED_ORIGINS = new Set([
-  "https://domacimarket.rs",
   "https://www.domacimarket.rs",
   "https://staging.domacimarket.rs",
 ]);

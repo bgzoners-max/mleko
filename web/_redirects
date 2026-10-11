@@ -1,0 +1,5 @@
+/sitemap.xml /api/sitemap 200
+/politika-privatnosti /politika-privatnosti.html 200
+/uslovi-koriscenja /uslovi-koriscenja.html 200
+/auth/confirm /api/auth-confirm 200
+/* /index.html 200

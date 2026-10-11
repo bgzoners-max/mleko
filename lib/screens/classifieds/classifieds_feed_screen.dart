@@ -116,7 +116,18 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final classifieds = context.watch<ClassifiedsProvider>();
-    final user = context.watch<AppState>().user;
+    final appState = context.watch<AppState>();
+    final user = appState.user;
+    final isAppOffline = appState.isOffline;
+    final isNetworkErr = classifieds.error != null &&
+        (isAppOffline ||
+            classifieds.error!.toLowerCase().contains('socket') ||
+            classifieds.error!.toLowerCase().contains('network') ||
+            classifieds.error!.toLowerCase().contains('offline') ||
+            classifieds.error!.toLowerCase().contains('konekcij') ||
+            classifieds.error!.toLowerCase().contains('connection') ||
+            classifieds.error!.toLowerCase().contains('host lookup') ||
+            classifieds.error!.toLowerCase().contains('timeout'));
 
     if (!widget.isEmbedded) {
       final currentCatId = classifieds.selectedCategoryId;
@@ -157,7 +168,7 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         ? null
         : FloatingActionButton.extended(
             onPressed: () => context.push('/classifieds/new'),
-            backgroundColor: AmazonColors.amber,
+            backgroundColor: const Color(0xFFFFE082),
             foregroundColor: AmazonColors.darkNavy,
             elevation: 3,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -481,12 +492,26 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 4)),
 
-          // ── SADRŽAJ: loading / prazan / mreža oglasa ──────────────────────
+          // ── SADRŽAJ: loading / nema interneta / greška / prazan / mreža oglasa ──
           if (classifieds.loading)
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
                 child: Center(child: CircularProgressIndicator()),
+              ),
+            )
+          else if (classifieds.ads.isEmpty && (isAppOffline || isNetworkErr))
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: AppEmptyState(
+                  icon: Icons.wifi_off_rounded,
+                  title: 'Nema internet veze',
+                  subtitle: 'Proverite vašu internet konekciju i pokušajte ponovo da učitate oglase.',
+                  ctaLabel: 'Pokušaj ponovo',
+                  ctaIcon: Icons.refresh,
+                  onCtaPressed: classifieds.refresh,
+                ),
               ),
             )
           else if (classifieds.error != null && classifieds.ads.isEmpty)

@@ -155,7 +155,7 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
               child: FilledButton(
                 onPressed: onApplyPrice,
                 style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? AmazonColors.amberDark : AmazonColors.amber,
+                  backgroundColor: isDark ? AmazonColors.darkAmberCta : AmazonColors.amber,
                   foregroundColor: AmazonColors.darkNavy,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),

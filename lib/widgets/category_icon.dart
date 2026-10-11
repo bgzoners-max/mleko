@@ -6,12 +6,45 @@ const _categoryAssetIcons = {
   'cvarci_asset': 'assets/images/categories/cvarci.png',
   'slanina_asset': 'assets/images/categories/slanina.png',
   'sunka_asset': 'assets/images/categories/sunka.png',
+  'specijaliteti': 'assets/images/categories/sunka.png',
+  'suhomesnato': 'assets/images/categories/slanina.png',
+  'cvarci': 'assets/images/categories/cvarci.png',
+  'slanina': 'assets/images/categories/slanina.png',
+  'sunka': 'assets/images/categories/sunka.png',
 };
 
 String _normalizeCategoryIconName(String iconName) =>
     iconName.trim().toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
 
-/// Prikazuje ikonu kategorije - emoji (🥛, 🍯) ili Material ikonu
+/// Pristupačna komponenta za prikaz ikone kategorije ili sekcije
+class CategoryIcon extends StatelessWidget {
+  final String? iconName;
+  final double size;
+  final Color? color;
+  final String? semanticLabel;
+
+  const CategoryIcon({
+    super.key,
+    required this.iconName,
+    this.size = 48,
+    this.color,
+    this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = buildCategoryIcon(iconName, size: size, color: color);
+    if (semanticLabel != null && semanticLabel!.isNotEmpty) {
+      return Semantics(
+        label: semanticLabel,
+        child: child,
+      );
+    }
+    return child;
+  }
+}
+
+/// Prikazuje ikonu kategorije - asset, Material ikonu ili fallback emoji
 Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
   Widget iconChild;
   if (iconName == null || iconName.isEmpty) {
@@ -44,18 +77,26 @@ Widget buildCategoryIcon(String? iconName, {double size = 48, Color? color}) {
         'bakery_dining',
         'agriculture',
         'local_florist',
-        'pets'
+        'pets',
+        'category',
+        'hrana',
+        'osnove',
+        'domace',
+        'sveze',
+        'pica',
+        'ostalo',
       ];
       if (knownIcons.contains(lower)) {
         final iconData = switch (lower) {
-          'eco' => Icons.eco,
-          'restaurant' => Icons.restaurant,
+          'eco' || 'domace' => Icons.eco,
+          'restaurant' || 'hrana' => Icons.restaurant,
           'egg' => Icons.egg,
-          'water_drop' => Icons.water_drop,
+          'water_drop' || 'pica' => Icons.water_drop,
           'bakery_dining' => Icons.bakery_dining,
-          'agriculture' => Icons.agriculture,
-          'local_florist' => Icons.local_florist,
+          'agriculture' || 'osnove' => Icons.agriculture,
+          'local_florist' || 'sveze' => Icons.local_florist,
           'pets' => Icons.pets,
+          'category' || 'ostalo' => Icons.category,
           _ => Icons.category,
         };
         iconChild = Icon(iconData, size: size * 0.6, color: color);

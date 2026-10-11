@@ -145,7 +145,7 @@ class _ClassifiedsDesktopSidebarState extends State<ClassifiedsDesktopSidebar> {
                               style: AppFonts.display(
                                 isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -417,37 +417,6 @@ class _ClassifiedsDesktopSidebarState extends State<ClassifiedsDesktopSidebar> {
                       fontWeight: classifieds.onlyUrgent ? FontWeight.w700 : FontWeight.w500,
                       color: classifieds.onlyUrgent
                           ? AmazonColors.dealRed
-                          : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        InkWell(
-          onTap: () => classifieds.setOnlyFeatured(!classifieds.onlyFeatured),
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-            child: Row(
-              children: [
-                Icon(
-                  classifieds.onlyFeatured ? Icons.check_box : Icons.check_box_outline_blank,
-                  size: 16,
-                  color: classifieds.onlyFeatured
-                      ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
-                      : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '⭐ Samo istaknuti oglasi',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: classifieds.onlyFeatured ? FontWeight.w700 : FontWeight.w500,
-                      color: classifieds.onlyFeatured
-                          ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
                           : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
                     ),
                   ),

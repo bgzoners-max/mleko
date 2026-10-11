@@ -6,7 +6,7 @@ import 'push_health_cards.dart';
 /// Issues deo Admin Push Health panela — pretraga, filteri, sortiranje
 /// i prikaz korisničkih problema (izdvojeno iz ekrana).
 
-/// Redosled sortiranja issues listе.
+/// Redosled sortiranja issues liste.
 enum IssueSort {
   latestNotificationDesc,
   latestDeliveryDesc,

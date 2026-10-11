@@ -9,6 +9,9 @@ void setPageMetadata({
   Map<String, dynamic>? jsonLd,
 }) {}
 
-String resolveBaseUrl([String? origin]) => origin ?? 'https://domacimarket.rs';
+String resolveBaseUrl([String? origin]) {
+  if (origin == 'https://domacimarket.rs') return 'https://www.domacimarket.rs';
+  return origin ?? 'https://www.domacimarket.rs';
+}
 
 bool isWebOnline() => true;

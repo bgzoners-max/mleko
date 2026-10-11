@@ -20,10 +20,19 @@ class AppFonts {
     double height = 1.3,
     double letterSpacing = -0.1,
   }) {
+    // Bitter bundle u assets/google_fonts sadrži: Regular (w400), Medium (w500),
+    // SemiBold (w600) i Bold (w700). Za veće težine (w800, w900) mapiramo na w700
+    // kako google_fonts ne bi bacao runtime Exception za nepostojeće Bitter-ExtraBold/Black.
+    final resolvedWeight = fontWeight.value > FontWeight.w700.value
+        ? FontWeight.w700
+        : (fontWeight.value < FontWeight.w400.value
+            ? FontWeight.w400
+            : fontWeight);
+
     return GoogleFonts.bitter(
       textStyle: TextStyle(
         fontSize: fontSize,
-        fontWeight: fontWeight,
+        fontWeight: resolvedWeight,
         height: height,
         letterSpacing: letterSpacing,
         color: color,

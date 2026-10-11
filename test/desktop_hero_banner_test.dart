@@ -54,7 +54,7 @@ void main() {
 
     // CTA buttons
     expect(find.text('Istraži ponudu hrane'), findsOneWidget);
-    expect(find.text('Mali oglasi & mehanizacija'), findsOneWidget);
+    expect(find.text('Mali oglasi'), findsOneWidget);
     expect(find.text('Interaktivna mapa gazdinstava'), findsOneWidget);
 
     // Quick tags
@@ -86,7 +86,7 @@ void main() {
     expect(exploredFood, isTrue);
 
     // Tap classifieds button
-    await tester.tap(find.text('Mali oglasi & mehanizacija'));
+    await tester.tap(find.text('Mali oglasi'));
     await tester.pumpAndSettle();
     expect(exploredClassifieds, isTrue);
 

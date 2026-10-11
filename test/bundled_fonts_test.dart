@@ -44,4 +44,36 @@ void main() {
         await rootBundle.loadString('assets/google_fonts/Bitter-OFL.txt');
     expect(license, contains('SIL OPEN FONT LICENSE'));
   });
+
+  test('Bundled Roboto font assets are full TTF files with proper sizes',
+      () async {
+    const expectedRobotoSizes = <String, int>{
+      'Roboto-Regular': 89960,
+      'Roboto-Medium': 90088,
+      'Roboto-Bold': 90536,
+      'Roboto-Light': 90008,
+    };
+
+    for (final entry in expectedRobotoSizes.entries) {
+      final path = 'assets/google_fonts/${entry.key}.ttf';
+      final data = await rootBundle.load(path);
+      expect(
+        data.lengthInBytes,
+        entry.value,
+        reason: '$path ima pogrešnu veličinu.',
+      );
+      // TrueType magic: 0x00 0x01 0x00 0x00
+      expect(
+        data.getUint16(0),
+        0x0001,
+        reason: '$path nije validan TrueType font.',
+      );
+    }
+  });
+
+  test('Roboto OFL license accompanies the bundled font files', () async {
+    final license =
+        await rootBundle.loadString('assets/google_fonts/OFL.txt');
+    expect(license, contains('SIL OPEN FONT LICENSE'));
+  });
 }

@@ -88,7 +88,11 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   Future<void> _shareAd(ClassifiedAdModel ad) async {
     final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
         ? SupabaseConfig.shareBaseUrl
-        : (kIsWeb ? Uri.base.origin : 'https://domacimarket.rs');
+        : (kIsWeb
+            ? (Uri.base.origin == 'https://domacimarket.rs'
+                ? 'https://www.domacimarket.rs'
+                : Uri.base.origin)
+            : 'https://www.domacimarket.rs');
     final base = rawBase.replaceAll(RegExp(r'/+$'), '');
     final url = '$base/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}\n$url';

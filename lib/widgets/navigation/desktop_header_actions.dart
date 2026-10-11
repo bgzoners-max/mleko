@@ -294,7 +294,7 @@ class DesktopHeaderActions extends StatelessWidget {
             }
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: AmazonColors.amber,
+            backgroundColor: const Color(0xFFFFE082),
             foregroundColor: AmazonColors.darkNavy,
             elevation: 2,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

@@ -15,22 +15,27 @@ class ClassifiedConditionSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!isConditionApplicable) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DropdownButtonFormField<String>(
-          initialValue: (condition == 'new' || condition == 'used')
-              ? condition
-              : 'used',
-          decoration: const InputDecoration(labelText: 'Stanje predmeta'),
-          items: const [
-            DropdownMenuItem(value: 'used', child: Text('Polovno')),
-            DropdownMenuItem(value: 'new', child: Text('Novo / Nekorišćeno')),
-          ],
-          onChanged: onChanged,
+    return DropdownButtonFormField<String>(
+      initialValue: (condition == 'new' || condition == 'used')
+          ? condition
+          : 'used',
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'Stanje predmeta',
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+      items: const [
+        DropdownMenuItem(
+          value: 'used',
+          child: Text('Polovno', overflow: TextOverflow.ellipsis),
         ),
-        const SizedBox(height: 16),
+        DropdownMenuItem(
+          value: 'new',
+          child: Text('Novo / Nekorišćeno', overflow: TextOverflow.ellipsis),
+        ),
       ],
+      onChanged: onChanged,
     );
   }
 }

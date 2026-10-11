@@ -42,7 +42,9 @@ class ClassifiedCityAutocomplete extends StatelessWidget {
           decoration: const InputDecoration(
             labelText: 'Grad ili mesto *',
             hintText: 'npr. Beograd, Čačak, Zlatibor...',
-            prefixIcon: Icon(Icons.location_on_outlined),
+            prefixIcon: Icon(Icons.location_on_outlined, size: 18),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) return 'Unesite grad ili mesto.';

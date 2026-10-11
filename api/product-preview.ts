@@ -21,6 +21,7 @@ type ProductRow = {
   unit_type: string | null;
   image_urls: string[] | null;
   available_now: boolean | null;
+  category?: string | null;
 };
 
 const FALLBACK_TITLE = "Domaće, baš kako treba! | domaćimarket.rs";
@@ -130,7 +131,7 @@ export async function GET(request: Request): Promise<Response> {
     const { data, error } = await supabase
       .from("products")
       .select(
-        "id, name, description, location, price_per_kg, unit_type, image_urls, available_now",
+        "id, name, description, location, price_per_kg, unit_type, image_urls, available_now, category",
       )
       .eq("id", productId)
       .maybeSingle();
@@ -150,21 +151,39 @@ export async function GET(request: Request): Promise<Response> {
       ? "https://schema.org/OutOfStock"
       : "https://schema.org/InStock";
 
+    const nextYear = new Date().getFullYear() + 1;
+    const priceValidUntil = `${nextYear}-12-31`;
+
     const jsonLd = product
       ? {
         "@context": "https://schema.org",
         "@type": "Product",
         name: product.name,
         description: product.description || description,
+        sku: product.id,
+        productID: product.id,
         image: product.image_urls && product.image_urls.length > 0
           ? product.image_urls
           : [imageUrl],
+        brand: {
+          "@type": "Brand",
+          name: "Domaći Market",
+        },
+        category: product.category || undefined,
         offers: {
           "@type": "Offer",
           priceCurrency: "RSD",
           price: product.price_per_kg != null ? product.price_per_kg : 0,
           availability,
+          itemCondition: "https://schema.org/NewCondition",
+          priceValidUntil,
           url: canonicalUrl,
+          seller: {
+            "@type": "Organization",
+            name: product.location
+              ? `Poljoprivredno gazdinstvo (${product.location})`
+              : "Domaći Market",
+          },
         },
       }
       : undefined;

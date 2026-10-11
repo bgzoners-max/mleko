@@ -4,10 +4,16 @@ import 'dart:convert';
 import 'dart:html' as html;
 
 String resolveBaseUrl([String? origin]) {
-  if (origin != null && origin.isNotEmpty) return origin;
+  if (origin != null && origin.isNotEmpty) {
+    if (origin == 'https://domacimarket.rs') return 'https://www.domacimarket.rs';
+    return origin;
+  }
   final windowOrigin = html.window.location.origin;
-  if (windowOrigin.isNotEmpty) return windowOrigin;
-  return 'https://domacimarket.rs';
+  if (windowOrigin.isNotEmpty) {
+    if (windowOrigin == 'https://domacimarket.rs') return 'https://www.domacimarket.rs';
+    return windowOrigin;
+  }
+  return 'https://www.domacimarket.rs';
 }
 
 bool isWebOnline() {
@@ -64,7 +70,7 @@ void setPageMetadata({
   final resolvedImageUrl = _normalizeUrl(
     imageUrl?.trim().isNotEmpty == true
         ? imageUrl!.trim()
-        : 'https://domacimarket.rs/icons/Icon-512.png',
+        : 'https://www.domacimarket.rs/icons/Icon-512.png',
     origin,
   );
   _upsertMetaByProperty('og:image', resolvedImageUrl);

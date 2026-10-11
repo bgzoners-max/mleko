@@ -19,8 +19,7 @@ void main() {
     final lines = (file as File).readAsLinesSync();
     for (int i = 0; i < lines.length; i++) {
       if (cyrillicRegExp.hasMatch(lines[i])) {
-        if (file.path.contains('${Platform.pathSeparator}l10n${Platform.pathSeparator}') ||
-            file.path.endsWith('classified_ad_model.dart')) {
+        if (file.path.endsWith('classified_ad_model.dart')) {
           continue;
         }
 

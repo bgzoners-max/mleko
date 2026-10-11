@@ -177,4 +177,43 @@ void main() {
     expect(provider.minPrice, isNull);
     expect(provider.maxPrice, isNull);
   });
+
+  testWidgets('ClassifiedsSidebarCategoryTree displays icons for all categories in sidebar', (tester) async {
+    tester.view.physicalSize = const Size(1280, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(buildTestWidget());
+    await tester.pumpAndSettle();
+
+    // Verify categories header exists
+    expect(find.text('KATEGORIJE'), findsOneWidget);
+
+    // Initial fallback categories include Poljoprivreda and Vozila with their respective icons
+    expect(find.text('Poljoprivreda'), findsOneWidget);
+    expect(find.text('Vozila'), findsOneWidget);
+    expect(find.byIcon(Icons.agriculture), findsOneWidget);
+    expect(find.byIcon(Icons.directions_car), findsOneWidget);
+
+    // Load categories from service
+    await provider.loadCategories();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Domaće životinje'), findsOneWidget);
+    expect(find.text('Mehanizacija'), findsOneWidget);
+    expect(find.byIcon(Icons.pets), findsOneWidget);
+    expect(find.byIcon(Icons.agriculture), findsOneWidget);
+
+    // Tap on category with subcategories to check active category icon rendering
+    final zivotinjeTile = find.text('Domaće životinje');
+    await tester.tap(zivotinjeTile);
+    await tester.pumpAndSettle();
+
+    expect(provider.selectedCategoryId, equals('zivotinje'));
+    expect(find.text('Sve kategorije'), findsOneWidget);
+    expect(find.text('Krave i junad'), findsOneWidget);
+
+    // Active category container renders with category icon
+    expect(find.byIcon(Icons.pets), findsWidgets);
+  });
 }

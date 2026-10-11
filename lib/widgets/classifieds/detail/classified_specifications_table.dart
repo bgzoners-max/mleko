@@ -60,7 +60,7 @@ class ClassifiedSpecificationsTable extends StatelessWidget {
             for (final entry in ad.attributes.entries) ...[
               () {
                 final val = entry.value;
-                if (val == null) return const SizedBox.shrink();
+                if (val == null || val == false) return const SizedBox.shrink();
                 final attr =
                     ClassifiedAttributesEngine.findAttributeByKey(entry.key);
                 final label = attr?.label ?? entry.key;

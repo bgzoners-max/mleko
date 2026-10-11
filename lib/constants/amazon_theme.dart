@@ -14,7 +14,7 @@ class AmazonColors {
 
   // ── Topla jantarna / medena paleta (CTA dugmad, isticanja) ──
   static const Color amber = Color(0xFFD97724); // Domaći med / zrelo žito
-  static const Color amberLight = Color(0xFFE89844); // Svetlo žito / akcenat
+  static const Color amberLight = Color(0xFFFFE082); // Svetliji ćilibar / akcenat #ffe082
   static const Color amberHover = Color(0xFFC66900); // Topli pečeni med
   static const Color amberDark = Color(0xFFA65300); // Tamna karamela
 
@@ -48,6 +48,7 @@ class AmazonColors {
   // ── Svetle varijante za visoku čitljivost u tamnoj temi (WCAG AAA) ──
   static const Color lightGreen = Color(0xFF81C784); // Svetlo zelena za tamnu temu (kontrast >8.5:1)
   static const Color lightYellow = Color(0xFFFFD54F); // Svetlo žuta / toplo zlato
+  static const Color darkAmberCta = Color(0xFFFFE082); // Svetliji ćilibar / akcenat #ffe082
 
   // Helper metode za dinamički odabir svetlo/tamno
   static Color getCanvas(BuildContext context) {
@@ -76,6 +77,10 @@ class AmazonColors {
 
   static Color getGreen(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark ? lightGreen : green;
+  }
+
+  static Color getAmber(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? darkAmberCta : amber;
   }
 
   /// Meka, difuzna organska senka za kartice

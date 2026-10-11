@@ -12,16 +12,19 @@ class ClassifiedDescriptionField extends StatelessWidget {
       children: [
         TextFormField(
           controller: controller,
-          maxLines: 5,
+          minLines: 3,
+          maxLines: 4,
           maxLength: 2000,
           keyboardType: TextInputType.multiline,
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
             labelText: 'Detaljan opis',
             hintText: 'Opišite stanje, karakteristike, razlog prodaje, zamene itd.',
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
       ],
     );
   }

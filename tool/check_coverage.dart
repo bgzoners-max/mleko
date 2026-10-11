@@ -16,7 +16,7 @@ import 'dart:io';
 /// `lib/utils` je aspiracioni cilj (45%): trenutno se preskace jer nijedan
 /// fajl u tom folderu nije ukljucen u coverage, pa podizanje ne blokira build.
 const Map<String, double> folderGates = {
-  'lib/services/orders': 25.0,
+  'lib/services/orders': 35.0,
   'lib/utils': 45.0,
 };
 
@@ -95,9 +95,8 @@ void main(List<String> args) {
   final dirStats = <String, ({int found, int hit})>{};
   for (final entry in fileStats.entries) {
     final path = entry.key;
-    // e.g. lib/services/communication or lib/providers
-    final parts = path.split('/');
-    final prefix = parts.take(3).join('/');
+    final lastSlash = path.lastIndexOf('/');
+    final prefix = lastSlash > 0 ? path.substring(0, lastSlash) : path;
     final prev = dirStats[prefix] ?? (found: 0, hit: 0);
     dirStats[prefix] = (found: prev.found + entry.value.found, hit: prev.hit + entry.value.hit);
   }
@@ -133,6 +132,9 @@ void main(List<String> args) {
   // ── Save coverage summary JSON for CI artifact ──
   _saveSummaryJson(totalPct, minCoverage, dirStats);
 
+  // ── Update README badge if present ──
+  _updateReadmeBadge(totalPct);
+
   // ── Final verdict ──
   if (totalPct < minCoverage) {
     stderr.writeln('\nFAILED: Coverage ${totalPct.toStringAsFixed(2)}% is below threshold of ${minCoverage.toStringAsFixed(2)}%');
@@ -142,6 +144,34 @@ void main(List<String> args) {
     exitCode = 1;
   } else {
     stdout.writeln('\nPASSED: Coverage threshold met.');
+  }
+}
+
+void _updateReadmeBadge(double totalPct) {
+  try {
+    final readmeFile = File('README.md');
+    if (!readmeFile.existsSync()) return;
+
+    final content = readmeFile.readAsStringSync();
+    final badgeRegex = RegExp(r'\[!\[Coverage\]\(https:\/\/img\.shields\.io\/badge\/Coverage-[\d\.]+%25-[a-zA-Z]+\)\]\(STATUS\.md\)');
+    final color = totalPct >= 50.0
+        ? 'brightgreen'
+        : totalPct >= 35.0
+            ? 'yellowgreen'
+            : totalPct >= 25.0
+                ? 'orange'
+                : 'red';
+    final newBadge = '[![Coverage](https://img.shields.io/badge/Coverage-${totalPct.toStringAsFixed(2)}%25-$color)](STATUS.md)';
+
+    if (badgeRegex.hasMatch(content)) {
+      final updated = content.replaceFirst(badgeRegex, newBadge);
+      if (updated != content) {
+        readmeFile.writeAsStringSync(updated);
+        stdout.writeln('Updated Coverage badge in README.md to ${totalPct.toStringAsFixed(2)}% ($color)');
+      }
+    }
+  } catch (e) {
+    stderr.writeln('WARNING: Could not update README.md badge: $e');
   }
 }
 

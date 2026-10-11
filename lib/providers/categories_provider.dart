@@ -5,7 +5,11 @@ import 'package:mleko/services/services.dart';
 
 /// Keš kategorija – učitavanje jednom pri startu, deljenje između ekrana.
 class CategoriesProvider extends ChangeNotifier {
-  final SupabaseService _service = SupabaseService();
+  final SupabaseService? _service;
+
+  CategoriesProvider({SupabaseService? service}) : _service = service;
+
+  SupabaseService get _effectiveService => _service ?? SupabaseService();
 
   List<Category>? _categories;
   List<CategoryGroup>? _groups;
@@ -37,18 +41,18 @@ class CategoriesProvider extends ChangeNotifier {
     'hrana', 'osnove', 'domace', 'sveze', 'pica', 'specijaliteti', 'ostalo',
   ];
 
-  static const _sectionLabels = {
-    'hrana':         ('🥛', 'Hrana'),
-    'osnove':        ('🌾', 'Osnove za kuhinju'),
-    'domace':        ('🍯', 'Domaći proizvodi'),
-    'sveze':         ('🍎', 'Sveže i prirodno'),
-    'pica':          ('🧃', 'Pića'),
-    'specijaliteti': ('🍲', 'Specijaliteti'),
-    'ostalo':        ('🎨', 'Ostalo'),
+  static const _sectionConfig = {
+    'hrana':         (icon: 'hrana', emoji: '🥛', label: 'Hrana'),
+    'osnove':        (icon: 'osnove', emoji: '🌾', label: 'Osnove za kuhinju'),
+    'domace':        (icon: 'domace', emoji: '🍯', label: 'Domaći proizvodi'),
+    'sveze':         (icon: 'sveze', emoji: '🍎', label: 'Sveže i prirodno'),
+    'pica':          (icon: 'pica', emoji: '🧃', label: 'Pića'),
+    'specijaliteti': (icon: 'specijaliteti', emoji: '🍲', label: 'Specijaliteti'),
+    'ostalo':        (icon: 'ostalo', emoji: '🎨', label: 'Ostalo'),
   };
 
-  /// Vraća listu (emoji, label, kategorije) za svaku sekciju, u ispravnom redoslijedu.
-  List<({String emoji, String label, List<Category> categories})> get categoriesBySection {
+  /// Vraća listu (emoji, icon, label, kategorije) za svaku sekciju, u ispravnom redoslijedu.
+  List<({String emoji, String icon, String label, List<Category> categories})> get categoriesBySection {
     if (_categories == null) return [];
     final topLevel = _categories!.where((c) => c.parentId == null).toList();
     final bySection = <String, List<Category>>{};
@@ -60,8 +64,9 @@ class CategoriesProvider extends ChangeNotifier {
       for (final key in _sectionOrder)
         if (bySection.containsKey(key))
           (
-            emoji: _sectionLabels[key]?.$1 ?? '📦',
-            label: _sectionLabels[key]?.$2 ?? key,
+            emoji: _sectionConfig[key]?.emoji ?? '📦',
+            icon: _sectionConfig[key]?.icon ?? 'ostalo',
+            label: _sectionConfig[key]?.label ?? key,
             categories: bySection[key]!,
           ),
     ];
@@ -75,7 +80,7 @@ class CategoriesProvider extends ChangeNotifier {
     // (e.g. when load() is triggered from didChangeDependencies).
     SchedulerBinding.instance.addPostFrameCallback((_) => notifyListeners());
     try {
-      final list = await _service.getAllCategories();
+      final list = await _effectiveService.getAllCategories();
       _groups = _buildGroups(list);
       _categories = list;
       _loaded = true;
@@ -142,6 +147,15 @@ class CategoriesProvider extends ChangeNotifier {
     _categories = null;
     _groups = null;
     await load();
+  }
+
+  @visibleForTesting
+  void setCategoriesForTesting(List<Category> list) {
+    _categories = list;
+    _groups = _buildGroups(list);
+    _loaded = true;
+    _loading = false;
+    notifyListeners();
   }
 }
 

@@ -75,7 +75,7 @@ class SearchFilterSidebar extends StatelessWidget {
                     style: AppFonts.display(
                       isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],

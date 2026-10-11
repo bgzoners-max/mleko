@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:ui' show PlatformDispatcher, PointerDeviceKind;
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, kReleaseMode;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart' as p_provider;
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/app_providers.dart';
 import 'core/router.dart';
@@ -152,6 +152,13 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // U release režimu za mobilne platforme isključujemo runtime fetching sa mreže radi offline rada.
+  // Na webu dozvoljavamo runtime fallback kako nedostajuća varijanta fonta nikada ne bi
+  // bacila fatalni Exception u browser konzolu koji ruši Lighthouse PageSpeed reviziju.
+  if (kReleaseMode && !kIsWeb) {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  }
+
   // Graceful fallback za sve greške u renderovanju widgeta
   ErrorWidget.builder = (details) {
     CrashReportingService.recordFlutterError(details);
@@ -159,7 +166,9 @@ void main() async {
   };
 
   FlutterError.onError = (details) {
-    FlutterError.presentError(details);
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
     CrashReportingService.recordFlutterError(details);
     LoggerService.error(
       'FlutterError: ${details.exceptionAsString()}',
@@ -287,7 +296,6 @@ void main() async {
             darkTheme: buildAppDarkTheme(compact: settings.compactMode),
             themeMode: settings.themeMode,
             localizationsDelegates: const [
-              AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,

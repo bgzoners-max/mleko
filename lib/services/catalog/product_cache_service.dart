@@ -49,6 +49,7 @@ class CachedProductList {
 class ProductCacheService {
   static const String _prefix = 'mleko_cache_';
   static const Duration _defaultTTL = Duration(hours: 24);
+  static const Duration searchCacheTTL = Duration(minutes: 5);
   static const int _maxMemoryCacheEntries = 200;
   static final Map<String, CachedProductList> _memoryCache = {};
 
@@ -193,6 +194,24 @@ class ProductCacheService {
       LoggerService.debug('Cleared cache', extra: {'key': key});
     } catch (e, st) {
       LoggerService.error('Failed to clear cache key', e, stackTrace: st);
+    }
+  }
+
+  /// Invalidira sve keširane rezultate pretrage iz memorije i skladišta.
+  Future<void> invalidateSearchCache() async {
+    _memoryCache.removeWhere((key, _) => key.startsWith('${_prefix}search_'));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys =
+          prefs.getKeys().where((k) => k.startsWith('${_prefix}search_')).toList();
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+      LoggerService.debug('Invalidated search cache',
+          extra: {'count': keys.length});
+    } catch (e, st) {
+      LoggerService.error('Failed to invalidate search cache', e,
+          stackTrace: st);
     }
   }
 

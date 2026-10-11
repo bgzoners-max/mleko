@@ -35,7 +35,11 @@ import '../widgets/product/product_reviews_section.dart';
 Future<void> _shareProduct(BuildContext context, ProductModel product) async {
   final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
       ? SupabaseConfig.shareBaseUrl
-      : (kIsWeb ? Uri.base.origin : 'https://domacimarket.rs');
+      : (kIsWeb
+          ? (Uri.base.origin == 'https://domacimarket.rs'
+              ? 'https://www.domacimarket.rs'
+              : Uri.base.origin)
+          : 'https://www.domacimarket.rs');
   final base = rawBase.replaceAll(RegExp(r'/+$'), '');
   final url = '$base/p/${product.id}';
   final text =

@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../../models/product_model.dart';
 
@@ -6,10 +7,17 @@ class AnalyticsService {
   factory AnalyticsService() => _instance;
   AnalyticsService._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  FirebaseAnalytics? get _analytics {
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        return FirebaseAnalytics.instance;
+      }
+    } catch (_) {}
+    return null;
+  }
 
   Future<void> logAddToCart(ProductModel product, double quantity) async {
-    await _analytics.logEvent(
+    await _analytics?.logEvent(
       name: 'add_to_cart',
       parameters: {
         'product_id': product.id,
@@ -22,7 +30,7 @@ class AnalyticsService {
   }
 
   Future<void> logBeginCheckout(int itemCount, double totalValue) async {
-    await _analytics.logEvent(
+    await _analytics?.logEvent(
       name: 'begin_checkout',
       parameters: {
         'value': totalValue,
@@ -38,7 +46,7 @@ class AnalyticsService {
     required int itemCount,
     double? shipping,
   }) async {
-    await _analytics.logEvent(
+    await _analytics?.logEvent(
       name: 'purchase',
       parameters: {
         'transaction_id': transactionId,

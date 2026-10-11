@@ -166,27 +166,41 @@ export async function GET(request: Request): Promise<Response> {
       ? "https://schema.org/OutOfStock"
       : "https://schema.org/InStock";
 
+    const nextYear = new Date().getFullYear() + 1;
+    const priceValidUntil = `${nextYear}-12-31`;
+
+    const categoryName = (Array.isArray(ad?.classified_categories)
+      ? ad?.classified_categories[0]?.name
+      : ad?.classified_categories?.name) || undefined;
+
     const jsonLd = ad
       ? {
         "@context": "https://schema.org",
         "@type": "Product",
         name: ad.title,
         description: ad.description || description,
+        sku: ad.id,
+        productID: ad.id,
         image: ad.images && ad.images.length > 0 ? ad.images : [imageUrl],
-        category: (Array.isArray(ad.classified_categories)
-          ? ad.classified_categories[0]?.name
-          : ad.classified_categories?.name) || undefined,
+        brand: {
+          "@type": "Brand",
+          name: "Domaći Market",
+        },
+        category: categoryName,
         offers: {
           "@type": "Offer",
           priceCurrency: ad.currency || "RSD",
           price: ad.price != null ? ad.price : 0,
           availability,
+          itemCondition: ad.condition === "new"
+            ? "https://schema.org/NewCondition"
+            : "https://schema.org/UsedCondition",
+          priceValidUntil,
           url: canonicalUrl,
-          ...(ad.condition === "new"
-            ? { itemCondition: "https://schema.org/NewCondition" }
-            : ad.condition === "used"
-            ? { itemCondition: "https://schema.org/UsedCondition" }
-            : {}),
+          seller: {
+            "@type": "Person",
+            name: ad.city ? `Oglašivač (${ad.city})` : "Domaći Market oglašivač",
+          },
         },
       }
       : undefined;

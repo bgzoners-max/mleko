@@ -7,13 +7,13 @@ import { resolvePublicBaseUrl } from "./_shared/preview-utils.js";
 declare const process: any;
 
 export async function GET(request: Request): Promise<Response> {
+  let publicBaseUrl = "https://www.domacimarket.rs";
   try {
     const url = new URL(request.url);
+    publicBaseUrl = resolvePublicBaseUrl(url.origin);
     const tokenHash = url.searchParams.get("token_hash");
     const type = url.searchParams.get("type") as EmailOtpType | null;
     const next = url.searchParams.get("next") || "/auth/confirmed";
-
-    const publicBaseUrl = resolvePublicBaseUrl(url.origin);
 
     if (!tokenHash || !type) {
       return new Response(null, {
@@ -92,7 +92,7 @@ export async function GET(request: Request): Promise<Response> {
     return new Response(null, {
       status: 302,
       headers: {
-        Location: `https://domacimarket.rs/#/login?error=${encodeURIComponent(
+        Location: `${publicBaseUrl}/#/login?error=${encodeURIComponent(
           err?.message || "Greška pri obradi zahteva za verifikaciju."
         )}`,
         "Cache-Control": "no-store, max-age=0",

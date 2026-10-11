@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/product_model.dart';
 import '../../../models/app_error.dart';
+import '../product_cache_service.dart';
 
 mixin ProductManagementMixin {
   SupabaseClient get client;
@@ -55,6 +56,7 @@ mixin ProductManagementMixin {
         product.deliveryMode,
         product.selectedDeliveryPointIds,
       );
+      unawaited(ProductCacheService().invalidateSearchCache());
       return productId;
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
@@ -71,6 +73,7 @@ mixin ProductManagementMixin {
         product.deliveryMode,
         product.selectedDeliveryPointIds,
       );
+      unawaited(ProductCacheService().invalidateSearchCache());
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -79,6 +82,7 @@ mixin ProductManagementMixin {
   Future<void> deleteProduct(String id) async {
     try {
       await client.from('products').delete().eq('id', id);
+      unawaited(ProductCacheService().invalidateSearchCache());
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -89,6 +93,7 @@ mixin ProductManagementMixin {
       await client
           .from('products')
           .update({'available_now': availableNow}).eq('id', productId);
+      unawaited(ProductCacheService().invalidateSearchCache());
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

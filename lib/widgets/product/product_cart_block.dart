@@ -143,14 +143,50 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final product = widget.product;
+    final isDesktop = widget.desktopMode;
     final totalPrice = _quantity * product.pricePerKg;
 
+    final cartButton = SizedBox(
+      height: 46,
+      child: BounceTapButton(
+        onPressed: () => withHaptic(() => _addToCart(), medium: true),
+        builder: (onPressed) => ElevatedButton.icon(
+          onPressed: onPressed,
+          icon: const Icon(Icons.add_shopping_cart, size: 18),
+          label: Text(
+            'Dodaj u korpu (${totalPrice.toStringAsFixed(0)} RSD)',
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 13.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AmazonColors.amberLight,
+            foregroundColor: AmazonColors.darkNavy,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(
+                color: AmazonColors.amberDark,
+                width: 0.9,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment:
+          isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (product.isAvailable)
           Row(
+            mainAxisSize: isDesktop ? MainAxisSize.min : MainAxisSize.max,
             children: [
               _ProductQuantityStepper(
                 quantity: _quantity,
@@ -162,40 +198,16 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
                     setState(() => _quantity = newQuantity),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: BounceTapButton(
-                    onPressed: () =>
-                        withHaptic(() => _addToCart(), medium: true),
-                    builder: (onPressed) => ElevatedButton.icon(
-                      onPressed: onPressed,
-                      icon: const Icon(Icons.add_shopping_cart, size: 18),
-                      label: Text(
-                        'Dodaj u korpu (${totalPrice.toStringAsFixed(0)} RSD)',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AmazonColors.amberLight,
-                        foregroundColor: AmazonColors.darkNavy,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: const BorderSide(
-                            color: AmazonColors.amberDark,
-                            width: 0.9,
-                          ),
-                        ),
-                      ),
-                    ),
+              if (isDesktop)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 180,
+                    maxWidth: 260,
                   ),
-                ),
-              ),
+                  child: cartButton,
+                )
+              else
+                Expanded(child: cartButton),
             ],
           )
         else
@@ -218,9 +230,13 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
         _SellerChatPrompt(
           sellerId: product.sellerId,
           onTap: _openChat,
+          isDesktop: isDesktop,
         ),
         const SizedBox(height: 8),
-        SellerInlineCartSection(sellerId: product.sellerId),
+        SizedBox(
+          width: double.infinity,
+          child: SellerInlineCartSection(sellerId: product.sellerId),
+        ),
       ],
     );
   }
@@ -314,10 +330,12 @@ class _ProductQuantityStepper extends StatelessWidget {
 class _SellerChatPrompt extends StatelessWidget {
   final String sellerId;
   final VoidCallback onTap;
+  final bool isDesktop;
 
   const _SellerChatPrompt({
     required this.sellerId,
     required this.onTap,
+    this.isDesktop = false,
   });
 
   @override
@@ -336,7 +354,9 @@ class _SellerChatPrompt extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: isDesktop ? MainAxisSize.min : MainAxisSize.max,
+          mainAxisAlignment:
+              isDesktop ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
             Icon(
               Icons.chat_bubble_outline_rounded,

@@ -179,22 +179,22 @@ class DesktopHeader extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1B2F21) : const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2E4D38) : const Color(0xFFC8E6C9),
-                  width: 1.2,
+            Image.asset(
+              'assets/images/domaci_market_logo_v2.png',
+              width: 44,
+              height: 44,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1B2F21) : const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(9),
                 ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.eco_rounded,
+                child: const Icon(
+                  Icons.storefront_rounded,
                   color: AmazonColors.green,
-                  size: 22,
+                  size: 24,
                 ),
               ),
             ),
@@ -211,7 +211,7 @@ class DesktopHeader extends StatelessWidget {
                       style: AppFonts.display(
                         isDark ? Colors.white : const Color(0xFF162A1D),
                         fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: -0.4,
                       ),
                     ),
@@ -255,7 +255,6 @@ class DesktopHeader extends StatelessWidget {
         DesktopNavTab(
           label: 'Mali oglasi',
           icon: Icons.campaign_outlined,
-          badge: 'NOVO',
           isActive: isClassifieds,
           onTap: () => _onNavigateTo(context, 1, route: '/classifieds', mode: MarketMode.classifieds),
         ),

@@ -440,14 +440,110 @@ class ClassifiedAttributesEngine {
       ],
     ),
     CategoryAttribute(
-      key: 'sim_lock',
-      label: 'SIM status',
-      type: AttributeType.select,
+      key: 'battery_capacity_mah',
+      label: 'Kapacitet baterije',
+      type: AttributeType.number,
+      unit: 'mAh',
+      min: 500,
+      max: 25000,
+      hint: 'npr. 5000',
+      icon: Icons.battery_charging_full_outlined,
+    ),
+    CategoryAttribute(
+      key: 'sim_free',
+      label: 'SIM Free',
+      type: AttributeType.boolean,
+      icon: Icons.lock_open_outlined,
+    ),
+    CategoryAttribute(
+      key: 'sim_single',
+      label: '1x SIM slot',
+      type: AttributeType.boolean,
       icon: Icons.sim_card_outlined,
-      options: [
-        CategoryAttributeOption(value: 'sim_free', label: 'SIM Free (otključan za sve mreže)'),
-        CategoryAttributeOption(value: 'zakljucan', label: 'Zaključan na mrežu'),
-      ],
+    ),
+    CategoryAttribute(
+      key: 'sim_dual',
+      label: '2x SIM slota',
+      type: AttributeType.boolean,
+      icon: Icons.sim_card_outlined,
+    ),
+    CategoryAttribute(
+      key: 'sim_esim',
+      label: 'eSIM podrška',
+      type: AttributeType.boolean,
+      icon: Icons.contactless_outlined,
+    ),
+    CategoryAttribute(
+      key: 'net_5g',
+      label: '5G',
+      type: AttributeType.boolean,
+      icon: Icons.five_g_outlined,
+    ),
+    CategoryAttribute(
+      key: 'warranty_official',
+      label: 'Zvanična garancija',
+      type: AttributeType.boolean,
+      icon: Icons.verified_outlined,
+    ),
+    CategoryAttribute(
+      key: 'warranty_operator',
+      label: 'Garancija operatera',
+      type: AttributeType.boolean,
+      icon: Icons.cell_tower_outlined,
+    ),
+    CategoryAttribute(
+      key: 'warranty_shop',
+      label: 'Garancija radnje / servisa',
+      type: AttributeType.boolean,
+      icon: Icons.storefront_outlined,
+    ),
+    CategoryAttribute(
+      key: 'warranty_working',
+      label: 'Radna garancija',
+      type: AttributeType.boolean,
+      icon: Icons.security_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_box',
+      label: 'Originalna kutija',
+      type: AttributeType.boolean,
+      icon: Icons.inventory_2_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_charger',
+      label: 'Punjač',
+      type: AttributeType.boolean,
+      icon: Icons.electrical_services_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_cable',
+      label: 'USB kabl',
+      type: AttributeType.boolean,
+      icon: Icons.cable_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_case',
+      label: 'Zaštitna maska',
+      type: AttributeType.boolean,
+      icon: Icons.phone_android_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_glass',
+      label: 'Zaštitno staklo',
+      type: AttributeType.boolean,
+      icon: Icons.shield_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_headphones',
+      label: 'Slušalice',
+      type: AttributeType.boolean,
+      icon: Icons.headphones_outlined,
+    ),
+    CategoryAttribute(
+      key: 'acc_receipt',
+      label: 'Fiskalni račun',
+      type: AttributeType.boolean,
+      icon: Icons.receipt_long_outlined,
     ),
   ];
 
@@ -493,14 +589,69 @@ class ClassifiedAttributesEngine {
     }
 
     // Telefoni / Smartfoni
-    if (matches('telefoni') || matches('smartfon') || matches('pametni_telefoni')) {
-      if (!matches('maske') && !matches('punjac') && !matches('delovi')) {
+    final isPhone = matches('telefoni') ||
+        matches('smartfon') ||
+        matches('pametni_telefoni') ||
+        ClassifiedCategoryModel.isPhoneBrand(id);
+    if (isPhone) {
+      if (!matches('maske') &&
+          !matches('punjac') &&
+          !matches('delovi') &&
+          !matches('satovi')) {
         return phoneAttributes;
       }
     }
 
     return const [];
   }
+
+  static const List<CategoryAttribute> _legacyPhoneAttributes = [
+    CategoryAttribute(
+      key: 'warranty',
+      label: 'Garancija',
+      type: AttributeType.select,
+      icon: Icons.verified_outlined,
+      options: [
+        CategoryAttributeOption(value: 'zvanicna', label: 'Zvanična garancija'),
+        CategoryAttributeOption(value: 'operater', label: 'Garancija operatera'),
+        CategoryAttributeOption(value: 'servis_radnja', label: 'Garancija radnje / servisa'),
+        CategoryAttributeOption(value: 'nema', label: 'Nema garanciju'),
+      ],
+    ),
+    CategoryAttribute(
+      key: 'sim_lock',
+      label: 'SIM status',
+      type: AttributeType.select,
+      icon: Icons.lock_open_outlined,
+      options: [
+        CategoryAttributeOption(value: 'sim_free', label: 'SIM Free'),
+        CategoryAttributeOption(value: 'zakljucan', label: 'Zaključan na mrežu'),
+      ],
+    ),
+    CategoryAttribute(
+      key: 'sim_slots',
+      label: 'SIM slotovi',
+      type: AttributeType.select,
+      icon: Icons.sim_card_outlined,
+      options: [
+        CategoryAttributeOption(value: 'single_sim', label: 'Single SIM'),
+        CategoryAttributeOption(value: 'dual_sim', label: 'Dual SIM'),
+        CategoryAttributeOption(value: 'sim_esim', label: 'SIM + eSIM'),
+        CategoryAttributeOption(value: 'dual_esim', label: 'Dual eSIM'),
+      ],
+    ),
+    CategoryAttribute(
+      key: 'package_contents',
+      label: 'Prateća oprema',
+      type: AttributeType.select,
+      icon: Icons.inventory_2_outlined,
+      options: [
+        CategoryAttributeOption(value: 'full', label: 'Full pakovanje'),
+        CategoryAttributeOption(value: 'telefon_punjac', label: 'Telefon i punjač / kabl'),
+        CategoryAttributeOption(value: 'samo_telefon', label: 'Samo telefon'),
+      ],
+    ),
+  ];
 
   /// Pronalazi atribut po ključu u svim definisanim šemama
   static CategoryAttribute? findAttributeByKey(String key) {
@@ -511,6 +662,7 @@ class ClassifiedAttributesEngine {
       realEstateHouseAttributes,
       realEstateLandAttributes,
       phoneAttributes,
+      _legacyPhoneAttributes,
     ];
     for (final list in allLists) {
       for (final a in list) {

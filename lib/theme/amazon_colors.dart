@@ -21,4 +21,5 @@ class AmazonColors {
   static const Color link = Color(0xFF007185);
   static const Color lightGreen = Color(0xFF81C784);
   static const Color lightYellow = Color(0xFFFFD54F);
+  static const Color darkAmberCta = Color(0xFFFFE082);
 }
