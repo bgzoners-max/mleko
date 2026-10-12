@@ -2,9 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 void main() {
-  final buildWebDir = Directory('build/web');
-  final apiDir = Directory('api');
-  final deployDir = Directory('build/vercel-deploy');
+  stderr.writeln(
+      'DEPRECATED: Vercel deployment is permanently decommissioned for this project.');
+  stderr.writeln(
+      'Please use Cloudflare Pages instead: dart run tool/prepare_cloudflare_deploy.dart');
+  exitCode = 1;
+  return;
+}
 
   if (!buildWebDir.existsSync()) {
     stderr.writeln('Build output directory not found: ${buildWebDir.path}');

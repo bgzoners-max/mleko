@@ -49,7 +49,7 @@
 - **Backend & Baza**: [Supabase](https://supabase.com) (PostgreSQL 15+, Row Level Security, Realtime, Edge Functions u Deno/TypeScript).
 - **Push Notifikacije**: Firebase Cloud Messaging (FCM) + Supabase Edge Functions (`send-push`).
 - **Pohrana datoteka**: Supabase Storage (`product-images`, `classified-images`, `avatars`).
-- **Hosting / Deploy**: Vercel za Web distribuciju, CI/CD preko GitHub Actions.
+- **Hosting / Deploy**: Cloudflare Pages (`domacimarket.rs`), CI/CD preko GitHub Actions.
 
 ---
 
@@ -140,8 +140,8 @@ Za detaljnije tehničke specifikacije pogledajte prateću dokumentaciju u repozi
 
 ## 🚢 Produkcijski Deploy
 
-Za produkcioni deploy Web verzije koristi se skripta:
+Za produkcioni deploy Web verzije na Cloudflare Pages koristi se skripta:
 ```bash
-npm run vercel:deploy
+npm run deploy:all
 ```
-Ova skripta kompajlira optimizovani Flutter Web bundle (`build/web`), priprema `build/vercel-deploy` i vrši bezbedan deploy na produkcioni Vercel projekat.
+Ova skripta kompajlira optimizovani Flutter Web bundle (`build/web`), priprema `build/cloudflare-deploy` (sa `_headers`, `_routes.json`, `.well-known` i Cloudflare funkcijama) i vrši bezbedan deploy na Cloudflare Pages projekat `domacimarket` (`domacimarket.rs`).
