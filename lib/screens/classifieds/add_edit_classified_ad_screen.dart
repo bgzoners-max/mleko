@@ -102,6 +102,11 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _phoneController.text = user.phone ?? '';
       }
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ClassifiedsProvider>().loadCategories();
+      }
+    });
   }
 
   @override
@@ -163,6 +168,10 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   Future<void> _loadExisting() async {
     setState(() => _initializing = true);
     try {
+      final provider = context.read<ClassifiedsProvider>();
+      if (!provider.categoriesLoaded || provider.categories.every((c) => c.subcategories.isEmpty)) {
+        await provider.loadCategories();
+      }
       final ad = await _service.getAd(widget.adId!);
       if (ad != null && mounted) {
         _titleController.text = ad.title;
@@ -377,7 +386,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   }
 
   void _openCategoryPicker(BuildContext context) async {
-    final categories = context.read<ClassifiedsProvider>().categories;
+    final provider = context.read<ClassifiedsProvider>();
+    if (!provider.categoriesLoaded || provider.categories.every((c) => c.subcategories.isEmpty)) {
+      await provider.loadCategories();
+    }
+    if (!context.mounted) return;
+    final categories = provider.categories;
     final result = await CategorySelectionModal.show(context, categories);
     
     if (result != null) {

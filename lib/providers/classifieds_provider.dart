@@ -88,6 +88,7 @@ class ClassifiedsProvider extends ChangeNotifier {
         final cached = await _service.getCachedCategories();
         if (cached.isNotEmpty) {
           _categories = cached;
+          _categoriesLoaded = true;
           notifyListeners();
         }
       } catch (e, st) {

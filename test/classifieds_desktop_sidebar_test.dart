@@ -189,9 +189,9 @@ void main() {
     // Verify categories header exists
     expect(find.text('KATEGORIJE'), findsOneWidget);
 
-    // Initial fallback categories include Poljoprivreda and Vozila with their respective icons
-    expect(find.text('Poljoprivreda'), findsOneWidget);
-    expect(find.text('Vozila'), findsOneWidget);
+    // Initial fallback categories include Poljoprivreda i mehanizacija and Vozila i auto-moto with their respective icons
+    expect(find.text('Poljoprivreda i mehanizacija'), findsOneWidget);
+    expect(find.text('Vozila i auto-moto'), findsOneWidget);
     expect(find.byIcon(Icons.agriculture), findsOneWidget);
     expect(find.byIcon(Icons.directions_car), findsOneWidget);
 

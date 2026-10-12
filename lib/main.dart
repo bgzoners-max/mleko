@@ -255,6 +255,7 @@ void main() async {
   final classifiedsService = ClassifiedsService();
   final classifiedReportsService = ClassifiedReportsService();
   final classifiedsProvider = ClassifiedsProvider();
+  unawaited(classifiedsProvider.loadCategories());
   final router = createRouter(appState);
 
   // Sinhronizacija omiljenih, korpe, praćenja oglasa i korisničkog ID-a za monitoring sa statusom prijave.
