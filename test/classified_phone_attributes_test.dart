@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:mleko/core/lucide_icons.dart';
 import 'package:mleko/utils/classified_attributes_engine.dart';
 import 'package:mleko/widgets/classifieds/add_edit/classified_attributes_section.dart';
 

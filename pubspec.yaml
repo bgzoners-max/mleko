@@ -45,7 +45,7 @@ dependencies:
   image: ^4.10.1
   firebase_analytics: ^12.6.0
   http: ^1.2.0
-  lucide_icons_flutter: ^3.1.25
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -65,6 +65,11 @@ flutter:
     - assets/images/phone_brands/
     - assets/images/tractor_brands/
     - assets/icon/
+
+  fonts:
+    - family: Lucide
+      fonts:
+        - asset: assets/fonts/lucide.ttf
 
 
 flutter_launcher_icons:

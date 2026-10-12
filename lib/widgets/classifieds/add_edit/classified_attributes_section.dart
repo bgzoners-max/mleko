@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../core/lucide_icons.dart';
 import '../../../models/category_attribute_model.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/number_input_utils.dart';

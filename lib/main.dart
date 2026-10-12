@@ -3,6 +3,7 @@ import 'dart:ui' show PlatformDispatcher, PointerDeviceKind;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, kReleaseMode;
+import 'package:flutter/services.dart' show FontLoader, rootBundle;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -151,6 +152,17 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Preload Lucide font za garantovano renderovanje mikro ikonica na webu / CanvasKit-u pre crtanja UI-ja
+  if (kIsWeb) {
+    try {
+      final fontLoader = FontLoader('Lucide');
+      fontLoader.addFont(rootBundle.load('assets/fonts/lucide.ttf'));
+      await fontLoader.load();
+    } catch (e) {
+      LoggerService.warning('Lucide font preload skipped or failed: $e');
+    }
+  }
 
   // U release režimu za mobilne platforme isključujemo runtime fetching sa mreže radi offline rada.
   // Na webu dozvoljavamo runtime fallback kako nedostajuća varijanta fonta nikada ne bi

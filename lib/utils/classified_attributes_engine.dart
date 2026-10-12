@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../core/lucide_icons.dart';
 import '../models/category_attribute_model.dart';
 import '../models/classified_category_model.dart';
 
