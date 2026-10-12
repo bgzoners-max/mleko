@@ -94,4 +94,27 @@ void main() {
     expect(selectedResult!.breadcrumbs[1].id, 'smartfoni');
     expect(selectedResult!.breadcrumbs[2].id, 'iphone');
   });
+
+  test('every root pillar has subcategories and every path ends in a terminal leaf node', () {
+    final categories = ClassifiedCategoryModel.fallbackCategories;
+
+    for (final root in categories) {
+      expect(root.subcategories, isNotEmpty, reason: 'Root [${root.id}] must not be a leaf node');
+    }
+
+    void verifyLeaves(ClassifiedCategoryModel node) {
+      if (node.subcategories.isEmpty) {
+        // This is a valid leaf category
+        expect(node.id, isNotEmpty);
+      } else {
+        for (final child in node.subcategories) {
+          verifyLeaves(child);
+        }
+      }
+    }
+
+    for (final root in categories) {
+      verifyLeaves(root);
+    }
+  });
 }

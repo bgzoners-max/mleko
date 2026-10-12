@@ -414,6 +414,17 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       return;
     }
 
+    final selectedCat = context.read<ClassifiedsProvider>().findCategory(_selectedCategoryId!);
+    if (selectedCat != null && selectedCat.subcategories.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Molimo izaberite krajnju podkategoriju u stablu za oglas.'),
+        ),
+      );
+      _openCategoryPicker(context);
+      return;
+    }
+
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) {
       unawaited(showGuestAuthPrompt(
