@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../models/category_attribute_model.dart';
 import '../models/classified_category_model.dart';
 
@@ -415,7 +416,7 @@ class ClassifiedAttributesEngine {
       key: 'storage_gb',
       label: 'Interna memorija',
       type: AttributeType.select,
-      icon: Icons.memory_outlined,
+      icon: LucideIcons.hardDrive,
       options: [
         CategoryAttributeOption(value: '32', label: '32 GB'),
         CategoryAttributeOption(value: '64', label: '64 GB'),
@@ -429,7 +430,7 @@ class ClassifiedAttributesEngine {
       key: 'ram_gb',
       label: 'RAM memorija',
       type: AttributeType.select,
-      icon: Icons.storage_outlined,
+      icon: LucideIcons.cpu,
       options: [
         CategoryAttributeOption(value: '3', label: '3 GB'),
         CategoryAttributeOption(value: '4', label: '4 GB'),
@@ -447,103 +448,103 @@ class ClassifiedAttributesEngine {
       min: 500,
       max: 25000,
       hint: 'npr. 5000',
-      icon: Icons.battery_charging_full_outlined,
+      icon: LucideIcons.batteryCharging,
     ),
     CategoryAttribute(
       key: 'sim_free',
       label: 'SIM Free',
       type: AttributeType.boolean,
-      icon: Icons.lock_open_outlined,
+      icon: LucideIcons.unlock,
     ),
     CategoryAttribute(
       key: 'sim_single',
       label: '1x SIM slot',
       type: AttributeType.boolean,
-      icon: Icons.sim_card_outlined,
+      icon: LucideIcons.smartphone,
     ),
     CategoryAttribute(
       key: 'sim_dual',
       label: '2x SIM slota',
       type: AttributeType.boolean,
-      icon: Icons.sim_card_outlined,
+      icon: LucideIcons.layers,
     ),
     CategoryAttribute(
       key: 'sim_esim',
       label: 'eSIM podrška',
       type: AttributeType.boolean,
-      icon: Icons.contactless_outlined,
+      icon: LucideIcons.nfc,
     ),
     CategoryAttribute(
       key: 'net_5g',
       label: '5G',
       type: AttributeType.boolean,
-      icon: Icons.five_g_outlined,
+      icon: LucideIcons.signal,
     ),
     CategoryAttribute(
       key: 'warranty_official',
       label: 'Zvanična garancija',
       type: AttributeType.boolean,
-      icon: Icons.verified_outlined,
+      icon: LucideIcons.badgeCheck,
     ),
     CategoryAttribute(
       key: 'warranty_operator',
       label: 'Garancija operatera',
       type: AttributeType.boolean,
-      icon: Icons.cell_tower_outlined,
+      icon: LucideIcons.radioTower,
     ),
     CategoryAttribute(
       key: 'warranty_shop',
       label: 'Garancija radnje / servisa',
       type: AttributeType.boolean,
-      icon: Icons.storefront_outlined,
+      icon: LucideIcons.store,
     ),
     CategoryAttribute(
       key: 'warranty_working',
       label: 'Radna garancija',
       type: AttributeType.boolean,
-      icon: Icons.security_outlined,
+      icon: LucideIcons.wrench,
     ),
     CategoryAttribute(
       key: 'acc_box',
       label: 'Originalna kutija',
       type: AttributeType.boolean,
-      icon: Icons.inventory_2_outlined,
+      icon: LucideIcons.package,
     ),
     CategoryAttribute(
       key: 'acc_charger',
       label: 'Punjač',
       type: AttributeType.boolean,
-      icon: Icons.electrical_services_outlined,
+      icon: LucideIcons.plug,
     ),
     CategoryAttribute(
       key: 'acc_cable',
       label: 'USB kabl',
       type: AttributeType.boolean,
-      icon: Icons.cable_outlined,
+      icon: LucideIcons.usb,
     ),
     CategoryAttribute(
       key: 'acc_case',
       label: 'Zaštitna maska',
       type: AttributeType.boolean,
-      icon: Icons.phone_android_outlined,
+      icon: LucideIcons.shield,
     ),
     CategoryAttribute(
       key: 'acc_glass',
       label: 'Zaštitno staklo',
       type: AttributeType.boolean,
-      icon: Icons.shield_outlined,
+      icon: LucideIcons.sparkles,
     ),
     CategoryAttribute(
       key: 'acc_headphones',
       label: 'Slušalice',
       type: AttributeType.boolean,
-      icon: Icons.headphones_outlined,
+      icon: LucideIcons.headphones,
     ),
     CategoryAttribute(
       key: 'acc_receipt',
       label: 'Fiskalni račun',
       type: AttributeType.boolean,
-      icon: Icons.receipt_long_outlined,
+      icon: LucideIcons.receipt,
     ),
   ];
 
@@ -610,7 +611,7 @@ class ClassifiedAttributesEngine {
       key: 'warranty',
       label: 'Garancija',
       type: AttributeType.select,
-      icon: Icons.verified_outlined,
+      icon: LucideIcons.badgeCheck,
       options: [
         CategoryAttributeOption(value: 'zvanicna', label: 'Zvanična garancija'),
         CategoryAttributeOption(value: 'operater', label: 'Garancija operatera'),
@@ -622,7 +623,7 @@ class ClassifiedAttributesEngine {
       key: 'sim_lock',
       label: 'SIM status',
       type: AttributeType.select,
-      icon: Icons.lock_open_outlined,
+      icon: LucideIcons.unlock,
       options: [
         CategoryAttributeOption(value: 'sim_free', label: 'SIM Free'),
         CategoryAttributeOption(value: 'zakljucan', label: 'Zaključan na mrežu'),
@@ -632,7 +633,7 @@ class ClassifiedAttributesEngine {
       key: 'sim_slots',
       label: 'SIM slotovi',
       type: AttributeType.select,
-      icon: Icons.sim_card_outlined,
+      icon: LucideIcons.smartphone,
       options: [
         CategoryAttributeOption(value: 'single_sim', label: 'Single SIM'),
         CategoryAttributeOption(value: 'dual_sim', label: 'Dual SIM'),
@@ -644,7 +645,7 @@ class ClassifiedAttributesEngine {
       key: 'package_contents',
       label: 'Prateća oprema',
       type: AttributeType.select,
-      icon: Icons.inventory_2_outlined,
+      icon: LucideIcons.package,
       options: [
         CategoryAttributeOption(value: 'full', label: 'Full pakovanje'),
         CategoryAttributeOption(value: 'telefon_punjac', label: 'Telefon i punjač / kabl'),

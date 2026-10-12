@@ -61,6 +61,16 @@ class ClassifiedsSidebarAttributesSection extends StatelessWidget {
                           : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
                     ),
                     const SizedBox(width: 8),
+                    if (attr.icon != null) ...[
+                      Icon(
+                        attr.icon,
+                        size: 13,
+                        color: isTrue
+                            ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
+                            : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     Expanded(
                       child: Text(
                         attr.label,

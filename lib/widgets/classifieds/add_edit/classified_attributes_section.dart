@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../models/category_attribute_model.dart';
 import 'package:flutter/services.dart';
 import '../../../utils/number_input_utils.dart';
@@ -120,13 +121,23 @@ class ClassifiedAttributesSection extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'SIM kartica i povezivanje',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.radio,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'SIM kartica i povezivanje',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Wrap(
@@ -135,13 +146,13 @@ class ClassifiedAttributesSection extends StatelessWidget {
                 children: [
                   _buildCheckboxChip(
                     label: 'SIM Free',
-                    icon: Icons.lock_open_outlined,
+                    icon: LucideIcons.unlock,
                     value: currentAttributes['sim_free'] == true,
                     onChanged: (val) => onChanged('sim_free', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: '1x SIM slot',
-                    icon: Icons.sim_card_outlined,
+                    icon: LucideIcons.smartphone,
                     value: currentAttributes['sim_single'] == true,
                     onChanged: (val) {
                       onChanged('sim_single', val ? true : null);
@@ -150,7 +161,7 @@ class ClassifiedAttributesSection extends StatelessWidget {
                   ),
                   _buildCheckboxChip(
                     label: '2x SIM slota',
-                    icon: Icons.sim_card_outlined,
+                    icon: LucideIcons.layers,
                     value: currentAttributes['sim_dual'] == true,
                     onChanged: (val) {
                       onChanged('sim_dual', val ? true : null);
@@ -159,13 +170,13 @@ class ClassifiedAttributesSection extends StatelessWidget {
                   ),
                   _buildCheckboxChip(
                     label: 'eSIM',
-                    icon: Icons.contactless_outlined,
+                    icon: LucideIcons.nfc,
                     value: currentAttributes['sim_esim'] == true,
                     onChanged: (val) => onChanged('sim_esim', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: '5G',
-                    icon: Icons.five_g_outlined,
+                    icon: LucideIcons.signal,
                     value: currentAttributes['net_5g'] == true,
                     onChanged: (val) => onChanged('net_5g', val ? true : null),
                   ),
@@ -185,13 +196,23 @@ class ClassifiedAttributesSection extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Garancija',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.shieldCheck,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Garancija',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Wrap(
@@ -200,7 +221,7 @@ class ClassifiedAttributesSection extends StatelessWidget {
                 children: [
                   _buildCheckboxChip(
                     label: 'Zvanična garancija',
-                    icon: Icons.verified_outlined,
+                    icon: LucideIcons.badgeCheck,
                     value: currentAttributes['warranty_official'] == true ||
                         currentAttributes['warranty'] == 'zvanicna',
                     onChanged: (val) {
@@ -212,7 +233,7 @@ class ClassifiedAttributesSection extends StatelessWidget {
                   ),
                   _buildCheckboxChip(
                     label: 'Garancija operatera',
-                    icon: Icons.cell_tower_outlined,
+                    icon: LucideIcons.radioTower,
                     value: currentAttributes['warranty_operator'] == true ||
                         currentAttributes['warranty'] == 'operater',
                     onChanged: (val) {
@@ -224,7 +245,7 @@ class ClassifiedAttributesSection extends StatelessWidget {
                   ),
                   _buildCheckboxChip(
                     label: 'Garancija radnje / servisa',
-                    icon: Icons.storefront_outlined,
+                    icon: LucideIcons.store,
                     value: currentAttributes['warranty_shop'] == true ||
                         currentAttributes['warranty'] == 'servis_radnja',
                     onChanged: (val) {
@@ -236,7 +257,7 @@ class ClassifiedAttributesSection extends StatelessWidget {
                   ),
                   _buildCheckboxChip(
                     label: 'Radna garancija',
-                    icon: Icons.security_outlined,
+                    icon: LucideIcons.wrench,
                     value: currentAttributes['warranty_working'] == true,
                     onChanged: (val) {
                       onChanged('warranty_working', val ? true : null);
@@ -261,13 +282,23 @@ class ClassifiedAttributesSection extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Prateća oprema',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.packageCheck,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Prateća oprema',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Wrap(
@@ -276,43 +307,43 @@ class ClassifiedAttributesSection extends StatelessWidget {
                 children: [
                   _buildCheckboxChip(
                     label: 'Originalna kutija',
-                    icon: Icons.inventory_2_outlined,
+                    icon: LucideIcons.package,
                     value: currentAttributes['acc_box'] == true,
                     onChanged: (val) => onChanged('acc_box', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: 'Punjač',
-                    icon: Icons.electrical_services_outlined,
+                    icon: LucideIcons.plug,
                     value: currentAttributes['acc_charger'] == true,
                     onChanged: (val) => onChanged('acc_charger', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: 'USB kabl',
-                    icon: Icons.cable_outlined,
+                    icon: LucideIcons.usb,
                     value: currentAttributes['acc_cable'] == true,
                     onChanged: (val) => onChanged('acc_cable', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: 'Zaštitna maska',
-                    icon: Icons.phone_android_outlined,
+                    icon: LucideIcons.shield,
                     value: currentAttributes['acc_case'] == true,
                     onChanged: (val) => onChanged('acc_case', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: 'Zaštitno staklo',
-                    icon: Icons.shield_outlined,
+                    icon: LucideIcons.sparkles,
                     value: currentAttributes['acc_glass'] == true,
                     onChanged: (val) => onChanged('acc_glass', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: 'Slušalice',
-                    icon: Icons.headphones_outlined,
+                    icon: LucideIcons.headphones,
                     value: currentAttributes['acc_headphones'] == true,
                     onChanged: (val) => onChanged('acc_headphones', val ? true : null),
                   ),
                   _buildCheckboxChip(
                     label: 'Fiskalni račun',
-                    icon: Icons.receipt_long_outlined,
+                    icon: LucideIcons.receipt,
                     value: currentAttributes['acc_receipt'] == true,
                     onChanged: (val) => onChanged('acc_receipt', val ? true : null),
                   ),
@@ -510,17 +541,19 @@ class ClassifiedAttributesSection extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
         decoration: BoxDecoration(
           color: value
-              ? colorScheme.primary.withValues(alpha: isDark ? 0.25 : 0.08)
-              : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+              ? colorScheme.primary.withValues(alpha: isDark ? 0.22 : 0.08)
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.black.withValues(alpha: 0.025)),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: value
                 ? colorScheme.primary
-                : colorScheme.outlineVariant.withValues(alpha: 0.5),
-            width: value ? 1.5 : 1.0,
+                : colorScheme.outlineVariant.withValues(alpha: 0.45),
+            width: value ? 1.4 : 1.0,
           ),
         ),
         child: Row(
@@ -533,15 +566,46 @@ class ClassifiedAttributesSection extends StatelessWidget {
                 value: value,
                 onChanged: (v) => onChanged(v ?? false),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
-            const SizedBox(width: 6),
-            Icon(
-              icon,
-              size: 16,
-              color: value ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            const SizedBox(width: 7),
+            // Mikro flat Lucid ikonica pored checkbox-a
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: value
+                    ? colorScheme.primary.withValues(alpha: isDark ? 0.32 : 0.14)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.045)),
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(
+                  color: value
+                      ? colorScheme.primary.withValues(alpha: 0.35)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.06)),
+                  width: 0.8,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                icon,
+                size: 13,
+                color: value
+                    ? (isDark ? Colors.white : colorScheme.primary)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.75)
+                        : colorScheme.onSurfaceVariant),
+              ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
