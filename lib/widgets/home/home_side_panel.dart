@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../constants/amazon_theme.dart';
 import '../../core/responsive.dart';
 import '../../models/home_products_data.dart';
+import '../../providers/app_state.dart';
 import '../skeleton.dart';
 import '../app_empty_state.dart';
 import '../app_network_image.dart';
@@ -190,6 +192,7 @@ class TopProductsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
 
     return StreamBuilder<HomeProductsData>(
       initialData: initialData,
@@ -210,12 +213,13 @@ class TopProductsList extends StatelessWidget {
         if (list.isEmpty) {
           return AppEmptyState(
             icon: Icons.shopping_basket_outlined,
-            title: 'Još nema proizvoda u katalogu',
-            subtitle:
-                'Proverite ponovo kasnije ili pretražite po kategorijama.',
-            ctaLabel: 'Pretraži proizvode',
-            ctaIcon: Icons.search,
-            onCtaPressed: () => context.push('/search'),
+            title: 'Još nema ponude u katalogu',
+            subtitle: isSeller
+                ? 'Dodajte svoje proizvode i započnite prodaju.'
+                : 'Proizvodite domaću hranu? Otvorite svoju online tezgu besplatno.',
+            ctaLabel: isSeller ? 'Dodaj proizvod' : 'Postani prodavac',
+            ctaIcon: Icons.add_business_outlined,
+            onCtaPressed: () => context.push(isSeller ? '/add-product' : '/becoming-seller'),
           );
         }
 

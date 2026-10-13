@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/design_system.dart';
@@ -12,6 +13,7 @@ import '../../providers/app_state.dart';
 
 import '../app_empty_state.dart';
 import '../app_error_retry.dart';
+import '../guest_auth_prompt.dart';
 import '../cache_status_widget.dart';
 import '../app_shimmer.dart';
 import '../organic_divider.dart';
@@ -96,6 +98,7 @@ class HomeNarrowProductsSliver extends StatelessWidget {
         final canFavorite = user != null && !user.isGuest;
 
         if (displayList.isEmpty) {
+          final isSeller = user != null && user.isSeller;
           return SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -107,9 +110,24 @@ class HomeNarrowProductsSliver extends StatelessWidget {
                 icon: Icons.storefront_outlined,
                 title: 'Još nema ponude u ovom kraju',
                 subtitle:
-                    'Gazdinstva iz ovog regiona još nisu objavila proizvode. Probaj drugi kraj ili navrati malo kasnije.',
-                ctaLabel: 'Pretraži proizvode',
-                onCtaPressed: onSearchTap,
+                    'Proizvodite domaći sir, med, meso ili zimnicu? Otvorite svoju online tezgu besplatno i privucite lokalne kupce.',
+                ctaLabel: isSeller ? 'Dodaj novi proizvod' : 'Otvorite besplatnu tezgu',
+                ctaIcon: Icons.add_business_outlined,
+                onCtaPressed: () {
+                  if (user == null || user.isGuest) {
+                    showGuestAuthPrompt(
+                      context,
+                      title: 'Otvaranje online tezge',
+                      message:
+                          'Registrujte se ili prijavite da biste postavili svoje domaće proizvode i započeli prodaju direktno kupcima.',
+                      icon: Icons.storefront_rounded,
+                    );
+                  } else if (isSeller) {
+                    context.push('/add-product');
+                  } else {
+                    context.push('/becoming-seller');
+                  }
+                },
               ),
             ),
           );

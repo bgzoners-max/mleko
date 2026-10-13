@@ -33,6 +33,8 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
   final isPublicRoute = loc == '/' ||
       loc.startsWith('/search') ||
       loc.startsWith('/product/') ||
+      loc.startsWith('/p/') ||
+      loc.startsWith('/ad/') ||
       loc.startsWith('/categories') ||
       loc == '/sellers-map' ||
       loc == '/cart' ||

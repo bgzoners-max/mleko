@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/design_system.dart';
@@ -20,6 +19,7 @@ import '../../services/communication/chat_service.dart';
 import '../../supabase_config.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/app_back_button.dart';
+import '../../widgets/app_share_sheet.dart';
 import '../../widgets/navigation/desktop_header.dart';
 import '../../widgets/classifieds/report_classified_ad_dialog.dart';
 import '../../widgets/classifieds/detail/classified_breadcrumbs.dart';
@@ -95,9 +95,15 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
             : 'https://www.domacimarket.rs');
     final base = rawBase.replaceAll(RegExp(r'/+$'), '');
     final url = '$base/ad/${ad.id}';
-    final text = '${ad.title} — ${ad.priceFormatted}\n$url';
+    final text = '${ad.title} — ${ad.priceFormatted}';
     unawaited(_service.recordInteraction(ad.id, 'share'));
-    await SharePlus.instance.share(ShareParams(text: text, subject: ad.title));
+    await showAppShareSheet(
+      context,
+      title: ad.title,
+      url: url,
+      shareText: text,
+      subject: ad.title,
+    );
   }
 
   Future<void> _makePhoneCall(String phone, {String? adId}) async {

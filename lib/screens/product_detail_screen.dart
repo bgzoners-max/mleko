@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart'
-    show kIsWeb, consolidateHttpClientResponseBytes;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/amazon_theme.dart';
@@ -23,6 +20,7 @@ import '../supabase_config.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_share_sheet.dart';
 import '../widgets/navigation/desktop_header.dart';
 import '../widgets/skeleton.dart';
 
@@ -43,47 +41,15 @@ Future<void> _shareProduct(BuildContext context, ProductModel product) async {
   final base = rawBase.replaceAll(RegExp(r'/+$'), '');
   final url = '$base/p/${product.id}';
   final text =
-      'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:\n$url';
+      'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:';
 
-  if (product.imageUrls.isEmpty || kIsWeb) {
-    await SharePlus.instance.share(
-      ShareParams(text: text, subject: product.name),
-    );
-    return;
-  }
-
-  try {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Priprema slike za deljenje...'),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    final request =
-        await HttpClient().getUrl(Uri.parse(product.imageUrls.first));
-    final response = await request.close();
-    final bytes = await consolidateHttpClientResponseBytes(response);
-
-    await SharePlus.instance.share(
-      ShareParams(
-        text: text,
-        subject: product.name,
-        files: [
-          XFile.fromData(bytes, mimeType: 'image/jpeg', name: 'proizvod.jpg'),
-        ],
-      ),
-    );
-  } catch (e, st) {
-    unawaited(ErrorHandlerService().handleError(
-      e,
-      stackTrace: st,
-      context: 'Share product image fallback',
-    ));
-    await SharePlus.instance.share(
-      ShareParams(text: text, subject: product.name),
-    );
-  }
+  await showAppShareSheet(
+    context,
+    title: product.name,
+    url: url,
+    shareText: text,
+    subject: product.name,
+  );
 }
 
 class ProductDetailScreen extends StatefulWidget {

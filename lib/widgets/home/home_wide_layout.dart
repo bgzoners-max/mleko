@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../constants/amazon_theme.dart';
 import '../../core/constants.dart';
@@ -15,6 +16,7 @@ import '../../utils/animations.dart';
 
 import '../app_empty_state.dart';
 import '../app_error_retry.dart';
+import '../guest_auth_prompt.dart';
 import '../cache_status_widget.dart';
 import '../product_card.dart';
 import '../app_shimmer.dart';
@@ -128,6 +130,7 @@ class HomeWideLayout extends StatelessWidget {
                       context.select<AppState, UserModel?>((s) => s.user);
                   final canFavorite = user != null && !user.isGuest;
                   if (displayList.isEmpty) {
+                    final isSeller = user != null && user.isSeller;
                     return FadeInSlide(
                       delay: const Duration(milliseconds: 300),
                       child: Padding(
@@ -136,9 +139,24 @@ class HomeWideLayout extends StatelessWidget {
                           icon: Icons.storefront_outlined,
                           title: 'Nema proizvoda za prikaz',
                           subtitle:
-                              'Trenutno nema dostupnih proizvoda u ovom regionu. Pokušaj kasnije ili promeni filter.',
-                          ctaLabel: 'Pretraži proizvode',
-                          onCtaPressed: onSearchTap,
+                              'Proizvodite domaći sir, med, meso ili zimnicu? Otvorite svoju online tezgu besplatno i privucite lokalne kupce.',
+                          ctaLabel: isSeller ? 'Dodaj novi proizvod' : 'Otvorite besplatnu tezgu',
+                          ctaIcon: Icons.add_business_outlined,
+                          onCtaPressed: () {
+                            if (user == null || user.isGuest) {
+                              showGuestAuthPrompt(
+                                context,
+                                title: 'Otvaranje online tezge',
+                                message:
+                                    'Registrujte se ili prijavite da biste postavili svoje domaće proizvode i započeli prodaju direktno kupcima.',
+                                icon: Icons.storefront_rounded,
+                              );
+                            } else if (isSeller) {
+                              context.push('/add-product');
+                            } else {
+                              context.push('/becoming-seller');
+                            }
+                          },
                         ),
                       ),
                     );

@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../app_empty_state.dart';
 import '../app_footer.dart';
+import '../guest_auth_prompt.dart';
 import 'classified_active_filters.dart';
 import 'classified_ad_card.dart';
 import 'classified_search_bar.dart';
@@ -218,26 +219,36 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 40),
                                 child: AppEmptyState(
                                   icon: Icons.search_off_outlined,
-                                  title: 'Nema oglasa za izabrane filtere',
+                                  title: isFiltered
+                                      ? 'Nema oglasa za izabrane filtere'
+                                      : 'Još nema oglasa u ovoj kategoriji',
                                   subtitle: isFiltered
                                       ? 'Pokušajte sa promenom kategorije, cene ili lokacije.'
-                                      : (isGuest
-                                          ? 'Trenutno nema objavljenih oglasa.'
-                                          : 'Budite prvi koji će postaviti oglas!'),
+                                      : 'Budite prvi koji će postaviti besplatan oglas i privući kupce!',
                                   ctaLabel: isFiltered
                                       ? 'Poništi filtere'
-                                      : (isGuest ? null : 'Postavi oglas'),
+                                      : 'Postavi besplatan oglas',
                                   ctaIcon: isFiltered
                                       ? Icons.refresh
-                                      : (isGuest ? null : Icons.add_circle_outline),
+                                      : Icons.add_circle_outline,
                                   onCtaPressed: isFiltered
                                       ? () {
                                           searchController.clear();
                                           classifieds.clearAllFilters();
                                         }
-                                      : (isGuest
-                                          ? null
-                                          : () => context.push('/classifieds/new')),
+                                      : () {
+                                          if (isGuest) {
+                                            showGuestAuthPrompt(
+                                              context,
+                                              title: 'Postavljanje oglasa',
+                                              message:
+                                                  'Prijavite se ili se besplatno registrujte da biste postavili oglas za samo 2 minuta.',
+                                              icon: Icons.add_circle_outline,
+                                            );
+                                          } else {
+                                            context.push('/classifieds/new');
+                                          }
+                                        },
                                 ),
                               )
                             else ...[

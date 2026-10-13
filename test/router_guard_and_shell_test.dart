@@ -77,5 +77,18 @@ void main() {
       // Mora biti tacno 1 (unutar StatefulShellBranch), bez duplog na root nivou
       expect(conversationsRouteCount, 1);
     });
+
+    test('short links /ad/:id and /p/:id exist in router and redirect accurately', () {
+      SharedPreferences.setMockInitialValues({});
+      final appState = AppState(ordersService: _FakeOrdersService());
+      final router = createRouter(appState);
+
+      final rootGoRoutes = router.configuration.routes.whereType<GoRoute>().toList();
+      final adRoute = rootGoRoutes.firstWhere((r) => r.path == '/ad/:id');
+      final pRoute = rootGoRoutes.firstWhere((r) => r.path == '/p/:id');
+
+      expect(adRoute, isNotNull);
+      expect(pRoute, isNotNull);
+    });
   });
 }

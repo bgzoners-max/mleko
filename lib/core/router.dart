@@ -428,6 +428,22 @@ GoRouter createRouter(AppState appState) {
         ),
       ),
       GoRoute(
+        path: '/ad/:id',
+        redirect: (context, state) {
+          final id = state.pathParameters['id'];
+          final query = state.uri.hasQuery ? '?${state.uri.query}' : '';
+          return '/classifieds/ad/$id$query';
+        },
+      ),
+      GoRoute(
+        path: '/p/:id',
+        redirect: (context, state) {
+          final id = state.pathParameters['id'];
+          final query = state.uri.hasQuery ? '?${state.uri.query}' : '';
+          return '/product/$id$query';
+        },
+      ),
+      GoRoute(
         path: '/classifieds/ad/:id',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
