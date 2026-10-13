@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../skeleton.dart';
 import '../app_empty_state.dart';
 import '../app_network_image.dart';
+import '../guest_auth_prompt.dart';
 import 'favorite_farms_list.dart';
 
 class HomeSidePanel extends StatefulWidget {
@@ -50,7 +51,7 @@ class _HomeSidePanelState extends State<HomeSidePanel>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final textScale = MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.4);
-    final cardHeight = (236.0 * textScale).roundToDouble();
+    final cardHeight = (240.0 * textScale).roundToDouble();
 
     if (isWide) {
       return Column(
@@ -149,6 +150,7 @@ class SidePanelCard extends StatelessWidget {
         ),
         boxShadow: AmazonColors.getCardShadow(context),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,6 +214,7 @@ class TopProductsList extends StatelessWidget {
         final salesCounts = data?.salesCounts ?? {};
         if (list.isEmpty) {
           return AppEmptyState(
+            isCompact: true,
             icon: Icons.shopping_basket_outlined,
             title: 'Još nema ponude u katalogu',
             subtitle: isSeller
@@ -219,7 +222,22 @@ class TopProductsList extends StatelessWidget {
                 : 'Proizvodite domaću hranu? Otvorite svoju online tezgu besplatno.',
             ctaLabel: isSeller ? 'Dodaj proizvod' : 'Postani prodavac',
             ctaIcon: Icons.add_business_outlined,
-            onCtaPressed: () => context.push(isSeller ? '/add-product' : '/becoming-seller'),
+            onCtaPressed: () {
+              final user = context.read<AppState>().user;
+              if (user == null || user.isGuest) {
+                showGuestAuthPrompt(
+                  context,
+                  title: 'Otvaranje online tezge',
+                  message:
+                      'Registrujte se ili prijavite da biste postavili svoje domaće proizvode i započeli prodaju direktno kupcima.',
+                  icon: Icons.storefront_rounded,
+                );
+              } else if (isSeller) {
+                context.push('/add-product');
+              } else {
+                context.push('/becoming-seller');
+              }
+            },
           );
         }
 
