@@ -5,12 +5,20 @@ import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
 import type { Database, Json } from "../../types/database.types.ts"
 
 // Dozvoljeni domeni za CORS (ograniči attack surface)
-const ALLOWED_ORIGINS = [
+const PROD_ALLOWED_ORIGINS = [
   "https://domacimarket.rs",
   "https://www.domacimarket.rs",
-  "http://localhost:3000", // Za lokalni development
-  "http://localhost:8080", // Za lokalni development
 ]
+
+// Dozvoli lokalne adrese samo u development okruženju
+const isDev = (Deno.env.get("ENVIRONMENT") || "").toLowerCase() === "development" ||
+  (Deno.env.get("DENO_ENV") || "").toLowerCase() === "development" ||
+  Deno.env.get("ALLOW_LOCAL_CORS") === "true"
+
+const ALLOWED_ORIGINS = isDev
+  ? [...PROD_ALLOWED_ORIGINS, "http://localhost:3000", "http://localhost:8080"]
+  : PROD_ALLOWED_ORIGINS
+
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin") || ""

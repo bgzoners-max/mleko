@@ -27,6 +27,12 @@ void main() {
     'get_product_order_count',
     'is_seller_verified',
     'search_products_fts',
+    'get_related_seller_products',
+    'send_push_notification',
+    'invoke_send_push',
+    'check_ticket_message_limit',
+    'validate_product_delivery_point_same_seller',
+    'get_conversation_info_with_profile',
   };
 
   final files = dir
