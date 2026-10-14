@@ -15,6 +15,7 @@ import 'classifieds/saved_searches_screen.dart';
 import '../providers/classifieds_provider.dart';
 
 import '../widgets/profile/mini_store_card.dart';
+import '../widgets/profile/become_seller_cta_card.dart';
 import '../widgets/profile/buyer_stats_card.dart';
 import '../widgets/profile/seller_profile_photo_section.dart';
 import '../widgets/profile/seller_gallery_section.dart';
@@ -145,6 +146,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     BuyerStatsCard(user: user),
                     const SizedBox(height: 8),
                   ],
+                  if (!user.isGuest && !user.isSeller) ...[
+                    BecomeSellerCtaCard(
+                      isSelected: _isActive('becoming-seller', true),
+                      onTap: () => _openPanel(
+                        'becoming-seller',
+                        const BecomingSellerScreen(),
+                        isWide: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
                   // SEKCIJA 1: MINI PIJACA (sa blago zelenkastom pozadinom)
                   _buildMiniPijacaSection(context, user, isWide: true),
                   const SizedBox(height: 10),
@@ -185,6 +197,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (user.isSeller) SellerGallerySection(user: user),
       ProfileDataCard(user: user),
       if (!user.isGuest) BuyerStatsCard(user: user),
+      if (!user.isGuest && !user.isSeller)
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 2),
+          child: BecomeSellerCtaCard(
+            isSelected: false,
+            onTap: () => _push('/becoming-seller'),
+          ),
+        ),
     ];
     return ListView(
       padding: EdgeInsets.all(isSmallTablet ? 12 : 8),
@@ -316,8 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Omiljeni proizvodi'),
             subtitle: const Text('Brzi pristup najdražim proizvodima sa pijace'),
             selected: _isActive('favorites', isWide),
-            onTap: () => _openPanel('favorites', const FavoritesScreen(),
-                isWide: isWide),
+            onTap: () => _openPanel('favorites', const FavoritesScreen(), isWide: isWide),
           ),
           ListTile(
             visualDensity: VisualDensity.compact,
@@ -325,25 +344,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Pratim gazdinstva i prodavce'),
             subtitle: const Text('Obaveštenja o novoj ponudi proizvođača'),
             selected: _isActive('favorite-sellers', isWide),
-            onTap: () => _openPanel(
-                'favorite-sellers', const FavoriteSellersScreen(),
-                isWide: isWide),
+            onTap: () => _openPanel('favorite-sellers', const FavoriteSellersScreen(), isWide: isWide),
           ),
-
-          // Ako korisnik još nije prodavac: ponuda da otvori gazdinstvo
-          if (!user.isGuest && !user.isSeller)
-            ListTile(
-              visualDensity: VisualDensity.compact,
-              leading: Icon(Icons.add_business_outlined, color: headerColor),
-              title: const Text('Postani prodavac / Otvori gazdinstvo',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              subtitle:
-                  const Text('Organizovana prodaja domaće hrane na mini pijaci'),
-              selected: _isActive('becoming-seller', isWide),
-              onTap: () => _openPanel(
-                  'becoming-seller', const BecomingSellerScreen(),
-                  isWide: isWide),
-            ),
           const SizedBox(height: 6),
         ],
       ),
@@ -614,9 +616,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('Izmena imena, broja telefona, grada i adrese'),
               selected: _isActive('edit-profile', isWide),
-              onTap: () => _openPanel(
-                  'edit-profile', const EditProfileScreen(),
-                  isWide: isWide),
+              onTap: () => _openPanel('edit-profile', const EditProfileScreen(), isWide: isWide),
             ),
             ListTile(
               visualDensity: VisualDensity.compact,
@@ -624,8 +624,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Poruke'),
               subtitle: const Text('Direktni razgovori sa kupcima i prodavcima'),
               selected: _isActive('messages', isWide),
-              onTap: () => _openPanel('messages', const ConversationsScreen(),
-                  isWide: isWide),
+              onTap: () => _openPanel('messages', const ConversationsScreen(), isWide: isWide),
             ),
           ],
           ListTile(
@@ -634,17 +633,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Obaveštenja'),
             subtitle: const Text('Nove poruke i statusi'),
             selected: _isActive('notifications', isWide),
-            onTap: () => _openPanel(
-                'notifications', const NotificationsScreen(),
-                isWide: isWide),
+            onTap: () => _openPanel('notifications', const NotificationsScreen(), isWide: isWide),
           ),
           ListTile(
             visualDensity: VisualDensity.compact,
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Podešavanja'),
             selected: _isActive('settings', isWide),
-            onTap: () => _openPanel('settings', const SettingsScreen(),
-                isWide: isWide),
+            onTap: () => _openPanel('settings', const SettingsScreen(), isWide: isWide),
           ),
           ListTile(
             visualDensity: VisualDensity.compact,
@@ -668,17 +664,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Odjavi se?'),
-                  content:
-                      const Text('Da li ste sigurni da želite da se odjavite?'),
+                  content: const Text('Da li ste sigurni da želite da se odjavite?'),
                   actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Odustani'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Odjavi se'),
-                    ),
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Odustani')),
+                    FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Odjavi se')),
                   ],
                 ),
               );
