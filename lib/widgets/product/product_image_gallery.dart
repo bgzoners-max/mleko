@@ -249,9 +249,12 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Opacity(
-                        opacity: isSelected ? 1.0 : 0.5,
+                        opacity: isSelected ? 1.0 : 0.85,
                         child: AppNetworkImage.thumbnail(
                           imageUrl: product.imageUrls[i],
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),

@@ -226,6 +226,8 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
         return widget.errorWidget ?? AppNetworkImage._defaultError();
       },
       imageBuilder: (context, imageProvider) => Container(
+        width: widget.width,
+        height: widget.height,
         decoration: BoxDecoration(
           image: DecorationImage(
             image: imageProvider,

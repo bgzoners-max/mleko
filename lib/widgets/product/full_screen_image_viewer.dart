@@ -376,6 +376,9 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                                       borderRadius: BorderRadius.circular(6),
                                       child: AppNetworkImage.thumbnail(
                                         imageUrl: widget.imageUrls[i],
+                                        width: 52,
+                                        height: 52,
+                                        fit: BoxFit.cover,
                                       ),
                                     ),
                                   ),
