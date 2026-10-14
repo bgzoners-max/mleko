@@ -99,9 +99,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('NOVO'), findsOneWidget);
+    expect(find.text('BETA'), findsOneWidget);
 
-    await tester.tap(find.text('NOVO'));
+    await tester.tap(find.text('BETA'));
     await tester.pumpAndSettle();
 
     expect(find.byType(BetaInfoDialog), findsOneWidget);

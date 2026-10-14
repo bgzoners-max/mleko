@@ -149,7 +149,7 @@ class BetaAnnouncementBanner extends StatelessWidget {
   }
 }
 
-/// Mali stilizovani bedž 'NOVO' koji se prikazuje pored logotipa
+/// Mali stilizovani bedž 'BETA' koji se prikazuje pored logotipa
 /// i otvara informativni modal na dodir/klik.
 class BetaBadge extends StatelessWidget {
   final bool showInfoIcon;
@@ -158,7 +158,7 @@ class BetaBadge extends StatelessWidget {
   const BetaBadge({
     super.key,
     this.showInfoIcon = false,
-    this.label = 'NOVO',
+    this.label = 'BETA',
   });
 
   @override
@@ -166,7 +166,7 @@ class BetaBadge extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Tooltip(
-      message: 'Nova platforma – kliknite za detalje',
+      message: 'BETA verzija – kliknite za detalje',
       child: InkWell(
         onTap: () => showBetaInfoDialog(context),
         borderRadius: BorderRadius.circular(6),
