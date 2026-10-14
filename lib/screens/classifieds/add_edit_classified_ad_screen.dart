@@ -22,20 +22,9 @@ import '../../utils/classified_attributes_engine.dart';
 import '../../utils/number_input_utils.dart';
 import '../../widgets/app_back_button.dart';
 
-import '../../widgets/classifieds/add_edit/classified_attributes_section.dart';
-import '../../widgets/classifieds/add_edit/classified_seller_type_section.dart';
-import '../../widgets/classifieds/add_edit/classified_promotion_section.dart';
-import '../../widgets/classifieds/add_edit/classified_image_picker_row.dart';
 import '../../widgets/classifieds/add_edit/category_selection_modal.dart';
-import '../../widgets/classifieds/add_edit/classified_city_autocomplete.dart';
-import '../../widgets/classifieds/add_edit/classified_submit_button.dart';
-import '../../widgets/classifieds/add_edit/classified_price_section.dart';
-import '../../widgets/classifieds/add_edit/classified_contact_section.dart';
-import '../../widgets/classifieds/add_edit/classified_category_selector.dart';
-import '../../widgets/classifieds/add_edit/classified_title_field.dart';
-import '../../widgets/classifieds/add_edit/classified_description_field.dart';
+import '../../widgets/classifieds/add_edit/classified_ad_form.dart';
 import '../../widgets/classifieds/add_edit/classified_guest_empty_state.dart';
-
 import '../../widgets/guest_auth_prompt.dart';
 
 class AddEditClassifiedAdScreen extends StatefulWidget {
@@ -600,158 +589,60 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
             constraints: BoxConstraints(
               maxWidth: (isTablet || Breakpoints.isDesktop(context)) ? 780 : 640,
             ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClassifiedImagePickerRow(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    isPickingImages: _isPickingImages,
-                    onPickImages: _pickImages,
-                    existingImages: _existingImages,
-                    newImageBytes: _newImageBytes,
-                    onRemoveExisting: (index) => setState(() => _existingImages.removeAt(index)),
-                    onRemoveNew: (index) => setState(() => _newImageBytes.removeAt(index)),
-                    incomingCount: _incomingCount,
-                    imageProcessingStatus: _imageProcessingStatus,
-                    imageProcessingProgress: _imageProcessingProgress,
-                  ),
-                  const SizedBox(height: 14),
-
-                  ClassifiedTitleField(controller: _titleController),
-
-                  // Kategorija (puna širina za čist i čitljiv prikaz stabla kategorije)
-                  ClassifiedCategorySelector(
-                    selectedCategoryId: _selectedCategoryId,
-                    selectedCategoryName: _selectedCategoryName,
-                    colorScheme: colorScheme,
-                    onTap: () => _openCategoryPicker(context),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Stanje predmeta i Način formiranja cene (u istom redu na desktopu)
-                  ClassifiedPriceSection(
-                    isConditionApplicable: _isConditionApplicable,
-                    condition: _condition,
-                    onConditionChanged: (v) => setState(() => _condition = v ?? 'used'),
-                    priceType: _priceType,
-                    currency: _currency,
-                    priceController: _priceController,
-                    onPriceTypeChanged: (v) => setState(() => _priceType = v ?? 'fixed'),
-                    onCurrencyChanged: (v) => setState(() => _currency = v ?? 'RSD'),
-                  ),
-                  const SizedBox(height: 12),
-
-                  ClassifiedAttributesWrapper(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    categoryId: _selectedCategoryId,
-                    breadcrumbs: _selectedCategoryBreadcrumbs,
-                    currentAttributes: _attributes,
-                    onChanged: (key, val) {
-                      setState(() {
-                        if (val == null) {
-                          _attributes.remove(key);
-                        } else {
-                          _attributes[key] = val;
-                        }
-                      });
-                    },
-                  ),
-
-                  // Grad / Lokacija i Kontakt telefon
-                  if (isTablet || Breakpoints.isDesktop(context)) ...[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ClassifiedCityAutocomplete(controller: _cityController),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: 'Kontakt telefon',
-                              hintText: 'npr. 064 123 4567',
-                              prefixIcon: Icon(Icons.phone_outlined, size: 18),
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SwitchListTile.adaptive(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        'Prikaži telefon javno u oglasu',
-                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: const Text(
-                        'Ako isključite, kupci vas mogu kontaktirati samo preko poruka na sajtu.',
-                        style: TextStyle(fontSize: 11),
-                      ),
-                      value: _phonePublic,
-                      onChanged: (v) => setState(() => _phonePublic = v),
-                    ),
-                  ] else ...[
-                    ClassifiedCityAutocomplete(controller: _cityController),
-                    const SizedBox(height: 10),
-                    ClassifiedContactSection(
-                      phoneController: _phoneController,
-                      phonePublic: _phonePublic,
-                      onPhonePublicChanged: (v) => setState(() => _phonePublic = v),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-
-                  ClassifiedDescriptionField(controller: _descController),
-
-                  // Sekcija: Tip oglašivača (Zakon o zaštiti potrošača)
-                  ClassifiedSellerTypeSection(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    sellerType: _sellerType,
-                    onChanged: (val) {
-                      setState(() {
-                        _sellerType = val;
-                      });
-                    },
-                  ),
-
-                  // Sekcija za hitnu prodaju
-                  ClassifiedPromotionSection(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    isUrgent: _isUrgent,
-                    onUrgentChanged: (val) => setState(() => _isUrgent = val),
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Dugme za objavu
-                  ClassifiedSubmitButton(
-                    loading: _loading,
-                    isEdit: isEdit,
-                    uploadStatusText: _uploadStatusText,
-                    onSubmit: _submit,
-                  ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+            child: ClassifiedAdForm(
+              formKey: _formKey,
+              isTablet: isTablet,
+              theme: theme,
+              colorScheme: colorScheme,
+              isPickingImages: _isPickingImages,
+              onPickImages: _pickImages,
+              existingImages: _existingImages,
+              newImageBytes: _newImageBytes,
+              onRemoveExisting: (index) => setState(() => _existingImages.removeAt(index)),
+              onRemoveNew: (index) => setState(() => _newImageBytes.removeAt(index)),
+              incomingCount: _incomingCount,
+              imageProcessingStatus: _imageProcessingStatus,
+              imageProcessingProgress: _imageProcessingProgress,
+              titleController: _titleController,
+              selectedCategoryId: _selectedCategoryId,
+              selectedCategoryName: _selectedCategoryName,
+              onOpenCategoryPicker: () => _openCategoryPicker(context),
+              isConditionApplicable: _isConditionApplicable,
+              condition: _condition,
+              onConditionChanged: (v) => setState(() => _condition = v ?? 'used'),
+              priceType: _priceType,
+              currency: _currency,
+              priceController: _priceController,
+              onPriceTypeChanged: (v) => setState(() => _priceType = v ?? 'fixed'),
+              onCurrencyChanged: (v) => setState(() => _currency = v ?? 'RSD'),
+              selectedCategoryBreadcrumbs: _selectedCategoryBreadcrumbs,
+              attributes: _attributes,
+              onAttributeChanged: (key, val) {
+                setState(() {
+                  if (val == null) {
+                    _attributes.remove(key);
+                  } else {
+                    _attributes[key] = val;
+                  }
+                });
+              },
+              cityController: _cityController,
+              phoneController: _phoneController,
+              phonePublic: _phonePublic,
+              onPhonePublicChanged: (v) => setState(() => _phonePublic = v),
+              descController: _descController,
+              sellerType: _sellerType,
+              onSellerTypeChanged: (val) => setState(() => _sellerType = val),
+              isUrgent: _isUrgent,
+              onUrgentChanged: (val) => setState(() => _isUrgent = val),
+              loading: _loading,
+              isEdit: isEdit,
+              uploadStatusText: _uploadStatusText,
+              onSubmit: _submit,
             ),
           ),
         ),
       ),
     );
   }
-
-
-
 }
-
-
