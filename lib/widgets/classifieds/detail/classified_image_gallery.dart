@@ -75,20 +75,22 @@ class _ClassifiedImageGalleryState extends State<ClassifiedImageGallery> {
                   itemCount: widget.ad.images.length,
                   onPageChanged: (i) => setState(() => _currentImageIndex = i),
                   itemBuilder: (ctx, i) {
-                    return InkWell(
-                      onTap: () => widget.onImageTap(widget.ad.images, i),
-                      child: AppNetworkImage(
-                        imageUrl: widget.ad.images[i],
-                        fit: BoxFit.cover,
-                        placeholder: Container(
-                          color: widget.colorScheme.surfaceContainerHighest,
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                    return _ClassifiedGalleryKeepAliveItem(
+                      child: InkWell(
+                        onTap: () => widget.onImageTap(widget.ad.images, i),
+                        child: AppNetworkImage(
+                          imageUrl: widget.ad.images[i],
+                          fit: BoxFit.cover,
+                          placeholder: Container(
+                            color: widget.colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
                           ),
-                        ),
-                        errorWidget: Container(
-                          color: widget.colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.broken_image, size: 60),
+                          errorWidget: Container(
+                            color: widget.colorScheme.surfaceContainerHighest,
+                            child: const Icon(Icons.broken_image, size: 60),
+                          ),
                         ),
                       ),
                     );
@@ -270,3 +272,26 @@ class _ClassifiedImageGalleryState extends State<ClassifiedImageGallery> {
     );
   }
 }
+
+class _ClassifiedGalleryKeepAliveItem extends StatefulWidget {
+  final Widget child;
+  const _ClassifiedGalleryKeepAliveItem({required this.child});
+
+  @override
+  State<_ClassifiedGalleryKeepAliveItem> createState() =>
+      _ClassifiedGalleryKeepAliveItemState();
+}
+
+class _ClassifiedGalleryKeepAliveItemState
+    extends State<_ClassifiedGalleryKeepAliveItem>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+

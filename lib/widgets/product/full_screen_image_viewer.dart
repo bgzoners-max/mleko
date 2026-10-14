@@ -152,14 +152,11 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                       minScale: 1.0,
                       maxScale: 4.0,
                       child: Center(
-                        child: Hero(
-                          tag: 'product_image_${widget.productId}_$realIndex',
-                          child: AppNetworkImage(
-                            imageUrl: widget.imageUrls[realIndex],
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
+                        child: AppNetworkImage(
+                          imageUrl: widget.imageUrls[realIndex],
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
                         ),
                       ),
                     ),

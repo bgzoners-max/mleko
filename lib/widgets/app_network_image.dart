@@ -203,13 +203,38 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
     final resolvedUrl =
         _useServerTransform && serverUrl != null ? serverUrl : widget.imageUrl;
 
+    if (kIsWeb) {
+      return Image.network(
+        resolvedUrl,
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return widget.placeholder ?? AppNetworkImage._defaultPlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          if (_useServerTransform && serverUrl != null && mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() => _useServerTransform = false);
+              }
+            });
+          }
+          return widget.errorWidget ?? AppNetworkImage._defaultError();
+        },
+      );
+    }
+
     return CachedNetworkImage(
       imageUrl: resolvedUrl,
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
-      memCacheWidth: kIsWeb ? null : widget.memCacheWidth,
-      memCacheHeight: kIsWeb ? null : widget.memCacheHeight,
+      memCacheWidth: widget.memCacheWidth,
+      memCacheHeight: widget.memCacheHeight,
       fadeInDuration: widget.fadeInDuration ?? const Duration(milliseconds: 500),
       fadeInCurve: Curves.easeInCubic,
       placeholder: (_, __) =>
@@ -225,16 +250,6 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
         }
         return widget.errorWidget ?? AppNetworkImage._defaultError();
       },
-      imageBuilder: (context, imageProvider) => Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: imageProvider,
-            fit: widget.fit,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -60,39 +60,51 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
                         controller: _pageController,
                         onPageChanged: (i) => setState(() => _pageIndex = i),
                         itemCount: widget.product.imageUrls.length,
-                        itemBuilder: (_, i) => GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              PageRouteBuilder(
-                                opaque: false,
-                                barrierColor: Colors.black87,
-                                barrierDismissible: true,
-                                pageBuilder: (BuildContext context, _, __) {
-                                  return FullScreenImageViewer(
-                                    productId: widget.product.id,
-                                    imageUrls: widget.product.imageUrls,
-                                    initialIndex: i,
-                                  );
-                                },
-                                transitionsBuilder: (context, animation,
-                                    secondaryAnimation, child) {
-                                  return FadeTransition(
-                                      opacity: animation, child: child);
-                                },
-                              ),
-                            );
-                          },
-                          child: Center(
-                            child: Hero(
-                              tag: 'product_image_${widget.product.id}_$i',
-                              child: AppNetworkImage(
-                                imageUrl: widget.product.imageUrls[i],
-                                width: double.infinity,
-                                height: widget.height,
-                                fit: BoxFit.contain,
-                                memCacheWidth: 800,
-                                fadeInDuration: Duration.zero,
-                              ),
+                        itemBuilder: (_, i) => _GalleryKeepAliveItem(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                PageRouteBuilder(
+                                  opaque: false,
+                                  barrierColor: Colors.black87,
+                                  barrierDismissible: true,
+                                  pageBuilder: (BuildContext context, _, __) {
+                                    return FullScreenImageViewer(
+                                      productId: widget.product.id,
+                                      imageUrls: widget.product.imageUrls,
+                                      initialIndex: i,
+                                    );
+                                  },
+                                  transitionsBuilder: (context, animation,
+                                      secondaryAnimation, child) {
+                                    return FadeTransition(
+                                        opacity: animation, child: child);
+                                  },
+                                ),
+                              );
+                            },
+                            child: Center(
+                              child: i == 0
+                                  ? Hero(
+                                      tag:
+                                          'product_image_${widget.product.id}_0',
+                                      child: AppNetworkImage(
+                                        imageUrl: widget.product.imageUrls[i],
+                                        width: double.infinity,
+                                        height: widget.height,
+                                        fit: BoxFit.contain,
+                                        memCacheWidth: 800,
+                                        fadeInDuration: Duration.zero,
+                                      ),
+                                    )
+                                  : AppNetworkImage(
+                                      imageUrl: widget.product.imageUrls[i],
+                                      width: double.infinity,
+                                      height: widget.height,
+                                      fit: BoxFit.contain,
+                                      memCacheWidth: 800,
+                                      fadeInDuration: Duration.zero,
+                                    ),
                             ),
                           ),
                         ),
@@ -210,6 +222,7 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
               (i) {
                 final isSelected = _pageIndex == i;
                 return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => _pageController.animateToPage(
                     i,
                     duration: const Duration(milliseconds: 300),
@@ -268,3 +281,24 @@ class _ProductImageGalleryState extends State<ProductImageGallery> {
     );
   }
 }
+
+class _GalleryKeepAliveItem extends StatefulWidget {
+  final Widget child;
+  const _GalleryKeepAliveItem({required this.child});
+
+  @override
+  State<_GalleryKeepAliveItem> createState() => _GalleryKeepAliveItemState();
+}
+
+class _GalleryKeepAliveItemState extends State<_GalleryKeepAliveItem>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
