@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../widgets/search/search_widgets.dart';
+import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
+import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
@@ -340,6 +342,43 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  void _resetSearchFilters() {
+    _searchController.clear();
+    setState(() {
+      _category = null;
+      _region = null;
+      _availableNow = null;
+      _debouncedQuery = '';
+    });
+    _loadFirstPage();
+  }
+
+  void _clearActiveFilters() {
+    setState(() {
+      _category = null;
+      _region = null;
+      _availableNow = null;
+    });
+    _onFilterChanged();
+  }
+
+  Widget _buildProductCard(int i, UserModel? user) {
+    final p = _products[i];
+    final rating = _ratings[p.id];
+    return SearchProductCard(
+      product: p,
+      user: user,
+      isPopular: (_salesCounts[p.id] ?? 0) >= AppConstants.popularProductMinSales,
+      avgRating: rating?.avg,
+      reviewCount: rating?.count,
+    );
+  }
+
+  Widget _buildEmptyState() => SearchEmptyState(
+        hasFilters: _category != null || _region != null || _availableNow == true,
+        onResetFilters: _resetSearchFilters,
+      );
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
@@ -491,14 +530,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 child: Align(
                                   alignment: Alignment.centerRight,
                                   child: TextButton.icon(
-                                    onPressed: () {
-                                      setState(() {
-                                        _category = null;
-                                        _region = null;
-                                        _availableNow = null;
-                                      });
-                                      _onFilterChanged();
-                                    },
+                                    onPressed: _clearActiveFilters,
                                     icon: const Icon(Icons.clear_all_rounded,
                                         size: 18),
                                     label: const Text('Očisti filtere'),
@@ -520,10 +552,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 scrollController: _scrollController,
                                 onRefresh: _onRefresh,
                                 onRetry: _loadFirstPage,
-                                itemBuilder: (ctx, i) => SearchProductCard(
-                                    screen: this, i: i, user: user),
-                                emptyStateWidget:
-                                    SearchEmptyState(screen: this),
+                                itemBuilder: (ctx, i) => _buildProductCard(i, user),
+                                emptyStateWidget: _buildEmptyState(),
                                 crossAxisCount: wideGridColumns,
                                 mainAxisExtent: wideGridExtent,
                                 spacing: stackedGridSpacing,
@@ -618,14 +648,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Align(
                             alignment: Alignment.centerRight,
                             child: TextButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _category = null;
-                                  _region = null;
-                                  _availableNow = null;
-                                });
-                                _onFilterChanged();
-                              },
+                              onPressed: _clearActiveFilters,
                               icon:
                                   const Icon(Icons.clear_all_rounded, size: 18),
                               label: const Text('Očisti filtere'),
@@ -647,9 +670,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           scrollController: _scrollController,
                           onRefresh: _onRefresh,
                           onRetry: _loadFirstPage,
-                          itemBuilder: (ctx, i) =>
-                              SearchProductCard(screen: this, i: i, user: user),
-                          emptyStateWidget: SearchEmptyState(screen: this),
+                          itemBuilder: (ctx, i) => _buildProductCard(i, user),
+                          emptyStateWidget: _buildEmptyState(),
                           crossAxisCount:
                               mobileResultsAsGrid ? stackedResultColumns : 2,
                           mainAxisExtent:

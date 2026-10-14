@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 
-import '../../core/constants.dart';
-import '../../widgets/product_card.dart';
+import '../../models/product_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/favorites_provider.dart';
 import '../../widgets/app_empty_state.dart';
+import '../../widgets/product_card.dart';
 import '../../widgets/rustic_illustration.dart';
 
 /// Prazno stanje pretrage — izvučeno iz SearchScreen da se smanji veličina ekrana.
 class SearchEmptyState extends StatelessWidget {
-  const SearchEmptyState({super.key, required this.screen});
+  const SearchEmptyState({
+    super.key,
+    required this.hasFilters,
+    required this.onResetFilters,
+  });
 
-  final dynamic screen;
+  final bool hasFilters;
+  final VoidCallback onResetFilters;
 
   @override
   Widget build(BuildContext context) {
-    final hasFilters = screen._category != null ||
-        screen._region != null ||
-        screen._availableNow == true;
     final subtitle = hasFilters
         ? 'Probaj da ukloniš aktivne filtere ili promeniš pojam pretrage.'
         : 'Probaj drugi naziv ili pogledaj celu ponudu.';
@@ -29,16 +31,7 @@ class SearchEmptyState extends StatelessWidget {
       subtitle: subtitle,
       ctaLabel: 'Pogledaj sve proizvode',
       ctaIcon: Icons.list,
-      onCtaPressed: () {
-        screen._searchController.clear();
-        screen.setState(() {
-          screen._category = null;
-          screen._region = null;
-          screen._availableNow = null;
-          screen._debouncedQuery = '';
-        });
-        screen._loadFirstPage();
-      },
+      onCtaPressed: onResetFilters,
     );
   }
 }
@@ -47,20 +40,24 @@ class SearchEmptyState extends StatelessWidget {
 class SearchProductCard extends StatelessWidget {
   const SearchProductCard({
     super.key,
-    required this.screen,
-    required this.i,
+    required this.product,
     required this.user,
+    this.isPopular = false,
+    this.avgRating,
+    this.reviewCount,
   });
 
-  final dynamic screen;
-  final int i;
-  final dynamic user;
+  final ProductModel product;
+  final UserModel? user;
+  final bool isPopular;
+  final double? avgRating;
+  final int? reviewCount;
 
   @override
   Widget build(BuildContext context) {
-    final p = screen._products[i];
-    final rating = screen._ratings[p.id];
-    return user != null && !user.isGuest
+    final p = product;
+    final rating = avgRating;
+    return user != null && !user!.isGuest
         ? Selector<FavoritesProvider, bool>(
             selector: (_, fav) => fav.isFavorite(p.id),
             builder: (_, isFavorite, __) {
@@ -68,11 +65,10 @@ class SearchProductCard extends StatelessWidget {
               return ProductCard(
                 product: p,
                 isFavorite: isFavorite,
-                onFavoriteToggle: () => favorites.toggle(user.id, p.id),
-                isPopular: (screen._salesCounts[p.id] ?? 0) >=
-                    AppConstants.popularProductMinSales,
-                avgRating: rating?.avg,
-                reviewCount: rating?.count,
+                onFavoriteToggle: () => favorites.toggle(user!.id, p.id),
+                isPopular: isPopular,
+                avgRating: rating,
+                reviewCount: reviewCount,
               );
             },
           )
@@ -80,10 +76,9 @@ class SearchProductCard extends StatelessWidget {
             product: p,
             isFavorite: null,
             onFavoriteToggle: null,
-            isPopular: (screen._salesCounts[p.id] ?? 0) >=
-                AppConstants.popularProductMinSales,
-            avgRating: rating?.avg,
-            reviewCount: rating?.count,
+            isPopular: isPopular,
+            avgRating: rating,
+            reviewCount: reviewCount,
           );
   }
 }
