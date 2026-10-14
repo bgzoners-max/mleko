@@ -162,10 +162,20 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/seller-settings',
-        pageBuilder: (context, state) => buildPageTransition(
-          state: state,
-          child: const SellerSettingsScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final tabQuery = state.uri.queryParameters['tab'];
+          final initialTab = switch (tabQuery) {
+            'delivery' => 1,
+            'story' => 2,
+            'gallery' => 3,
+            'quick-replies' => 4,
+            _ => 0,
+          };
+          return buildPageTransition(
+            state: state,
+            child: SellerSettingsScreen(initialTabIndex: initialTab),
+          );
+        },
       ),
       GoRoute(
         path: '/map-picker',

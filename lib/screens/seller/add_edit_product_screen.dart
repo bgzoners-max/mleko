@@ -207,6 +207,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     }
   }
 
+  Future<void> _openDeliverySettings() async {
+    await context.push('/seller-settings?tab=delivery');
+    if (mounted) await _loadSellerDeliveryPoints();
+  }
+
   int get _totalImages => _imageUrls.length + _newImageBytes.length;
 
   Future<void> _pickImage() async {
@@ -335,37 +340,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             minOrderKg: minOrder,
           );
 
-    if (price == null || price <= 0) {
-      const msg = 'Unesite validnu cenu.';
+    void fail(String msg) {
       setState(() => _error = msg);
       _showErrorDialog(msg);
-      return;
     }
-    if (minOrder <= 0) {
-      const msg = 'Minimalna porudžbina mora biti veća od 0.';
-      setState(() => _error = msg);
-      _showErrorDialog(msg);
-      return;
-    }
-    if (resolvedStep > minOrder) {
-      const msg = 'Korak porudžbine ne može biti veći od minimalne porudžbine.';
-      setState(() => _error = msg);
-      _showErrorDialog(msg);
-      return;
-    }
-    if (resolvedStep <= 0) {
-      const msg = 'Korak porudžbine mora biti veći od 0.';
-      setState(() => _error = msg);
-      _showErrorDialog(msg);
-      return;
-    }
+
+    if (price == null || price <= 0) return fail('Unesite validnu cenu.');
+    if (minOrder <= 0) return fail('Minimalna porudžbina mora biti veća od 0.');
+    if (resolvedStep > minOrder) return fail('Korak porudžbine ne može biti veći od minimalne porudžbine.');
+    if (resolvedStep <= 0) return fail('Korak porudžbine mora biti veći od 0.');
     final desc = _descriptionController.text.trim();
     if (desc.length > AppConstants.maxProductDescriptionLength) {
-      const msg =
-          'Opis max ${AppConstants.maxProductDescriptionLength} karaktera.';
-      setState(() => _error = msg);
-      _showErrorDialog(msg);
-      return;
+      return fail('Opis max ${AppConstants.maxProductDescriptionLength} karaktera.');
     }
     setState(() {
       _error = null;
@@ -625,6 +611,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     const SizedBox(height: 16),
                     ProductDeliverySection(
                       farmLocation: user?.city ?? user?.location ?? _existingLocation,
+                      onEditDeliveryLocations: _openDeliverySettings,
                       pickupOptions: _pickupOptions,
                       onPickupOptionToggled: (opt) => setState(() {
                         if (_pickupOptions.contains(opt)) {

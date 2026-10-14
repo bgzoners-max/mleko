@@ -22,6 +22,7 @@ class ProductDeliverySection extends StatelessWidget {
   final ValueChanged<bool> onDomesticChanged;
   final bool availableNow;
   final ValueChanged<bool> onAvailableNowChanged;
+  final VoidCallback onEditDeliveryLocations;
 
   const ProductDeliverySection({
     super.key,
@@ -39,6 +40,7 @@ class ProductDeliverySection extends StatelessWidget {
     required this.onDomesticChanged,
     required this.availableNow,
     required this.onAvailableNowChanged,
+    required this.onEditDeliveryLocations,
   });
 
   @override
@@ -102,9 +104,25 @@ class ProductDeliverySection extends StatelessWidget {
               onChanged: (_) => onPickupOptionToggled(opt),
             )),
         const SizedBox(height: 8),
-        Text(
-          'Lična dostava domaćina za ovaj proizvod',
-          style: Theme.of(context).textTheme.labelLarge,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Lična dostava domaćina za ovaj proizvod',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: onEditDeliveryLocations,
+              icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+              label: const Text('Uredi lokacije'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         if (deliveryPointsLoading)
@@ -148,12 +166,25 @@ class ProductDeliverySection extends StatelessWidget {
           ),
           if (sellerDeliveryPoints.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 8),
-              child: Text(
-                'Još nemate definisane lokacije lične dostave. Prvo ih '
-                'dodajte u Seller Settings, pa se vratite ovde da uključite '
-                'dostavu po proizvodu.',
-                style: TextStyle(color: Colors.orange.shade800),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Još nemate definisane lokacije lične dostave. Dodajte '
+                    'ih u podešavanjima da biste ih ponudili kupcima.',
+                    style: TextStyle(color: Colors.orange.shade800),
+                  ),
+                  const SizedBox(height: 6),
+                  OutlinedButton.icon(
+                    onPressed: onEditDeliveryLocations,
+                    icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                    label: const Text('Dodaj punktove dostave'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
               ),
             ),
           if (deliveryMode == ProductDeliveryMode.selectedPoints)
@@ -166,7 +197,7 @@ class ProductDeliverySection extends StatelessWidget {
               ),
             ),
           if (deliveryMode == ProductDeliveryMode.selectedPoints &&
-              sellerDeliveryPoints.isNotEmpty)
+              sellerDeliveryPoints.isNotEmpty) ...[
             ...sellerDeliveryPoints.map(
               (point) => CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -180,6 +211,18 @@ class ProductDeliverySection extends StatelessWidget {
                 onChanged: (_) => onDeliveryPointToggled(point.id),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 4),
+              child: OutlinedButton.icon(
+                onPressed: onEditDeliveryLocations,
+                icon: const Icon(Icons.tune, size: 16),
+                label: const Text('Dodaj ili izmeni punktove dostave'),
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+          ],
         ],
         if (Breakpoints.isTabletOrLarger(context)) ...[
           Row(

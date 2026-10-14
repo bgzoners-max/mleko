@@ -13,7 +13,8 @@ import '../../widgets/seller_delivery_settings_tab.dart';
 
 /// Podešavanja prodavca: lokacija, priča, galerija
 class SellerSettingsScreen extends StatefulWidget {
-  const SellerSettingsScreen({super.key});
+  final int initialTabIndex;
+  const SellerSettingsScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<SellerSettingsScreen> createState() => _SellerSettingsScreenState();
@@ -32,7 +33,10 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    final safeIndex = (widget.initialTabIndex >= 0 && widget.initialTabIndex < 5)
+        ? widget.initialTabIndex
+        : 0;
+    _tabController = TabController(length: 5, vsync: this, initialIndex: safeIndex);
     _tabController.addListener(() => setState(() {}));
     final user = context.read<AppState>().user;
     _storyController.text = user?.sellerStory ?? '';

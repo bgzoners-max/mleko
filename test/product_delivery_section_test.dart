@@ -26,6 +26,7 @@ void main() {
               onDomesticChanged: (_) {},
               availableNow: true,
               onAvailableNowChanged: (_) {},
+              onEditDeliveryLocations: () {},
             ),
           ),
         ),
@@ -41,4 +42,53 @@ void main() {
     expect(find.byType(DropdownButtonFormField<String>), findsNothing);
     expect(find.text('Način preuzimanja *'), findsOneWidget);
   });
+
+  testWidgets('ProductDeliverySection triggers onEditDeliveryLocations when tapped', (tester) async {
+    final descController = TextEditingController();
+    var editLocationsCalled = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ProductDeliverySection(
+              farmLocation: 'Valjevo',
+              pickupOptions: const ['Lično'],
+              onPickupOptionToggled: (_) {},
+              deliveryPointsLoading: false,
+              sellerDeliveryPoints: const [],
+              deliveryMode: ProductDeliveryMode.none,
+              onDeliveryModeChanged: (_) {},
+              selectedDeliveryPointIds: const {},
+              onDeliveryPointToggled: (_) {},
+              descriptionController: descController,
+              isDomestic: true,
+              onDomesticChanged: (_) {},
+              availableNow: true,
+              onAvailableNowChanged: (_) {},
+              onEditDeliveryLocations: () => editLocationsCalled++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final editButton = find.text('Uredi lokacije');
+    expect(editButton, findsOneWidget);
+    await tester.tap(editButton);
+    await tester.pump();
+
+    expect(editLocationsCalled, equals(1));
+
+    // When points list is empty, helper button also exists
+    final addPointsButton = find.text('Dodaj punktove dostave');
+    expect(addPointsButton, findsOneWidget);
+    await tester.ensureVisible(addPointsButton);
+    await tester.pumpAndSettle();
+    await tester.tap(addPointsButton);
+    await tester.pump();
+
+    expect(editLocationsCalled, equals(2));
+  });
 }
+
