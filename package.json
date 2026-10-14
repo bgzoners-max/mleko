@@ -5,8 +5,6 @@
     "pages:prepare": "dart run tool/copy_web_shell_assets.dart && dart run tool/prepare_cloudflare_deploy.dart",
     "pages:deploy": "npm run pages:prepare && npx wrangler pages deploy build/cloudflare-deploy --project-name domacimarket --branch main",
     "deploy:pages": "npm run deploy:all",
-    "vercel:prepare": "node -e \"console.error('DEPRECATED: Vercel is decommissioned. Use Cloudflare Pages (npm run pages:prepare).'); process.exit(1);\"",
-    "vercel:deploy": "node -e \"console.error('DEPRECATED: Vercel is decommissioned. Use Cloudflare Pages (npm run deploy:all).'); process.exit(1);\"",
     "supabase:types": "supabase gen types --linked --schema public > supabase/types/database.types.ts",
     "supabase:types:local": "supabase gen types --local --schema public > supabase/types/database.types.ts",
     "supabase:link:prod": "supabase link --project-ref wvqtujpurhzraptorcvl",
