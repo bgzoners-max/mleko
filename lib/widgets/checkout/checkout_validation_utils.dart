@@ -51,4 +51,39 @@ class CheckoutValidationUtils {
 
     return null;
   }
+
+  /// Prilagođene, korisnički razumljive poruke o greškama pri kreiranju porudžbine.
+  static String friendlySubmitError(Object e) {
+    final s = e.toString();
+    if (s.contains('seller cannot buy own products')) {
+      return 'Nije moguće poručiti sopstvene proizvode.';
+    }
+    if (s.contains('must follow order step')) {
+      return 'Količina mora biti usklađena sa korakom porudžbine za izabrani proizvod.';
+    }
+    if (s.contains('exceeds available stock')) {
+      return 'Izabrana količina prevazilazi trenutno dostupnu zalihu.';
+    }
+    if (s.contains('honey products must use kg unit')) {
+      return 'Med se može poručiti samo u kilogramima.';
+    }
+    if (s.contains('invalid delivery_method')) {
+      return 'Izabrani način dostave privremeno nije dostupan. Pokušaj ponovo.';
+    }
+    if (s.contains('is currently unavailable')) {
+      return 'Jedan od proizvoda trenutno nije dostupan.';
+    }
+    if (s.contains('below min_order')) {
+      return 'Količina je ispod minimalne porudžbine za jedan od proizvoda.';
+    }
+    if (s.contains('below delivery slot minimum')) {
+      return 'Ukupan iznos nije dostigao minimum za izabrani termin dostave.';
+    }
+    if (s.contains('SocketException') ||
+        s.contains('network') ||
+        s.contains('XMLHttpRequest')) {
+      return 'Nema internet veze. Proveri konekciju i pokušaj ponovo.';
+    }
+    return 'Došlo je do greške prilikom slanja porudžbine. Pokušaj ponovo.';
+  }
 }

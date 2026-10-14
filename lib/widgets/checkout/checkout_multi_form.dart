@@ -19,6 +19,7 @@ import 'checkout_address_form.dart';
 import 'checkout_bottom_nav.dart';
 import 'checkout_delivery_options.dart';
 import 'checkout_item_card.dart';
+import 'checkout_items_section.dart';
 import 'checkout_validation_utils.dart';
 
 class CheckoutMultiForm extends StatefulWidget {
@@ -318,99 +319,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
   double get _totalAmount =>
       _items.fold(0.0, (sum, e) => sum + e.product.pricePerKg * e.quantity);
 
-  String get _totalQuantityLabel {
-    double totalKg = 0;
-    double totalL = 0;
-    double totalGkg = 0;
-    double totalPieces = 0;
-    double totalVeza = 0;
-    double totalPak = 0;
 
-    for (final e in _items) {
-      final p = e.product;
-      switch (p.unitType) {
-        case ProductModel.unitL:
-          totalL += e.quantity;
-          break;
-        case ProductModel.unitG:
-          totalGkg += e.quantity;
-          break;
-        case ProductModel.unitPiece:
-          totalPieces += e.quantity;
-          break;
-        case ProductModel.unitVeza:
-          totalVeza += e.quantity;
-          break;
-        case ProductModel.unitPak:
-          totalPak += e.quantity;
-          break;
-        default:
-          totalKg += e.quantity;
-      }
-    }
-
-    final parts = <String>[];
-    if (totalKg > 0) {
-      parts.add(
-          ProductModel.formatQuantityWithUnit(totalKg, ProductModel.unitKg));
-    }
-    if (totalL > 0) {
-      parts
-          .add(ProductModel.formatQuantityWithUnit(totalL, ProductModel.unitL));
-    }
-    if (totalGkg > 0) {
-      parts.add(
-          ProductModel.formatQuantityWithUnit(totalGkg, ProductModel.unitG));
-    }
-    if (totalPieces > 0) {
-      parts.add(ProductModel.formatQuantityWithUnit(
-          totalPieces, ProductModel.unitPiece));
-    }
-    if (totalVeza > 0) {
-      parts.add(ProductModel.formatQuantityWithUnit(
-          totalVeza, ProductModel.unitVeza));
-    }
-    if (totalPak > 0) {
-      parts.add(ProductModel.formatQuantityWithUnit(
-          totalPak, ProductModel.unitPak));
-    }
-    if (parts.isEmpty) return '';
-    return 'Ukupno količina: ${parts.join(' + ')}';
-  }
-
-  String _friendlyError(Object e) {
-    final s = e.toString();
-    if (s.contains('seller cannot buy own products')) {
-      return 'Nije moguće poručiti sopstvene proizvode.';
-    }
-    if (s.contains('must follow order step')) {
-      return 'Količina mora biti usklađena sa korakom porudžbine za izabrani proizvod.';
-    }
-    if (s.contains('exceeds available stock')) {
-      return 'Izabrana količina prevazilazi trenutno dostupnu zalihu.';
-    }
-    if (s.contains('honey products must use kg unit')) {
-      return 'Med se može poručiti samo u kilogramima.';
-    }
-    if (s.contains('invalid delivery_method')) {
-      return 'Izabrani način dostave privremeno nije dostupan. Pokušaj ponovo.';
-    }
-    if (s.contains('is currently unavailable')) {
-      return 'Jedan od proizvoda trenutno nije dostupan.';
-    }
-    if (s.contains('below min_order')) {
-      return 'Količina je ispod minimalne porudžbine za jedan od proizvoda.';
-    }
-    if (s.contains('below delivery slot minimum')) {
-      return 'Ukupan iznos nije dostigao minimum za izabrani termin dostave.';
-    }
-    if (s.contains('SocketException') ||
-        s.contains('network') ||
-        s.contains('XMLHttpRequest')) {
-      return 'Nema internet veze. Proveri konekciju i pokušaj ponovo.';
-    }
-    return 'Porudžbina nije mogla biti poslata. Pokušaj ponovo.';
-  }
 
   Future<void> _submit() async {
     final validationError =
@@ -593,9 +502,8 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
       context.go('/orders');
     } else {
       setState(() {
-        // Koristi staru dobru _friendlyError funkciju da ne izgubimo specifične "min_order" poruke
-        _error =
-            _friendlyError(result.error?.originalException ?? result.error!);
+        _error = CheckoutValidationUtils.friendlySubmitError(
+            result.error?.originalException ?? result.error!);
         _sending = false;
       });
     }
@@ -645,59 +553,14 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
                     const OfflineReadOnlyBadge(),
                   ],
                   const SizedBox(height: 12),
-                  if (_items.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Column(
-                        children: [
-                          Icon(Icons.shopping_basket_outlined,
-                              size: 48, color: Colors.grey.shade400),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Nema stavki. Dodaj proizvode kod prodavca.',
-                            style: TextStyle(color: Colors.grey.shade600),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          OutlinedButton.icon(
-                            onPressed: () =>
-                                context.go('/seller/${widget.sellerId}'),
-                            icon: const Icon(Icons.store, size: 20),
-                            label: const Text('Nazad kod prodavca'),
-                          ),
-                        ],
-                      ),
-                    )
-                  else ...[
-                    AnimatedList(
-                      key: _listKey,
-                      initialItemCount: _items.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (context, index, animation) {
-                        return CheckoutItemCard(
-                          item: _items[index],
-                          animation: animation,
-                          onQuantityChanged: (q) => _setQuantity(index, q),
-                          onRemove: () => _remove(index),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    if (_totalQuantityLabel.isNotEmpty)
-                      Text(
-                        _totalQuantityLabel,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: Colors.grey.shade700),
-                      ),
-                    Text(
-                      _hasSellerDeliveryOptions
-                          ? 'Prodavac nudi i ličnu dostavu na izabranim lokacijama i terminima.'
-                          : 'Napomena: Cena dostave se dogovara sa domaćinom.',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: Colors.grey.shade600),
-                    ),
-                  ],
+                  CheckoutItemsSection(
+                    sellerId: widget.sellerId,
+                    items: _items,
+                    listKey: _listKey,
+                    hasSellerDeliveryOptions: _hasSellerDeliveryOptions,
+                    onQuantityChanged: _setQuantity,
+                    onRemove: _remove,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Podaci za dostavu',

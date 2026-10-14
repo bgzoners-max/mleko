@@ -2,17 +2,8 @@ import 'dart:io';
 
 const int lineThreshold = 700;
 
-// Lista izuzetaka za fajlove koji su trenutno preveliki.
-// Cilj je postepeno refaktorisati ove fajlove i uklanjati ih sa ove liste.
-// Novi fajlovi (ili rastući fajlovi) ne smeju preći [lineThreshold]!
-const List<String> ignoreFiles = [
-  // Jos uvek preko limita — refaktorisati u sledecoj fazi.
-  'lib/screens/admin/admin_push_health_screen.dart',
-  'lib/screens/admin/classifieds_moderation_screen.dart',
-  'lib/services/communication/chat_service.dart',
-  'lib/widgets/checkout/checkout_multi_form.dart',
-  'lib/widgets/classifieds/classified_ad_card.dart',
-];
+// Nema izuzetaka: svi fajlovi u lib/ moraju striktno poštovati limit od [lineThreshold] linija.
+const List<String> ignoreFiles = [];
 
 void main() {
   final dir = Directory('lib');
