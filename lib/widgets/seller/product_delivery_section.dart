@@ -8,8 +8,7 @@ import '../../models/seller_delivery_models.dart';
 /// Sekcija dostave i preuzimanja: lokacija, način preuzimanja,
 /// lična dostava domaćina, switch-evi i opis.
 class ProductDeliverySection extends StatelessWidget {
-  final String? location;
-  final ValueChanged<String?> onLocationChanged;
+  final String? farmLocation;
   final List<String> pickupOptions;
   final ValueChanged<String> onPickupOptionToggled;
   final bool deliveryPointsLoading;
@@ -26,8 +25,7 @@ class ProductDeliverySection extends StatelessWidget {
 
   const ProductDeliverySection({
     super.key,
-    required this.location,
-    required this.onLocationChanged,
+    this.farmLocation,
     required this.pickupOptions,
     required this.onPickupOptionToggled,
     required this.deliveryPointsLoading,
@@ -48,16 +46,54 @@ class ProductDeliverySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<String>(
-          key: ValueKey(location),
-          initialValue: location,
-          decoration: const InputDecoration(labelText: 'Lokacija *'),
-          items: AppConstants.regions
-              .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-              .toList(),
-          onChanged: onLocationChanged,
-        ),
-        const SizedBox(height: 16),
+        if (farmLocation != null && farmLocation!.trim().isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white12
+                    : Colors.grey.shade300,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      style: Theme.of(context).textTheme.bodySmall,
+                      children: [
+                        const TextSpan(
+                          text: 'Matična lokacija gazdinstva: ',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(
+                          text: farmLocation!,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        TextSpan(
+                          text: ' (automatski iz profila)',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Text('Način preuzimanja *',
             style: Theme.of(context).textTheme.labelLarge),
         ...AppConstants.pickupOptions.map((opt) => CheckboxListTile(

@@ -41,7 +41,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   final _descriptionController = TextEditingController();
   String? _category;
   String _unitType = ProductModel.unitKg;
-  String? _location = AppConstants.regions.first;
+  String? _existingLocation;
   List<String> _pickupOptions = [
     AppConstants.pickupOptions.first
   ]; // bar jedan način preuzimanja
@@ -159,7 +159,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _descriptionController.text = p.description;
       _category = p.category;
       _unitType = p.unitType;
-      _location = p.location;
+      _existingLocation = p.location;
       _pickupOptions = List.from(p.pickupOptions);
       _isDomestic = p.isDomestic;
       _availableNow = p.availableNow;
@@ -263,9 +263,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final user = context.read<AppState>().user;
     final productsService = context.read<ProductsService>();
     final effectiveCategory = _resolveEffectiveCategory();
-    final effectiveLocation = (_location?.trim().isNotEmpty ?? false)
-        ? _location!.trim()
-        : AppConstants.regions.first;
+    final effectiveLocation = (user?.city?.trim().isNotEmpty == true)
+        ? user!.city!.trim()
+        : ((user?.location?.trim().isNotEmpty == true)
+            ? user!.location!.trim()
+            : ((_existingLocation?.trim().isNotEmpty == true)
+                ? _existingLocation!.trim()
+                : AppConstants.regions.first));
 
     if (user == null || !user.isSeller) {
       _showErrorDialog(
@@ -556,6 +560,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AppState>().user;
     final catProvider = context.watch<CategoriesProvider>();
     final groups = catProvider.groups;
     final maxFormWidth = Breakpoints.formContentWidth(context);
@@ -619,8 +624,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     ),
                     const SizedBox(height: 16),
                     ProductDeliverySection(
-                      location: _location,
-                      onLocationChanged: (v) => setState(() => _location = v),
+                      farmLocation: user?.city ?? user?.location ?? _existingLocation,
                       pickupOptions: _pickupOptions,
                       onPickupOptionToggled: (opt) => setState(() {
                         if (_pickupOptions.contains(opt)) {
