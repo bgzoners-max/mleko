@@ -90,5 +90,16 @@ void main() {
       expect(adRoute, isNotNull);
       expect(pRoute, isNotNull);
     });
+
+    test('/seller-dashboard route is registered in router', () {
+      SharedPreferences.setMockInitialValues({});
+      final appState = AppState(ordersService: _FakeOrdersService());
+      final router = createRouter(appState);
+
+      final rootGoRoutes = router.configuration.routes.whereType<GoRoute>().toList();
+      final sellerDashboardRoute = rootGoRoutes.firstWhere((r) => r.path == '/seller-dashboard');
+
+      expect(sellerDashboardRoute, isNotNull);
+    });
   });
 }

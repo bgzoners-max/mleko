@@ -55,6 +55,7 @@ class NotificationHandlerService {
     RegExp(r'^/favorite-sellers$'),
     RegExp(r'^/settings$'),
     RegExp(r'^/profile$'),
+    RegExp(r'^/seller-dashboard$'),
     RegExp(r'^/cart$'),
     RegExp(r'^/sellers-map$'),
   ];
