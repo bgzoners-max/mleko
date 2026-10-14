@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants.dart';
+import '../../core/responsive.dart';
 import '../../models/product_model.dart';
 import '../../models/seller_delivery_models.dart';
 
@@ -144,16 +145,40 @@ class ProductDeliverySection extends StatelessWidget {
               ),
             ),
         ],
-        SwitchListTile(
-          title: const Text('Domaće / Porodično gazdinstvo'),
-          value: isDomestic,
-          onChanged: onDomesticChanged,
-        ),
-        SwitchListTile(
-          title: const Text('Dostupno sada'),
-          value: availableNow,
-          onChanged: onAvailableNowChanged,
-        ),
+        if (Breakpoints.isTabletOrLarger(context)) ...[
+          Row(
+            children: [
+              Expanded(
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Domaće / Porodično gazdinstvo'),
+                  value: isDomestic,
+                  onChanged: onDomesticChanged,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Dostupno sada'),
+                  value: availableNow,
+                  onChanged: onAvailableNowChanged,
+                ),
+              ),
+            ],
+          ),
+        ] else ...[
+          SwitchListTile(
+            title: const Text('Domaće / Porodično gazdinstvo'),
+            value: isDomestic,
+            onChanged: onDomesticChanged,
+          ),
+          SwitchListTile(
+            title: const Text('Dostupno sada'),
+            value: availableNow,
+            onChanged: onAvailableNowChanged,
+          ),
+        ],
         const SizedBox(height: 16),
         TextField(
           controller: descriptionController,
