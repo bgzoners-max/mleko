@@ -169,7 +169,10 @@ class _AboutContent extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Domaći Market je nastao sa jasnom misijom: da ponudi poštenu, otvorenu i modernu platformu koja rešava dva velika svakodnevna izazova ljudi u Srbiji.\n\nPrvo, decenijama unazad, vredni seoski domaćini i zanatlije bili su prepušteni prekupcima i visokim trgovačkim maržama, dok su porodice u gradovima gubile dodir sa pravom, svežom i zdravom domaćom hranom čije se poreklo tačno zna.\n\nDrugo, poljoprivrednicima, zanatlijama i običnim ljudima nedostajalo je fer i moderno mesto za oglašavanje poljoprivredne mehanizacije, stoke, alata, vozila i stvari za dom — bez plaćanja skupih oglasnih taksi, bez provizija na prodatu robu i bez naplate obnavljanja oglasa.\n\nZato smo stvorili Domaći Market kao dve ravnopravne, obimne sekcije na jednom mestu: Pijacu domaće hrane sa sela i Nacionalne male oglase.',
+                'Domaći Market je nastao sa jednostavnom i snažnom idejom: da stvorimo pošteno, moderno i otvoreno mesto koje povezuje ljude širom Srbije i olakšava im svakodnevnu trgovinu.\n\n'
+                'Prvo — domaća hrana direktno od proizvođača. Želimo da podržimo vredne seoske domaćine, pčelare, vinare i male zanatlije, a porodicama u gradovima omogućimo lak i siguran pristup svežoj, prirodnoj hrani proverenog porekla. Bez komplikovanih posrednika — od porodičnog gazdinstva pravo na vašu trpezu.\n\n'
+                'Drugo — slobodna i besplatna berza za sve građane. Stvorili smo nacionalne male oglase otvorene za svakoga — bilo da prodajete ili tražite automobil, telefon, belu tehniku, nameštaj, nekretninu, stvari za decu i dom, alate ili poljoprivredne mašine. Naš princip je uvek isti i jasan: postavljanje oglasa, njihovo osvežavanje na vrh i celokupna trgovina su 100% besplatni, bez ikakvih provizija i skrivenih troškova.\n\n'
+                'Zato Domaći Market na jednom mestu spaja dve ravnopravne celine: Pijacu domaće hrane sa gazdinstava i Nacionalne male oglase za celu Srbiju — prostor gde ljudi trguju jednostavno, direktno i sa poverenjem.',
                 style: TextStyle(
                   fontSize: 14.5,
                   height: 1.6,
