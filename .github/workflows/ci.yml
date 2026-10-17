@@ -43,7 +43,7 @@ jobs:
         run: flutter test --coverage
 
       - name: Check code coverage threshold
-        run: dart run tool/check_coverage.dart --min-coverage=28.0
+        run: dart run tool/check_coverage.dart --min-coverage=32.0
 
       - name: Generate and verify STATUS.md
         shell: bash
