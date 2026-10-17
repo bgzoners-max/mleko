@@ -204,6 +204,7 @@ class PushTokenRegistrar {
 
       // Slušalac za automatsko osvežavanje tokena
       _onTokenRefreshSub =
+          // ignore: deprecated_member_use
           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
         if (!isCurrentRegistration(generation, userId)) return;
         await _upsertTokenToDatabase(
@@ -279,6 +280,7 @@ class PushTokenRegistrar {
           apnsRetries++;
         }
       }
+      // ignore: deprecated_member_use
       return await FirebaseMessaging.instance.getToken();
     } catch (e) {
       LoggerService.warning('PushTokenRegistrar: Failed to fetch token',
