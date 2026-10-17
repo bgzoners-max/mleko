@@ -1,7 +1,7 @@
 # Naše Selo (mleko) — Marketplace & Oglasnik Domaćih Proizvoda
 
 [![CI](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-28.35%25-orange)](STATUS.md)
+[![Coverage](https://img.shields.io/badge/Coverage-33.63%25-orange)](STATUS.md)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth%20%7C%20Storage-3ECF8E?logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)]()
@@ -111,7 +111,7 @@ npm run supabase:types
 ```
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) automatski izvršava:
-1. `flutter-checks`: Statičku analizu (uz `--no-fatal-infos`) i testove sa pokrivenošću od ~28.35%.
+1. `flutter-checks`: Statičku analizu (uz `--no-fatal-infos`) i testove sa pokrivenošću od ~32%.
 2. `db-integration-checks`: Podizanje lokalnog Supabase okruženja, primenu migracija i izvršavanje SQL integracionih provera (`supabase/tests/order_status_flow_integration.sql`).
    > **Napomena**: Folder `supabase/migrations/` predstavlja jedini i kanonski izvor istine za strukturu baze podataka (zastareli snapshot fajlovi šeme su uklonjeni).
 
