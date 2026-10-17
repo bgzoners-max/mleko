@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -10,9 +7,8 @@ import '../../core/constants.dart';
 import '../../core/responsive.dart';
 import '../../core/utils/error_messages.dart';
 import '../../utils/number_input_utils.dart';
-import '../../utils/product_helpers.dart';
+import '../../utils/product_form_validator.dart';
 import '../../providers/categories_provider.dart';
-import '../../models/category.dart';
 import '../../models/product_model.dart';
 import '../../models/seller_delivery_models.dart';
 import '../../providers/app_state.dart';
@@ -62,16 +58,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   bool get isEdit => widget.productId != null && widget.productId!.isNotEmpty;
 
-  String? _firstSelectableCategory(List<CategoryGroup>? groups) {
-    if (groups == null) return null;
-    for (final group in groups) {
-      if (group.selectable.isNotEmpty) {
-        return group.selectable.first.name;
-      }
-    }
-    return null;
-  }
-
   String? _resolveEffectiveCategory() {
     final selected = _category?.trim();
     if (selected != null && selected.isNotEmpty) {
@@ -79,7 +65,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     }
 
     final provider = context.read<CategoriesProvider>();
-    return _firstSelectableCategory(provider.groups) ??
+    return ProductFormValidator.firstSelectableCategory(provider.groups) ??
         provider.categoryNames.firstOrNull;
   }
 
@@ -331,14 +317,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 : NumberInputUtils.parseDecimal(_orderStepController.text)))
         : null;
 
-    final resolvedStep = (parsedOrderStep != null && parsedOrderStep > 0)
-        ? parsedOrderStep
-        : _resolveOrderStep(
-            category: effectiveCategory ?? '',
-            name: _nameController.text.trim(),
-            unitType: _unitType,
-            minOrderKg: minOrder,
-          );
+    final resolvedStep = ProductFormValidator.resolveOrderStep(
+      category: effectiveCategory ?? '',
+      name: _nameController.text.trim(),
+      unitType: _unitType,
+      minOrderKg: minOrder,
+      parsedOrderStep: parsedOrderStep,
+    );
 
     void fail(String msg) {
       setState(() => _error = msg);
@@ -431,46 +416,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       setState(() => _error = msg);
       _showErrorDialog(msg);
     }
-  }
-
-  double _resolveOrderStep({
-    required String category,
-    required String name,
-    required String unitType,
-    required double minOrderKg,
-  }) {
-    if (minOrderKg <= 0) {
-      return 0.1;
-    }
-
-    final defaultStepByUnit = switch (unitType) {
-      ProductModel.unitL => 1.0,
-      ProductModel.unitG => 0.05,
-      ProductModel.unitPiece => 1.0,
-      ProductModel.unitVeza => 1.0,
-      ProductModel.unitPak => 1.0,
-      _ => suggestedOrderStepKg(
-          category: category, name: name, minOrderKg: minOrderKg),
-    };
-
-    return math.min(defaultStepByUnit, minOrderKg);
-  }
-
-  String? _formatQuantityHint(String text, String unitType) {
-    final raw = text.trim();
-    if (raw.isEmpty) return null;
-    if (unitType == ProductModel.unitKg) {
-      final qty = ProductModel.parseQuantityKg(raw);
-      if (qty > 0) {
-        return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitKg)}';
-      }
-    } else if (unitType == ProductModel.unitL) {
-      final qty = ProductModel.parseQuantityL(raw);
-      if (qty > 0) {
-        return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitL)}';
-      }
-    }
-    return null;
   }
 
   Future<void> _confirmDelete() async {
@@ -596,7 +541,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       minOrderController: _minOrderController,
                       orderStepController: _orderStepController,
                       availableController: _availableController,
-                      quantityHintBuilder: _formatQuantityHint,
+                      quantityHintBuilder: ProductFormValidator.formatQuantityHint,
                       onChanged: () => setState(() {}),
                     ),
 // BASIC-SECTION-END
