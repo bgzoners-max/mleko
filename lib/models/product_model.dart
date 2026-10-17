@@ -28,6 +28,7 @@ ProductDeliveryMode productDeliveryModeFromDb(String? value) {
 class ProductModel {
   static const String unitKg = 'kg';
   static const String unitL = 'L';
+  /// Zastarela jedinica po REPO_BIBLE.md §3. Automatski se normalizuje u [unitKg] (npr. 0.1 kg = 100 g).
   static const String unitG = 'g';
   static const String unitPiece = 'kom';
   static const String unitVeza = 'veza';
@@ -42,7 +43,10 @@ class ProductModel {
   final double? orderStep;
   final double availableKg;
 
-  /// Jedinica: 'kg' ili 'L'. Za L su cena/min/available u litrima (0.75 = 750 ml).
+  /// Jedinica mere definisana u REPO_BIBLE.md §3:
+  /// 'kg', 'L', 'kom', 'veza', 'pak'.
+  /// Za 'L' su cena/min/available u litrima (0.75 = 750 ml).
+  /// Legacy 'g' se u [fromJson] automatski normalizuje u 'kg'.
   final String unitType;
   final String description;
   final List<String> imageUrls;
@@ -175,6 +179,7 @@ class ProductModel {
   /// Podržava preciznost do 3 decimale (npr. "2,25 kg", "0,125 kg")
   /// uz uklanjanje suvišnih pratećih nula ("2" umesto "2,000", "1,5" umesto "1,500").
   static String _formatDecimal(double value) {
+    if (!value.isFinite) return '0';
     if (value.truncateToDouble() == value) {
       return value.toInt().toString();
     }
@@ -271,10 +276,10 @@ class ProductModel {
     final unit = json['unit_type'] as String?;
     final unitType = switch (unit) {
       unitL => unitL,
-      unitG => unitG,
       unitPiece => unitPiece,
       unitVeza => unitVeza,
       unitPak => unitPak,
+      // 'g' je legacy jedinica koja se po REPO_BIBLE.md §3 automatski normalizuje u 'kg'
       _ => unitKg,
     };
     final minOrder = (json['min_order_kg'] as num?)?.toDouble() ?? 1;
@@ -344,11 +349,33 @@ class ProductModel {
     return v;
   }
 
-  /// Parsira unos količine za L: "750" → 0.75, "0.75" → 0.75, "1" → 1. Brojevi >= 100 tretiraju se kao ml.
+  /// Parsira unos količine za L: "750" → 0.75, "750 ml" → 0.75, "0.75" → 0.75, "1" → 1, "1.5 L" → 1.5.
+  /// Brojevi >= 100 ili unosi sa "ml" tretiraju se kao mililitri i konvertuju u litre.
   static double parseQuantityL(String text) {
-    final v = double.tryParse(text.replaceAll(',', '.').trim());
-    if (v == null) return 0;
-    if (v >= 100) return v / 1000; // ml u litre
+    var raw = text.trim().toLowerCase();
+    if (raw.isEmpty) return 0;
+
+    final isMl = raw.endsWith('ml') ||
+        raw.endsWith('mili') ||
+        raw.endsWith('mililitara') ||
+        raw.endsWith('mililitra');
+    if (isMl) {
+      final numPart = raw.replaceAll(RegExp(r'[^0-9.,]'), '');
+      final v = double.tryParse(numPart.replaceAll(',', '.'));
+      if (v != null && v > 0) return v / 1000.0;
+    }
+
+    raw = raw
+        .replaceAll('litara', '')
+        .replaceAll('litra', '')
+        .replaceAll('litar', '')
+        .replaceAll('l', '')
+        .replaceAll(',', '.')
+        .trim();
+    final v = double.tryParse(raw);
+    if (v == null || v <= 0) return 0;
+    if (v >= 100) return v / 1000.0; // ml bez sufiksa u litre
+
     return v;
   }
 
@@ -402,7 +429,9 @@ class ProductModel {
       'name': name,
       'price_per_kg': pricePerKg,
       'min_order_kg': minOrderKg,
-      if (orderStep != null) 'order_step': orderStep,
+      'order_step': (orderStep != null && orderStep! > 0)
+          ? orderStep
+          : (minOrderKg > 0 ? minOrderKg : 1.0),
       'available_kg': availableKg,
       'unit_type': unitType,
       'description': description,
@@ -441,4 +470,64 @@ class ProductModel {
       'review_count': reviewCount,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          sellerId == other.sellerId &&
+          category == other.category &&
+          name == other.name &&
+          pricePerKg == other.pricePerKg &&
+          minOrderKg == other.minOrderKg &&
+          orderStep == other.orderStep &&
+          availableKg == other.availableKg &&
+          unitType == other.unitType &&
+          description == other.description &&
+          location == other.location &&
+          isDomestic == other.isDomestic &&
+          availableNow == other.availableNow &&
+          deliveryMode == other.deliveryMode &&
+          sellerIsVerified == other.sellerIsVerified &&
+          avgRating == other.avgRating &&
+          reviewCount == other.reviewCount &&
+          createdAt == other.createdAt &&
+          _listEquals(imageUrls, other.imageUrls) &&
+          _listEquals(pickupOptions, other.pickupOptions) &&
+          _listEquals(selectedDeliveryPointIds, other.selectedDeliveryPointIds);
+
+  @override
+  int get hashCode => Object.hash(
+        id,
+        sellerId,
+        category,
+        name,
+        pricePerKg,
+        minOrderKg,
+        orderStep,
+        availableKg,
+        unitType,
+        isDomestic,
+        availableNow,
+        deliveryMode,
+        sellerIsVerified,
+        avgRating,
+        reviewCount,
+        createdAt,
+      );
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  String toString() =>
+      'ProductModel(id: $id, name: $name, price: $priceFormatted, unit: $unitType, available: $availableNow)';
 }

@@ -311,4 +311,136 @@ void main() {
       expect(product.maxOrderQuantity, closeTo(5.2, 0.001));
     });
   });
+
+  group('parseQuantityL', () {
+    test('parses plain decimal and integer liters', () {
+      expect(ProductModel.parseQuantityL('1'), 1.0);
+      expect(ProductModel.parseQuantityL('1.5'), 1.5);
+      expect(ProductModel.parseQuantityL('1,5'), 1.5);
+      expect(ProductModel.parseQuantityL('0.75'), 0.75);
+      expect(ProductModel.parseQuantityL('0,75'), 0.75);
+    });
+
+    test('parses values >= 100 as milliliters and converts to liters', () {
+      expect(ProductModel.parseQuantityL('750'), 0.75);
+      expect(ProductModel.parseQuantityL('250'), 0.25);
+      expect(ProductModel.parseQuantityL('1000'), 1.0);
+    });
+
+    test('parses inputs with ml suffix', () {
+      expect(ProductModel.parseQuantityL('750 ml'), 0.75);
+      expect(ProductModel.parseQuantityL('750ml'), 0.75);
+      expect(ProductModel.parseQuantityL('250 ml'), 0.25);
+      expect(ProductModel.parseQuantityL('100 ml'), 0.1);
+      expect(ProductModel.parseQuantityL('50 ml'), 0.05);
+    });
+
+    test('parses inputs with L suffix', () {
+      expect(ProductModel.parseQuantityL('1 L'), 1.0);
+      expect(ProductModel.parseQuantityL('1L'), 1.0);
+      expect(ProductModel.parseQuantityL('1.5 L'), 1.5);
+      expect(ProductModel.parseQuantityL('1,5 l'), 1.5);
+      expect(ProductModel.parseQuantityL('2 litra'), 2.0);
+      expect(ProductModel.parseQuantityL('1 litar'), 1.0);
+    });
+
+    test('handles empty or invalid inputs gracefully', () {
+      expect(ProductModel.parseQuantityL(''), 0.0);
+      expect(ProductModel.parseQuantityL('abc'), 0.0);
+      expect(ProductModel.parseQuantityL('-2'), 0.0);
+    });
+  });
+
+  group('Legacy unit "g" normalization (REPO_BIBLE §3)', () {
+    test('ProductModel.fromJson normalizes unit_type "g" to "kg"', () {
+      final p = ProductModel.fromJson({
+        'id': 'p-legacy-g',
+        'seller_id': 's1',
+        'category': 'sir',
+        'name': 'Kozji sir 100g',
+        'price_per_kg': 1500,
+        'min_order_kg': 0.1,
+        'available_kg': 2,
+        'unit_type': 'g',
+      });
+
+      expect(p.unitType, ProductModel.unitKg);
+      expect(p.toDbMap()['unit_type'], ProductModel.unitKg);
+    });
+  });
+
+  group('ProductModel equality, hashCode, toString and toDbMap', () {
+    final now = DateTime(2026, 1, 1);
+    final p1 = ProductModel(
+      id: 'p-eq-1',
+      sellerId: 's1',
+      category: 'mleko',
+      name: 'Mleko',
+      pricePerKg: 120,
+      minOrderKg: 1,
+      orderStep: 1,
+      availableKg: 10,
+      unitType: ProductModel.unitL,
+      description: 'Sveže',
+      imageUrls: const ['img1.jpg'],
+      pickupOptions: const ['Lično'],
+      location: 'Valjevo',
+      createdAt: now,
+    );
+
+    final p2 = ProductModel(
+      id: 'p-eq-1',
+      sellerId: 's1',
+      category: 'mleko',
+      name: 'Mleko',
+      pricePerKg: 120,
+      minOrderKg: 1,
+      orderStep: 1,
+      availableKg: 10,
+      unitType: ProductModel.unitL,
+      description: 'Sveže',
+      imageUrls: const ['img1.jpg'],
+      pickupOptions: const ['Lično'],
+      location: 'Valjevo',
+      createdAt: now,
+    );
+
+    test('operator == and hashCode match for identical and equal instances', () {
+      expect(p1, equals(p2));
+      expect(p1.hashCode, equals(p2.hashCode));
+    });
+
+    test('operator == detects field changes', () {
+      final pModified = p1.copyWith(pricePerKg: 150);
+      expect(p1 == pModified, isFalse);
+    });
+
+    test('toString contains essential product summary', () {
+      final str = p1.toString();
+      expect(str, contains('p-eq-1'));
+      expect(str, contains('Mleko'));
+      expect(str, contains('120 din./L'));
+    });
+
+    test('toDbMap always includes valid order_step with fallback', () {
+      final pWithoutOrderStep = ProductModel(
+        id: 'p-no-step',
+        sellerId: 's1',
+        category: 'med',
+        name: 'Med',
+        pricePerKg: 1000,
+        minOrderKg: 0.5,
+        availableKg: 5,
+        description: 'Med',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Kragujevac',
+        createdAt: now,
+      );
+
+      final dbMap = pWithoutOrderStep.toDbMap();
+      expect(dbMap['order_step'], 0.5); // falls back to minOrderKg
+    });
+  });
 }
+
