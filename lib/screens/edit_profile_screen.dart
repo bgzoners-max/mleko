@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
@@ -20,6 +21,8 @@ class EditProfileScreen extends StatelessWidget {
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(
+          toolbarHeight: 46,
+          centerTitle: false,
           backgroundColor:
               isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
           foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
@@ -31,7 +34,14 @@ class EditProfileScreen extends StatelessWidget {
                   bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
                 ),
           leading: const AppBackButton(fallbackRoute: '/profile'),
-          title: const Text('Izmena profila'),
+          title: Text(
+            'Izmena profila',
+            style: GoogleFonts.roboto(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1B201C),
+            ),
+          ),
           actions: const [AppHomeButton()],
         ),
         body: Center(
@@ -62,6 +72,8 @@ class EditProfileScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 46,
+        centerTitle: false,
         backgroundColor:
             isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
         foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
@@ -73,7 +85,14 @@ class EditProfileScreen extends StatelessWidget {
                 bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
               ),
         leading: const AppBackButton(fallbackRoute: '/profile'),
-        title: const Text('Uredi profil'),
+        title: Text(
+          'Uredi profil',
+          style: GoogleFonts.roboto(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF1B201C),
+          ),
+        ),
         actions: const [AppHomeButton()],
       ),
       body: Align(

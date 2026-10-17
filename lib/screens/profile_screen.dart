@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/responsive.dart';
 import '../models/user_model.dart';
@@ -86,6 +87,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(
+          toolbarHeight: 46,
+          centerTitle: true,
           backgroundColor:
               isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
           foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
@@ -97,7 +100,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
                 ),
           leading: const AppBackButton(fallbackRoute: '/'),
-          title: const Text('Prijava'),
+          title: Text(
+            'Prijava',
+            style: GoogleFonts.roboto(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : const Color(0xFF1B201C),
+            ),
+          ),
           actions: const [AppHomeButton()],
         ),
         body: Center(
@@ -129,6 +139,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: isWide ? 44 : 46,
+        centerTitle: !isWide,
         backgroundColor:
             isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
         foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
@@ -140,7 +152,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
               ),
         leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Profil'),
+        title: Text(
+          'Profil',
+          style: GoogleFonts.roboto(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF1B201C),
+          ),
+        ),
         actions: const [AppHomeButton()],
       ),
       body: Align(
@@ -222,6 +241,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Theme(
               data: theme.copyWith(
                 appBarTheme: theme.appBarTheme.copyWith(
+                  toolbarHeight: 44,
+                  centerTitle: false,
                   backgroundColor:
                       isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
                   foregroundColor:
@@ -236,6 +257,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                   iconTheme: IconThemeData(
                     color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                    size: 20,
+                  ),
+                  actionsIconTheme: IconThemeData(
+                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                    size: 20,
+                  ),
+                  titleTextStyle: GoogleFonts.roboto(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
+                    color: isDark ? Colors.white : const Color(0xFF1B201C),
                   ),
                 ),
                 tabBarTheme: theme.tabBarTheme.copyWith(
@@ -246,6 +278,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       isDark ? theme.colorScheme.secondary : const Color(0xFF245938),
                   indicatorSize: TabBarIndicatorSize.label,
                   dividerColor: isDark ? null : const Color(0xFFE5E7EB),
+                  labelStyle: GoogleFonts.roboto(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: GoogleFonts.roboto(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               child: Navigator(

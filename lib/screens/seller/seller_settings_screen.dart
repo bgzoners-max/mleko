@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
@@ -248,9 +249,12 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isDesktop = !Breakpoints.isPhone(context);
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: isDesktop ? 44 : 46,
+        centerTitle: !isDesktop,
         backgroundColor:
             isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
         foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
@@ -262,27 +266,45 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
                 bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
               ),
         leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Podešavanja prodavca'),
+        title: Text(
+          'Podešavanja prodavca',
+          style: GoogleFonts.roboto(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF1B201C),
+          ),
+        ),
         actions: const [AppHomeButton()],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          labelColor: isDark ? Colors.white : const Color(0xFF245938),
-          unselectedLabelColor:
-              isDark ? Colors.white60 : const Color(0xFF555E57),
-          indicatorColor:
-              isDark ? theme.colorScheme.secondary : const Color(0xFF245938),
-          indicatorWeight: 3,
-          dividerColor: isDark ? null : const Color(0xFFE5E7EB),
-          onTap: (_) => HapticFeedback.selectionClick(),
-          tabs: const [
-            Tab(text: 'Lokacija'),
-            Tab(text: 'Lična dostava'),
-            Tab(text: 'Priča'),
-            Tab(text: 'Galerija'),
-            Tab(text: 'Brzi odgovori'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(38),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelColor: isDark ? Colors.white : const Color(0xFF245938),
+            unselectedLabelColor:
+                isDark ? Colors.white60 : const Color(0xFF555E57),
+            indicatorColor:
+                isDark ? theme.colorScheme.secondary : const Color(0xFF245938),
+            indicatorWeight: 2.5,
+            dividerColor: isDark ? null : const Color(0xFFE5E7EB),
+            labelStyle: GoogleFonts.roboto(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: GoogleFonts.roboto(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            onTap: (_) => HapticFeedback.selectionClick(),
+            tabs: const [
+              Tab(height: 38, text: 'Lokacija'),
+              Tab(height: 38, text: 'Lična dostava'),
+              Tab(height: 38, text: 'Priča'),
+              Tab(height: 38, text: 'Galerija'),
+              Tab(height: 38, text: 'Brzi odgovori'),
+            ],
+          ),
         ),
       ),
       body: Align(

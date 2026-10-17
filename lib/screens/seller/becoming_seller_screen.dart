@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
 import '../../providers/app_state.dart';
@@ -75,6 +76,8 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 46,
+        centerTitle: false,
         backgroundColor:
             isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
         foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
@@ -86,7 +89,14 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
                 bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
               ),
         leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Postani prodavac'),
+        title: Text(
+          'Postani prodavac',
+          style: GoogleFonts.roboto(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white : const Color(0xFF1B201C),
+          ),
+        ),
         actions: const [AppHomeButton()],
       ),
       body: Align(

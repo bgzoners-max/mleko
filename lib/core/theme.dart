@@ -191,23 +191,30 @@ ThemeData _buildBaseTheme({required bool compact}) {
       onSecondaryContainer: Color(0xFF245938),
     ),
     appBarTheme: const AppBarTheme(
-      centerTitle: true,
+      centerTitle: false,
       elevation: 0,
-      scrolledUnderElevation: 2,
-      backgroundColor: Color(0xFF1E3424), // Duboki šumski bor (brend: AmazonColors.navNavy)
-      foregroundColor: Colors.white,
+      scrolledUnderElevation: 1,
+      toolbarHeight: 46,
+      backgroundColor: Colors.white,
+      foregroundColor: Color(0xFF1B201C),
+      iconTheme: IconThemeData(color: Color(0xFF1B201C), size: 20),
+      actionsIconTheme: IconThemeData(color: Color(0xFF1B201C), size: 20),
       titleTextStyle: TextStyle(
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.1,
-        color: Colors.white,
+        color: Color(0xFF1B201C),
+      ),
+      shape: Border(
+        bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
       ),
     ),
     tabBarTheme: const TabBarThemeData(
-      labelColor: Colors.white,
-      unselectedLabelColor: Colors.white60,
-      indicatorColor: Colors.white,
+      labelColor: Color(0xFF245938),
+      unselectedLabelColor: Color(0xFF555E57),
+      indicatorColor: Color(0xFF245938),
       indicatorSize: TabBarIndicatorSize.label,
+      dividerColor: Color(0xFFE5E7EB),
     ),
     elevatedButtonTheme: _buildElevatedButtonTheme(
       touch: touch,
@@ -375,15 +382,37 @@ ThemeData buildAppTheme({bool compact = false}) {
     scaffoldBackgroundColor: const Color(0xFFF8F6F0),
     canvasColor: Colors.white,
     appBarTheme: AppBarTheme(
-      centerTitle: true,
+      centerTitle: false,
       elevation: 0,
-      backgroundColor: const Color(0xFF1E3424), // Duboki šumski bor (brend)
-      foregroundColor: Colors.white,
+      scrolledUnderElevation: 1,
+      toolbarHeight: compact ? 44.0 : 46.0,
+      backgroundColor: Colors.white,
+      foregroundColor: const Color(0xFF1B201C),
+      iconTheme: const IconThemeData(color: Color(0xFF1B201C), size: 20),
+      actionsIconTheme: const IconThemeData(color: Color(0xFF1B201C), size: 20),
       titleTextStyle: GoogleFonts.roboto(
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.1,
-        color: Colors.white,
+        color: const Color(0xFF1B201C),
+      ),
+      shape: const Border(
+        bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+      ),
+    ),
+    tabBarTheme: TabBarThemeData(
+      labelColor: const Color(0xFF245938),
+      unselectedLabelColor: const Color(0xFF555E57),
+      indicatorColor: const Color(0xFF245938),
+      indicatorSize: TabBarIndicatorSize.label,
+      dividerColor: const Color(0xFFE5E7EB),
+      labelStyle: GoogleFonts.roboto(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelStyle: GoogleFonts.roboto(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
       ),
     ),
     textTheme: _buildTextTheme(
@@ -485,11 +514,39 @@ ThemeData buildAppDarkTheme({bool compact = false}) {
       secondaryContainer: Color(0xFF386B41),
       onSecondaryContainer: Color(0xFFE89844),
     ),
-    appBarTheme: const AppBarTheme(
-      centerTitle: true,
+    appBarTheme: AppBarTheme(
+      centerTitle: false,
       elevation: 0,
-      backgroundColor: Color(0xFF1A1C19),
-      foregroundColor: Color(0xFFE2E3DD),
+      scrolledUnderElevation: 1,
+      toolbarHeight: compact ? 44.0 : 46.0,
+      backgroundColor: const Color(0xFF1A1C19),
+      foregroundColor: const Color(0xFFE2E3DD),
+      iconTheme: const IconThemeData(color: Color(0xFFE2E3DD), size: 20),
+      actionsIconTheme: const IconThemeData(color: Color(0xFFE2E3DD), size: 20),
+      titleTextStyle: GoogleFonts.roboto(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.1,
+        color: const Color(0xFFE2E3DD),
+      ),
+      shape: const Border(
+        bottom: BorderSide(color: Color(0xFF2F3033), width: 1),
+      ),
+    ),
+    tabBarTheme: TabBarThemeData(
+      labelColor: Colors.white,
+      unselectedLabelColor: const Color(0xFFD0D6CB),
+      indicatorColor: const Color(0xFFE89844),
+      indicatorSize: TabBarIndicatorSize.label,
+      dividerColor: const Color(0xFF2F3033),
+      labelStyle: GoogleFonts.roboto(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelStyle: GoogleFonts.roboto(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
     ),
     elevatedButtonTheme: _buildElevatedButtonTheme(
       touch: touch,
