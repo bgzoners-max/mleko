@@ -19,7 +19,9 @@ class AppConstants {
   static const int maxProductDescriptionLength = 300;
   static const int maxProductImages = 3;
 
-  /// Proizvod je „Novo“ ako je kreiran u poslednjih N dana
+  /// Proizvod dobija bedž „NOVO“ ako je kreiran u poslednjih N sati (prvih 24h)
+  static const int newProductHours = 24;
+  /// Proizvod je „Novo“ za sekciju na početnoj ako je kreiran u poslednjih N dana
   static const int newProductDays = 14;
   /// Proizvod je „Popularno“ ako ima bar N prodaja
   static const int popularProductMinSales = 2;

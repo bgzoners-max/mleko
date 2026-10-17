@@ -45,8 +45,8 @@ class _ProductCardState extends State<ProductCard> {
   bool _isPressed = false;
 
   bool get _isNew {
-    final diff = DateTime.now().difference(widget.product.createdAt).inDays;
-    return diff < AppConstants.newProductDays;
+    final diff = DateTime.now().difference(widget.product.createdAt).inHours;
+    return diff >= 0 && diff < AppConstants.newProductHours;
   }
 
   Widget _buildCard(BuildContext context, bool gridMode) {
@@ -132,7 +132,7 @@ class _ProductCardState extends State<ProductCard> {
                   ),
                 if (_isNew)
                   const _AmazonBadge(
-                    label: 'SVEŽE',
+                    label: 'NOVO',
                     backgroundColor: AmazonColors.green,
                   ),
                 if (widget.isPopular)
