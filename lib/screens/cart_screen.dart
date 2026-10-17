@@ -28,7 +28,6 @@ class _CartScreenState extends State<CartScreen> {
   Map<String, List<({ProductModel product, double quantity})>> _groupedItems =
       {};
   Map<String, UserModel> _sellerProfiles = {};
-  Map<String, double> _sellerMinimums = {};
 
   @override
   void initState() {
@@ -51,34 +50,15 @@ class _CartScreenState extends State<CartScreen> {
 
     final sellerIds = grouped.keys.toList();
     final usersService = context.read<UsersService>();
-    final deliveryService = SellerDeliveryService();
 
     try {
       final profiles = await usersService.getUsers(sellerIds);
       final profilesMap = {for (var p in profiles) p.id: p};
 
-      final minsMap = <String, double>{};
-      for (final sid in sellerIds) {
-        final points = await deliveryService.getSellerDeliveryPoints(sid,
-            onlyActive: true);
-        double? minOrder;
-        for (final p in points) {
-          for (final s in p.activeSlots) {
-            if (s.minOrderAmountRsd != null) {
-              if (minOrder == null || s.minOrderAmountRsd! < minOrder) {
-                minOrder = s.minOrderAmountRsd;
-              }
-            }
-          }
-        }
-        if (minOrder != null) minsMap[sid] = minOrder;
-      }
-
       if (!mounted) return;
       setState(() {
         _groupedItems = grouped;
         _sellerProfiles = profilesMap;
-        _sellerMinimums = minsMap;
         _loading = false;
       });
     } catch (e) {
@@ -171,15 +151,12 @@ class _CartScreenState extends State<CartScreen> {
             final sellerId = sellerIds[sellerIndex];
             final items = _groupedItems[sellerId] ?? [];
             final profile = _sellerProfiles[sellerId];
-            final minOrder = _sellerMinimums[sellerId];
-
             return CartSellerGroupCard(
               sellerId: sellerId,
               sellerName:
                   profile?.farmName ?? profile?.displayName ?? 'Prodavac',
               location: profile?.city ?? 'Nepoznata lokacija',
               items: items,
-              minOrder: minOrder,
               onRefresh: _loadData,
             );
           },

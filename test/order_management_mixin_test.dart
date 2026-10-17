@@ -244,7 +244,8 @@ void main() {
       );
     });
 
-    test('createOrderWithItems throws validation error when order total is below delivery minimum', () async {
+    test('createOrderWithItems does not block order when total is below legacy slot delivery minimum', () async {
+      bool rpcCalled = false;
       final mockClient = MockHttpHandlerClient((req, body) async {
         if (req.url.path.contains('/rest/v1/products')) {
           final jsonResp = jsonEncode([
@@ -261,6 +262,10 @@ void main() {
           ]);
           return http.Response(jsonResp, 200);
         }
+        if (req.url.path.contains('/rpc/create_order_with_items')) {
+          rpcCalled = true;
+          return http.Response(jsonEncode('order-no-minimum-block'), 200);
+        }
         return http.Response('[]', 200);
       });
       final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
@@ -276,33 +281,29 @@ void main() {
         weekday: 1,
         timeFrom: '10:00',
         timeTo: '12:00',
-        minOrderAmountRsd: 2500, // Zahteva se 2500, a poručeno je 1000
+        minOrderAmountRsd: 2500, // Legacy slot polje (2500), dok je poručeno 1000
       );
 
-      expect(
-        () => service.createOrderWithItems(
-          buyerId: 'buyer-1',
-          sellerId: 'seller-1',
-          items: [
-            const OrderItemModel(
-              productId: 'prod-1',
-              productName: 'Med',
-              quantityKg: 1,
-              unitType: 'kg',
-            ),
-          ],
-          note: '',
-          buyerCity: 'Beograd',
-          buyerPhone: '0601234567',
-          deliveryMethod: DeliveryMethod.sellerDelivery,
-          deliverySelection: selection,
-        ),
-        throwsA(isA<AppError>().having(
-          (e) => e.userMessage,
-          'userMessage',
-          contains('Minimalna porudžbina za izabrani termin'),
-        )),
+      final orderId = await service.createOrderWithItems(
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        items: [
+          const OrderItemModel(
+            productId: 'prod-1',
+            productName: 'Med',
+            quantityKg: 1,
+            unitType: 'kg',
+          ),
+        ],
+        note: '',
+        buyerCity: 'Beograd',
+        buyerPhone: '0601234567',
+        deliveryMethod: DeliveryMethod.sellerDelivery,
+        deliverySelection: selection,
       );
+
+      expect(orderId, equals('order-no-minimum-block'));
+      expect(rpcCalled, isTrue);
     });
 
     test('createOrderWithItems calls RPC and returns order ID when valid', () async {

@@ -81,8 +81,6 @@ mixin OrderManagementMixin {
         (p['id'] as String): p,
     };
 
-    var orderTotal = 0.0;
-
     for (final item in items) {
       final product = productMap[item.productId];
       if (product == null) {
@@ -124,9 +122,6 @@ mixin OrderManagementMixin {
           type: ErrorType.validation,
         );
       }
-
-      final unitPrice = (product['price_per_kg'] as num?)?.toDouble() ?? 0;
-      orderTotal += unitPrice * item.quantityKg;
     }
 
     if (deliveryMethod == DeliveryMethod.sellerDelivery) {
@@ -134,15 +129,6 @@ mixin OrderManagementMixin {
         throw AppError(
           message: 'Delivery selection missing',
           userMessage: 'Izaberite grad, lokaciju i termin lične dostave.',
-          type: ErrorType.validation,
-        );
-      }
-      final minimum = deliverySelection.minOrderAmountRsd;
-      if (minimum != null && orderTotal < minimum) {
-        throw AppError(
-          message: 'Order total below delivery minimum',
-          userMessage:
-              'Minimalna porudžbina za izabrani termin je ${formatRsdAmount(minimum)}.',
           type: ErrorType.validation,
         );
       }

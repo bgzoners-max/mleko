@@ -15,7 +15,6 @@ class CartSellerGroupCard extends StatefulWidget {
   final String sellerName;
   final String location;
   final List<({ProductModel product, double quantity})> items;
-  final double? minOrder;
   final VoidCallback onRefresh;
 
   const CartSellerGroupCard({
@@ -24,7 +23,6 @@ class CartSellerGroupCard extends StatefulWidget {
     required this.sellerName,
     required this.location,
     required this.items,
-    this.minOrder,
     required this.onRefresh,
   });
 
@@ -83,12 +81,6 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
   Widget build(BuildContext context) {
     final total = widget.items.fold<double>(
         0, (sum, item) => sum + (item.product.pricePerKg * item.quantity));
-    final progress = widget.minOrder != null
-        ? (total / widget.minOrder!).clamp(0.0, 1.0)
-        : 1.0;
-    final remaining = widget.minOrder != null ? widget.minOrder! - total : 0.0;
-    final isMet = remaining <= 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 24),
@@ -135,142 +127,6 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                   tooltip: 'Ukloni sve od ovog prodavca',
                 ),
               ],
-            ),
-          ),
-          if (widget.minOrder != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(AppDesign.spaceL,
-                  AppDesign.spaceL, AppDesign.spaceL, AppDesign.spaceS),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: isMet
-                          ? (isDark ? const Color(0xFF1B2F21) : Colors.green.shade50)
-                          : (isDark ? const Color(0xFF2C2216) : Colors.orange.shade50),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isMet
-                            ? (isDark ? const Color(0xFF2E633B) : Colors.green.shade200)
-                            : (isDark ? const Color(0xFF5C3C18) : Colors.orange.shade200),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isMet
-                              ? Icons.check_circle_outline
-                              : Icons.info_outline,
-                          size: 16,
-                          color: isMet
-                              ? (isDark ? AmazonColors.lightGreen : Colors.green.shade700)
-                              : (isDark ? AmazonColors.amberLight : Colors.orange.shade800),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            isMet
-                                ? 'Minimalni iznos je dostignut. Možeš nastaviti sa porudžbinom.'
-                                : 'Još ti fali ${remaining.toStringAsFixed(0)} RSD da dostigneš minimum za ovu porudžbinu.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isMet
-                                  ? (isDark ? AmazonColors.lightGreen : Colors.green.shade800)
-                                  : (isDark ? AmazonColors.amberLight : Colors.orange.shade800),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        isMet
-                            ? 'Ispunjen minimum za porudžbinu'
-                            : 'Do minimuma za porudžbinu:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: isMet
-                              ? (isDark ? AmazonColors.lightGreen : Colors.green.shade700)
-                              : (isDark ? AmazonColors.amberLight : Colors.orange.shade800),
-                        ),
-                      ),
-                      if (!isMet)
-                        Text(
-                          'još ${remaining.toStringAsFixed(0)} RSD',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange.shade800),
-                        ),
-                    ],
-                  ),
-                  AppDesign.boxS,
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 8,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          isMet ? Colors.green : Colors.orange),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Minimalna porudžbina: ${widget.minOrder!.toStringAsFixed(0)} RSD',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
-                  ),
-                ],
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppDesign.spaceL, 0, AppDesign.spaceL, AppDesign.spaceS),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.22),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.18),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      isMet
-                          ? 'Dostignut je minimum za ličnu dostavu domaćina. Možeš nastaviti na izbor termina ili drugog načina dostave.'
-                          : 'Prikazani minimum važi za ličnu dostavu domaćina. Na sledećem koraku možeš izabrati i kurirsku dostavu ili lično preuzimanje.',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
           const Divider(height: AppDesign.spaceL),

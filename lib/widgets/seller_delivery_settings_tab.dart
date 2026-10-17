@@ -200,9 +200,6 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
     final feeController = TextEditingController(
       text: existing?.deliveryFeeRsd?.toStringAsFixed(0) ?? '',
     );
-    final minOrderController = TextEditingController(
-      text: existing?.minOrderAmountRsd?.toStringAsFixed(0) ?? '',
-    );
     final maxOrdersController = TextEditingController(
       text: existing?.maxOrders?.toString() ?? '',
     );
@@ -281,14 +278,6 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: minOrderController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimalna porudžbina (RSD)',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
                   controller: maxOrdersController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
@@ -331,8 +320,6 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
                   timeFrom: _formatTimeOfDay(timeFrom),
                   timeTo: _formatTimeOfDay(timeTo),
                   deliveryFeeRsd: double.tryParse(feeController.text.trim()),
-                  minOrderAmountRsd:
-                      double.tryParse(minOrderController.text.trim()),
                   maxOrders: int.tryParse(maxOrdersController.text.trim()),
                   isActive: isActive,
                 );
@@ -363,7 +350,6 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
     );
     } finally {
       feeController.dispose();
-      minOrderController.dispose();
       maxOrdersController.dispose();
     }
 
@@ -590,8 +576,6 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
                         [
                           if (slot.deliveryFeeRsd != null)
                             'Dostava ${formatRsdAmount(slot.deliveryFeeRsd)}',
-                          if (slot.minOrderAmountRsd != null)
-                            'Minimum ${formatRsdAmount(slot.minOrderAmountRsd)}',
                           if (slot.maxOrders != null) 'Maks ${slot.maxOrders}',
                         ].join(' • '),
                         style: TextStyle(color: Colors.grey.shade700),

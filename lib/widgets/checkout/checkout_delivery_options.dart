@@ -156,10 +156,6 @@ class CheckoutDeliveryOptions extends StatelessWidget {
                     ),
                     if (deliverySelection!.feeLabel != null)
                       Text('Dostava: ${deliverySelection!.feeLabel}'),
-                    if (deliverySelection!.minOrderLabel != null)
-                      Text(
-                        'Minimum za termin: ${deliverySelection!.minOrderLabel}',
-                      ),
                   ],
                 ),
               ),
