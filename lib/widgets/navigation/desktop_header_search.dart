@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/design_system.dart';
-import 'desktop_top_utility_strip.dart';
 
-/// Integrisano polje za pretragu na desktopu sa brzim biračem lokacije.
+/// Integrisano polje za pretragu na desktopu (Amazon / Allegro standard).
 class DesktopHeaderSearch extends StatefulWidget {
   final bool isDark;
   final String? selectedRegion;
@@ -11,7 +10,7 @@ class DesktopHeaderSearch extends StatefulWidget {
   const DesktopHeaderSearch({
     super.key,
     required this.isDark,
-    required this.selectedRegion,
+    this.selectedRegion,
     required this.onSearchSubmitted,
   });
 
@@ -27,6 +26,9 @@ class _DesktopHeaderSearchState extends State<DesktopHeaderSearch> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _searchFocusNode.addListener(() {
       if (mounted) {
         setState(() => _isSearchFocused = _searchFocusNode.hasFocus);
@@ -41,103 +43,115 @@ class _DesktopHeaderSearchState extends State<DesktopHeaderSearch> {
     super.dispose();
   }
 
+  void _submit() {
+    widget.onSearchSubmitted(_searchController.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
-    final selectedRegion = widget.selectedRegion;
 
-    return Container(
-      height: 42,
-      constraints: const BoxConstraints(maxWidth: 420),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E2B21) : const Color(0xFFF3F6F3),
-        borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-          color: _isSearchFocused
-              ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
-              : (isDark ? const Color(0xFF2C3E2F) : const Color(0xFFD6DFD6)),
-          width: _isSearchFocused ? 1.5 : 1.0,
-        ),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 12),
-          Icon(
-            Icons.search_rounded,
-            size: 20,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 640),
+      child: Container(
+        height: 42,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1B281E) : Colors.white,
+          borderRadius: BorderRadius.circular(21),
+          border: Border.all(
             color: _isSearchFocused
                 ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
-                : (isDark ? Colors.white60 : Colors.black54),
+                : (isDark ? const Color(0xFF2C3E2F) : const Color(0xFFD0D7D0)),
+            width: _isSearchFocused ? 1.8 : 1.2,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (val) => widget.onSearchSubmitted(val),
-              style: TextStyle(
-                fontSize: 13.5,
-                color: isDark ? Colors.white : AmazonColors.darkNavy,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Pretraži sir, med, voće, traktore, oglase...',
-                hintStyle: TextStyle(
-                  fontSize: 12.5,
-                  color: isDark ? Colors.white38 : Colors.black45,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+              blurRadius: _isSearchFocused ? 6 : 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 14),
+            Icon(
+              Icons.search_rounded,
+              size: 20,
+              color: _isSearchFocused
+                  ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
+                  : (isDark ? Colors.white60 : Colors.black45),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _submit(),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : AmazonColors.darkNavy,
                 ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-            ),
-          ),
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear, size: 16),
-              onPressed: () {
-                _searchController.clear();
-                widget.onSearchSubmitted('');
-              },
-            ),
-          // Birač lokacije unutar pretrage
-          InkWell(
-            onTap: () => openLocationDialog(context),
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.only(right: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? Colors.white12 : Colors.grey.shade300,
-                  width: 1,
+                decoration: InputDecoration(
+                  hintText: 'Pretražite domaću hranu, sireve, med, voće, traktore, oglase...',
+                  hintStyle: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.normal,
+                    color: isDark ? Colors.white38 : Colors.black45,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.location_on, size: 13, color: isDark ? AmazonColors.lightGreen : AmazonColors.green),
-                  const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 80),
-                    child: Text(
-                      selectedRegion ?? 'Srbija',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : AmazonColors.darkNavy,
-                      ),
+            ),
+            if (_searchController.text.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.clear, size: 16),
+                splashRadius: 16,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                color: isDark ? Colors.white54 : Colors.black45,
+                tooltip: 'Obriši tekst',
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {});
+                  widget.onSearchSubmitted('');
+                },
+              ),
+            // Amazon Signature Warm Amber Search Button sa desne strane
+            Tooltip(
+              message: 'Pretraži',
+              child: InkWell(
+                onTap: _submit,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                child: Container(
+                  width: 48,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: AmazonColors.amberLight,
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
                     ),
                   ),
-                ],
+                  child: const Center(
+                    child: Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: AmazonColors.darkNavy,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

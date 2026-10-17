@@ -246,10 +246,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   constraints:
                       const BoxConstraints(minWidth: 36, minHeight: 36),
                   icon: const Icon(Icons.location_on_outlined, size: 22),
+                  tooltip: 'Izaberi lokaciju',
                   onPressed: () => _showLocationPicker(context),
                 ),
-                const SizedBox(width: 2),
-                const Center(child: ThemeToggleSwitch()),
+                if (MediaQuery.sizeOf(context).width >= 500) ...[
+                  const SizedBox(width: 4),
+                  const Center(child: ThemeToggleSwitch()),
+                ],
                 const SizedBox(width: 6),
               ],
             ),

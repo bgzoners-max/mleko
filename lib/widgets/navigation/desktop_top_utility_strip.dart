@@ -255,21 +255,27 @@ class DesktopTopUtilityStrip extends StatelessWidget {
           child: Row(
             children: [
               // Poruka poverenja
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('🌱', style: TextStyle(fontSize: 13)),
-                  const SizedBox(width: 6),
-                  Text(
-                    '100% domaća hrana i proizvodi direktno od poljoprivrednih gazdinstava širom Srbije',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🌱', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        '100% domaća hrana i proizvodi direktno od poljoprivrednih gazdinstava širom Srbije',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const Spacer(),
               // Lokacija brzi selektor

@@ -202,42 +202,16 @@ class SellerProfilePhotoContent extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              resolveProfileDisplayName(
-                                currentUser.farmName,
-                                currentUser.displayName,
-                              ),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: isSeller
-                                  ? Colors.green.withValues(alpha: 0.15)
-                                  : Colors.blue.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              isSeller ? 'Prodavac' : 'Kupac',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: isSeller
-                                    ? Colors.green.shade800
-                                    : Colors.blue.shade800,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        resolveProfileDisplayName(
+                          currentUser.farmName,
+                          currentUser.displayName,
+                        ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       if (isSeller && followersCount > 0) ...[

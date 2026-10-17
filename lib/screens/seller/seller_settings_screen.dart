@@ -79,6 +79,28 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     }
   }
 
+  Future<void> _confirmAndClearLocation() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Obriši lokaciju?'),
+        content: const Text('Lokacija na mapi će biti uklonjena.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Odustani'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Obriši'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) await _clearLocation();
+  }
+
   Future<void> _openMapPicker() async {
     final user = context.read<AppState>().user;
     final usersService = context.read<UsersService>();
@@ -286,6 +308,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   }
 
   Widget _buildLocationTab() {
+    final isDesktop = !Breakpoints.isPhone(context);
     final user = context.watch<AppState>().user;
     final hasLocation = user?.lat != null && user?.lng != null;
     return SingleChildScrollView(
@@ -319,55 +342,118 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
             Text(_error!, style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 16),
           ],
-          FilledButton.icon(
-            onPressed: _loading ? null : _openMapPicker,
-            icon: _loading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.map),
-            label: Text(hasLocation ? 'Promeni lokaciju' : 'Odaberi na mapi'),
-          ),
-          if (hasLocation) ...[
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _loading
-                  ? null
-                  : () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Obriši lokaciju?'),
-                          content:
-                              const Text('Lokacija na mapi će biti uklonjena.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Odustani'),
+          Align(
+            alignment: isDesktop ? Alignment.centerRight : Alignment.center,
+            child: isDesktop
+                ? Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (hasLocation)
+                        OutlinedButton.icon(
+                          onPressed: _loading ? null : _confirmAndClearLocation,
+                          icon: const Icon(Icons.location_off, size: 18),
+                          label: const Text('Obriši lokaciju'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.red),
-                              child: const Text('Obriši'),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          ],
+                          ),
                         ),
-                      );
-                      if (ok == true && context.mounted) await _clearLocation();
-                    },
-              icon: const Icon(Icons.location_off),
-              label: const Text('Obriši lokaciju'),
-              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-            ),
-          ],
+                      FilledButton.icon(
+                        onPressed: _loading ? null : _openMapPicker,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: _loading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.map, size: 18),
+                        label: Text(
+                          hasLocation ? 'Promeni lokaciju' : 'Odaberi na mapi',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _loading ? null : _openMapPicker,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: _loading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.map, size: 18),
+                        label: Text(
+                          hasLocation ? 'Promeni lokaciju' : 'Odaberi na mapi',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (hasLocation) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _loading ? null : _confirmAndClearLocation,
+                          icon: const Icon(Icons.location_off, size: 18),
+                          label: const Text('Obriši lokaciju'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildStoryTab() {
+    final isDesktop = !Breakpoints.isPhone(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -387,14 +473,40 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
             Text(_error!, style: const TextStyle(color: Colors.red))
           ],
           const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _loading ? null : _saveStory,
-            child: _loading
-                ? const SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Sačuvaj priču'),
+          Align(
+            alignment: isDesktop ? Alignment.centerRight : Alignment.center,
+            child: SizedBox(
+              width: isDesktop ? null : double.infinity,
+              child: FilledButton.icon(
+                onPressed: _loading ? null : _saveStory,
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 24 : 16,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: _loading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check, size: 18),
+                label: const Text(
+                  'Sačuvaj priču',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -497,50 +609,78 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
                     style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 12),
               ],
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: _quickRepliesSaving
-                    ? null
-                    : () async {
-                        this.setState(() {
-                          _quickRepliesError = '';
-                          _quickRepliesSaving = true;
-                        });
+              const SizedBox(height: 12),
+              Align(
+                alignment: !Breakpoints.isPhone(context)
+                    ? Alignment.centerRight
+                    : Alignment.center,
+                child: SizedBox(
+                  width: !Breakpoints.isPhone(context) ? null : double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _quickRepliesSaving
+                        ? null
+                        : () async {
+                            this.setState(() {
+                              _quickRepliesError = '';
+                              _quickRepliesSaving = true;
+                            });
 
-                        final appState = context.read<AppState>();
-                        final usersService = context.read<UsersService>();
-                        final u = appState.user;
-                        if (u == null) return;
+                            final appState = context.read<AppState>();
+                            final usersService = context.read<UsersService>();
+                            final u = appState.user;
+                            if (u == null) return;
 
-                        final resultAction = await ErrorHandlerService()
-                            .executeWithResult('Update quick replies', () {
-                          final replies =
-                              controllers.map((c) => c.text).toList();
-                          return usersService.updateSellerQuickReplies(
-                              u.id, replies);
-                        });
+                            final resultAction = await ErrorHandlerService()
+                                .executeWithResult('Update quick replies', () {
+                              final replies =
+                                  controllers.map((c) => c.text).toList();
+                              return usersService.updateSellerQuickReplies(
+                                  u.id, replies);
+                            });
 
-                        if (!mounted) return;
-                        this.setState(() => _quickRepliesSaving = false);
+                            if (!mounted) return;
+                            this.setState(() => _quickRepliesSaving = false);
 
-                        if (resultAction.isSuccess) {
-                          await appState.refreshUser();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Brzi odgovori sačuvani.')));
-                          }
-                        } else {
-                          this.setState(() => _quickRepliesError =
-                              resultAction.error?.getUserMessage() ?? 'Greška');
-                        }
-                      },
-                child: _quickRepliesSaving
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Sačuvaj brze odgovore'),
+                            if (resultAction.isSuccess) {
+                              await appState.refreshUser();
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Brzi odgovori sačuvani.')));
+                              }
+                            } else {
+                              this.setState(() => _quickRepliesError =
+                                  resultAction.error?.getUserMessage() ?? 'Greška');
+                            }
+                          },
+                    style: FilledButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: !Breakpoints.isPhone(context) ? 24 : 16,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: _quickRepliesSaving
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check, size: 18),
+                    label: const Text(
+                      'Sačuvaj brze odgovore',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

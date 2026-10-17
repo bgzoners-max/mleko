@@ -6,6 +6,7 @@ import 'package:mleko/providers/app_settings_provider.dart';
 import 'package:mleko/providers/app_state.dart';
 import 'package:mleko/screens/seller/seller_settings_screen.dart';
 import 'package:mleko/models/category.dart';
+import 'package:mleko/models/user_model.dart';
 import 'package:mleko/services/auth/auth_service.dart';
 import 'package:mleko/services/auth/users_service.dart';
 import 'package:mleko/services/orders/orders_service.dart';
@@ -262,6 +263,153 @@ void main() {
       final tabBar = tester.widget<TabBar>(find.byType(TabBar));
       expect(tabBar.isScrollable, isTrue);
       expect(tabBar.tabAlignment, equals(TabAlignment.start));
+    });
+
+    testWidgets('Story tab save button is right-aligned and compact on desktop',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final appState = AppState(
+        ordersService: OrdersService(),
+        authService: AuthService(),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AppState>.value(value: appState),
+            ChangeNotifierProvider<AppSettingsProvider>.value(
+              value: AppSettingsProvider(),
+            ),
+            Provider<UsersService>.value(value: UsersService()),
+          ],
+          child: const MaterialApp(
+            home: SellerSettingsScreen(initialTabIndex: 2),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final buttonFinder = find.widgetWithText(FilledButton, 'Sačuvaj priču');
+      expect(buttonFinder, findsOneWidget);
+
+      final buttonSize = tester.getSize(buttonFinder);
+      expect(buttonSize.width, lessThan(300));
+
+      final alignFinder = find.ancestor(
+        of: buttonFinder,
+        matching: find.byType(Align),
+      );
+      final alignWidget = tester.widget<Align>(alignFinder.first);
+      expect(alignWidget.alignment, equals(Alignment.centerRight));
+    });
+
+    testWidgets('Location tab action buttons are right-aligned and compact on desktop',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final appState = AppState(
+        ordersService: OrdersService(),
+        authService: AuthService(),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AppState>.value(value: appState),
+            ChangeNotifierProvider<AppSettingsProvider>.value(
+              value: AppSettingsProvider(),
+            ),
+            Provider<UsersService>.value(value: UsersService()),
+          ],
+          child: const MaterialApp(
+            home: SellerSettingsScreen(initialTabIndex: 0),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final mapButtonFinder =
+          find.widgetWithText(FilledButton, 'Odaberi na mapi');
+      expect(mapButtonFinder, findsOneWidget);
+
+      final buttonSize = tester.getSize(mapButtonFinder);
+      expect(buttonSize.width, lessThan(350));
+
+      final alignFinder = find.ancestor(
+        of: mapButtonFinder,
+        matching: find.byType(Align),
+      );
+      final alignWidget = tester.widget<Align>(alignFinder.first);
+      expect(alignWidget.alignment, equals(Alignment.centerRight));
+    });
+
+    testWidgets(
+        'Location tab renders both edit and delete buttons aligned right and compact on desktop when location exists',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final appState = AppState(
+        ordersService: OrdersService(),
+        authService: AuthService(),
+      );
+      appState.setUserForTesting(
+        const UserModel(
+          id: 'test_seller_1',
+          displayName: 'Pera Perić',
+          email: 'pera@example.com',
+          role: UserRole.seller,
+          lat: 44.74442,
+          lng: 20.42008,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AppState>.value(value: appState),
+            ChangeNotifierProvider<AppSettingsProvider>.value(
+              value: AppSettingsProvider(),
+            ),
+            Provider<UsersService>.value(value: UsersService()),
+          ],
+          child: const MaterialApp(
+            home: SellerSettingsScreen(initialTabIndex: 0),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final editButtonFinder =
+          find.widgetWithText(FilledButton, 'Promeni lokaciju');
+      expect(editButtonFinder, findsOneWidget);
+
+      final deleteButtonFinder =
+          find.widgetWithText(OutlinedButton, 'Obriši lokaciju');
+      expect(deleteButtonFinder, findsOneWidget);
+
+      // Verify buttons are compact (< 350px width each)
+      final editSize = tester.getSize(editButtonFinder);
+      expect(editSize.width, lessThan(350));
+      final deleteSize = tester.getSize(deleteButtonFinder);
+      expect(deleteSize.width, lessThan(350));
+
+      // Verify aligned right
+      final alignFinder = find.ancestor(
+        of: editButtonFinder,
+        matching: find.byType(Align),
+      );
+      final alignWidget = tester.widget<Align>(alignFinder.first);
+      expect(alignWidget.alignment, equals(Alignment.centerRight));
     });
   });
 

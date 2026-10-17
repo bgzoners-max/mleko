@@ -33,7 +33,7 @@ void main() {
 
     // Eyebrow badge
     expect(
-      find.text('100% PROVERENA DOMAĆA HRANA I GAZDINSTVA'),
+      find.text('100% DOMAĆA HRANA'),
       findsOneWidget,
     );
 
@@ -43,7 +43,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.textContaining('Pravi ukusi sela, bez industrijskih posrednika'),
+      find.textContaining('Upoznaj porodična gazdinstva, podrži domaću proizvodnju'),
       findsOneWidget,
     );
 

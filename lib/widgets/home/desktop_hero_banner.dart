@@ -100,7 +100,7 @@ class DesktopHeroBanner extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: isCompactDesktop ? 24 : 32,
-                vertical: isCompactDesktop ? 22 : 28,
+                vertical: isCompactDesktop ? 18 : 22,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +108,7 @@ class DesktopHeroBanner extends StatelessWidget {
                 children: [
                   // Eyebrow bedž
                   _buildEyebrowBadge(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // Glavni zanatski Bitter naslov
                   ConstrainedBox(
@@ -119,14 +119,14 @@ class DesktopHeroBanner extends StatelessWidget {
                       'Direktno sa srpskih gazdinstava na vašu trpezu',
                       style: AppFonts.display(
                         Colors.white,
-                        fontSize: isCompactDesktop ? 26 : 32,
+                        fontSize: isCompactDesktop ? 24 : 30,
                         fontWeight: FontWeight.w700,
                         height: 1.18,
                         letterSpacing: -0.5,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
                   // Podnaslov sa misijom
                   ConstrainedBox(
@@ -134,31 +134,31 @@ class DesktopHeroBanner extends StatelessWidget {
                       maxWidth: isCompactDesktop ? 560 : 660,
                     ),
                     child: Text(
-                      'Pravi ukusi sela, bez industrijskih posrednika. Povežite se sa proverenim porodičnim proizvođačima, pčelarima, vodenicama i gazdinstvima širom Srbije.',
+                      'Upoznaj porodična gazdinstva, podrži domaću proizvodnju. Uživajte u pravim ukusima!',
                       style: TextStyle(
-                        fontSize: isCompactDesktop ? 13.5 : 14.5,
-                        height: 1.45,
+                        fontSize: isCompactDesktop ? 13.0 : 14.0,
+                        height: 1.4,
                         color: Colors.white.withValues(alpha: 0.92),
                         fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Akciona dugmad (CTA)
                   _buildActionButtons(context, isCompactDesktop: isCompactDesktop),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
                   // Brzi tagovi / popularno
                   _buildQuickTags(context),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 16),
 
                   // Linija razdvajanja
                   Container(
                     height: 1,
                     color: Colors.white.withValues(alpha: 0.15),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // 3 Stuba poverenja (Trust Badges)
                   _buildTrustBadges(context, isCompactDesktop: isCompactDesktop),
@@ -183,22 +183,22 @@ class DesktopHeroBanner extends StatelessWidget {
           width: 0.9,
         ),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.eco_rounded,
             size: 14,
             color: AmazonColors.amberLight,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(
-            '100% PROVERENA DOMAĆA HRANA I GAZDINSTVA',
+            '100% DOMAĆA HRANA',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,
-              color: Colors.white.withValues(alpha: 0.95),
+              color: Colors.white,
             ),
           ),
         ],

@@ -110,36 +110,26 @@ class DesktopHeader extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. GORNJA TRAKA (Top Utility Strip)
+          // 1. GORNJA INFORMATIVNA TRAKA (Top Utility Strip - Slogan, Lokacija, Kontakt)
           DesktopTopUtilityStrip(
             isDark: isDark,
             selectedRegion: selectedRegion,
           ),
 
-          // 2. GLAVNI HEADER (Brand, Navigacija, Pretraga, Akcije, CTA)
+          // 2. GLAVNI HEADER (Brand, Velika Centralna Pretraga, Akcije i Korpa)
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1360),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 child: Row(
                   children: [
                     // Brand / Logo
                     _buildBrandLogo(context, isDark: isDark),
 
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 24),
 
-                    // Primarni Navigacioni Tabovi ("Pijaca hrane", "Mali oglasi", "Seoska gazdinstva", "O nama")
-                    _buildNavTabs(
-                      context,
-                      isFoodMarket: isFoodMarket,
-                      isClassifieds: isClassifieds,
-                      isSellersMap: isSellersMap,
-                    ),
-
-                    const SizedBox(width: 16),
-
-                    // Integrisana Desktop Pretraga
+                    // Integrisana Desktop Pretraga (Prostrana, ne sudara se sa korpom)
                     Expanded(
                       child: DesktopHeaderSearch(
                         isDark: isDark,
@@ -148,9 +138,9 @@ class DesktopHeader extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 20),
 
-                    // Desni klaster akcija (Notifikacije, Korpa, Poruke, Tema, Profil, CTA)
+                    // Desni klaster akcija (Korpa, Notifikacije, Poruke, Tema, Profil, CTA)
                     DesktopHeaderActions(
                       isDark: isDark,
                       isGuest: isGuest,
@@ -165,7 +155,103 @@ class DesktopHeader extends StatelessWidget {
               ),
             ),
           ),
+
+          // 3. SEKUNDARNI NAVIGACIONI BAR (Primarni Tabovi i brzi filteri - Amazon/KP stil)
+          _buildSubNavBar(
+            context,
+            isDark: isDark,
+            isFoodMarket: isFoodMarket,
+            isClassifieds: isClassifieds,
+            isSellersMap: isSellersMap,
+            selectedRegion: selectedRegion,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubNavBar(
+    BuildContext context, {
+    required bool isDark,
+    required bool isFoodMarket,
+    required bool isClassifieds,
+    required bool isSellersMap,
+    required String? selectedRegion,
+  }) {
+    final subBarBg = isDark ? const Color(0xFF131D15) : const Color(0xFFF7FAF7);
+    final subBarBorder = isDark ? const Color(0xFF1F2E22) : const Color(0xFFE2E8E2);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: subBarBg,
+        border: Border(
+          top: BorderSide(color: subBarBorder, width: 1.0),
+          bottom: BorderSide(color: subBarBorder, width: 1.0),
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1360),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 5),
+            child: Row(
+              children: [
+                // 4 Primarna Navigaciona Taba
+                _buildNavTabs(
+                  context,
+                  isFoodMarket: isFoodMarket,
+                  isClassifieds: isClassifieds,
+                  isSellersMap: isSellersMap,
+                ),
+
+                const Spacer(),
+
+                // Brzi birač regiona u podnavigaciji
+                InkWell(
+                  onTap: () => openLocationDialog(context),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : Colors.grey.shade300,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 13,
+                          color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          selectedRegion != null ? 'Region: $selectedRegion' : 'Srbija: Svi regioni',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AmazonColors.darkNavy,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 14,
+                          color: isDark ? Colors.white60 : Colors.black45,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -256,6 +342,7 @@ class DesktopHeader extends StatelessWidget {
           label: 'Mali oglasi',
           icon: Icons.campaign_outlined,
           isActive: isClassifieds,
+          badge: 'NOVO',
           onTap: () => _onNavigateTo(context, 1, route: '/classifieds', mode: MarketMode.classifieds),
         ),
         const SizedBox(width: 6),

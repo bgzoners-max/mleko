@@ -283,6 +283,179 @@ class _EditProfileFormState extends State<EditProfileForm> {
     }
   }
 
+  Widget _buildDisplayNameField(bool isSeller) {
+    return TextField(
+      controller: _farmNameCtrl,
+      decoration: InputDecoration(
+        labelText: isSeller
+            ? 'Naziv gazdinstva / Prikazano ime'
+            : 'Prikazano ime (Display name)',
+        hintText: isSeller
+            ? 'npr. Gazdinstvo Petrović ili Eko Farma'
+            : 'npr. Milan Jovanović ili Nadimak',
+        border: const OutlineInputBorder(),
+        prefixIcon: Icon(isSeller
+            ? Icons.storefront_outlined
+            : Icons.badge_outlined),
+        helperText:
+            'Ime koje se javno prikazuje na profilu, oglasima i porukama',
+      ),
+      textCapitalization: TextCapitalization.words,
+    );
+  }
+
+  Widget _buildFullNameField() {
+    return TextField(
+      controller: _nameCtrl,
+      decoration: const InputDecoration(
+        labelText: 'Puno ime i prezime',
+        hintText: 'Vaše lično ime i prezime',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.person_outline),
+        helperText: 'Lično ime za porudžbine i dostavu',
+      ),
+      textCapitalization: TextCapitalization.words,
+    );
+  }
+
+  Widget _buildPhoneField() {
+    return TextFormField(
+      controller: _phoneCtrl,
+      decoration: const InputDecoration(
+        labelText: 'Broj telefona',
+        hintText: 'npr. 064 1234567',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.phone_outlined),
+      ),
+      keyboardType: TextInputType.phone,
+      validator: (v) {
+        final val = v?.trim() ?? '';
+        if (val.isEmpty) return null;
+        final digits = val.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
+        if (!RegExp(r'^\d{7,15}$').hasMatch(digits)) {
+          return 'Unesite ispravan broj telefona (7-15 cifara)';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPhonePrivacySwitch(ThemeData theme) {
+    return SwitchListTile(
+      value: _phonePublic,
+      onChanged: (v) => setState(() => _phonePublic = v),
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      secondary: Icon(
+        _phonePublic ? Icons.lock_open_outlined : Icons.lock_outline,
+        size: 20,
+        color: _phonePublic
+            ? Colors.green.shade600
+            : theme.colorScheme.onSurfaceVariant,
+      ),
+      title: Text(
+        _phonePublic ? 'Telefon je vidljiv svima' : 'Telefon je privatan',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: _phonePublic ? Colors.green.shade700 : null,
+        ),
+      ),
+      subtitle: Text(
+        _phonePublic
+            ? 'Kupci i posetioci mogu videti vaš broj u oglasima i na profilu.'
+            : 'Broj je sakriven od javnosti i koristi se isključivo za realizaciju narudžbina.',
+        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+      ),
+    );
+  }
+
+  Widget _buildCityField() {
+    return Autocomplete<String>(
+      initialValue: TextEditingValue(text: _cityCtrl.text),
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.trim().isEmpty) {
+          return const Iterable<String>.empty();
+        }
+        return SerbianCities.suggestions(textEditingValue.text);
+      },
+      onSelected: (String selection) {
+        _cityCtrl.text = selection;
+      },
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController fieldTextEditingController,
+        FocusNode fieldFocusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
+        if (_cityCtrl.text.isNotEmpty &&
+            fieldTextEditingController.text.isEmpty) {
+          fieldTextEditingController.text = _cityCtrl.text;
+        }
+        fieldTextEditingController.addListener(() {
+          _cityCtrl.text = fieldTextEditingController.text;
+        });
+
+        return TextFormField(
+          controller: fieldTextEditingController,
+          focusNode: fieldFocusNode,
+          decoration: const InputDecoration(
+            labelText: 'Grad ili mesto',
+            hintText: 'npr. Beograd, Novi Sad, Čačak...',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.location_city_outlined),
+          ),
+          textCapitalization: TextCapitalization.words,
+          validator: (v) {
+            final val = v?.trim() ?? '';
+            if (val.isEmpty) return null;
+            if (val.length < 2) {
+              return 'Grad mora imati najmanje 2 karaktera';
+            }
+            if (RegExp(r'^\d+$').hasMatch(val)) {
+              return 'Unesite ispravan naziv grada';
+            }
+            return null;
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPostalCodeField() {
+    return TextField(
+      controller: _postalCodeCtrl,
+      decoration: const InputDecoration(
+        labelText: 'Poštanski broj',
+        hintText: 'npr. 11000',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.markunread_mailbox_outlined),
+      ),
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+    );
+  }
+
+  Widget _buildAddressField() {
+    return TextField(
+      controller: _addressCtrl,
+      decoration: InputDecoration(
+        labelText: 'Adresa (ulica i broj)',
+        hintText: 'npr. Cara Dušana 12 / Stan 4',
+        border: const OutlineInputBorder(),
+        prefixIcon: const Icon(Icons.home_outlined),
+        helperText: 'Vidljiva samo tebi i drugoj strani pri naručivanju',
+        helperStyle: TextStyle(color: Colors.grey.shade600),
+        suffixIcon: Tooltip(
+          message: 'Adresa nikada nije javno vidljiva posetiocima',
+          child: Icon(Icons.lock_outline,
+              size: 18, color: Colors.grey.shade500),
+        ),
+      ),
+      textCapitalization: TextCapitalization.sentences,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -290,396 +463,317 @@ class _EditProfileFormState extends State<EditProfileForm> {
 
     return Form(
       key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 1. FOTOGRAFIJA PROFILA (Avatar sa brzim izmenama)
-          Center(
-            child: Column(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 560;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. FOTOGRAFIJA PROFILA (Avatar sa brzim izmenama)
+              Center(
+                child: Column(
                   children: [
-                    GestureDetector(
-                      onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
-                      child: CircleAvatar(
-                        radius: 46,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                        backgroundImage: _currentPhotoUrl != null &&
-                                _currentPhotoUrl!.isNotEmpty
-                            ? NetworkImage(_currentPhotoUrl!)
-                            : null,
-                        child: _uploadingPhoto
-                            ? const CircularProgressIndicator()
-                            : (_currentPhotoUrl == null ||
-                                    _currentPhotoUrl!.isEmpty)
-                                ? Icon(Icons.person,
-                                    size: 52, color: theme.colorScheme.onSurfaceVariant)
-                                : null,
-                      ),
-                    ),
-                    Positioned(
-                      right: -2,
-                      bottom: -2,
-                      child: Material(
-                        color: theme.colorScheme.primary,
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        child: InkWell(
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        GestureDetector(
                           onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
-                          customBorder: const CircleBorder(),
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(Icons.camera_alt,
-                                color: Colors.white, size: 18),
+                          child: CircleAvatar(
+                            radius: 46,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHighest,
+                            backgroundImage: _currentPhotoUrl != null &&
+                                    _currentPhotoUrl!.isNotEmpty
+                                ? NetworkImage(_currentPhotoUrl!)
+                                : null,
+                            child: _uploadingPhoto
+                                ? const CircularProgressIndicator()
+                                : (_currentPhotoUrl == null ||
+                                        _currentPhotoUrl!.isEmpty)
+                                    ? Icon(Icons.person,
+                                        size: 52,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant)
+                                    : null,
                           ),
                         ),
-                      ),
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: Material(
+                            color: theme.colorScheme.primary,
+                            shape: const CircleBorder(),
+                            elevation: 2,
+                            child: InkWell(
+                              onTap:
+                                  _uploadingPhoto ? null : _pickAndUploadPhoto,
+                              customBorder: const CircleBorder(),
+                              child: const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Icon(Icons.camera_alt,
+                                    color: Colors.white, size: 18),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
-                  icon: const Icon(Icons.photo_camera_outlined, size: 16),
-                  label: Text(_currentPhotoUrl == null
-                      ? 'Dodaj profilnu sliku'
-                      : 'Promeni sliku'),
-                ),
-                if (_currentPhotoUrl != null && _currentPhotoUrl!.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: _uploadingPhoto ? null : _removePhoto,
-                    icon: const Icon(Icons.delete_outline,
-                        size: 16, color: Colors.redAccent),
-                    label: const Text(
-                      'Ukloni sliku',
-                      style: TextStyle(color: Colors.redAccent, fontSize: 13),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                      icon: const Icon(Icons.photo_camera_outlined, size: 16),
+                      label: Text(_currentPhotoUrl == null
+                          ? 'Dodaj profilnu sliku'
+                          : 'Promeni sliku'),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // 2. LIČNI PODACI
-          Text(
-            'Osnovni podaci',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _farmNameCtrl,
-            decoration: InputDecoration(
-              labelText: isSeller
-                  ? 'Naziv gazdinstva / Prikazano ime'
-                  : 'Prikazano ime (Display name)',
-              hintText: isSeller
-                  ? 'npr. Gazdinstvo Petrović ili Eko Farma'
-                  : 'npr. Milan Jovanović ili Nadimak',
-              border: const OutlineInputBorder(),
-              prefixIcon: Icon(isSeller
-                  ? Icons.storefront_outlined
-                  : Icons.badge_outlined),
-              helperText: 'Ime koje se javno prikazuje na profilu, oglasima i porukama',
-            ),
-            textCapitalization: TextCapitalization.words,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _nameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Puno ime i prezime',
-              hintText: 'Vaše lično ime i prezime',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person_outline),
-              helperText: 'Lično ime za porudžbine i dostavu',
-            ),
-            textCapitalization: TextCapitalization.words,
-          ),
-          const SizedBox(height: 20),
-
-          // 3. KONTAKT I PRIVATNOST
-          Text(
-            'Kontakt podaci',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _phoneCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Broj telefona',
-              hintText: 'npr. 064 1234567',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.phone_outlined),
-            ),
-            keyboardType: TextInputType.phone,
-            validator: (v) {
-              final val = v?.trim() ?? '';
-              if (val.isEmpty) return null;
-              final digits = val.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
-              if (!RegExp(r'^\d{7,15}$').hasMatch(digits)) {
-                return 'Unesite ispravan broj telefona (7-15 cifara)';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 4),
-          SwitchListTile(
-            value: _phonePublic,
-            onChanged: (v) => setState(() => _phonePublic = v),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            secondary: Icon(
-              _phonePublic ? Icons.lock_open_outlined : Icons.lock_outline,
-              size: 20,
-              color: _phonePublic
-                  ? Colors.green.shade600
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-            title: Text(
-              _phonePublic ? 'Telefon je vidljiv svima' : 'Telefon je privatan',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _phonePublic ? Colors.green.shade700 : null,
-              ),
-            ),
-            subtitle: Text(
-              _phonePublic
-                  ? 'Kupci i posetioci mogu videti vaš broj u oglasima i na profilu.'
-                  : 'Broj je sakriven od javnosti i koristi se isključivo za realizaciju narudžbina.',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // 4. LOKACIJA I ADRESA
-          Text(
-            'Lokacija i adresa',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Autocomplete<String>(
-            initialValue: TextEditingValue(text: _cityCtrl.text),
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.trim().isEmpty) {
-                return const Iterable<String>.empty();
-              }
-              return SerbianCities.suggestions(textEditingValue.text);
-            },
-            onSelected: (String selection) {
-              _cityCtrl.text = selection;
-            },
-            fieldViewBuilder: (
-              BuildContext context,
-              TextEditingController fieldTextEditingController,
-              FocusNode fieldFocusNode,
-              VoidCallback onFieldSubmitted,
-            ) {
-              if (_cityCtrl.text.isNotEmpty &&
-                  fieldTextEditingController.text.isEmpty) {
-                fieldTextEditingController.text = _cityCtrl.text;
-              }
-              fieldTextEditingController.addListener(() {
-                _cityCtrl.text = fieldTextEditingController.text;
-              });
-
-              return TextFormField(
-                controller: fieldTextEditingController,
-                focusNode: fieldFocusNode,
-                decoration: const InputDecoration(
-                  labelText: 'Grad ili mesto',
-                  hintText: 'npr. Beograd, Novi Sad, Čačak...',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.location_city_outlined),
-                ),
-                textCapitalization: TextCapitalization.words,
-                validator: (v) {
-                  final val = v?.trim() ?? '';
-                  if (val.isEmpty) return null;
-                  if (val.length < 2) {
-                    return 'Grad mora imati najmanje 2 karaktera';
-                  }
-                  if (RegExp(r'^\d+$').hasMatch(val)) {
-                    return 'Unesite ispravan naziv grada';
-                  }
-                  return null;
-                },
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _postalCodeCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Poštanski broj',
-              hintText: 'npr. 11000',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.markunread_mailbox_outlined),
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _addressCtrl,
-            decoration: InputDecoration(
-              labelText: 'Adresa (ulica i broj)',
-              hintText: 'npr. Cara Dušana 12 / Stan 4',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.home_outlined),
-              helperText: 'Vidljiva samo tebi i drugoj strani pri naručivanju',
-              helperStyle: TextStyle(color: Colors.grey.shade600),
-              suffixIcon: Tooltip(
-                message: 'Adresa nikada nije javno vidljiva posetiocima',
-                child: Icon(Icons.lock_outline,
-                    size: 18, color: Colors.grey.shade500),
-              ),
-            ),
-            textCapitalization: TextCapitalization.sentences,
-          ),
-
-          // 5. OZNAKE PRODAVCA (ako je korisnik prodavac)
-          if (isSeller) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Oznake gazdinstva / prodavca',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _kSellerTags
-                  .map((tag) => FilterChip(
-                        label: Text(tag, style: const TextStyle(fontSize: 13)),
-                        selected: _selectedTags.contains(tag),
-                        onSelected: (v) => setState(() {
-                          if (v) {
-                            _selectedTags.add(tag);
-                          } else {
-                            _selectedTags.remove(tag);
-                          }
-                        }),
-                      ))
-                  .toList(),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // 6. INFORMACIJE O NALOGU
-          Text(
-            'Informacije o nalogu',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.dividerColor.withValues(alpha: 0.4)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.email_outlined,
-                        size: 20, color: Colors.grey.shade600),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Email: ${widget.user.email ?? 'Nije unet'}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    Tooltip(
-                      message: 'Email je primarni identifikator naloga',
-                      child: Icon(Icons.lock_outline,
-                          size: 16, color: Colors.grey.shade500),
-                    ),
-                  ],
-                ),
-                if (widget.user.email != null &&
-                    widget.user.email!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Divider(height: 1),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Želite da promenite lozinku?',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade700),
+                    if (_currentPhotoUrl != null &&
+                        _currentPhotoUrl!.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: _uploadingPhoto ? null : _removePhoto,
+                        icon: const Icon(Icons.delete_outline,
+                            size: 16, color: Colors.redAccent),
+                        label: const Text(
+                          'Ukloni sliku',
+                          style:
+                              TextStyle(color: Colors.redAccent, fontSize: 13),
                         ),
                       ),
-                      TextButton.icon(
-                        onPressed: _sendingPasswordReset
-                            ? null
-                            : _sendPasswordReset,
-                        icon: _sendingPasswordReset
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.key_outlined, size: 16),
-                        label: const Text('Resetuj lozinku',
-                            style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 2. LIČNI PODACI
+              Text(
+                'Osnovni podaci',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildDisplayNameField(isSeller)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildFullNameField()),
+                  ],
+                )
+              else ...[
+                _buildDisplayNameField(isSeller),
+                const SizedBox(height: 12),
+                _buildFullNameField(),
+              ],
+              const SizedBox(height: 20),
+
+              // 3. KONTAKT I PRIVATNOST
+              Text(
+                'Kontakt podaci',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (isWide)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildPhoneField()),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.7),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _buildPhonePrivacySwitch(theme),
+                      ),
+                    ),
+                  ],
+                )
+              else ...[
+                _buildPhoneField(),
+                const SizedBox(height: 4),
+                _buildPhonePrivacySwitch(theme),
+              ],
+              const SizedBox(height: 20),
+
+              // 4. LOKACIJA I ADRESA
+              Text(
+                'Lokacija i adresa',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (isWide) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildCityField()),
+                    const SizedBox(width: 16),
+                    Expanded(child: _buildPostalCodeField()),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildAddressField(),
+              ] else ...[
+                _buildCityField(),
+                const SizedBox(height: 12),
+                _buildPostalCodeField(),
+                const SizedBox(height: 12),
+                _buildAddressField(),
+              ],
+
+              // 5. OZNAKE PRODAVCA (ako je korisnik prodavac)
+              if (isSeller) ...[
+                const SizedBox(height: 24),
+                Text(
+                  'Oznake gazdinstva / prodavca',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _kSellerTags
+                      .map((tag) => FilterChip(
+                            label:
+                                Text(tag, style: const TextStyle(fontSize: 13)),
+                            selected: _selectedTags.contains(tag),
+                            onSelected: (v) => setState(() {
+                              if (v) {
+                                _selectedTags.add(tag);
+                              } else {
+                                _selectedTags.remove(tag);
+                              }
+                            }),
+                          ))
+                      .toList(),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // 6. INFORMACIJE O NALOGU
+              Text(
+                'Informacije o nalogu',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.email_outlined,
+                            size: 20, color: Colors.grey.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Email: ${widget.user.email ?? 'Nije unet'}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Tooltip(
+                          message: 'Email je primarni identifikator naloga',
+                          child: Icon(Icons.lock_outline,
+                              size: 16, color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                    if (widget.user.email != null &&
+                        widget.user.email!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Želite da promenite lozinku?',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade700),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: _sendingPasswordReset
+                                ? null
+                                : _sendPasswordReset,
+                            icon: _sendingPasswordReset
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2))
+                                : const Icon(Icons.key_outlined, size: 16),
+                            label: const Text('Resetuj lozinku',
+                                style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          // 7. DUGME ZA ČUVANJE
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                  ],
+                ),
               ),
-            ),
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.check_circle_outline),
-            label: Text(
-              _saving ? 'Čuvanje izmena...' : 'Sačuvaj izmene',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
+
+              const SizedBox(height: 28),
+
+              // 7. DUGME ZA ČUVANJE
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: _saving ? null : _save,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check_circle_outline),
+                label: Text(
+                  _saving ? 'Čuvanje izmena...' : 'Sačuvaj izmene',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          );
+        },
       ),
     );
   }
