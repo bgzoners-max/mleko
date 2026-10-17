@@ -70,8 +70,21 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:
+            isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+        foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shape: isDark
+            ? null
+            : const Border(
+                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+              ),
         leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Postani prodavac'),
         actions: const [AppHomeButton()],

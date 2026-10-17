@@ -13,11 +13,23 @@ class EditProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final user = context.watch<AppState>().user;
 
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor:
+              isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+          foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          shape: isDark
+              ? null
+              : const Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                ),
           leading: const AppBackButton(fallbackRoute: '/profile'),
           title: const Text('Izmena profila'),
           actions: const [AppHomeButton()],
@@ -50,6 +62,16 @@ class EditProfileScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:
+            isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+        foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shape: isDark
+            ? null
+            : const Border(
+                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+              ),
         leading: const AppBackButton(fallbackRoute: '/profile'),
         title: const Text('Uredi profil'),
         actions: const [AppHomeButton()],

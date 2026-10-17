@@ -80,10 +80,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(
+          backgroundColor:
+              isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+          foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
+          elevation: 0,
+          scrolledUnderElevation: 1,
+          shape: isDark
+              ? null
+              : const Border(
+                  bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                ),
           leading: const AppBackButton(fallbackRoute: '/'),
           title: const Text('Prijava'),
           actions: const [AppHomeButton()],
@@ -117,6 +129,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:
+            isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+        foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shape: isDark
+            ? null
+            : const Border(
+                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+              ),
         leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Profil'),
         actions: const [AppHomeButton()],
@@ -134,6 +156,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildWide(BuildContext context, UserModel user) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -194,10 +219,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Flexible(
           flex: 7,
           child: HeroControllerScope.none(
-            child: Navigator(
-              key: _panelNavKey,
-              onGenerateRoute: (_) => MaterialPageRoute(
-                builder: (_) => const PanelPlaceholder(),
+            child: Theme(
+              data: theme.copyWith(
+                appBarTheme: theme.appBarTheme.copyWith(
+                  backgroundColor:
+                      isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+                  foregroundColor:
+                      isDark ? Colors.white : theme.colorScheme.onSurface,
+                  elevation: 0,
+                  scrolledUnderElevation: 1,
+                  shape: isDark
+                      ? null
+                      : const Border(
+                          bottom:
+                              BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                        ),
+                  iconTheme: IconThemeData(
+                    color: isDark ? Colors.white : theme.colorScheme.onSurface,
+                  ),
+                ),
+                tabBarTheme: theme.tabBarTheme.copyWith(
+                  labelColor: isDark ? Colors.white : const Color(0xFF245938),
+                  unselectedLabelColor:
+                      isDark ? Colors.white60 : const Color(0xFF555E57),
+                  indicatorColor:
+                      isDark ? theme.colorScheme.secondary : const Color(0xFF245938),
+                  indicatorSize: TabBarIndicatorSize.label,
+                  dividerColor: isDark ? null : const Color(0xFFE5E7EB),
+                ),
+              ),
+              child: Navigator(
+                key: _panelNavKey,
+                onGenerateRoute: (_) => MaterialPageRoute(
+                  builder: (_) => const PanelPlaceholder(),
+                ),
               ),
             ),
           ),

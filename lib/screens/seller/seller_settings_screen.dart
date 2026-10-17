@@ -246,8 +246,21 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:
+            isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+        foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        shape: isDark
+            ? null
+            : const Border(
+                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+              ),
         leading: const AppBackButton(fallbackRoute: '/'),
         title: const Text('Podešavanja prodavca'),
         actions: const [AppHomeButton()],
@@ -255,6 +268,13 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
+          labelColor: isDark ? Colors.white : const Color(0xFF245938),
+          unselectedLabelColor:
+              isDark ? Colors.white60 : const Color(0xFF555E57),
+          indicatorColor:
+              isDark ? theme.colorScheme.secondary : const Color(0xFF245938),
+          indicatorWeight: 3,
+          dividerColor: isDark ? null : const Color(0xFFE5E7EB),
           onTap: (_) => HapticFeedback.selectionClick(),
           tabs: const [
             Tab(text: 'Lokacija'),
