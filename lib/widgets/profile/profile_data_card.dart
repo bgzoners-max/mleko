@@ -9,9 +9,14 @@ import 'edit_profile_sheet.dart';
 
 class ProfileDataCard extends StatelessWidget {
   final UserModel user;
-  const ProfileDataCard({super.key, required this.user});
+  final VoidCallback? onEdit;
+  const ProfileDataCard({super.key, required this.user, this.onEdit});
 
   void _showEditSheet(BuildContext context, UserModel user) {
+    if (onEdit != null) {
+      onEdit!();
+      return;
+    }
     if (Breakpoints.useTwoPaneLayout(context)) {
       context.push('/profile/edit');
     } else {

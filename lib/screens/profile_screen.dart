@@ -11,7 +11,14 @@ import 'notifications_screen.dart';
 import 'conversations_screen.dart';
 import 'seller/becoming_seller_screen.dart';
 import 'seller/seller_reviews_screen.dart';
+import 'seller/seller_settings_screen.dart';
 import 'classifieds/saved_searches_screen.dart';
+import 'classifieds/my_classified_ads_screen.dart';
+import 'classifieds/add_edit_classified_ad_screen.dart';
+import 'buyer/buyer_reviews_hub_screen.dart';
+import 'tab_orders_or_inbox_screen.dart';
+import 'support_screen.dart';
+import 'about_screen.dart';
 import '../providers/classifieds_provider.dart';
 
 import '../widgets/profile/mini_store_card.dart';
@@ -44,11 +51,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _push(String route) => context.push(route);
-  void _openPanel(String section, Widget screen, {required bool isWide}) {
+  void _openPanel(String section, Widget screen, {required bool isWide, String? route}) {
     if (isWide) {
       _showInPanel(section, screen);
     } else {
-      _push(switch (section) {
+      _push(route ?? switch (section) {
         'favorites' => '/favorites',
         'favorite-sellers' => '/favorite-sellers',
         'saved-searches' => '/classifieds/saved-searches',
@@ -57,6 +64,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'settings' => '/settings',
         'becoming-seller' => '/becoming-seller',
         'edit-profile' => '/profile/edit',
+        'seller-settings' => '/seller-settings',
+        'orders' => '/orders',
+        'my-classifieds' => '/classifieds/my',
+        'new-classified' => '/classifieds/new',
+        'support' => '/support',
+        'about' => '/about',
         _ => '/',
       });
     }
@@ -140,7 +153,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SellerGallerySection(user: user),
                     const SizedBox(height: 6),
                   ],
-                  ProfileDataCard(user: user),
+                  ProfileDataCard(
+                    user: user,
+                    onEdit: () => _openPanel('edit-profile', const EditProfileScreen(), isWide: true),
+                  ),
                   const SizedBox(height: 8),
                   if (!user.isGuest) ...[
                     BuyerStatsCard(user: user),
@@ -317,7 +333,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Moja lokacija i isporuke na mapi',
                   style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: const Text('Podešavanje adrese i tačaka isporuke hrane'),
-              onTap: () => _push('/seller-settings'),
+              selected: _isActive('seller-settings', isWide),
+              onTap: () => _openPanel(
+                'seller-settings',
+                const SellerSettingsScreen(),
+                isWide: isWide,
+              ),
             ),
           ],
 
@@ -328,7 +349,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Moje porudžbine hrane',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             subtitle: const Text('Praćenje statusa i istorija porudžbina'),
-            onTap: () => _push('/orders'),
+            selected: _isActive('orders', isWide),
+            onTap: () => _openPanel(
+              'orders',
+              const TabOrdersOrInboxScreen(),
+              isWide: isWide,
+            ),
           ),
           ListTile(
             visualDensity: VisualDensity.compact,
@@ -431,6 +457,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Moji oglasi',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             subtitle: const Text('Pregled, izmena i status objavljenih oglasa'),
+            selected: _isActive('my-classifieds', isWide),
             onTap: () {
               if (user.isGuest) {
                 showGuestAuthPrompt(
@@ -442,7 +469,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
                 return;
               }
-              _push('/classifieds/my');
+              _openPanel('my-classifieds', const MyClassifiedAdsScreen(), isWide: isWide);
             },
           ),
 
@@ -453,6 +480,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Postavi novi oglas',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             subtitle: const Text('Besplatna objava novog malog oglasa'),
+            selected: _isActive('new-classified', isWide),
             onTap: () {
               if (user.isGuest) {
                 showGuestAuthPrompt(
@@ -464,7 +492,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
                 return;
               }
-              _push('/classifieds/new');
+              _openPanel('new-classified', const AddEditClassifiedAdScreen(), isWide: isWide);
             },
           ),
 
@@ -563,7 +591,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             leading: const Icon(Icons.reviews_outlined),
             title: const Text('Moje date recenzije'),
             subtitle: const Text('Utisci koje ste ostavili drugim prodavcima'),
-            onTap: () => _push('/buyer/${user.id}/reviews'),
+            selected: _isActive('buyer-reviews', isWide),
+            onTap: () => _openPanel(
+              'buyer-reviews',
+              BuyerReviewsHubScreen(buyerId: user.id),
+              isWide: isWide,
+              route: '/buyer/${user.id}/reviews',
+            ),
           ),
           const SizedBox(height: 4),
         ],
@@ -646,13 +680,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             visualDensity: VisualDensity.compact,
             leading: const Icon(Icons.help_outline),
             title: const Text('Podrška i pomoć'),
-            onTap: () => _push('/support'),
+            selected: _isActive('support', isWide),
+            onTap: () => _openPanel(
+              'support',
+              const SupportScreen(),
+              isWide: isWide,
+            ),
           ),
           ListTile(
             visualDensity: VisualDensity.compact,
             leading: const Icon(Icons.info_outline),
             title: const Text('O aplikaciji'),
-            onTap: () => _push('/about'),
+            selected: _isActive('about', isWide),
+            onTap: () => _openPanel(
+              'about',
+              const AboutScreen(),
+              isWide: isWide,
+            ),
           ),
           const Divider(height: 8),
           ListTile(
