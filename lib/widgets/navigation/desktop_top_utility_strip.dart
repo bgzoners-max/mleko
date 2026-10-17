@@ -7,6 +7,7 @@ import '../../core/constants.dart';
 import '../../core/design_system.dart';
 import '../../providers/location_provider.dart';
 import '../contact_options_dialog.dart';
+import '../instagram_icon.dart';
 
 /// Pomoćna funkcija za otvaranje modalnog dijaloga za izbor regiona u Srbiji.
 Future<void> openLocationDialog(BuildContext context) async {
@@ -362,8 +363,8 @@ class DesktopTopUtilityStrip extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.camera_alt_outlined, size: 13, color: Colors.white.withValues(alpha: 0.85)),
-                      const SizedBox(width: 4),
+                      const InstagramIcon(size: 14),
+                      const SizedBox(width: 5),
                       Text(
                         '@domacimarket.rs',
                         style: TextStyle(

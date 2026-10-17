@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/design_system.dart';
 import 'contact_options_dialog.dart';
+import 'instagram_icon.dart';
 
 /// Vizuelno definisano, profesionalno podnožje (Footer) po svetskim standardima.
 /// Sadrži brending, navigaciju, pravne informacije i kontakt/mreže na levoj strani.
@@ -419,7 +420,7 @@ class AppFooter extends StatelessWidget {
         const SizedBox(height: 8),
         _buildContactCard(
           context: context,
-          icon: const _InstagramIcon(size: 18),
+          icon: const InstagramIcon(size: 18),
           title: 'Instagram profil',
           value: '@domacimarket.rs',
           onTap: () => _openInstagram(context),
@@ -573,70 +574,6 @@ class _FooterLink extends StatelessWidget {
         style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
-class _InstagramIcon extends StatelessWidget {
-  final double size;
-  const _InstagramIcon({this.size = 18});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: const RadialGradient(
-          center: Alignment(-0.8, 1.1),
-          radius: 1.5,
-          colors: [
-            Color(0xFFFEDA77),
-            Color(0xFFF58529),
-            Color(0xFFDD2A7B),
-            Color(0xFF8134AF),
-            Color(0xFF515BD4),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: size * 0.72,
-              height: size * 0.72,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(size * 0.22),
-                border: Border.all(color: Colors.white, width: 1.1),
-              ),
-              child: Center(
-                child: Container(
-                  width: size * 0.32,
-                  height: size * 0.32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 0.9),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: size * 0.18,
-              right: size * 0.18,
-              child: Container(
-                width: size * 0.1,
-                height: size * 0.1,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
