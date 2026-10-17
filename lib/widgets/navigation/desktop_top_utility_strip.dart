@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants.dart';
 import '../../core/design_system.dart';
 import '../../providers/location_provider.dart';
+import '../contact_options_dialog.dart';
 
 /// Pomoćna funkcija za otvaranje modalnog dijaloga za izbor regiona u Srbiji.
 Future<void> openLocationDialog(BuildContext context) async {
@@ -304,28 +305,49 @@ class DesktopTopUtilityStrip extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              // Email
-              InkWell(
-                onTap: () => launchUrl(Uri.parse('mailto:kontakt@domacimarket.rs')),
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.mail_outline, size: 13, color: Colors.white.withValues(alpha: 0.85)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'kontakt@domacimarket.rs',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
+              // Email sa ikonicom za kopiranje i dijalogom
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InkWell(
+                    onTap: () => showContactOptionsDialog(context),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.mail_outline, size: 13, color: Colors.white.withValues(alpha: 0.85)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'kontakt@domacimarket.rs',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Tooltip(
+                    message: 'Kopiraj email adresu',
+                    child: InkWell(
+                      onTap: () => ContactOptionsDialog.copyEmail(context),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3.0),
+                        child: Icon(
+                          Icons.copy_rounded,
+                          size: 13,
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
               const SizedBox(width: 14),
               // Instagram

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/design_system.dart';
+import 'contact_options_dialog.dart';
 
 /// Vizuelno definisano, profesionalno podnožje (Footer) po svetskim standardima.
 /// Sadrži brending, navigaciju, pravne informacije i kontakt/mreže na levoj strani.
@@ -28,33 +28,7 @@ class AppFooter extends StatelessWidget {
   }
 
   static Future<void> _openEmail(BuildContext context) async {
-    final uri = Uri.parse('mailto:kontakt@domacimarket.rs');
-    try {
-      final launched = await launchUrl(uri);
-      if (!launched) {
-        await Clipboard.setData(
-          const ClipboardData(text: 'kontakt@domacimarket.rs'),
-        );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Email adresa kontakt@domacimarket.rs je kopirana.'),
-            ),
-          );
-        }
-      }
-    } catch (_) {
-      await Clipboard.setData(
-        const ClipboardData(text: 'kontakt@domacimarket.rs'),
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email adresa kontakt@domacimarket.rs je kopirana.'),
-          ),
-        );
-      }
-    }
+    await showContactOptionsDialog(context);
   }
 
   static Future<void> _openInstagram(BuildContext context) async {
@@ -424,6 +398,21 @@ class AppFooter extends StatelessWidget {
           title: 'Email za kontakt',
           value: 'kontakt@domacimarket.rs',
           onTap: () => _openEmail(context),
+          trailing: Tooltip(
+            message: 'Kopiraj email adresu',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () => ContactOptionsDialog.copyEmail(context),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  Icons.copy_rounded,
+                  size: 15,
+                  color: linkColor.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+          ),
           linkColor: linkColor,
           isDark: isDark,
         ),
@@ -449,6 +438,7 @@ class AppFooter extends StatelessWidget {
     required VoidCallback onTap,
     required Color linkColor,
     required bool isDark,
+    Widget? trailing,
   }) {
     return Material(
       color: isDark
@@ -501,6 +491,10 @@ class AppFooter extends StatelessWidget {
                   ],
                 ),
               ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing,
+              ],
             ],
           ),
         ),
