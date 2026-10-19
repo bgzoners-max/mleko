@@ -19,6 +19,7 @@ Allow: /uslovi-koriscenja
 Allow: /politika-privatnosti
 
 # Privatne, transakcione i korisnički zaštićene rute (ne treba indeksirati)
+Disallow: /cdn-cgi/
 Disallow: /cart
 Disallow: /checkout/
 Disallow: /checkout/*

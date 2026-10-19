@@ -190,6 +190,18 @@ void main() {
     stdout.writeln('Copied _redirects configuration');
   }
 
+  // 7b. Kreiraj čiste direktorijumske rute za statičke HTML stranice
+  //     kako bi Cloudflare Pages servirao čist HTML bez 308 redirect petlje
+  for (final page in ['politika-privatnosti', 'uslovi-koriscenja']) {
+    final src = File('${deployDir.path}/$page.html');
+    if (src.existsSync()) {
+      final pageDir = Directory('${deployDir.path}/$page');
+      pageDir.createSync(recursive: true);
+      src.copySync('${pageDir.path}/index.html');
+      stdout.writeln('Created clean directory index for $page');
+    }
+  }
+
   // 8. Prikaz statistike pripremljenog bundle-a
   final totalBytes = _calculateDirectorySize(deployDir);
   final totalMB = (totalBytes / (1024 * 1024)).toStringAsFixed(2);

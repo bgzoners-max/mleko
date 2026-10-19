@@ -19,6 +19,18 @@ export const onRequest: PagesFunction = async (context) => {
     return handleSitemap(request, env);
   }
 
+  // 0a. Cloudflare interni i email-protection linkovi: vratiti 410 Gone kako bi
+  //     pretraživači (Google Search Console) odmah uklonili ove nepostojeće rute iz indeksa.
+  if (pathname.startsWith("/cdn-cgi/")) {
+    return new Response(null, {
+      status: 410,
+      statusText: "Gone",
+      headers: {
+        "cache-control": "public, max-age=86400",
+      },
+    });
+  }
+
   // 1. Kratki linkovi: /ad/:id
   const adShortMatch = pathname.match(/^\/ad\/([^/]+)$/);
   if (adShortMatch) {

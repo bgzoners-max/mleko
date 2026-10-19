@@ -1,6 +1,5 @@
 # /sitemap.xml se serve-uje direktno iz functions/_middleware.ts (Functions se
 # izvršavaju pre _redirects-a; 200-proxy na ovom mestu ne može da pozove funkciju).
-/politika-privatnosti /politika-privatnosti.html 200
-/uslovi-koriscenja /uslovi-koriscenja.html 200
+# /politika-privatnosti i /uslovi-koriscenja se serviraju iz istoimenih direktorijuma (index.html).
 /auth/confirm /api/auth-confirm 200
 /* /index.html 200
