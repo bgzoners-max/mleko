@@ -13,6 +13,7 @@ export type HtmlPayload = {
   ogType?: "product" | "website" | string;
   ogSiteName?: string;
   bodyHeading?: string;
+  bodyParagraphs?: string[];
   redirectNote?: string;
   linkLabel?: string;
 };
@@ -133,6 +134,7 @@ export function buildHtml({
   ogType = "product",
   ogSiteName = "Domaći Market",
   bodyHeading,
+  bodyParagraphs,
   redirectNote = "Preusmeravanje...",
   linkLabel = "klikni ovde",
 }: HtmlPayload): string {
@@ -150,6 +152,10 @@ export function buildHtml({
   const jsonLdScript = jsonLd
     ? `<script type="application/ld+json">${sanitizeJsonLd(jsonLd)}</script>`
     : "";
+
+  const bodyParagraphsHtml = bodyParagraphs
+    ?.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+    .join("\n    ");
 
   return `<!DOCTYPE html>
 <html lang="sr">
@@ -179,10 +185,11 @@ export function buildHtml({
 
   ${jsonLdScript}
 </head>
-<body>
+  <body>
   <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
     ${escapedBodyHeading ? `<h2>${escapedBodyHeading}</h2>` : ""}
     ${escapedBodyHeading ? `<p>${escapedDescription}</p>` : ""}
+    ${bodyParagraphsHtml}
     <p>${escapedRedirectNote}</p>
     <p style="font-size: 0.9em; color: #666;">Ako se ništa ne dešava,
       <a href="${escapedCanonicalUrl}" style="color: #1B5E20; font-weight: bold;">${escapedLinkLabel}</a>.</p>
