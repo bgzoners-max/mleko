@@ -1,6 +1,6 @@
 # 📌 Zabeleška za sledeću sesiju (Handover & Sledeći koraci)
 
-**Datum ažuriranja:** 06. oktobar 2026.  
+**Datum ažuriranja:** 19. oktobar 2026.  
 **Projekat:** Domaći Market ([domacimarket.rs](https://www.domacimarket.rs))  
 **Git grana:** `master`
 
@@ -10,11 +10,13 @@
 
 1. **Desktop transformacija (Faze 1–5):**
    - Header, Hero sekcija, Kartice i 5-kolonski grid, Sidebar filteri i sortirani feed su kompletirani i pušteni u produkciju.
-2. **🌐 SEO, Dinamički Sitemap & OpenGraph deljenje na mrežama (Završeno 06. okt):**
-   - **Dinamički `sitemap.xml` (`api/sitemap.ts`):** Edge funkcija koja automatski dohvata sve aktivne male oglase i proizvode iz Supabase-a sa `lastmod` datumom, uz keširanje od 1h (`s-maxage=3600`) i stabilan fallback.
-   - **OpenGraph za direktne linkove:** Dodati pametni Vercel rewrites sa proverom User-Agent hedera za botove (Viber, WhatsApp, Facebook, Telegram, Discord, Googlebot, Applebot...) za direktne adrese `/classifieds/ad/:id` i `/product/:id`. Sada i linkovi kopirani direktno iz browser bara generišu bogate kartice sa slikom, cenom i opisom.
-   - **Usklađivanje stanja ('not_applicable'):** Ispravljen Schema.org JSON-LD i OpenGraph kod tako da se životinjama, sadnicama, voću i uslugama ne dodeljuje netačan `UsedCondition`.
-   - **Verifikacija:** Svi testovi prolaze (432/432), `flutter analyze` čisto (0 issues), `npm run type-check` čisto (0 errors).
+2. **🌐 SEO, Dinamički Sitemap & Server-Rendered Bot HTML (Završeno 19. okt):**
+   - **Cloudflare Pages Middleware (`functions/_middleware.ts`):** Servira pravi `application/xml` sitemap direktno pre statičkog catch-all-a. Povezane `SUPABASE_URL` i `SUPABASE_ANON_KEY` secrets preko Wranglera.
+   - **Dinamički `sitemap.xml`:** Uspešno izlistava 42 URL-a (38 statičkih ruta/kategorija + 4 dinamička proizvoda sa tačnim `lastmod` i prioritetima). Ispravljen SQL select upit uklanjanjem nepostojeće kolone `updated_at` na tabeli `products`.
+   - **Bot SSR & OpenGraph:** Botovi (Googlebot, Viber, WhatsApp, Facebook) dobijaju čist SEO HTML sa unikatnim naslovima, opisima i kanonskim linkovima za svaku rutu i proizvod.
+   - **Robots.txt & GSC 404:** Dodat `Disallow: /cdn-cgi/` u `robots.txt` radi sprečavanja grešaka 404 na Cloudflare sistemskim putanjama.
+   - **308 Redirect Loop Fix:** Statičke stranice (`/politika-privatnosti`, `/uslovi-koriscenja`) konfigurisane preko čistih `index.html` direktorijuma, eliminisan 308 redirect loop.
+   - **Automatski GitHub Actions CI/CD (`deploy-cloudflare.yml`):** Konfigurisan `CLOUDFLARE_API_TOKEN` i `npm ci` korak; svaki `git push origin master` automatski pokreće release build i deploy na Cloudflare Pages. Status: **success**.
 
 ---
 
