@@ -20,6 +20,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Functions bundle zavisi od @supabase/supabase-js (functions/api/*.ts);
+      # wrangler ga resolva iz node_modules pri deploy-u.
+      - name: Install npm dependencies
+        run: npm ci
+
       - name: Build web
         run: |
           flutter build web --release \
