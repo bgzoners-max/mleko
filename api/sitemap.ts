@@ -149,11 +149,18 @@ export async function GET(request: Request): Promise<Response> {
         .limit(3000),
       supabase
         .from("products")
-        .select("id, updated_at, created_at")
+        .select("id, created_at")
         .eq("available_now", true)
         .order("created_at", { ascending: false })
         .limit(3000),
     ]);
+
+    if (adsRes.error) {
+      console.error("Sitemap ads query error:", adsRes.error);
+    }
+    if (productsRes.error) {
+      console.error("Sitemap products query error:", productsRes.error);
+    }
 
     const dynamicEntries: SitemapEntry[] = [];
 
@@ -173,7 +180,7 @@ export async function GET(request: Request): Promise<Response> {
     if (productsRes.data && Array.isArray(productsRes.data)) {
       for (const prod of productsRes.data) {
         if (!prod.id) continue;
-        const modDate = formatDate(prod.updated_at || prod.created_at);
+        const modDate = formatDate((prod as any).updated_at || prod.created_at);
         dynamicEntries.push({
           loc: `${baseUrl}/product/${encodeURIComponent(prod.id)}`,
           lastmod: modDate,
