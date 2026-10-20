@@ -117,9 +117,18 @@ void main() {
 
       // Sub-nav tabs
       expect(find.text('Pijaca hrane'), findsOneWidget);
-      expect(find.text('Mali oglasi'), findsOneWidget);
       expect(find.text('Seoska gazdinstva'), findsOneWidget);
+      expect(find.text('Mali oglasi'), findsOneWidget);
       expect(find.text('O nama'), findsOneWidget);
+
+      final pijacaX = tester.getTopLeft(find.text('Pijaca hrane')).dx;
+      final gazdinstvaX = tester.getTopLeft(find.text('Seoska gazdinstva')).dx;
+      final oglasiX = tester.getTopLeft(find.text('Mali oglasi')).dx;
+      final oNamaX = tester.getTopLeft(find.text('O nama')).dx;
+
+      expect(pijacaX, lessThan(gazdinstvaX));
+      expect(gazdinstvaX, lessThan(oglasiX));
+      expect(oglasiX, lessThan(oNamaX));
     });
 
     testWidgets('renders cleanly at 1366px laptop resolution with spacious search bar', (tester) async {

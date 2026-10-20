@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/haptic.dart';
 
 enum MarketMode {
-  classifieds,
   foodMarket,
+  classifieds,
 }
 
 class MarketModeSwitcher extends StatelessWidget {
@@ -46,20 +46,20 @@ class MarketModeSwitcher extends StatelessWidget {
           children: [
             Expanded(
               child: _MarketSegmentPill(
-                isSelected: isClassifieds,
-                isClassifieds: true,
-                icon: Icons.campaign_rounded,
-                title: 'Mali Oglasi',
-                onTap: () => onModeChanged(MarketMode.classifieds),
-              ),
-            ),
-            Expanded(
-              child: _MarketSegmentPill(
                 isSelected: !isClassifieds,
                 isClassifieds: false,
                 icon: Icons.storefront_rounded,
                 title: 'Pijaca Hrane',
                 onTap: () => onModeChanged(MarketMode.foodMarket),
+              ),
+            ),
+            Expanded(
+              child: _MarketSegmentPill(
+                isSelected: isClassifieds,
+                isClassifieds: true,
+                icon: Icons.campaign_rounded,
+                title: 'Mali Oglasi',
+                onTap: () => onModeChanged(MarketMode.classifieds),
               ),
             ),
           ],

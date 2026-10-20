@@ -9,7 +9,7 @@ const _keyThemeMode = 'mleko_theme_mode'; // 0=system, 1=light, 2=dark
 const _keyAnimationsEnabled = 'mleko_animations_enabled';
 const _keyFontScale = 'mleko_font_scale';
 const _keyCompactMode = 'mleko_compact_mode';
-const _keyMarketMode = 'mleko_market_mode'; // 0=classifieds, 1=foodMarket
+const _keyMarketMode = 'mleko_market_mode_v2'; // 0=foodMarket, 1=classifieds
 const _keyBetaNoticeDismissed = 'mleko_beta_notice_dismissed_v1';
 
 /// Jednom se postavi na `true` nakon što su početne vrednosti (prva instalacija
@@ -28,7 +28,7 @@ class AppSettingsProvider extends ChangeNotifier {
   bool _animationsEnabled = true;
   double _fontScale = 1.0;
   bool _compactMode = true;
-  MarketMode _marketMode = MarketMode.classifieds;
+  MarketMode _marketMode = MarketMode.foodMarket;
   bool _betaNoticeDismissed = false;
 
   ThemeMode get themeMode => _themeMode;
@@ -98,6 +98,9 @@ class AppSettingsProvider extends ChangeNotifier {
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (prefs.containsKey('mleko_market_mode')) {
+        await prefs.remove('mleko_market_mode');
+      }
       final bootstrapDone =
           prefs.getBool(_keyInstallDefaultsBootstrap) ?? false;
 
@@ -234,10 +237,10 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   static MarketMode _marketModeFromInt(int v) =>
-      v == 1 ? MarketMode.foodMarket : MarketMode.classifieds;
+      v == 1 ? MarketMode.classifieds : MarketMode.foodMarket;
 
   static int _marketModeToInt(MarketMode m) =>
-      m == MarketMode.foodMarket ? 1 : 0;
+      m == MarketMode.classifieds ? 1 : 0;
 
   Future<void> dismissBetaNotice() async {
     if (_betaNoticeDismissed) return;

@@ -88,9 +88,10 @@ class DesktopHeader extends StatelessWidget {
     }
 
     final isSellersMap = currentPath == '/sellers-map';
+    final isAbout = currentPath == '/about';
     final currentIndex = navigationShell?.currentIndex ?? 0;
-    final isFoodMarket = (currentIndex == 0 && appSettings.marketMode == MarketMode.foodMarket && !isSellersMap);
-    final isClassifieds = ((currentIndex == 1 || appSettings.marketMode == MarketMode.classifieds) && !isSellersMap);
+    final isFoodMarket = (currentIndex == 0 && appSettings.marketMode == MarketMode.foodMarket && !isSellersMap && !isAbout);
+    final isClassifieds = ((currentIndex == 1 || appSettings.marketMode == MarketMode.classifieds) && !isSellersMap && !isAbout);
 
     final bgMain = isDark ? AmazonColors.darkCard : Colors.white;
     final borderMain = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
@@ -163,6 +164,7 @@ class DesktopHeader extends StatelessWidget {
             isFoodMarket: isFoodMarket,
             isClassifieds: isClassifieds,
             isSellersMap: isSellersMap,
+            isAbout: isAbout,
             selectedRegion: selectedRegion,
           ),
         ],
@@ -176,6 +178,7 @@ class DesktopHeader extends StatelessWidget {
     required bool isFoodMarket,
     required bool isClassifieds,
     required bool isSellersMap,
+    required bool isAbout,
     required String? selectedRegion,
   }) {
     final subBarBg = isDark ? const Color(0xFF131D15) : const Color(0xFFF7FAF7);
@@ -197,15 +200,23 @@ class DesktopHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 5),
             child: Row(
               children: [
-                // 4 Primarna Navigaciona Taba
-                _buildNavTabs(
-                  context,
-                  isFoodMarket: isFoodMarket,
-                  isClassifieds: isClassifieds,
-                  isSellersMap: isSellersMap,
+                // Navigacioni Tabovi (Objedinjena Kapsula za Domaću Hranu & Gazdinstva + Oglasi + O nama)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const ClampingScrollPhysics(),
+                    child: _buildNavTabs(
+                      context,
+                      isDark: isDark,
+                      isFoodMarket: isFoodMarket,
+                      isClassifieds: isClassifieds,
+                      isSellersMap: isSellersMap,
+                      isAbout: isAbout,
+                    ),
+                  ),
                 ),
 
-                const Spacer(),
+                const SizedBox(width: 12),
 
                 // Brzi birač regiona u podnavigaciji
                 InkWell(
@@ -324,20 +335,57 @@ class DesktopHeader extends StatelessWidget {
 
   Widget _buildNavTabs(
     BuildContext context, {
+    required bool isDark,
     required bool isFoodMarket,
     required bool isClassifieds,
     required bool isSellersMap,
+    required bool isAbout,
   }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        DesktopNavTab(
-          label: 'Pijaca hrane',
-          icon: Icons.storefront_outlined,
-          isActive: isFoodMarket,
-          onTap: () => _onNavigateTo(context, 0, route: '/', mode: MarketMode.foodMarket),
+        // 1. ZAJEDNIČKI OKVIR / KAPSULA (Pijaca hrane + Seoska gazdinstva kao jedna celina)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2.5),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF142418) : const Color(0xFFEAF4EC),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isDark ? const Color(0xFF23442A) : const Color(0xFFCCE4D0),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DesktopNavTab(
+                label: 'Pijaca hrane',
+                icon: Icons.storefront_outlined,
+                isActive: isFoodMarket,
+                isCapsule: true,
+                onTap: () => _onNavigateTo(context, 0, route: '/', mode: MarketMode.foodMarket),
+              ),
+              const SizedBox(width: 3),
+              DesktopNavTab(
+                label: 'Seoska gazdinstva',
+                icon: Icons.map_outlined,
+                isActive: isSellersMap,
+                isCapsule: true,
+                onTap: () => context.go('/sellers-map'),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 6),
+
+        // 2. DISKRETAN RAZDELNIK
+        Container(
+          height: 22,
+          width: 1,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          color: isDark ? const Color(0xFF2E3E32) : const Color(0xFFD6E0D6),
+        ),
+
+        // 3. MALI OGLASI
         DesktopNavTab(
           label: 'Mali oglasi',
           icon: Icons.campaign_outlined,
@@ -345,18 +393,14 @@ class DesktopHeader extends StatelessWidget {
           badge: 'NOVO',
           onTap: () => _onNavigateTo(context, 1, route: '/classifieds', mode: MarketMode.classifieds),
         ),
+
         const SizedBox(width: 6),
-        DesktopNavTab(
-          label: 'Seoska gazdinstva',
-          icon: Icons.map_outlined,
-          isActive: isSellersMap,
-          onTap: () => context.go('/sellers-map'),
-        ),
-        const SizedBox(width: 6),
+
+        // 4. O NAMA
         DesktopNavTab(
           label: 'O nama',
           icon: Icons.info_outline_rounded,
-          isActive: false,
+          isActive: isAbout,
           onTap: () => context.push('/about'),
         ),
       ],

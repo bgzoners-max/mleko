@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
+import '../../providers/app_settings_provider.dart';
+import '../../providers/classifieds_provider.dart';
 import '../../theme/amazon_colors.dart';
 
 class ClassifiedFeedHeader extends StatelessWidget {
   const ClassifiedFeedHeader({super.key});
+
+  void _goToFoodMarket(BuildContext context) {
+    context.read<AppSettingsProvider>().setMarketMode(MarketMode.foodMarket);
+    context.read<ClassifiedsProvider>().clearFilters();
+    context.go('/');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +37,7 @@ class ClassifiedFeedHeader extends StatelessWidget {
       child: Row(
         children: [
           InkWell(
-            onTap: () => context.go('/'),
+            onTap: () => _goToFoodMarket(context),
             borderRadius: BorderRadius.circular(6),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -71,7 +80,7 @@ class ClassifiedFeedHeader extends StatelessWidget {
           ),
           const Spacer(),
           TextButton.icon(
-            onPressed: () => context.go('/'),
+            onPressed: () => _goToFoodMarket(context),
             icon: Icon(
               Icons.storefront_outlined,
               size: 15,

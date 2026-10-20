@@ -18,9 +18,18 @@ void main() {
     expect(find.text('Mali Oglasi'), findsOneWidget);
     expect(find.text('Pijaca Hrane'), findsOneWidget);
 
+    // Verify Pijaca Hrane is first (on the left) and Mali Oglasi is second (on the right)
+    final pijacaX = tester.getTopLeft(find.text('Pijaca Hrane')).dx;
+    final maliOglasiX = tester.getTopLeft(find.text('Mali Oglasi')).dx;
+    expect(pijacaX, lessThan(maliOglasiX));
+
     await tester.tap(find.text('Pijaca Hrane'));
     await tester.pumpAndSettle();
     expect(mode, MarketMode.foodMarket);
+
+    await tester.tap(find.text('Mali Oglasi'));
+    await tester.pumpAndSettle();
+    expect(mode, MarketMode.classifieds);
   });
 
   testWidgets('MarketModeSwitcher has high-contrast text in dark theme',
