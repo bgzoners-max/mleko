@@ -38,7 +38,7 @@ jobs:
         run: dart run tool/prepare_cloudflare_deploy.dart
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy build/cloudflare-deploy --project-name=domacimarket --branch=master
+        run: npx wrangler pages deploy build/cloudflare-deploy --project-name=domacimarket --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '11626edfa0823bc02363325d0792c18f' }}
