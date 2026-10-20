@@ -224,8 +224,8 @@ Deno.serve(async (req) => {
           sent_count: params.sentCount ?? 0,
           failed_count: failedCount,
           status: params.status,
-          errors: (params.errors ?? []) as Json,
-          payload: (params.payload ?? {}) as Json,
+          errors: (params.errors ?? []) as NonNullable<Json>,
+          payload: (params.payload ?? {}) as NonNullable<Json>,
         })
       } catch (logErr) {
         log("error", "FCM: upis push_delivery_logs nije uspeo", String(logErr))
