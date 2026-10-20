@@ -109,8 +109,13 @@ jobs:
       # Integration testovi (checkout flow E2E sa mock servisima) na headless
       # flutter-tester uređaju. Na mašinama sa više uređaja flutter traži
       # interaktivni izbor, pa se uređaj navodi eksplicitno (-d flutter-tester).
+      # SVAKI fajl se pokreće u zasebnoj invokaciji — zajednička invokacija
+      # više fajlova na Linux flutter-tester-u ponekad pada sa
+      # "The log reader failed unexpectedly" pri restartu device-a.
       - name: Run integration tests (headless flutter-tester)
-        run: flutter test integration_test -d flutter-tester
+        run: |
+          flutter test integration_test/app_test.dart -d flutter-tester
+          flutter test integration_test/checkout_flow_test.dart -d flutter-tester
 
   db-integration-checks:
     runs-on: ubuntu-latest
