@@ -390,7 +390,6 @@ class DesktopHeader extends StatelessWidget {
           label: 'Mali oglasi',
           icon: Icons.campaign_outlined,
           isActive: isClassifieds,
-          badge: 'NOVO',
           onTap: () => _onNavigateTo(context, 1, route: '/classifieds', mode: MarketMode.classifieds),
         ),
 
