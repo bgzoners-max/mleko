@@ -42,8 +42,18 @@ jobs:
       - name: Flutter test (with coverage)
         run: flutter test --coverage
 
-      - name: Check code coverage threshold
-        run: dart run tool/check_coverage.dart --min-coverage=32.0
+      - name: Check code coverage (ratchet threshold)
+        run: dart run tool/check_coverage.dart --min-coverage=32.0 --ratchet-file=tool/coverage_ratchet.json
+
+      - name: Verify coverage ratchet baseline is committed
+        shell: bash
+        run: |
+          if ! git diff --quiet -- tool/coverage_ratchet.json; then
+            echo "::error file=tool/coverage_ratchet.json::Coverage ratchet baseline changed but is not committed."
+            echo "Coverage improved — commit the updated tool/coverage_ratchet.json ( isti obrazac kao STATUS.md)."
+            git --no-pager diff -- tool/coverage_ratchet.json
+            exit 1
+          fi
 
       - name: Generate and verify STATUS.md
         shell: bash
@@ -78,6 +88,29 @@ jobs:
             coverage/lcov.info
             coverage/coverage_summary.json
             coverage/html/
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # Integration testovi (checkout flow E2E sa mock servisima) na headless
+      # flutter-tester uređaju. Na mašinama sa više uređaja flutter traži
+      # interaktivni izbor, pa se uređaj navodi eksplicitno (-d flutter-tester).
+      - name: Run integration tests (headless flutter-tester)
+        run: flutter test integration_test -d flutter-tester
 
   db-integration-checks:
     runs-on: ubuntu-latest
