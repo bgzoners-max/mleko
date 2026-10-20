@@ -182,11 +182,7 @@ class ReviewsService {
       if (orderId == null || productId == null || productName == null) {
         return null;
       }
-      return (
-        orderId: orderId,
-        productId: productId,
-        productName: productName
-      );
+      return (orderId: orderId, productId: productId, productName: productName);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -223,7 +219,11 @@ class ReviewsService {
         .maybeSingle();
     if (order == null) return false;
     final status = order['status'] as String?;
-    if (status != 'delivered' && status != 'archived' && status != 'arhivirano') return false;
+    if (status != 'delivered' &&
+        status != 'archived' &&
+        status != 'arhivirano') {
+      return false;
+    }
 
     try {
       final existing = await _client
@@ -234,7 +234,14 @@ class ReviewsService {
           .maybeSingle();
       return existing == null;
     } on PostgrestException catch (e, st) {
-      if (e.code == '42P01') return false;
+      // maybeSingle putanja: postgrest zamenjuje code HTTP statusom, pa
+      // proveravamo i telo odgovora u kojem 42P01/PGRST205 ostaje vidljiv.
+      if (e.code == '42P01' ||
+          e.code == 'PGRST205' ||
+          e.message.contains('42P01') ||
+          e.message.contains('PGRST205')) {
+        return false;
+      }
       throw AppError.from(e, stackTrace: st);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);

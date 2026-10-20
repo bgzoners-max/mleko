@@ -16,8 +16,16 @@ class FavoritesService {
   final SupabaseClient? _customClient;
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
+  /// PostgREST vraća PGRST205 (missing relation) kada tabela ne postoji.
+  ///
+  /// NAPOMENA: na `maybeSingle` putanji postgrest klijent zamenjuje `code`
+  /// HTTP statusom (npr. '404') jer `_handleMaybeSingleError` rethrow-uje
+  /// originalnu grešku koju spoljašnji `catch (_)` prepiše — zato proveravamo
+  /// i message telo u kojem originalno PGRST205 polje ostaje.
   bool _isMissingFavoritesTableError(Object e) {
-    return e is PostgrestException && e.code == 'PGRST205';
+    if (e is! PostgrestException) return false;
+    if (e.code == 'PGRST205') return true;
+    return e.message.contains('PGRST205');
   }
 
   Future<List<String>> getFavoriteProductIds(String userId) async {
@@ -92,7 +100,6 @@ class FavoritesService {
       rethrow;
     }
   }
-
 
   Future<List<ProductModel>> getFavoriteProducts(String userId) async {
     final favIds = await getFavoriteProductIds(userId);
