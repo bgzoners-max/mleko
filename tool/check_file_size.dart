@@ -4,7 +4,6 @@ const int lineThreshold = 700;
 
 // Privremena lista za ekrane koji cekaju modularizaciju (preko 700 linija).
 const List<String> ignoreFiles = [
-  'lib/screens/profile_screen.dart',
   'lib/screens/seller/seller_settings_screen.dart',
 ];
 
