@@ -1,5 +1,25 @@
 // generate_status.dart
+import 'dart:convert';
 import 'dart:io';
+
+/// Čita ratchet baseline (tool/coverage_ratchet.json) — platformski nezavisan
+/// broj jer se coverage iz lcov.info razlikuje za ~0.02% između Windows/Linux
+/// zbog razlika u instrumentaciji. Korišćenjem baseline-a STATUS.md je
+/// deterministički i CI `git diff` check radi pouzdano. Ako fajl ne postoji,
+/// pada na sirovi lcov broj.
+double? _readRatchetTotal() {
+  final file = File('tool/coverage_ratchet.json');
+  if (!file.existsSync()) return null;
+  try {
+    final json = jsonDecode(file.readAsStringSync());
+    if (json is Map<String, dynamic>) {
+      return (json['total'] as num?)?.toDouble();
+    }
+  } catch (_) {
+    // Ignoriši neispravan fajl i padni na lcov.
+  }
+  return null;
+}
 
 void main(List<String> args) {
   final statusFile = File('STATUS.md');
@@ -17,7 +37,11 @@ void main(List<String> args) {
   }
 
   double coverage = 0.0;
-  if (lcovFile.existsSync()) {
+  final ratchetTotal = _readRatchetTotal();
+  if (ratchetTotal != null) {
+    // Preforirani izvor: ratchet baseline (deterministički po platformi).
+    coverage = ratchetTotal;
+  } else if (lcovFile.existsSync()) {
     final lines = lcovFile.readAsLinesSync();
     int totalLines = 0;
     int coveredLines = 0;
@@ -35,10 +59,8 @@ void main(List<String> args) {
 
   int migrationCount = 0;
   if (migrationsDir.existsSync()) {
-    migrationCount = migrationsDir
-        .listSync()
-        .where((e) => e.path.endsWith('.sql'))
-        .length;
+    migrationCount =
+        migrationsDir.listSync().where((e) => e.path.endsWith('.sql')).length;
   }
 
   final coverageStr = coverage.toStringAsFixed(2);
@@ -49,8 +71,9 @@ void main(List<String> args) {
     final existingContent = statusFile.readAsStringSync();
     final testMatch =
         RegExp(r'- \*\*Test fajlovi\*\*:\s*(\d+)').firstMatch(existingContent);
-    final covMatch = RegExp(r'- \*\*Pokrivenost koda \(Coverage\)\*\*:\s*([\d\.]+)%')
-        .firstMatch(existingContent);
+    final covMatch =
+        RegExp(r'- \*\*Pokrivenost koda \(Coverage\)\*\*:\s*([\d\.]+)%')
+            .firstMatch(existingContent);
     final migMatch = RegExp(r'- \*\*Broj SQL migracija\*\*:\s*(\d+)')
         .firstMatch(existingContent);
 
@@ -86,4 +109,3 @@ void main(List<String> args) {
     'STATUS.md uspešno generisan ($testCount test fajlova, $coverageStr% coverage, $migrationCount migracija).',
   );
 }
-
