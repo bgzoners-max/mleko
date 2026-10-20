@@ -27,6 +27,7 @@ import '../../widgets/classifieds/classified_search_bar.dart';
 import '../../widgets/classifieds/classified_subcategories_slivers.dart';
 import '../../widgets/classifieds/classifieds_desktop_feed_view.dart';
 import '../../widgets/app_footer.dart';
+import '../../widgets/theme_toggle_switch.dart';
 
 class ClassifiedsFeedScreen extends StatefulWidget {
   final Widget? headerWidget;
@@ -651,7 +652,11 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
           : AppBar(
               leading: const AppBackButton(fallbackRoute: '/'),
               title: const Text('Mali oglasi'),
-              actions: const [AppHomeButton()],
+              actions: const [
+                Center(child: ThemeToggleSwitch()),
+                SizedBox(width: 4),
+                AppHomeButton(),
+              ],
             ),
       backgroundColor: canvasColor,
       floatingActionButton: fab,

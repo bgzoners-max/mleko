@@ -14,7 +14,10 @@ const List<ClassifiedCategoryModel> kClassifiedFallbackCategories = [
       ClassifiedCategoryModel(id: 'prikljucci', name: 'Priključne mašine', iconName: 'handyman', parentId: 'poljoprivreda', sortOrder: 20),
       ClassifiedCategoryModel(id: 'stocna_hrana', name: 'Stočna hrana i sirovine', iconName: 'grass', parentId: 'poljoprivreda', sortOrder: 30),
       ClassifiedCategoryModel(id: 'sadnice_semena', name: 'Sadnice i semena', iconName: 'yard', parentId: 'poljoprivreda', sortOrder: 40),
-      ClassifiedCategoryModel(id: 'stocarstvo_zivotinje', name: 'Domaće životinje', iconName: 'pets', parentId: 'poljoprivreda', sortOrder: 50),
+      ClassifiedCategoryModel(id: 'domace_zivotinje', name: 'Domaće životinje i stoka', iconName: 'pig', parentId: 'poljoprivreda', sortOrder: 50, isConditionApplicable: false),
+      ClassifiedCategoryModel(id: 'zivinarstvo', name: 'Živinarstvo i peradarstvo', iconName: 'egg', parentId: 'poljoprivreda', sortOrder: 52, isConditionApplicable: false),
+      ClassifiedCategoryModel(id: 'stocarska_oprema', name: 'Stočarska oprema i muzilice', iconName: 'precision_manufacturing', parentId: 'poljoprivreda', sortOrder: 54, isConditionApplicable: true),
+      ClassifiedCategoryModel(id: 'pcelarstvo', name: 'Pčelarstvo', iconName: 'hive', parentId: 'poljoprivreda', sortOrder: 60, isConditionApplicable: false),
     ],
   ),
   ClassifiedCategoryModel(
@@ -170,17 +173,15 @@ const List<ClassifiedCategoryModel> kClassifiedFallbackCategories = [
   ),
   ClassifiedCategoryModel(
     id: 'ljubimci',
-    name: 'Kućni ljubimci i domaće životinje',
+    name: 'Kućni ljubimci',
     iconName: 'pets',
     sortOrder: 110,
     isConditionApplicable: false,
     subcategories: [
       ClassifiedCategoryModel(id: 'psi', name: 'Psi i štenci', iconName: 'pets', parentId: 'ljubimci', sortOrder: 10, isConditionApplicable: false),
       ClassifiedCategoryModel(id: 'macke', name: 'Mačke i mačići', iconName: 'pets', parentId: 'ljubimci', sortOrder: 20, isConditionApplicable: false),
-      ClassifiedCategoryModel(id: 'domace_zivotinje', name: 'Domaće životinje i stoka', iconName: 'pets', parentId: 'ljubimci', sortOrder: 30, isConditionApplicable: false),
-      ClassifiedCategoryModel(id: 'zivina_ptice', name: 'Živina i ptice', iconName: 'egg', parentId: 'ljubimci', sortOrder: 40, isConditionApplicable: false),
-      ClassifiedCategoryModel(id: 'pcelarstvo', name: 'Pčelarstvo', iconName: 'hive', parentId: 'ljubimci', sortOrder: 50, isConditionApplicable: false),
-      ClassifiedCategoryModel(id: 'oprema_za_zivotinje', name: 'Hrana i oprema za životinje', iconName: 'shopping_bag', parentId: 'ljubimci', sortOrder: 60, isConditionApplicable: false),
+      ClassifiedCategoryModel(id: 'zivina_ptice', name: 'Ptice i ostali kućni ljubimci', iconName: 'bird', parentId: 'ljubimci', sortOrder: 30, isConditionApplicable: false),
+      ClassifiedCategoryModel(id: 'oprema_za_zivotinje', name: 'Hrana i oprema za kućne ljubimce', iconName: 'shopping_bag', parentId: 'ljubimci', sortOrder: 40, isConditionApplicable: false),
     ],
   ),
   ClassifiedCategoryModel(

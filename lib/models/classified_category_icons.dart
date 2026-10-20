@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/lucide_icons.dart';
 
 /// Centralizovano mapiranje string naziva ikona u Flutter Material [IconData].
 IconData getCategoryIconData(String iconName) {
@@ -245,6 +246,14 @@ IconData getCategoryIconData(String iconName) {
       return Icons.pedal_bike;
     case 'pets':
       return Icons.pets;
+    case 'pig':
+    case 'piggy_bank':
+    case 'svinja':
+      return LucideIcons.pig;
+    case 'bird':
+    case 'chicken':
+    case 'kokoska':
+      return LucideIcons.bird;
     case 'phishing':
       return Icons.phishing;
     case 'piano':

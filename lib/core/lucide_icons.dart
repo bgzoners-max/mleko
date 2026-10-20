@@ -33,4 +33,8 @@ class LucideIcons {
   static const IconData headphones = IconData(0xe0f1, fontFamily: _fontFamily);
   static const IconData receipt = IconData(0xe3d3, fontFamily: _fontFamily);
   static const IconData radio = IconData(0xe142, fontFamily: _fontFamily);
+
+  // Zivotinje i poljoprivreda
+  static const IconData pig = IconData(0xe13a, fontFamily: _fontFamily);
+  static const IconData bird = IconData(0xe3c5, fontFamily: _fontFamily);
 }

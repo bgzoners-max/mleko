@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/design_system.dart';
+import '../../../core/lucide_icons.dart';
 import '../../../models/classified_category_model.dart';
 import '../../../providers/classifieds_provider.dart';
 
@@ -132,13 +133,23 @@ class ClassifiedsSidebarCategoryTree extends StatelessWidget {
       return Icons.sports_soccer;
     }
 
-    // 12. Kućni ljubimci i domaće životinje
+    // 11. Domaće životinje i stoka (poljoprivreda)
+    if (lowerId.contains('stoka') ||
+        lowerName.contains('stoka') ||
+        lowerId.contains('svinj') ||
+        lowerId.contains('krav') ||
+        lowerId.contains('ovc') ||
+        lowerId.contains('koz') ||
+        lowerId.contains('konj')) {
+      return LucideIcons.pig;
+    }
+
+    // 12. Kućni ljubimci
     if (lowerId.contains('ljubim') ||
         lowerName.contains('ljubim') ||
-        lowerId.contains('zivotinj') ||
-        lowerName.contains('životinj') ||
-        lowerId.contains('stoka') ||
-        lowerName.contains('stoka')) {
+        lowerId.contains('pas') ||
+        lowerId.contains('psi') ||
+        lowerId.contains('mack')) {
       return Icons.pets;
     }
 

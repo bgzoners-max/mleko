@@ -42,7 +42,7 @@ const BASE_ROUTES: Record<string, RouteSeo> = {
     heading: "Besplatni Mali Oglasi u Srbiji — 0 dinara provizije",
     paragraphs: [
       "Postavite oglas potpuno besplatno, bez skrivenih troškova i bez limita. Vraćanje oglasa na vrh pretrage (obnavljanje) košta tačno 0 dinara kad god poželite.",
-      "Istražite kategorije malih oglasa: poljoprivreda i mehanizacija, vozila i auto-moto, mašine i alati, dom i bašta, mobilni telefoni, računari i elektronika, nekretnine, građevinarstvo, odeća i obuća, sve za decu i bebe, sport i hobi, ljubimci i domaće životinje, usluge, zdravlje i lepota, knjige i umetnost i rukotvorine.",
+      "Istražite kategorije malih oglasa: poljoprivreda i mehanizacija, vozila i auto-moto, mašine i alati, dom i bašta, mobilni telefoni, računari i elektronika, nekretnine, građevinarstvo, odeća i obuća, sve za decu i bebe, sport i hobi, kućni ljubimci, usluge, zdravlje i lepota, knjige i umetnost i rukotvorine.",
     ],
   },
   "/categories": {
@@ -155,10 +155,10 @@ const CLASSIFIED_CATEGORY_SEO: Record<string, CategorySeo> = {
     body: "Pribor za ribolov (štapovi, mašinice, varalice), oprema za lov, skijanje i zimski sportovi, bicikli (MTB, drumski, gradski), fitnes sprave, kamp oprema, vodeni sportovi (SUP daske), roleri, trotineti, borilačka oprema i muzički instrumenti.",
   },
   ljubimci: {
-    name: "Kućni ljubimci i domaće životinje",
+    name: "Kućni ljubimci",
     description:
-      "Krave, junice, telad, ovce, jagnjad, svinje, koze, živina, pčele i rojevi, psi, štenci, mačke i hrana za stoku i ljubimce.",
-    body: "Krave, junice, telad, ovce, jagnjad, svinje, prasad, koze, živina (kokoške, ćurke, patke), pčele i rojevi, psi, štenci, mačke i hrana za stoku i ljubimce.",
+      "Psi, štenci, mačke, mačići, ptice, papagaji, kanarinci, ribice i hrana i oprema za kućne ljubimce.",
+    body: "Psi, štenci, mačke, mačići, ptice, papagaji, kanarinci, ribice i hrana i oprema za kućne ljubimce.",
   },
   usluge: {
     name: "Usluge i poslovi",
@@ -196,7 +196,7 @@ const FOOD_CATEGORY_SEO: Record<string, CategorySeo> = {
     body: "Punomasni kravlji, kozji i ovčiji sir, sjenički sir, zlatiborski kajmak, sveže mleko, jogurt, surutka i domaći kefir — direktno sa seoskih gazdinstava širom Srbije.",
   },
   meso: {
-    name: "Meso i mesne prerađevine",
+    name: "Meso, riba i delikatesi",
     description:
       "Domaća pršuta, pečenica, slanina, kobasice, kulen, čvarci, jagnjetina, teletina i sveža i dimljena rečna riba sa gazdinstava.",
     body: "Domaća pršuta, pečenica, slanina, kobasice, kulen, čvarci, jagnjetina, teletina, sveža rečna riba (pastrmka, šaran) i dimljena riba.",

@@ -25,8 +25,8 @@ class ClassifiedsService {
   final SupabaseClient? _customClient;
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
-  static const String _categoriesCacheKey = 'cached_classified_categories_payload_v2';
-  static const int _categoriesCacheVersion = 2;
+  static const String _categoriesCacheKey = 'cached_classified_categories_payload_v5';
+  static const int _categoriesCacheVersion = 5;
   static const Duration _categoriesCacheTtl = Duration(hours: 24);
 
   // Brojači neuspelih RPC poziva za telemetriju
@@ -58,6 +58,43 @@ class ClassifiedsService {
     final all = rawList
         .map((e) => ClassifiedCategoryModel.fromJson(e as Map<String, dynamic>))
         .toList();
+
+    // Ukloni zastarele duplikate ako postoje kanonski pandani
+    const obsoleteIds = {
+      'stocarstvo_zivotinje',
+      'prodaja_kuca',
+      'industrijski_placevi',
+      'gume_felne',
+      'auto_multimedija_navigacija',
+      'stampaci_skeneri_toneri',
+      'mrezna_oprema_ruteri',
+      'memorije_hard_diskovi',
+      'mali_kuhinjski_aparati',
+      'aparati_za_kafu',
+    };
+    all.removeWhere((c) => obsoleteIds.contains(c.id));
+
+    // Osiguraj postojanje 'zivinarstvo' i 'stocarska_oprema' pod 'poljoprivreda'
+    if (!all.any((c) => c.id == 'zivinarstvo')) {
+      all.add(const ClassifiedCategoryModel(
+        id: 'zivinarstvo',
+        name: 'Živinarstvo i peradarstvo',
+        iconName: 'egg',
+        parentId: 'poljoprivreda',
+        sortOrder: 52,
+        isConditionApplicable: false,
+      ));
+    }
+    if (!all.any((c) => c.id == 'stocarska_oprema')) {
+      all.add(const ClassifiedCategoryModel(
+        id: 'stocarska_oprema',
+        name: 'Stočarska oprema i muzilice',
+        iconName: 'precision_manufacturing',
+        parentId: 'poljoprivreda',
+        sortOrder: 54,
+        isConditionApplicable: true,
+      ));
+    }
 
     final roots = all.where((c) => c.isRoot).toList();
     final childrenByParent = <String, List<ClassifiedCategoryModel>>{};

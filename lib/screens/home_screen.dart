@@ -249,10 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   tooltip: 'Izaberi lokaciju',
                   onPressed: () => _showLocationPicker(context),
                 ),
-                if (MediaQuery.sizeOf(context).width >= 500) ...[
-                  const SizedBox(width: 4),
-                  const Center(child: ThemeToggleSwitch()),
-                ],
+                const SizedBox(width: 4),
+                const Center(child: ThemeToggleSwitch()),
                 const SizedBox(width: 6),
               ],
             ),

@@ -33,11 +33,56 @@ class ClassifiedCategoryModel {
     Map<String, dynamic> json, {
     List<ClassifiedCategoryModel> subcategories = const [],
   }) {
+    final id = json['id'] as String;
+    var name = json['name'] as String;
+    var iconName = json['icon_name'] as String? ?? 'category';
+    var parentId = json['parent_id'] as String?;
+
+    if (id == 'ljubimci') {
+      name = 'Kućni ljubimci';
+    }
+    if (id == 'domace_zivotinje' || id == 'stocarstvo_zivotinje') {
+      parentId = 'poljoprivreda';
+      name = 'Domaće životinje i stoka';
+      if (iconName == 'pets' || iconName.isEmpty) {
+        iconName = 'pig';
+      }
+    }
+    if (id == 'zivinarstvo') {
+      parentId = 'poljoprivreda';
+      name = 'Živinarstvo i peradarstvo';
+      iconName = 'egg';
+    }
+    if (id == 'stocarska_oprema') {
+      parentId = 'poljoprivreda';
+      name = 'Stočarska oprema i muzilice';
+      iconName = 'precision_manufacturing';
+    }
+    if (id == 'pcelarstvo') {
+      parentId = 'poljoprivreda';
+    }
+    if (id == 'kokoske_pilici' || id == 'curke' || id == 'patke_guske') {
+      parentId = 'zivinarstvo';
+    }
+    if (id == 'koncentrati_premiksi') {
+      parentId = 'stocna_hrana';
+    }
+    if (id == 'hranilice_pojilice_muzilice') {
+      parentId = 'stocarska_oprema';
+    }
+    if (id == 'zivina_ptice') {
+      name = 'Ptice i ostali kućni ljubimci';
+      iconName = 'bird';
+    }
+    if (id == 'oprema_za_zivotinje') {
+      name = 'Hrana i oprema za kućne ljubimce';
+    }
+
     return ClassifiedCategoryModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      iconName: json['icon_name'] as String? ?? 'category',
-      parentId: json['parent_id'] as String?,
+      id: id,
+      name: name,
+      iconName: iconName,
+      parentId: parentId,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       isConditionApplicable:
           (json['is_condition_applicable'] as bool?) ?? true,
