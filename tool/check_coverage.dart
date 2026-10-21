@@ -103,7 +103,7 @@ void main(List<String> args) {
   final totalPct = (totalHit / totalFound) * 100;
 
   // ── Ratchet baseline (opciono) ──
-  final ratchet = ratchetPath != null ? _loadRatchet(ratchetPath!) : null;
+  final ratchet = ratchetPath != null ? _loadRatchet(ratchetPath) : null;
   var effectiveMin = minCoverage;
   if (ratchet != null) {
     final ratchetMin = ratchet.total - _ratchetDropTolerance;
@@ -190,7 +190,7 @@ void main(List<String> args) {
   } else {
     stdout.writeln('\nPASSED: Coverage threshold met.');
     if (ratchetPath != null) {
-      _maybeRaiseRatchet(ratchetPath!, ratchet, totalPct, dirStats);
+      _maybeRaiseRatchet(ratchetPath, ratchet, totalPct, dirStats);
     }
   }
 }

@@ -165,6 +165,17 @@ class AuthSessionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Ponovo inicijalizuje autentifikacioni prikaz stanja — korisno nakon greške
+  /// ili kada se želi prisilno ponovo učitati korisnički profil iz sesije.
+  /// Resetuje `_authChecked` i `_user`, a zatim ponovo proverava Supabase sesiju.
+  Future<void> reload() async {
+    _authChecked = false;
+    _user = null;
+    _loading = false;
+    notifyListeners();
+    _initAuth();
+  }
+
   @override
   void dispose() {
     _authSubscription?.cancel();

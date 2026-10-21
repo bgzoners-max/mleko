@@ -7,6 +7,7 @@ import '../core/design_system.dart';
 import '../core/haptic.dart';
 import '../models/product_model.dart';
 import '../providers/app_settings_provider.dart';
+import '../utils/sales_counter_formatter.dart';
 import 'app_network_image.dart';
 import 'rustic_image_placeholder.dart';
 
@@ -15,6 +16,7 @@ class ProductCard extends StatefulWidget {
   final bool? isFavorite;
   final VoidCallback? onFavoriteToggle;
   final bool isPopular;
+  final int? salesCount;
   final double? avgRating;
   final int? reviewCount;
 
@@ -30,6 +32,7 @@ class ProductCard extends StatefulWidget {
     this.isFavorite,
     this.onFavoriteToggle,
     this.isPopular = false,
+    this.salesCount,
     this.avgRating,
     this.reviewCount,
     this.enableHero = false,
@@ -135,7 +138,13 @@ class _ProductCardState extends State<ProductCard> {
                     label: 'NOVO',
                     backgroundColor: AmazonColors.green,
                   ),
-                if (widget.isPopular)
+                if (formatSalesBadge(widget.salesCount ?? widget.product.orderCount) != null)
+                  _AmazonBadge(
+                    label: formatSalesBadge(widget.salesCount ?? widget.product.orderCount)!,
+                    backgroundColor: AmazonColors.amber,
+                    textColor: AmazonColors.darkNavy,
+                  )
+                else if (widget.isPopular)
                   const _AmazonBadge(
                     label: 'PREPORUKA',
                     backgroundColor: AmazonColors.amber,

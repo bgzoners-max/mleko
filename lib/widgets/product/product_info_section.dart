@@ -228,6 +228,38 @@ class _PriceAndAvailability extends StatelessWidget {
             ],
           ),
         ),
+        if (product.salesBadgeText != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF332A15) : const Color(0xFFFFF8E7),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isDark ? const Color(0xFF8A6D2B) : const Color(0xFFFBD88B),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  size: 13,
+                  color: Color(0xFFE67E22),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  product.salesBadgeText!,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? const Color(0xFFFFCC66)
+                        : const Color(0xFFB7791F),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

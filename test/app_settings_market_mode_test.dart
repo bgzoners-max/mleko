@@ -55,5 +55,33 @@ void main() {
       await reloaded2.ensureLoaded();
       expect(reloaded2.marketMode, equals(MarketMode.foodMarket));
     });
+
+    test('reload re-reads from SharedPreferences after in-memory change', () async {
+      SharedPreferences.setMockInitialValues({'mleko_market_mode_v2': 0}); // foodMarket
+      final settings = AppSettingsProvider(autoload: false);
+      await settings.ensureLoaded();
+      expect(settings.marketMode, equals(MarketMode.foodMarket));
+
+      // Promeni u memoriji — ovoga puta perzistira classifieds
+      await settings.setMarketMode(MarketMode.classifieds);
+      expect(settings.marketMode, equals(MarketMode.classifieds));
+
+      // reload() mora pročitati sačuvanu vrednost iz SharedPreferences (classifieds)
+      await settings.reload();
+      expect(settings.marketMode, equals(MarketMode.classifieds));
+      expect(settings.isLoaded, isTrue);
+    });
+
+    test('ensureLoaded can be called multiple times without error', () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = AppSettingsProvider(autoload: false);
+
+      await settings.ensureLoaded();
+      await settings.ensureLoaded();
+      await settings.ensureLoaded();
+
+      expect(settings.marketMode, equals(MarketMode.foodMarket));
+      expect(settings.isLoaded, isTrue);
+    });
   });
 }

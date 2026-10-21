@@ -21,6 +21,7 @@ import '../widgets/checkout/checkout_single_buyer_form.dart';
 import '../widgets/checkout/checkout_validation_utils.dart';
 import '../widgets/skeleton.dart';
 import '../services/core/analytics_service.dart';
+import '../widgets/responsive_layout.dart';
 import 'dart:async';
 
 class CheckoutScreen extends StatefulWidget {
@@ -93,8 +94,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           );
         }
-        return _CheckoutForm(
-            product: product, initialQuantity: widget.initialQuantity);
+        return DesktopScaffold(
+          child: _CheckoutForm(
+            product: product,
+            initialQuantity: widget.initialQuantity,
+          ),
+        );
       },
     );
   }

@@ -541,5 +541,57 @@ void main() {
 
       cart.dispose();
     });
+
+    test('reload re-reads cart from SharedPreferences after in-memory change', () async {
+      SharedPreferences.setMockInitialValues({
+        CartProvider.storageKeyFor('user-reload'): jsonEncode({'s-1': {'p-1': 2.0}}),
+      });
+      final service = FakeProductsService();
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+      await cart.setUser('user-reload');
+
+      // Verify loaded state
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), 2.0);
+      expect(cart.count, 1);
+
+      // Change in memory without persisting
+      await cart.addForSeller(sellerId: 's-2', productId: 'p-2', quantity: 5.0);
+      expect(cart.getQuantityForSeller('s-2', 'p-2'), 5.0);
+      expect(cart.count, 2);
+
+      // reload() should discard in-memory changes and re-read from storage
+      await cart.reload();
+      expect(cart.getQuantityForSeller('s-1', 'p-1'), 2.0);
+      expect(cart.getQuantityForSeller('s-2', 'p-2'), isNull);
+      expect(cart.count, 1);
+
+      cart.dispose();
+    });
+
+    test('clearForLogout clears cart and resets user', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService();
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.setUser('user-logout');
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-1', quantity: 2.0);
+      await cart.flush();
+
+      expect(cart.currentUserId, 'user-logout');
+      expect(cart.count, 1);
+
+      await cart.clearForLogout();
+
+      expect(cart.currentUserId, isNull);
+      expect(cart.isEmpty, isTrue);
+      expect(cart.count, 0);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('mleko_cart_user_id'), isNull);
+
+      cart.dispose();
+    });
   });
 }

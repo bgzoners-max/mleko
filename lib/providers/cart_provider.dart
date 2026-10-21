@@ -497,6 +497,20 @@ class CartProvider extends ChangeNotifier {
     _scheduleSave();
   }
 
+  /// Ponovo učitava korpu iz `SharedPreferences`, briše sve keše i obaveštava
+  /// slušalce. Koristan kada su stavke u korpi zastarele (npr. nakon promene
+  /// proizvoda na serveru ili nakon odjave/prijave korisnika).
+  Future<void> reload() async {
+    await _initFuture;
+    final prefs = await SharedPreferences.getInstance();
+    final key = storageKeyFor(_currentUserId);
+    final loaded = _loadFromStorage(prefs, key);
+    _sellerItems.clear();
+    _sellerItems.addAll(loaded);
+    _invalidateCache();
+    notifyListeners();
+  }
+
   /// Backward-compatible wrappers (pozivi bez sellerId).
   Future<void> add(String productId, {double quantity = 1}) async {
     final p = await _productsService.getProduct(productId);

@@ -1,4 +1,35 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Stil i konzistentnost
+    avoid_print: true
+    avoid_empty_else: true
+    cascade_invocations: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_final_fields: true
+    avoid_init_to_null: true
+    unnecessary_nullable_for_final_variable_declarations: true
+    use_super_parameters: true
+    use_key_in_widget_constructors: true
+    prefer_final_locals: true
+
+    # Bezbednost i korektnost
+    cancel_subscriptions: true
+    unawaited_futures: true
+    close_sinks: true
+    use_build_context_synchronously: true
+
 analyzer:
+  errors:
+    todo: info
+    unnecessary_nullable_for_final_variable_declarations: warning
+    close_sinks: error
+    unawaited_futures: error
+    use_build_context_synchronously: warning
+
   exclude:
     - build/**
     - android/**
@@ -9,14 +40,5 @@ analyzer:
     - linux/**
     # Alati izvan `lib/` — ručne skripte, `print` je nameran CLI izlaz.
     - tool/**
-include: package:flutter_lints/flutter.yaml
-linter:
-  rules:
-    prefer_const_constructors: true
-    prefer_const_literals_to_create_immutables: true
-    use_key_in_widget_constructors: true
-    avoid_print: true
-    cancel_subscriptions: true
-    close_sinks: true
-    prefer_final_locals: true
-    unawaited_futures: true
+    - "lib/l10n/**"
+    - ".dart_tool/**"

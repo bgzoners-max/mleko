@@ -199,7 +199,11 @@ mixin ProductListingMixin {
   Future<ProductModel?> getProduct(String id) async {
     final cache = ProductCacheService();
     try {
-      final res =
+      final res = await client
+              .from('products_with_ratings')
+              .select()
+              .eq('id', id)
+              .maybeSingle() ??
           await client.from('products').select().eq('id', id).maybeSingle();
       if (res == null) {
         return null;

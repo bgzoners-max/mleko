@@ -2,47 +2,34 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
+import '../../repositories/social/favorites_repository.dart';
 import '../core/logger_service.dart';
 
 class FavoritesService {
   static final FavoritesService _instance = FavoritesService._internal();
-  factory FavoritesService({SupabaseClient? client}) {
-    if (client != null) return FavoritesService._(client);
+
+  factory FavoritesService({
+    FavoritesRepository? repository,
+    SupabaseClient? client,
+  }) {
+    if (repository != null || client != null) {
+      return FavoritesService._(repository: repository, client: client);
+    }
     return _instance;
   }
-  FavoritesService._([SupabaseClient? client]) : _customClient = client;
-  FavoritesService._internal() : _customClient = null;
 
-  final SupabaseClient? _customClient;
-  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
+  FavoritesService._({FavoritesRepository? repository, SupabaseClient? client})
+      : _repository = repository ?? SupabaseFavoritesRepository(client: client);
 
-  /// PostgREST vraća PGRST205 (missing relation) kada tabela ne postoji.
-  ///
-  /// NAPOMENA: na `maybeSingle` putanji postgrest klijent zamenjuje `code`
-  /// HTTP statusom (npr. '404') jer `_handleMaybeSingleError` rethrow-uje
-  /// originalnu grešku koju spoljašnji `catch (_)` prepiše — zato proveravamo
-  /// i message telo u kojem originalno PGRST205 polje ostaje.
-  bool _isMissingFavoritesTableError(Object e) {
-    if (e is! PostgrestException) return false;
-    if (e.code == 'PGRST205') return true;
-    return e.message.contains('PGRST205');
-  }
+  FavoritesService._internal()
+      : _repository = SupabaseFavoritesRepository();
+
+  final FavoritesRepository _repository;
 
   Future<List<String>> getFavoriteProductIds(String userId) async {
     try {
-      final list = await _client
-          .from('favorites')
-          .select('product_id')
-          .eq('user_id', userId);
-      return (list as List).map((e) => e['product_id'] as String).toList();
+      return await _repository.getFavoriteProductIds(userId);
     } catch (e, st) {
-      if (_isMissingFavoritesTableError(e)) {
-        LoggerService.warning(
-          'Favorites table missing. Returning empty favorites list.',
-          extra: {'error': e.toString()},
-        );
-        return [];
-      }
       LoggerService.error('Failed to load favorite product IDs', e,
           stackTrace: st);
       rethrow;
@@ -51,17 +38,8 @@ class FavoritesService {
 
   Future<bool> isFavorite(String userId, String productId) async {
     try {
-      final res = await _client
-          .from('favorites')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('product_id', productId)
-          .maybeSingle();
-      return res != null;
+      return await _repository.isFavorite(userId, productId);
     } catch (e, st) {
-      if (_isMissingFavoritesTableError(e)) {
-        return false;
-      }
       LoggerService.error('Failed to check favorite status', e, stackTrace: st);
       rethrow;
     }
@@ -69,15 +47,8 @@ class FavoritesService {
 
   Future<void> addFavorite(String userId, String productId) async {
     try {
-      await _client.from('favorites').insert({
-        'user_id': userId,
-        'product_id': productId,
-      });
+      await _repository.addFavorite(userId, productId);
     } catch (e, st) {
-      if (_isMissingFavoritesTableError(e)) {
-        LoggerService.warning('Favorites table missing. Skipping addFavorite.');
-        return;
-      }
       LoggerService.error('Failed to add favorite', e, stackTrace: st);
       rethrow;
     }
@@ -85,29 +56,15 @@ class FavoritesService {
 
   Future<void> removeFavorite(String userId, String productId) async {
     try {
-      await _client
-          .from('favorites')
-          .delete()
-          .eq('user_id', userId)
-          .eq('product_id', productId);
+      await _repository.removeFavorite(userId, productId);
     } catch (e, st) {
-      if (_isMissingFavoritesTableError(e)) {
-        LoggerService.warning(
-            'Favorites table missing. Skipping removeFavorite.');
-        return;
-      }
       LoggerService.error('Failed to remove favorite', e, stackTrace: st);
       rethrow;
     }
   }
 
   Future<List<ProductModel>> getFavoriteProducts(String userId) async {
-    final favIds = await getFavoriteProductIds(userId);
-    if (favIds.isEmpty) return [];
-    final list = await _client.from('products').select().inFilter('id', favIds);
-    return (list as List)
-        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return _repository.getFavoriteProducts(userId);
   }
 
   Stream<List<ProductModel>> streamFavoriteProducts(String userId,

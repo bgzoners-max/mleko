@@ -365,10 +365,12 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildProductCard(int i, UserModel? user) {
     final p = _products[i];
     final rating = _ratings[p.id];
+    final count = _salesCounts[p.id] ?? 0;
     return SearchProductCard(
       product: p,
       user: user,
-      isPopular: (_salesCounts[p.id] ?? 0) >= AppConstants.popularProductMinSales,
+      salesCount: count,
+      isPopular: count >= AppConstants.popularProductMinSales,
       avgRating: rating?.avg,
       reviewCount: rating?.count,
     );

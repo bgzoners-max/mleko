@@ -10,6 +10,7 @@ import '../skeleton.dart';
 import '../app_empty_state.dart';
 import '../app_network_image.dart';
 import '../guest_auth_prompt.dart';
+import '../../utils/sales_counter_formatter.dart';
 import 'favorite_farms_list.dart';
 
 class HomeSidePanel extends StatefulWidget {
@@ -292,14 +293,19 @@ class TopProductsList extends StatelessWidget {
                   color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
               ),
-              subtitle: Text(
-                '$count prodaja',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              subtitle: () {
+                final salesText = formatSalesCount(count);
+                return Text(
+                  salesText ?? p.priceFormatted,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: salesText != null
+                        ? (isDark ? AmazonColors.lightGreen : AmazonColors.link)
+                        : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
+                    fontWeight: salesText != null ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                );
+              }(),
               trailing: Icon(
                 Icons.chevron_right,
                 size: 16,

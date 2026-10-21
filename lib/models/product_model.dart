@@ -1,5 +1,6 @@
 import '../services/core/logger_service.dart';
 import '../utils/quantity_engine.dart';
+import '../utils/sales_counter_formatter.dart';
 
 enum ProductDeliveryMode { none, allSellerPoints, selectedPoints }
 
@@ -60,6 +61,7 @@ class ProductModel {
   final bool sellerIsVerified;
   final double? avgRating;
   final int reviewCount;
+  final int orderCount;
 
   const ProductModel({
     required this.id,
@@ -83,6 +85,7 @@ class ProductModel {
     this.sellerIsVerified = false,
     this.avgRating,
     this.reviewCount = 0,
+    this.orderCount = 0,
   });
 
   // Sentinel vrednost za copyWith da razlikuje "nije prosleđeno" od "prosleđeno null"
@@ -110,6 +113,7 @@ class ProductModel {
     bool? sellerIsVerified,
     Object? avgRating = _undefined,
     int? reviewCount,
+    int? orderCount,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -134,6 +138,7 @@ class ProductModel {
       sellerIsVerified: sellerIsVerified ?? this.sellerIsVerified,
       avgRating: identical(avgRating, _undefined) ? this.avgRating : avgRating as double?,
       reviewCount: reviewCount ?? this.reviewCount,
+      orderCount: orderCount ?? this.orderCount,
     );
   }
 
@@ -238,6 +243,10 @@ class ProductModel {
   String get minOrderFormatted => formatQuantity(minOrderKg);
   String get availableFormatted => formatQuantity(availableKg);
 
+  /// Formatiran podatak o broju prodaja (Social Proof: npr. '10+ prodaja', '50+ prodaja').
+  /// Vraća `null` ako ima manje od 10 prodaja kako se ne bi prikazivali niski brojevi.
+  String? get salesBadgeText => formatSalesCount(orderCount);
+
   /// Proizvod je dostupan za narudžbinu (autoritativno pravilo: REPO_BIBLE.md §11).
   bool get isAvailable => availableNow;
 
@@ -322,6 +331,7 @@ class ProductModel {
       sellerIsVerified: json['seller_is_verified'] as bool? ?? false,
       avgRating: (json['avg_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
+      orderCount: (json['order_count'] as num?)?.toInt() ?? 0,
     );
   }
 

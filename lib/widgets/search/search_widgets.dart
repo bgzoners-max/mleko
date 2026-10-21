@@ -43,6 +43,7 @@ class SearchProductCard extends StatelessWidget {
     required this.product,
     required this.user,
     this.isPopular = false,
+    this.salesCount,
     this.avgRating,
     this.reviewCount,
   });
@@ -50,6 +51,7 @@ class SearchProductCard extends StatelessWidget {
   final ProductModel product;
   final UserModel? user;
   final bool isPopular;
+  final int? salesCount;
   final double? avgRating;
   final int? reviewCount;
 
@@ -67,6 +69,7 @@ class SearchProductCard extends StatelessWidget {
                 isFavorite: isFavorite,
                 onFavoriteToggle: () => favorites.toggle(user!.id, p.id),
                 isPopular: isPopular,
+                salesCount: salesCount,
                 avgRating: rating,
                 reviewCount: reviewCount,
               );
@@ -77,6 +80,7 @@ class SearchProductCard extends StatelessWidget {
             isFavorite: null,
             onFavoriteToggle: null,
             isPopular: isPopular,
+            salesCount: salesCount,
             avgRating: rating,
             reviewCount: reviewCount,
           );

@@ -47,13 +47,13 @@ void main() {
       ];
 
       final payload = {
-        'version': 2,
+        'version': 5,
         'fetched_at': freshTime.toIso8601String(),
         'data': rawCategories,
       };
 
       await prefs.setString(
-        'cached_classified_categories_payload_v2',
+        'cached_classified_categories_payload_v5',
         jsonEncode(payload),
       );
 
@@ -80,13 +80,13 @@ void main() {
       ];
 
       final payload = {
-        'version': 2,
+        'version': 5,
         'fetched_at': expiredTime.toIso8601String(),
         'data': rawCategories,
       };
 
       await prefs.setString(
-        'cached_classified_categories_payload_v2',
+        'cached_classified_categories_payload_v5',
         jsonEncode(payload),
       );
 
@@ -113,7 +113,7 @@ void main() {
       };
 
       await prefs.setString(
-        'cached_classified_categories_payload_v2',
+        'cached_classified_categories_payload_v5',
         jsonEncode(payload),
       );
 

@@ -60,8 +60,24 @@ class AppSettingsProvider extends ChangeNotifier {
     }
   }
 
-  /// Eksplicitno čekanje da se settings učitaju (za pre prvog frejma i splash)
-  Future<void> ensureLoaded() => _loadFuture ??= _load();
+  /// Eksplicitno čekanje da se settings učitaju (za pre prvog frejma i splash).
+  ///
+  /// Ako prethodni `_load()` neuspe, dozvoljava ponovni pokušaj pri sledećem
+  /// pozivu (ne vraća keširani neuspešan future).
+  Future<void> ensureLoaded() async {
+    if (_loadFuture == null) {
+      _loadFuture = _load();
+    }
+    return _loadFuture;
+  }
+
+  /// Ponovo pokreće učitavanje postavki (npr. nakon greške ili promene okruženja).
+  /// Resetuje interno stanje i pokušava učitati iz SharedPreferences ponovo.
+  Future<void> reload() async {
+    _isLoaded = false;
+    _loadFuture = null;
+    await ensureLoaded();
+  }
 
   /// Ključevi koji ukazuju da je aplikacija već korišćena pre ovog bootstrap-a
   /// (nadogradnja sa starije verzije). Namerno **ne** uključujemo `mleko_cache_*`

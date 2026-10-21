@@ -27,6 +27,7 @@ class HomeProductItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ProductCard(
       product: product,
+      salesCount: salesCount,
       isPopular: salesCount >= AppConstants.popularProductMinSales,
       isFavorite: canFavorite
           ? context

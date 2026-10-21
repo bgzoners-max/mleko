@@ -201,6 +201,7 @@ class HomeWideLayout extends StatelessWidget {
                               selector: (_, fav) => fav.isFavorite(product.id),
                               builder: (_, isFavorite, __) => ProductCard(
                                 product: product,
+                                salesCount: salesCounts[product.id] ?? 0,
                                 isPopular: (salesCounts[product.id] ?? 0) >=
                                     AppConstants.popularProductMinSales,
                                 isFavorite: canFavorite ? isFavorite : null,

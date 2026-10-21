@@ -37,6 +37,18 @@ class SyncProvider extends ChangeNotifier {
     _connectivity.addListener(_connectivityListener);
   }
 
+  /// Ponovo pokreće sinhronizaciju — prisilno ponovo proverava mrežnu dostupnost
+  /// i osvežava listu pending porudžbina. Korisno nakon greške u mrežnom sloju
+  /// ili kada se želi prisilno ponovo proučiti online/offline stanje.
+  ///
+  /// Ne poziva `dispose()` na pod-uslugama jer one nisu idempotentne i ne mogu
+  /// se ponovo instancirati (polja su `final` / `late final`).
+  Future<void> reload() async {
+    await _connectivity.checkReachability();
+    await _syncManager.refreshPendingOrders();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _connectivity.removeListener(_connectivityListener);

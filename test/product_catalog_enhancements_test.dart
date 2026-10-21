@@ -126,5 +126,64 @@ void main() {
       );
       expect(heroFinder, findsOneWidget);
     });
+
+    testWidgets('ProductCard displays tiered sales badge for count >= 10, keeps PREPORUKA when < 10',
+        (tester) async {
+      // 1. Manje od 10 prodaja (npr. 5) sa isPopular: true -> PREPORUKA, ne prikazuje 5 prodaja
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ProductCard(
+              product: testProduct,
+              salesCount: 5,
+              isPopular: true,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('PREPORUKA'), findsOneWidget);
+      expect(find.text('5 prodaja'), findsNothing);
+      expect(find.text('5+ PRODAJA'), findsNothing);
+
+      // 2. 15 prodaja -> prikazuje '10+ PRODAJA'
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ProductCard(
+              product: testProduct,
+              salesCount: 15,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('10+ PRODAJA'), findsOneWidget);
+
+      // 3. 60 prodaja -> prikazuje '50+ PRODAJA'
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ProductCard(
+              product: testProduct,
+              salesCount: 60,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('50+ PRODAJA'), findsOneWidget);
+
+      // 4. 120 prodaja -> prikazuje '100+ PRODAJA'
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ProductCard(
+              product: testProduct,
+              salesCount: 120,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('100+ PRODAJA'), findsOneWidget);
+    });
   });
 }
+
