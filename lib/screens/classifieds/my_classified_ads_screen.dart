@@ -239,345 +239,64 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
               ),
               child: RefreshIndicator(
                 onRefresh: () async => _load(),
-                child: ListView.builder(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: Breakpoints.isTabletOrLarger(context) ? 16 : 0,
-                    vertical: 8,
-                  ),
-                  itemCount: list.length + 1,
-                  itemBuilder: (ctx, i) {
-                    if (i == 0) {
-                      if (_statsFuture != null) {
-                        return FutureBuilder<ClassifiedSellerStatsModel>(
-                          future: _statsFuture,
-                          builder: (context, statsSnap) {
-                            final stats = statsSnap.data;
-                            if (stats == null || !stats.hasAds) {
-                              return const SizedBox.shrink();
-                            }
-                            return SellerAnalyticsSummaryCard(
-                              stats: stats,
-                              onRefresh: _load,
-                            );
-                          },
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    }
-
-                    final ad = list[i - 1];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 5),
-                      child: Card(
-                        elevation: 1,
-                        clipBehavior: Clip.antiAlias,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(
-                            color: ad.isCurrentlyFeatured
-                                ? const Color(0xFFF59E0B).withValues(alpha: 0.8)
-                                : colorScheme.outlineVariant
-                                    .withValues(alpha: 0.3),
-                            width: ad.isCurrentlyFeatured ? 1.5 : 1.0,
-                          ),
-                        ),
-                        child: InkWell(
-                          onTap: () => context.push('/classifieds/ad/${ad.id}'),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Thumbnail prve slike
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: ad.images.isNotEmpty
-                                      ? AppNetworkImage.thumbnail(
-                                          imageUrl: ad.images.first,
-                                          width: 72,
-                                          height: 72,
-                                          fit: BoxFit.cover,
-                                          placeholder: Container(
-                                            width: 72,
-                                            height: 72,
-                                            color: colorScheme
-                                                .surfaceContainerHighest,
-                                          ),
-                                          errorWidget: Container(
-                                            width: 72,
-                                            height: 72,
-                                            color: colorScheme
-                                                .surfaceContainerHighest,
-                                            child: const Icon(
-                                                Icons.broken_image,
-                                                size: 32),
-                                          ),
-                                        )
-                                      : Container(
-                                          width: 72,
-                                          height: 72,
-                                          color: colorScheme
-                                              .surfaceContainerHighest,
-                                          child: Icon(
-                                            Icons.campaign_outlined,
-                                            size: 32,
-                                            color: colorScheme.onSurfaceVariant
-                                                .withValues(alpha: 0.4),
-                                          ),
-                                        ),
-                                ),
-                                const SizedBox(width: 12),
-
-                                // Desna strana — status, naslov, meta, akcije
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: Wrap(
-                                              spacing: 6,
-                                              runSpacing: 4,
-                                              crossAxisAlignment:
-                                                  WrapCrossAlignment.center,
-                                              children: [
-                                                // Status bedž
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 3),
-                                                  decoration: BoxDecoration(
-                                                    color: ad.isSold
-                                                        ? Colors.grey.shade600
-                                                        : Colors.green.shade700,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            6),
-                                                  ),
-                                                  child: Text(
-                                                    ad.isSold
-                                                        ? 'PRODATO'
-                                                        : 'AKTIVAN',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ),
-                                                if (ad.isCurrentlyFeatured)
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 7,
-                                                        vertical: 3),
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(
-                                                          0xFFD97706),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6),
-                                                    ),
-                                                    child: const Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(Icons.star_rounded,
-                                                            size: 11,
-                                                            color:
-                                                                Colors.white),
-                                                        SizedBox(width: 3),
-                                                        Text(
-                                                          'ISTAKNUTO',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 9.5,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                if (ad.isUrgent)
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 7,
-                                                        vertical: 3),
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(
-                                                          0xFFDC2626),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              6),
-                                                    ),
-                                                    child: const Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(Icons.bolt_rounded,
-                                                            size: 11,
-                                                            color:
-                                                                Colors.white),
-                                                        SizedBox(width: 2),
-                                                        Text(
-                                                          'HITNO',
-                                                          style: TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 9.5,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            ad.priceFormatted,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: colorScheme.primary,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      // Naslov
-                                      Text(
-                                        ad.title,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      // Lokacija i pregledi
-                                      Text(
-                                        '${ad.city} · ${ad.timeAgo}',
-                                        style: TextStyle(
-                                            color: colorScheme.onSurfaceVariant,
-                                            fontSize: 12),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      // Metrika angažovanosti kupaca
-                                      Row(
-                                        children: [
-                                          MetricBadge(
-                                            icon: Icons.visibility_outlined,
-                                            text: '${ad.viewsCount}',
-                                            tooltip: 'Ukupno pregleda',
-                                            color: const Color(0xFF0284C7),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          MetricBadge(
-                                            icon: Icons.phone_in_talk_outlined,
-                                            text: '${ad.callClicksCount}',
-                                            tooltip: 'Klikovi na telefon',
-                                            color: const Color(0xFF059669),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          MetricBadge(
-                                            icon: Icons.share_outlined,
-                                            text: '${ad.sharesCount}',
-                                            tooltip: 'Deljenja oglasa',
-                                            color: const Color(0xFF8B5CF6),
-                                          ),
-                                        ],
-                                      ),
-                                      const Divider(height: 20),
-                                      // Radnje
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          if (!ad.isSold) ...[
-                                            if (ad.isCurrentlyFeatured)
-                                              IconButton(
-                                                tooltip: 'Istaknut oglas (Ukloni)',
-                                                icon: const Icon(
-                                                  Icons.star_rounded,
-                                                  color: Color(0xFFD97706),
-                                                  size: 20,
-                                                ),
-                                                onPressed: () =>
-                                                    showFeaturedInfo(context, ad, () => _removeFeatured(ad)),
-                                              ),
-                                            IconButton(
-                                              tooltip: ad.isUrgent
-                                                  ? 'Ukloni hitnost'
-                                                  : 'Označi kao hitno',
-                                              icon: Icon(
-                                                ad.isUrgent
-                                                    ? Icons.bolt_rounded
-                                                    : Icons.bolt_outlined,
-                                                color: ad.isUrgent
-                                                    ? const Color(0xFFDC2626)
-                                                    : colorScheme
-                                                        .onSurfaceVariant,
-                                                size: 20,
-                                              ),
-                                              onPressed: () =>
-                                                  _toggleUrgent(ad),
-                                            ),
-                                            TextButton.icon(
-                                              onPressed: () =>
-                                                  _markAsSold(ad.id),
-                                              icon: const Icon(Icons.check,
-                                                  size: 16),
-                                              label: const Text('Prodato',
-                                                  style:
-                                                      TextStyle(fontSize: 12)),
-                                            ),
-                                          ],
-                                          IconButton(
-                                            tooltip: 'Pogledaj oglas',
-                                            icon: const Icon(
-                                                Icons.visibility_outlined,
-                                                size: 20),
-                                            onPressed: () => context.push(
-                                                '/classifieds/ad/${ad.id}'),
-                                          ),
-                                          IconButton(
-                                            tooltip: 'Izmeni',
-                                            icon: const Icon(
-                                                Icons.edit_outlined,
-                                                size: 20),
-                                            onPressed: () async {
-                                              await context.push(
-                                                  '/classifieds/edit/${ad.id}');
-                                              _load();
-                                            },
-                                          ),
-                                          IconButton(
-                                            tooltip: 'Obriši',
-                                            icon: const Icon(
-                                                Icons.delete_outline,
-                                                color: Colors.red,
-                                                size: 20),
-                                            onPressed: () => _deleteAd(ad.id),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= 720;
+                    return CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        if (_statsFuture != null)
+                          SliverToBoxAdapter(
+                            child: FutureBuilder<ClassifiedSellerStatsModel>(
+                              future: _statsFuture,
+                              builder: (context, statsSnap) {
+                                final stats = statsSnap.data;
+                                if (stats == null || !stats.hasAds) {
+                                  return const SizedBox.shrink();
+                                }
+                                return SellerAnalyticsSummaryCard(
+                                  stats: stats,
+                                  onRefresh: _load,
+                                );
+                              },
                             ),
                           ),
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 10 : 6,
+                            vertical: 6,
+                          ),
+                          sliver: isWide
+                              ? SliverGrid(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                    mainAxisExtent: 144,
+                                  ),
+                                  delegate: SliverChildBuilderDelegate(
+                                    (ctx, i) => _buildCompactAdCard(
+                                        ctx, list[i], colorScheme),
+                                    childCount: list.length,
+                                  ),
+                                )
+                              : SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (ctx, i) => Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 6),
+                                      child: _buildCompactAdCard(
+                                          ctx, list[i], colorScheme),
+                                    ),
+                                    childCount: list.length,
+                                  ),
+                                ),
                         ),
-                      ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 24),
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -585,6 +304,305 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCompactAdCard(
+    BuildContext context,
+    ClassifiedAdModel ad,
+    ColorScheme colorScheme,
+  ) {
+    return Card(
+      elevation: 0.5,
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: ad.isCurrentlyFeatured
+              ? const Color(0xFFF59E0B)
+              : colorScheme.outlineVariant.withValues(alpha: 0.35),
+          width: ad.isCurrentlyFeatured ? 1.5 : 1.0,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => context.push('/classifieds/ad/${ad.id}'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ad.images.isNotEmpty
+                        ? AppNetworkImage.thumbnail(
+                            imageUrl: ad.images.first,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            placeholder: Container(
+                              width: 64,
+                              height: 64,
+                              color: colorScheme.surfaceContainerHighest,
+                            ),
+                            errorWidget: Container(
+                              width: 64,
+                              height: 64,
+                              color: colorScheme.surfaceContainerHighest,
+                              child: const Icon(Icons.broken_image, size: 24),
+                            ),
+                          )
+                        : Container(
+                            width: 64,
+                            height: 64,
+                            color: colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.campaign_outlined,
+                              size: 26,
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: ad.isSold
+                                    ? Colors.grey.shade600
+                                    : Colors.green.shade700,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                ad.isSold ? 'PRODATO' : 'AKTIVAN',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            if (ad.isCurrentlyFeatured) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD97706),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.star_rounded,
+                                        size: 10, color: Colors.white),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'ISTAKNUTO',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (ad.isUrgent) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDC2626),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.bolt_rounded,
+                                        size: 10, color: Colors.white),
+                                    SizedBox(width: 1),
+                                    Text(
+                                      'HITNO',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            Text(
+                              ad.priceFormatted,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.primary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          ad.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${ad.city} · ${ad.timeAgo}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            MetricBadge(
+                              icon: Icons.visibility_outlined,
+                              text: '${ad.viewsCount}',
+                              tooltip: 'Pregleda',
+                              color: const Color(0xFF0284C7),
+                            ),
+                            const SizedBox(width: 6),
+                            MetricBadge(
+                              icon: Icons.phone_in_talk_outlined,
+                              text: '${ad.callClicksCount}',
+                              tooltip: 'Poziva',
+                              color: const Color(0xFF059669),
+                            ),
+                            const SizedBox(width: 6),
+                            MetricBadge(
+                              icon: Icons.share_outlined,
+                              text: '${ad.sharesCount}',
+                              tooltip: 'Deljenja',
+                              color: const Color(0xFF8B5CF6),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Divider(height: 1, thickness: 0.5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (!ad.isSold) ...[
+                    if (ad.isCurrentlyFeatured)
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                            minWidth: 26, minHeight: 26),
+                        tooltip: 'Istaknut oglas (Ukloni)',
+                        icon: const Icon(
+                          Icons.star_rounded,
+                          color: Color(0xFFD97706),
+                          size: 17,
+                        ),
+                        onPressed: () => showFeaturedInfo(
+                            context, ad, () => _removeFeatured(ad)),
+                      ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 26, minHeight: 26),
+                      tooltip:
+                          ad.isUrgent ? 'Ukloni hitnost' : 'Označi kao hitno',
+                      icon: Icon(
+                        ad.isUrgent
+                            ? Icons.bolt_rounded
+                            : Icons.bolt_outlined,
+                        color: ad.isUrgent
+                            ? const Color(0xFFDC2626)
+                            : colorScheme.onSurfaceVariant,
+                        size: 17,
+                      ),
+                      onPressed: () => _toggleUrgent(ad),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 0),
+                        minimumSize: const Size(0, 26),
+                      ),
+                      onPressed: () => _markAsSold(ad.id),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check, size: 13),
+                          SizedBox(width: 2),
+                          Text('Prodato', style: TextStyle(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  ],
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Pogledaj oglas',
+                    icon: const Icon(Icons.visibility_outlined, size: 17),
+                    onPressed: () =>
+                        context.push('/classifieds/ad/${ad.id}'),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Izmeni',
+                    icon: const Icon(Icons.edit_outlined, size: 17),
+                    onPressed: () async {
+                      await context.push('/classifieds/edit/${ad.id}');
+                      _load();
+                    },
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 26, minHeight: 26),
+                    tooltip: 'Obriši',
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.red, size: 17),
+                    onPressed: () => _deleteAd(ad.id),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

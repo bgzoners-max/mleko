@@ -68,7 +68,7 @@ class ProfileMarketSection extends StatelessWidget {
           children: [
             // ZAGLAVLJE MINI PIJACE
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
               child: Row(
                 children: [
                   Container(
@@ -180,6 +180,8 @@ class _SellerMapTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
       visualDensity: VisualDensity.compact,
       leading: Icon(Icons.location_on_outlined, color: headerColor),
       title: const Text('Moja lokacija i isporuke na mapi',
@@ -211,6 +213,8 @@ class _MiniPijacaTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
       visualDensity: VisualDensity.compact,
       leading: Icon(icon, color: headerColor),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),

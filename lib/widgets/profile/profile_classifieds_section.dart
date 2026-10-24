@@ -65,7 +65,7 @@ class ProfileClassifiedsSection extends StatelessWidget {
           children: [
             // ZAGLAVLJE OGLASNIKA
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
               child: Row(
                 children: [
                   Container(
@@ -110,6 +110,9 @@ class ProfileClassifiedsSection extends StatelessWidget {
 
             // Moji oglasi
             ListTile(
+              dense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
               visualDensity: VisualDensity.compact,
               leading:
                   Icon(Icons.format_list_bulleted_rounded, color: headerColor),
@@ -136,6 +139,9 @@ class ProfileClassifiedsSection extends StatelessWidget {
 
             // Postavi novi oglas
             ListTile(
+              dense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
               visualDensity: VisualDensity.compact,
               leading: Icon(Icons.add_circle_outline, color: headerColor),
               title: const Text('Postavi novi oglas',
@@ -160,6 +166,9 @@ class ProfileClassifiedsSection extends StatelessWidget {
 
             // Praćene kategorije i pretrage (sa brojačem)
             ListTile(
+              dense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
               visualDensity: VisualDensity.compact,
               leading:
                   Icon(Icons.notifications_active_outlined, color: headerColor),

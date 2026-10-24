@@ -200,9 +200,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 8,
+              left: 10,
+              right: 10,
+              top: 6,
               bottom: 16 + MediaQuery.of(context).padding.bottom,
             ),
             itemCount: (_isArchive ? 1 : 0) + list.length + (_hasMore ? 1 : 0),
@@ -283,9 +283,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
 
     _initStream(user.id);
-    final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
-    final contentPadding = Breakpoints.horizontalPadding(context);
-    final panelGap = Breakpoints.panelGap(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -293,14 +290,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
         title: const Text('Moje porudžbine'),
         actions: const [AppHomeButton()],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth:
-                isTwoPaneLayout ? Breakpoints.dataContentWidth(context) : 800,
-          ),
-          child: isTwoPaneLayout
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isTwoPaneLayout = constraints.maxWidth >= 960;
+          final contentPadding = isTwoPaneLayout ? 12.0 : 8.0;
+          final panelGap = isTwoPaneLayout ? 12.0 : 8.0;
+
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isTwoPaneLayout
+                    ? Breakpoints.dataContentWidth(context)
+                    : 840,
+              ),
+              child: isTwoPaneLayout
               ? Padding(
                   padding: EdgeInsets.all(contentPadding),
                   child: Row(
@@ -464,8 +468,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ),
                   ],
                 ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 }
+

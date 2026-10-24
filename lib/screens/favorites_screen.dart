@@ -96,32 +96,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final user = context.watch<AppState>().user;
     final favoritesProvider = context.watch<FavoritesProvider>();
     final isDesktop = Breakpoints.isDesktop(context);
-    final isWideDesktop = Breakpoints.isWideDesktop(context);
-    final isLargeTablet = Breakpoints.isLargeTablet(context);
-    final isSmallTablet = Breakpoints.isSmallTablet(context);
-    final isGridLayout = isDesktop || isLargeTablet || isSmallTablet;
-    final contentPadding = Breakpoints.horizontalPadding(context);
-    final gridColumns = isWideDesktop
-        ? 4
-        : isDesktop
-            ? 3
-            : isLargeTablet
-                ? 3
-                : 2;
-    final gridSpacing = Breakpoints.adaptiveDouble(
-      context,
-      phone: 12,
-      smallTabletValue: 12,
-      largeTabletValue: 14,
-      desktop: 14,
-    );
-    final gridExtent = isWideDesktop
-        ? 360.0
-        : isDesktop
-            ? 372.0
-            : isLargeTablet
-                ? 340.0
-                : 320.0;
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(
@@ -194,76 +168,73 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ? Breakpoints.dataContentWidth(context)
                       : Breakpoints.maxContentWidth(context),
                 ),
-                child: isGridLayout
-                    ? GridView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.all(contentPadding),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: gridColumns,
-                          crossAxisSpacing: gridSpacing,
-                          mainAxisSpacing: gridSpacing,
-                          mainAxisExtent: gridExtent,
-                        ),
-                        itemCount: visible.length + (hasMore ? 1 : 0),
-                        itemBuilder: (_, i) {
-                          if (i == visible.length) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          final p = visible[i];
-                          return Selector<FavoritesProvider, bool>(
-                            selector: (_, fav) => fav.isFavorite(p.id),
-                            builder: (_, isFavorite, __) {
-                              final user = context.watch<AppState>().user;
-                              final favorites =
-                                  context.read<FavoritesProvider>();
-                              return ProductCard(
-                                product: p,
-                                isFavorite: isFavorite,
-                                onFavoriteToggle: user != null && !user.isGuest
-                                    ? () => favorites.toggle(user.id, p.id)
-                                    : null,
-                              );
-                            },
-                          );
-                        },
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.all(contentPadding),
-                        itemCount: visible.length + (hasMore ? 1 : 0),
-                        itemBuilder: (_, i) {
-                          if (i == visible.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          final p = visible[i];
-                          return Selector<FavoritesProvider, bool>(
-                            selector: (_, fav) => fav.isFavorite(p.id),
-                            builder: (_, isFavorite, __) {
-                              final user = context.watch<AppState>().user;
-                              final favorites =
-                                  context.read<FavoritesProvider>();
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: ProductCard(
-                                  product: p,
-                                  isFavorite: isFavorite,
-                                  onFavoriteToggle: user != null &&
-                                          !user.isGuest
-                                      ? () => favorites.toggle(user.id, p.id)
-                                      : null,
-                                ),
-                              );
-                            },
-                          );
-                        },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availWidth = constraints.maxWidth;
+                    final int columns;
+                    final double extent;
+                    final double spacing;
+                    final EdgeInsets padding;
+
+                    if (availWidth >= 1100) {
+                      columns = 4;
+                      extent = 280;
+                      spacing = 10;
+                      padding = const EdgeInsets.all(12);
+                    } else if (availWidth >= 800) {
+                      columns = 3;
+                      extent = 280;
+                      spacing = 10;
+                      padding = const EdgeInsets.all(12);
+                    } else if (availWidth >= 520) {
+                      columns = 2;
+                      extent = 275;
+                      spacing = 8;
+                      padding = const EdgeInsets.all(10);
+                    } else {
+                      columns = availWidth >= 340 ? 2 : 1;
+                      extent = availWidth >= 340 ? 265 : 270;
+                      spacing = 8;
+                      padding = const EdgeInsets.all(8);
+                    }
+
+                    return GridView.builder(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: padding,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: spacing,
+                        mainAxisSpacing: spacing,
+                        mainAxisExtent: extent,
                       ),
+                      itemCount: visible.length + (hasMore ? 1 : 0),
+                      itemBuilder: (_, i) {
+                        if (i == visible.length) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final p = visible[i];
+                        return Selector<FavoritesProvider, bool>(
+                          selector: (_, fav) => fav.isFavorite(p.id),
+                          builder: (_, isFavorite, __) {
+                            final user = context.watch<AppState>().user;
+                            final favorites =
+                                context.read<FavoritesProvider>();
+                            return ProductCard(
+                              product: p,
+                              isFavorite: isFavorite,
+                              onFavoriteToggle: user != null && !user.isGuest
+                                  ? () => favorites.toggle(user.id, p.id)
+                                  : null,
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           );

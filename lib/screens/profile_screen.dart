@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Flexible(
           flex: 3,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 200, maxWidth: 430),
+            constraints: const BoxConstraints(minWidth: 200, maxWidth: 350),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -146,10 +146,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         'edit-profile', const EditProfileScreen(),
                         isWide: true),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   if (!user.isGuest) ...[
                     BuyerStatsCard(user: user),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                   ],
                   if (!user.isGuest && !user.isSeller) ...[
                     BecomeSellerCtaCard(
@@ -160,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         isWide: true,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                   ],
                   // SEKCIJA 1: MINI PIJACA (sa blago zelenkastom pozadinom)
                   ProfileMarketSection(
@@ -169,7 +169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onOpenPanel: _openPanel,
                     isActiveSection: _isActive,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   // SEKCIJA 2: OGLASNIK (sve stavke oglasnika na jednom mestu)
                   ProfileClassifiedsSection(
                     user: user,
@@ -177,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onOpenPanel: _openPanel,
                     isActiveSection: _isActive,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   // SEKCIJA 3: RECENZIJE I OCENE (zajednički ugled)
                   ProfileReviewsSection(
                     user: user,
@@ -185,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onOpenPanel: _openPanel,
                     isActiveSection: _isActive,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   // SEKCIJA 4: NALOG I PODEŠAVANJA
                   ProfileAccountSection(
                     user: user,
