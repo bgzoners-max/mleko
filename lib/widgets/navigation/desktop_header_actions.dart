@@ -290,7 +290,7 @@ class DesktopHeaderActions extends StatelessWidget {
                 icon: Icons.campaign_rounded,
               );
             } else {
-              context.push('/classifieds/new');
+              context.go('/profile?section=new-classified');
             }
           },
           style: ElevatedButton.styleFrom(

@@ -502,6 +502,18 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/classifieds/new',
+        redirect: (context, state) {
+          final mq = MediaQuery.maybeSizeOf(context);
+          final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
+          final width = mq?.width ??
+              (view != null && view.devicePixelRatio > 0
+                  ? view.physicalSize.width / view.devicePixelRatio
+                  : 1200);
+          if (width >= 960) {
+            return '/profile?section=new-classified';
+          }
+          return null;
+        },
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
@@ -510,6 +522,19 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/classifieds/edit/:id',
+        redirect: (context, state) {
+          final id = state.pathParameters['id'];
+          final mq = MediaQuery.maybeSizeOf(context);
+          final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
+          final width = mq?.width ??
+              (view != null && view.devicePixelRatio > 0
+                  ? view.physicalSize.width / view.devicePixelRatio
+                  : 1200);
+          if (width >= 960 && id != null) {
+            return '/profile?section=edit-classified&id=$id';
+          }
+          return null;
+        },
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
@@ -518,6 +543,18 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/classifieds/my',
+        redirect: (context, state) {
+          final mq = MediaQuery.maybeSizeOf(context);
+          final view = WidgetsBinding.instance.platformDispatcher.views.firstOrNull;
+          final width = mq?.width ??
+              (view != null && view.devicePixelRatio > 0
+                  ? view.physicalSize.width / view.devicePixelRatio
+                  : 1200);
+          if (width >= 960) {
+            return '/profile?section=my-classifieds';
+          }
+          return null;
+        },
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
@@ -593,10 +630,17 @@ GoRouter createRouter(AppState appState) {
             routes: [
               GoRoute(
                 path: '/profile',
-                pageBuilder: (context, state) => buildPageTransition(
-                  state: state,
-                  child: const ProfileScreen(),
-                ),
+                pageBuilder: (context, state) {
+                  final section = state.uri.queryParameters['section'];
+                  final id = state.uri.queryParameters['id'];
+                  return buildPageTransition(
+                    state: state,
+                    child: ProfileScreen(
+                      initialSection: section,
+                      targetId: id,
+                    ),
+                  );
+                },
               ),
             ],
           ),

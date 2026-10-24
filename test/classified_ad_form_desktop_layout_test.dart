@@ -67,7 +67,7 @@ void main() {
     );
   }
 
-  testWidgets('ClassifiedAdForm renders 3 balanced columns on desktop (width >= 960)', (tester) async {
+  testWidgets('ClassifiedAdForm renders 2 balanced columns on desktop (width >= 960) with seller type first', (tester) async {
     tester.view.physicalSize = const Size(1280, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -76,26 +76,26 @@ void main() {
     await tester.pumpWidget(buildTestWidget(screenSize: const Size(1280, 900)));
     await tester.pumpAndSettle();
 
-    // Verify Form child is Row with 3 columns on desktop
+    // Verify Form child is Row with 2 columns on desktop
     final formWidget = tester.widget<Form>(find.byType(Form));
     expect(formWidget.child, isA<Row>());
     final rowWidget = formWidget.child as Row;
 
-    // Verify 3 Expanded columns inside the Row
+    // Verify 2 Expanded columns inside the Row
     final expandedChildren = rowWidget.children.whereType<Expanded>().toList();
-    expect(expandedChildren.length, equals(3));
-    expect(expandedChildren[0].flex, equals(10)); // Leva
-    expect(expandedChildren[1].flex, equals(11)); // Srednja
-    expect(expandedChildren[2].flex, equals(10)); // Desna
+    expect(expandedChildren.length, equals(2));
 
-    // Verify Desna kolona contains Description, SellerType, Promotion, and SubmitButton at the end
+    // Verify Leva kolona starts with SellerType (first option)
+    final leftColumn = expandedChildren[0].child as Column;
+    expect(leftColumn.children.first, isA<ClassifiedSellerTypeSection>());
+
+    // Verify Desna kolona ends with SubmitButton
     expect(find.byType(ClassifiedDescriptionField), findsOneWidget);
-    expect(find.byType(ClassifiedSellerTypeSection), findsOneWidget);
     expect(find.byType(ClassifiedPromotionSection), findsOneWidget);
     expect(find.byType(ClassifiedSubmitButton), findsOneWidget);
   });
 
-  testWidgets('ClassifiedAdForm renders 1 column on mobile (width < 960)', (tester) async {
+  testWidgets('ClassifiedAdForm renders 1 column on mobile (width < 960) with seller type first', (tester) async {
     tester.view.physicalSize = const Size(400, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -104,8 +104,13 @@ void main() {
     await tester.pumpWidget(buildTestWidget(screenSize: const Size(400, 800)));
     await tester.pumpAndSettle();
 
-    // Verify no IntrinsicHeight on mobile
-    expect(find.byType(IntrinsicHeight), findsNothing);
+    // Verify Form child is Column on mobile
+    final formWidget = tester.widget<Form>(find.byType(Form));
+    expect(formWidget.child, isA<Column>());
+    final columnWidget = formWidget.child as Column;
+
+    // Verify first option on mobile is SellerType
+    expect(columnWidget.children.first, isA<ClassifiedSellerTypeSection>());
 
     // Verify SubmitButton still exists
     expect(find.byType(ClassifiedSubmitButton), findsOneWidget);

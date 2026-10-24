@@ -19,11 +19,23 @@ import '../widgets/profile/profile_classifieds_section.dart';
 import '../widgets/profile/profile_guest_prompt.dart';
 import '../widgets/profile/profile_market_section.dart';
 import '../widgets/profile/profile_reviews_section.dart';
+import 'classifieds/add_edit_classified_ad_screen.dart';
+import 'classifieds/my_classified_ads_screen.dart';
+import 'classifieds/saved_searches_screen.dart';
+import 'favorites_screen.dart';
+import 'favorite_sellers_screen.dart';
+import 'orders_screen.dart';
+import 'support_screen.dart';
+import 'about_screen.dart';
+import 'seller/seller_settings_screen.dart';
 import 'edit_profile_screen.dart';
 import 'seller/becoming_seller_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? initialSection;
+  final String? targetId;
+
+  const ProfileScreen({super.key, this.initialSection, this.targetId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -32,6 +44,43 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _panelNavKey = GlobalKey<NavigatorState>();
   String? _activeSection;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeSection = widget.initialSection;
+  }
+
+  @override
+  void didUpdateWidget(ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialSection != null &&
+        widget.initialSection != oldWidget.initialSection) {
+      final initialWidget =
+          _getInitialWidget(widget.initialSection, widget.targetId);
+      if (initialWidget != null) {
+        _showInPanel(widget.initialSection!, initialWidget);
+      }
+    }
+  }
+
+  Widget? _getInitialWidget(String? section, String? targetId) {
+    return switch (section) {
+      'new-classified' => const AddEditClassifiedAdScreen(),
+      'edit-classified' => AddEditClassifiedAdScreen(adId: targetId),
+      'my-classifieds' => const MyClassifiedAdsScreen(),
+      'orders' => const OrdersScreen(),
+      'favorites' => const FavoritesScreen(),
+      'favorite-sellers' => const FavoriteSellersScreen(),
+      'saved-searches' => const SavedSearchesScreen(),
+      'becoming-seller' => const BecomingSellerScreen(),
+      'edit-profile' => const EditProfileScreen(),
+      'seller-settings' => const SellerSettingsScreen(),
+      'support' => const SupportScreen(),
+      'about' => const AboutScreen(),
+      _ => null,
+    };
+  }
 
   void _showInPanel(String section, Widget screen) {
     setState(() => _activeSection = section);
@@ -258,7 +307,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Navigator(
                 key: _panelNavKey,
                 onGenerateRoute: (_) => MaterialPageRoute(
-                  builder: (_) => const PanelPlaceholder(),
+                  builder: (_) =>
+                      _getInitialWidget(_activeSection, widget.targetId) ??
+                      const PanelPlaceholder(),
                 ),
               ),
             ),
