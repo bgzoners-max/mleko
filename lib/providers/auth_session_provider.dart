@@ -69,6 +69,25 @@ class AuthSessionProvider extends ChangeNotifier {
         isGuest: false,
       );
       _authChecked = true;
+    } else {
+      // Ako nema sinhronog korisnika (web IndexedDB ili guest), proveravamo sesiju asinhrono
+      // kako _authChecked ne bi ostao false ako authStateChanges ne emituje event.
+      Future.microtask(() async {
+        if (_authChecked) return;
+        try {
+          final currentUser = await _auth.getCurrentUser();
+          if (_authChecked) return;
+          _user = currentUser;
+        } catch (_) {
+          if (_authChecked) return;
+          _user = null;
+        } finally {
+          if (!_authChecked) {
+            _authChecked = true;
+            notifyListeners();
+          }
+        }
+      });
     }
 
     _authSubscription =

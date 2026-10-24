@@ -6,7 +6,18 @@ import '../providers/app_state.dart';
 /// Centralna zaštita i preusmeravanje ruta (Guest flow, Auth guards, Admin, Email potvrda).
 String? routerRedirect(BuildContext context, GoRouterState state, AppState appState) {
   final loc = state.uri.path;
-  if (loc == '/splash') return null;
+  if (loc == '/splash') {
+    if (!appState.authChecked || appState.isLoading) return null;
+    final rawReturnTo = state.uri.queryParameters['returnTo'];
+    if (rawReturnTo != null && rawReturnTo.isNotEmpty) {
+      final decoded = Uri.decodeComponent(rawReturnTo);
+      final decodedUri = Uri.tryParse(decoded);
+      if (decodedUri != null && decodedUri.path != '/splash') {
+        return decoded;
+      }
+    }
+    return null;
+  }
   if (loc.startsWith('/onboarding')) return null;
   if (loc == '/verify-email') return null;
   if (loc == '/terms' ||

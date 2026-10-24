@@ -93,6 +93,27 @@ void main() {
       expect(resLoading, '/splash?returnTo=%2Fprofile');
     });
 
+    test('handles /splash with returnTo: stays while loading, redirects once auth is checked', () {
+      appState
+        ..authChecked = false
+        ..isLoading = false;
+
+      final resPending = routerRedirect(
+        context,
+        _FakeGoRouterState('/splash?returnTo=%2Fprofile'),
+        appState,
+      );
+      expect(resPending, isNull);
+
+      appState.authChecked = true;
+      final resReady = routerRedirect(
+        context,
+        _FakeGoRouterState('/splash?returnTo=%2Fprofile'),
+        appState,
+      );
+      expect(resReady, '/profile');
+    });
+
     test('redirects guest to /login?returnTo=... on protected routes', () {
       appState
         ..authChecked = true

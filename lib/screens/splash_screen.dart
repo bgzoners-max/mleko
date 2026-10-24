@@ -41,12 +41,25 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
-    if (returnTo != null && returnTo.isNotEmpty) {
-      context.go(returnTo);
-    } else {
-      context.go('/');
+    // Sačekaj da authChecked postane true (najviše 2.5s da ne blokira offline rad)
+    int waitMs = 0;
+    while (!appState.authChecked && waitMs < 2500 && mounted) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      waitMs += 100;
     }
+
+    if (!mounted) return;
+
+    final rawReturnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
+    if (rawReturnTo != null && rawReturnTo.isNotEmpty) {
+      final decoded = Uri.decodeComponent(rawReturnTo);
+      final decodedUri = Uri.tryParse(decoded);
+      if (decodedUri != null && decodedUri.path != '/splash') {
+        context.go(decoded);
+        return;
+      }
+    }
+    context.go('/');
   }
 
   @override

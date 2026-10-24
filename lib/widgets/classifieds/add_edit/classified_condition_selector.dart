@@ -23,7 +23,7 @@ class ClassifiedConditionSelector extends StatelessWidget {
       decoration: const InputDecoration(
         labelText: 'Stanje predmeta',
         isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       ),
       items: const [
         DropdownMenuItem(

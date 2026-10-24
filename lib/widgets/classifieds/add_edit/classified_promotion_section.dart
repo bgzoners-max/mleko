@@ -18,7 +18,7 @@ class ClassifiedPromotionSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -30,7 +30,7 @@ class ClassifiedPromotionSection extends StatelessWidget {
       ),
       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

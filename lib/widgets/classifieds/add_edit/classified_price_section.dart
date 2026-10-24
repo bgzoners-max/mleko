@@ -36,51 +36,41 @@ class ClassifiedPriceSection extends StatelessWidget {
         // Kada kategorija IMA stanje predmeta:
         if (hasPriceInput) {
           if (isDesktopWidth) {
-            // Desktop: Sve u jednom kompaktnom redu!
-            // [ Stanje predmeta ] [ Način formiranja cene ] [ Cena * ] [ Valuta ]
+            // Desktop: Sve u jednom redu sa kompaktno spojenom cenom i valutom
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 3, child: _buildConditionDropdown()),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(flex: 4, child: _buildPriceTypeDropdown()),
-                const SizedBox(width: 10),
-                Expanded(flex: 3, child: _buildPriceField()),
-                const SizedBox(width: 10),
-                Expanded(flex: 2, child: _buildCurrencyDropdown()),
+                const SizedBox(width: 8),
+                Expanded(flex: 5, child: _buildPriceWithCurrency()),
               ],
             );
           } else {
-            // Srednji tablet ekran (600-719px): 2 lepa reda od po 2 polja
+            // Srednji tablet ekran (600-719px): 2 reda
             return Column(
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: _buildConditionDropdown()),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(child: _buildPriceTypeDropdown()),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 3, child: _buildPriceField()),
-                    const SizedBox(width: 10),
-                    Expanded(flex: 2, child: _buildCurrencyDropdown()),
-                  ],
-                ),
+                const SizedBox(height: 8),
+                _buildPriceWithCurrency(),
               ],
             );
           }
         } else {
-          // Pozvati ili Besplatno: Nema polja cene, samo Stanje i Način formiranja u istom redu
+          // Pozvati ili Besplatno: Nema polja cene, samo Stanje i Način formiranja
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: _buildConditionDropdown()),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(child: _buildPriceTypeDropdown()),
             ],
           );
@@ -92,10 +82,8 @@ class ClassifiedPriceSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(flex: 4, child: _buildPriceTypeDropdown()),
-              const SizedBox(width: 10),
-              Expanded(flex: 3, child: _buildPriceField()),
-              const SizedBox(width: 10),
-              Expanded(flex: 2, child: _buildCurrencyDropdown()),
+              const SizedBox(width: 8),
+              Expanded(flex: 5, child: _buildPriceWithCurrency()),
             ],
           );
         } else {
@@ -110,19 +98,12 @@ class ClassifiedPriceSection extends StatelessWidget {
       children: [
         if (isConditionApplicable) ...[
           _buildConditionDropdown(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
         ],
         _buildPriceTypeDropdown(),
         if (hasPriceInput) ...[
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 3, child: _buildPriceField()),
-              const SizedBox(width: 10),
-              Expanded(flex: 2, child: _buildCurrencyDropdown()),
-            ],
-          ),
+          const SizedBox(height: 8),
+          _buildPriceWithCurrency(),
         ],
       ],
     );
@@ -143,7 +124,7 @@ class ClassifiedPriceSection extends StatelessWidget {
       decoration: const InputDecoration(
         labelText: 'Način formiranja cene',
         isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       ),
       items: const [
         DropdownMenuItem(
@@ -175,7 +156,7 @@ class ClassifiedPriceSection extends StatelessWidget {
         labelText: priceType == 'fixed' ? 'Cena *' : 'Okvirna cena',
         hintText: 'npr. 2500',
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       ),
       validator: (v) {
         if (priceType == 'fixed' && (v == null || v.trim().isEmpty)) {
@@ -186,26 +167,58 @@ class ClassifiedPriceSection extends StatelessWidget {
     );
   }
 
-  Widget _buildCurrencyDropdown() {
-    return DropdownButtonFormField<String>(
-      isExpanded: true,
-      initialValue: currency,
-      decoration: const InputDecoration(
-        labelText: 'Valuta',
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+  Widget _buildCurrencySelector() {
+    final selectedCurrency = currency.toUpperCase() == 'EUR' ? 'EUR' : 'RSD';
+    return SizedBox(
+      width: 92,
+      height: 42,
+      child: SegmentedButton<String>(
+        showSelectedIcon: false,
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+          side: WidgetStatePropertyAll(
+            BorderSide(color: Colors.grey.shade300, width: 1.0),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        ),
+        segments: const [
+          ButtonSegment<String>(
+            value: 'RSD',
+            label: Text(
+              'RSD',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+          ButtonSegment<String>(
+            value: 'EUR',
+            label: Text(
+              'EUR',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+        selected: {selectedCurrency},
+        onSelectionChanged: (newSelection) {
+          if (newSelection.isNotEmpty) {
+            onCurrencyChanged(newSelection.first);
+          }
+        },
       ),
-      items: const [
-        DropdownMenuItem(
-          value: 'RSD',
-          child: Text('RSD (din)', overflow: TextOverflow.ellipsis),
-        ),
-        DropdownMenuItem(
-          value: 'EUR',
-          child: Text('EUR (€)', overflow: TextOverflow.ellipsis),
-        ),
+    );
+  }
+
+  Widget _buildPriceWithCurrency() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _buildPriceField()),
+        const SizedBox(width: 8),
+        _buildCurrencySelector(),
       ],
-      onChanged: onCurrencyChanged,
     );
   }
 }

@@ -581,13 +581,15 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 32 : 16,
-          vertical: 14,
+          horizontal: isTablet ? 24 : 16,
+          vertical: 12,
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: (isTablet || Breakpoints.isDesktop(context)) ? 780 : 640,
+              maxWidth: (Breakpoints.isDesktop(context) || MediaQuery.sizeOf(context).width >= 960)
+                  ? 1040
+                  : (isTablet ? 720 : 600),
             ),
             child: ClassifiedAdForm(
               formKey: _formKey,
