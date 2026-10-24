@@ -1,0 +1,17 @@
+#!/bin/sh
+# Pre-commit guard za repozitorijum Mleko.
+# Pokreće se pre svakog commita i sprečava ubacivanje sekreta ili štetnog koda.
+#
+# Instalacija:
+#   chmod +x .githooks/pre-commit
+#   dart run scripts/setup_githooks.dart   (ili: ln -s ../../.githooks/pre-commit .git/hooks/pre-commit)
+
+set -e
+
+echo "Pre-commit: provera da nisu commitovani sekreti..."
+dart run tool/check_no_committed_secrets.dart
+
+echo "Pre-commit: statička analiza (fatal infos)..."
+dart analyze --fatal-infos lib tool
+
+echo "Pre-commit: sve provere prošle."

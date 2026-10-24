@@ -41,6 +41,10 @@
 /version.json
   Cache-Control: public, max-age=0, s-maxage=3600
 
+/health.json
+  Content-Type: application/json; charset=UTF-8
+  Cache-Control: public, max-age=0, s-maxage=60
+
 /robots.txt
   Content-Type: text/plain; charset=UTF-8
   Cache-Control: public, max-age=86400

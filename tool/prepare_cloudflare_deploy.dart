@@ -202,6 +202,13 @@ void main() {
     }
   }
 
+  // 7c. Health endpoint — statički /health.json za monitoring, uptime provere i
+  //     post-deploy smoke test (vidi docs/DEPLOYMENT.md). Cloudflare Pages ga
+  //     servira kao običan statički fajl bez pokretanja app koda.
+  final healthFile = File('${deployDir.path}/health.json');
+  healthFile.writeAsStringSync(_buildHealthJson());
+  stdout.writeln('Generated /health.json endpoint');
+
   // 8. Prikaz statistike pripremljenog bundle-a
   final totalBytes = _calculateDirectorySize(deployDir);
   final totalMB = (totalBytes / (1024 * 1024)).toStringAsFixed(2);
@@ -216,21 +223,24 @@ void main() {
   stdout.writeln('----------------------------------------------------');
 }
 
-String _getBuildHash(Directory buildWebDir) {
-  String? commitSha;
+String? _gitShortSha() {
   final envSha = Platform.environment['GITHUB_SHA'];
   if (envSha != null && envSha.trim().isNotEmpty) {
     final s = envSha.trim();
-    commitSha = s.length > 8 ? s.substring(0, 8) : s;
-  } else {
-    try {
-      final res = Process.runSync('git', ['rev-parse', '--short', 'HEAD']);
-      if (res.exitCode == 0) {
-        final s = res.stdout.toString().trim();
-        if (s.isNotEmpty) commitSha = s;
-      }
-    } catch (_) {}
+    return s.length > 8 ? s.substring(0, 8) : s;
   }
+  try {
+    final res = Process.runSync('git', ['rev-parse', '--short', 'HEAD']);
+    if (res.exitCode == 0) {
+      final s = res.stdout.toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+  } catch (_) {}
+  return null;
+}
+
+String _getBuildHash(Directory buildWebDir) {
+  final commitSha = _gitShortSha();
 
   final timestamp = DateTime.now().millisecondsSinceEpoch.toRadixString(36);
   if (commitSha != null) {
@@ -245,6 +255,31 @@ String _getBuildHash(Directory buildWebDir) {
     return '${mod}_${len}_$timestamp';
   }
   return timestamp;
+}
+
+/// Čita `version:` iz pubspec.yaml (npr. `1.1.6+16`).
+String _readAppVersion() {
+  try {
+    final pubspec = File('pubspec.yaml');
+    if (!pubspec.existsSync()) return 'unknown';
+    for (final line in pubspec.readAsLinesSync()) {
+      final match = RegExp(r'^version:\s*(\S+)').firstMatch(line);
+      if (match != null) return match.group(1)!;
+    }
+  } catch (_) {}
+  return 'unknown';
+}
+
+/// Sadržaj /health.json — identitet build-a za smoke testove i rollback proveru.
+String _buildHealthJson() {
+  final encoder = const JsonEncoder.withIndent('  ');
+  return encoder.convert({
+    'status': 'ok',
+    'app': 'domaci-market',
+    'version': _readAppVersion(),
+    'commit': _gitShortSha() ?? 'unknown',
+    'built_at': DateTime.now().toUtc().toIso8601String(),
+  });
 }
 
 int _calculateDirectorySize(Directory dir) {

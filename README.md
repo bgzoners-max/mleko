@@ -1,7 +1,7 @@
 # Naše Selo (mleko) — Marketplace & Oglasnik Domaćih Proizvoda
 
 [![CI](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-35.42%25-yellowgreen)](STATUS.md)
+[![Coverage](https://img.shields.io/badge/Coverage-36.04%25-yellowgreen)](STATUS.md)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth%20%7C%20Storage-3ECF8E?logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)]()
@@ -130,6 +130,9 @@ Za detaljnije tehničke specifikacije pogledajte prateću dokumentaciju u repozi
 | **[docs/SUPABASE_DATABASE.md](docs/SUPABASE_DATABASE.md)** | Izvor istine za bazu, pravila migracija, deploy procedura (`supabase db push`) i RLS. |
 | **[docs/MIGRATIONS_SOLO.md](docs/MIGRATIONS_SOLO.md)** | Rad sa SQL migracijama, rešavanje konflikata i postupak deploymenta šeme. |
 | **[docs/PUSH_SETUP.md](docs/PUSH_SETUP.md)** | Arhitektura i podešavanje FCM push notifikacija i Edge funkcija. |
+| **[supabase/functions/send-push/README.md](supabase/functions/send-push/README.md)** | API ugovor `send-push` Edge funkcije: autorizacija, request/response, primeri poziva. |
+| **[docs/INCIDENT_RUNBOOK.md](docs/INCIDENT_RUNBOOK.md)** | **Operativni runbook za incidente**: push dijagnostika, Edge redeploy, reset FCM tokena, RLS revizija, eskalacija. |
+| **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** | **Deploy & rollback**: Cloudflare Pages pipeline, `/health.json` smoke test, pre-commit githook, preview deploy. |
 | **[docs/LOGIKA_PORUDZBINE.md](docs/LOGIKA_PORUDZBINE.md)** | Detaljan tok kreiranja porudžbina, validacija i bezbednosni triggeri. |
 | **[docs/ERROR_HANDLING_GUIDE.md](docs/ERROR_HANDLING_GUIDE.md)** | Standardizovani obrasci rukovanja greškama i mrežnim prekidima. |
 | **[docs/OFFLINE_MODE_GUIDE.md](docs/OFFLINE_MODE_GUIDE.md)** | Keširanje podataka, offline režim rada i sinhronizacija. |

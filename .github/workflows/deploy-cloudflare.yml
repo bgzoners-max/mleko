@@ -42,3 +42,23 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '11626edfa0823bc02363325d0792c18f' }}
+
+      # Post-deploy smoke test: novi deployment mora biti "live" i zdrav.
+      # /health.json generiše prepare_cloudflare_deploy.dart (status/version/commit).
+      # Ako 5 pokušaja ne uspe, workflow pada — rollback postupak: docs/DEPLOYMENT.md.
+      - name: Post-deploy health check (domacimarket.rs)
+        run: |
+          for i in 1 2 3 4 5; do
+            sleep 20
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" https://domacimarket.rs/health.json || echo 000)
+            if [ "$code" = "200" ]; then
+              cat /tmp/health.json
+              if jq -e '.status == "ok"' /tmp/health.json > /dev/null; then
+                echo "Health OK — deployment je live."
+                exit 0
+              fi
+            fi
+            echo "Pokušaj $i/5: HTTP $code — čekam da Cloudflare propagation završi..."
+          done
+          echo "::error::Health check nije prošao nakon 5 pokušaja — pokreni rollback (docs/DEPLOYMENT.md)."
+          exit 1

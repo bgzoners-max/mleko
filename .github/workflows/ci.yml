@@ -36,8 +36,10 @@ jobs:
       - name: Guard against seed test users in migrations
         run: dart run tool/check_no_seed_data_in_migrations.dart
 
+      # Info nalazi su fatalni: analyzer je 2026-10 sa 0 grešaka/upozorenja, pa se
+      # svako buduće štetno labavljenje kvaliteta (novo info upozorenje) blokira.
       - name: Flutter analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --fatal-infos
 
       - name: Flutter test (with coverage)
         run: flutter test --coverage
@@ -146,6 +148,9 @@ jobs:
 
       - name: Type-check Supabase edge functions
         run: deno check --config supabase/functions/deno.json supabase/functions/send-push/index.ts
+
+      - name: Unit test Supabase edge function helpers (Deno)
+        run: deno test supabase/functions/send-push/push_helpers.test.ts
 
       - name: Install PostgreSQL client
         run: |

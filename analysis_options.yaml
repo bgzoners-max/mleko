@@ -5,6 +5,9 @@ linter:
     # Stil i konzistentnost
     avoid_print: true
     avoid_empty_else: true
+    # Aktivan od 2026-10-24 — svih 75 istorijskih nalaza očišćeno u kaskade
+    # (lib/, test/, integration_test/). CI pokreće `flutter analyze --fatal-infos`,
+    # pa je svaki info nalaz fatalan — održavaj kaskade u novom kodu.
     cascade_invocations: true
     prefer_const_constructors: true
     prefer_const_declarations: true
