@@ -588,7 +588,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: (Breakpoints.isDesktop(context) || MediaQuery.sizeOf(context).width >= 960)
-                  ? 1040
+                  ? 1200
                   : (isTablet ? 720 : 600),
             ),
             child: ClassifiedAdForm(

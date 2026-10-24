@@ -136,130 +136,132 @@ class ClassifiedAdForm extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // LEVA KOLONA: Slike, Lokacija, Kontakt, Zakonska deklaracija, Promocija
-            Expanded(
-              flex: 5,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClassifiedImagePickerRow(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    isPickingImages: isPickingImages,
-                    onPickImages: onPickImages,
-                    existingImages: existingImages,
-                    newImageBytes: newImageBytes,
-                    onRemoveExisting: onRemoveExisting,
-                    onRemoveNew: onRemoveNew,
-                    incomingCount: incomingCount,
-                    imageProcessingStatus: imageProcessingStatus,
-                    imageProcessingProgress: imageProcessingProgress,
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: ClassifiedCityAutocomplete(controller: cityController),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
-                          controller: phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Kontakt telefon',
-                            hintText: 'npr. 064 123 4567',
-                            prefixIcon: Icon(Icons.phone_outlined, size: 18),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SwitchListTile.adaptive(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Prikaži telefon javno u oglasu',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              // 1. LEVA KOLONA: Slike, Grad / Lokacija, Kontakt telefon, Javni prikaz
+              Expanded(
+                flex: 10,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ClassifiedImagePickerRow(
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      isPickingImages: isPickingImages,
+                      onPickImages: onPickImages,
+                      existingImages: existingImages,
+                      newImageBytes: newImageBytes,
+                      onRemoveExisting: onRemoveExisting,
+                      onRemoveNew: onRemoveNew,
+                      incomingCount: incomingCount,
+                      imageProcessingStatus: imageProcessingStatus,
+                      imageProcessingProgress: imageProcessingProgress,
                     ),
-                    subtitle: const Text(
-                      'Ako isključite, kupci vas mogu kontaktirati samo preko poruka na sajtu.',
-                      style: TextStyle(fontSize: 11),
+                    const SizedBox(height: 12),
+                    ClassifiedCityAutocomplete(controller: cityController),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Kontakt telefon',
+                        hintText: 'npr. 064 123 4567',
+                        prefixIcon: Icon(Icons.phone_outlined, size: 18),
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      ),
                     ),
-                    value: phonePublic,
-                    onChanged: onPhonePublicChanged,
-                  ),
-                  const SizedBox(height: 6),
-                  ClassifiedSellerTypeSection(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    sellerType: sellerType,
-                    onChanged: onSellerTypeChanged,
-                  ),
-                  ClassifiedPromotionSection(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    isUrgent: isUrgent,
-                    onUrgentChanged: onUrgentChanged,
-                  ),
-                ],
+                    SwitchListTile.adaptive(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Prikaži telefon javno u oglasu',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: const Text(
+                        'Ako isključite, kupci vas mogu kontaktirati samo preko poruka na sajtu.',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                      value: phonePublic,
+                      onChanged: onPhonePublicChanged,
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(width: 20),
+              const SizedBox(width: 16),
 
-            // DESNA KOLONA: Naslov, Kategorija, Cena, Atributi, Opis, Submit dugme
-            Expanded(
-              flex: 6,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClassifiedTitleField(controller: titleController),
-                  ClassifiedCategorySelector(
-                    selectedCategoryId: selectedCategoryId,
-                    selectedCategoryName: selectedCategoryName,
-                    colorScheme: colorScheme,
-                    onTap: onOpenCategoryPicker,
-                  ),
-                  const SizedBox(height: 10),
-                  ClassifiedPriceSection(
-                    isConditionApplicable: isConditionApplicable,
-                    condition: condition,
-                    onConditionChanged: onConditionChanged,
-                    priceType: priceType,
-                    currency: currency,
-                    priceController: priceController,
-                    onPriceTypeChanged: onPriceTypeChanged,
-                    onCurrencyChanged: onCurrencyChanged,
-                  ),
-                  const SizedBox(height: 10),
-                  ClassifiedAttributesWrapper(
-                    theme: theme,
-                    colorScheme: colorScheme,
-                    categoryId: selectedCategoryId,
-                    breadcrumbs: selectedCategoryBreadcrumbs,
-                    currentAttributes: attributes,
-                    onChanged: onAttributeChanged,
-                  ),
-                  ClassifiedDescriptionField(controller: descController),
-                  const SizedBox(height: 8),
-                  ClassifiedSubmitButton(
-                    loading: loading,
-                    isEdit: isEdit,
-                    uploadStatusText: uploadStatusText,
-                    onSubmit: onSubmit,
-                  ),
-                  const SizedBox(height: 32),
-                ],
+              // 2. SREDNJA KOLONA: Naslov, Kategorija, Stanje & Cena, Dinamički atributi
+              Expanded(
+                flex: 11,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ClassifiedTitleField(controller: titleController),
+                    ClassifiedCategorySelector(
+                      selectedCategoryId: selectedCategoryId,
+                      selectedCategoryName: selectedCategoryName,
+                      colorScheme: colorScheme,
+                      onTap: onOpenCategoryPicker,
+                    ),
+                    const SizedBox(height: 10),
+                    ClassifiedPriceSection(
+                      isConditionApplicable: isConditionApplicable,
+                      condition: condition,
+                      onConditionChanged: onConditionChanged,
+                      priceType: priceType,
+                      currency: currency,
+                      priceController: priceController,
+                      onPriceTypeChanged: onPriceTypeChanged,
+                      onCurrencyChanged: onCurrencyChanged,
+                    ),
+                    const SizedBox(height: 10),
+                    ClassifiedAttributesWrapper(
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      categoryId: selectedCategoryId,
+                      breadcrumbs: selectedCategoryBreadcrumbs,
+                      currentAttributes: attributes,
+                      onChanged: onAttributeChanged,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    }
+
+              const SizedBox(width: 16),
+
+              // 3. DESNA KOLONA: Detaljan opis, Zakonska deklaracija, Promocija, Dugme za objavu (na kraju)
+              Expanded(
+                flex: 10,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ClassifiedDescriptionField(controller: descController),
+                    ClassifiedSellerTypeSection(
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      sellerType: sellerType,
+                      onChanged: onSellerTypeChanged,
+                    ),
+                    ClassifiedPromotionSection(
+                      theme: theme,
+                      colorScheme: colorScheme,
+                      isUrgent: isUrgent,
+                      onUrgentChanged: onUrgentChanged,
+                    ),
+                    const SizedBox(height: 12),
+                    ClassifiedSubmitButton(
+                      loading: loading,
+                      isEdit: isEdit,
+                      uploadStatusText: uploadStatusText,
+                      onSubmit: onSubmit,
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
 
     // Mobilni i uži prikaz (< 960px)
     return Form(

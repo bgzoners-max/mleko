@@ -35,13 +35,14 @@ class ClassifiedImagePickerRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 6,
           children: [
             Text(
               'Fotografije oglasa (do 8 slika)',
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(width: 8),
             Text(
               '– možete izabrati više odjednom',
               style: theme.textTheme.bodySmall?.copyWith(

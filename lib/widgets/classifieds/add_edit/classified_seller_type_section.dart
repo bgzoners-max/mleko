@@ -148,11 +148,13 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
                       color: colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Tip oglašivača * (Zakonska deklaracija)',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.5,
+                    Expanded(
+                      child: Text(
+                        'Tip oglašivača * (Zakonska deklaracija)',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14.5,
+                        ),
                       ),
                     ),
                   ],
