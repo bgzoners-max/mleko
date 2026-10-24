@@ -24,8 +24,9 @@ class SearchHistoryService {
   Future<void> addToHistory(String query) async {
     if (query.trim().isEmpty) return;
     final history = await getHistory();
-    history.remove(query.trim());
-    history.insert(0, query.trim());
+    history
+      ..remove(query.trim())
+      ..insert(0, query.trim());
     if (history.length > _maxItems) {
       history.removeRange(_maxItems, history.length);
     }

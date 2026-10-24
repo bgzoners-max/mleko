@@ -111,4 +111,24 @@ class ChatRoomManager {
           extra: {'conversationId': conversationId, 'error': e.toString()});
     }
   }
+
+  /// Oslobađa sve aktivne sobe i odjavljuje sve Realtime kanale (npr. pri odjavi korisnika).
+  Future<void> releaseAll(SupabaseClient client) async {
+    final rooms = List.of(_rooms.values);
+    _rooms.clear();
+    for (final room in rooms) {
+      room.onMessageCallbacks.clear();
+      room.onTypingCallbacks.clear();
+      room.onReactionCallbacks.clear();
+      room.refCount = 0;
+      try {
+        await client.removeChannel(room.channel);
+      } catch (e) {
+        LoggerService.warning(
+          'Failed to remove conversation room channel on releaseAll',
+          extra: {'error': e.toString()},
+        );
+      }
+    }
+  }
 }

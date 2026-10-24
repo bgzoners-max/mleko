@@ -45,13 +45,11 @@ void main() {
     });
 
     test('scheduleLoadUnreadCount cancels prior debounce timer and resets delay', () async {
+      // Schedule first debounce
       final appState = AppState(
         ordersService: OrdersService(),
         authService: _FakeAuthService(),
-      );
-
-      // Schedule first debounce
-      appState.scheduleLoadUnreadCountForTesting(const Duration(milliseconds: 500));
+      )..scheduleLoadUnreadCountForTesting(const Duration(milliseconds: 500));
       final timer1 = appState.unreadDebounceTimer;
       expect(timer1, isNotNull);
       expect(timer1!.isActive, isTrue);
@@ -103,10 +101,10 @@ void main() {
       );
 
       var notified = 0;
-      appState.addListener(() => notified++);
-
-      // increment kroz fasadu -> vidljivo i na fasadi i na provideru
-      appState.incrementUnreadCount();
+      appState
+        ..addListener(() => notified++)
+        // increment kroz fasadu -> vidljivo i na fasadi i na provideru
+        ..incrementUnreadCount();
       expect(appState.unreadNotificationCount, equals(1));
       expect(unread.unreadCount, equals(1));
       expect(notified, equals(1));
@@ -131,9 +129,9 @@ void main() {
       );
 
       var notified = 0;
-      appState.addListener(() => notified++);
-
-      appState.markPendingEmailVerification();
+      appState
+        ..addListener(() => notified++)
+        ..markPendingEmailVerification();
       // Does not notify yet
       expect(appState.justConfirmedEmail, isFalse);
 

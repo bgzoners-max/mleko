@@ -103,8 +103,9 @@ void showClassifiedCityPickerSheet(BuildContext context) {
                                 ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
                                 : null,
                             onTap: () {
-                              provider.selectCity(null);
-                              provider.selectDistrict(null);
+                              provider
+                                ..selectCity(null)
+                                ..selectDistrict(null);
                               Navigator.pop(ctx);
                             },
                           ),
@@ -300,9 +301,10 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          provider.setPriceRange(minPrice: null, maxPrice: null);
-                          provider.removeAttributeFilter('min_area_m2');
-                          provider.removeAttributeFilter('max_area_m2');
+                          provider
+                            ..setPriceRange(minPrice: null, maxPrice: null)
+                            ..removeAttributeFilter('min_area_m2')
+                            ..removeAttributeFilter('max_area_m2');
                           Navigator.pop(ctx);
                         },
                         style: OutlinedButton.styleFrom(

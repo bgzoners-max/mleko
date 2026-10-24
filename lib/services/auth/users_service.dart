@@ -172,11 +172,12 @@ class UsersService {
           updateData['seller_quick_replies'] = user.sellerQuickReplies;
         }
       } else {
-        updateData.addAll(user.toDbMap());
-        updateData.remove('id');
-        updateData.remove('created_at');
-        updateData.remove('is_admin');
-        updateData.remove('is_verified');
+        updateData
+          ..addAll(user.toDbMap())
+          ..remove('id')
+          ..remove('created_at')
+          ..remove('is_admin')
+          ..remove('is_verified');
       }
 
       if (updateData.length > 1) {
@@ -193,8 +194,9 @@ class UsersService {
           insertData['email'] ??= _client.auth.currentUser?.email;
           insertData['role'] ??= user.role == UserRole.seller ? 'seller' : 'buyer';
           insertData['is_guest'] ??= user.isGuest;
-          insertData.remove('is_admin');
-          insertData.remove('is_verified');
+          insertData
+            ..remove('is_admin')
+            ..remove('is_verified');
           await _client.from('profiles').insert(insertData);
         }
       }

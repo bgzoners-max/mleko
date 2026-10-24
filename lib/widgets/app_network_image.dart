@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../utils/image_precache_utils.dart';
 import '../utils/image_url_utils.dart';
 
 /// Zajednički wrapper za mrežne slike – podržava automatsku server-side
@@ -230,6 +231,9 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
 
     return CachedNetworkImage(
       imageUrl: resolvedUrl,
+      cacheManager: AppImageCache.cacheManager,
+      maxWidthDiskCache: 800,
+      maxHeightDiskCache: 800,
       width: widget.width,
       height: widget.height,
       fit: widget.fit,

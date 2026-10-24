@@ -92,9 +92,9 @@ void main() {
     });
 
     test('whitelisted route in payload triggers router.go', () {
-      final handler = NotificationHandlerService(router: mockRouter, appState: appState);
-
-      handler.handleNotification({'route': '/orders/active'});
+      final handler = NotificationHandlerService(router: mockRouter, appState: appState)
+        // Whitelisted absolute route goes through router.go
+        ..handleNotification({'route': '/orders/active'});
       expect(mockRouter.lastGoPath, equals('/orders/active'));
 
       handler.handleNotification({'route': '/chat/conversation-xyz'});
@@ -102,13 +102,12 @@ void main() {
     });
 
     test('disallowed route in payload is dropped and falls back to safe type-based routing', () {
-      final handler = NotificationHandlerService(router: mockRouter, appState: appState);
-
-      // Malicious route + valid order event: dropped route, falls back to /orders
-      handler.handleNotification({
-        'route': 'https://evil.com/steal-token',
-        'type': 'new_order',
-      });
+      final handler = NotificationHandlerService(router: mockRouter, appState: appState)
+        // Malicious route + valid order event: dropped route, falls back to /orders
+        ..handleNotification({
+          'route': 'https://evil.com/steal-token',
+          'type': 'new_order',
+        });
       expect(mockRouter.lastGoPath, equals('/orders'));
 
       // Non-admin payload trying to push to admin screen: dropped route, falls back to chat
@@ -121,10 +120,9 @@ void main() {
     });
 
     test('support_ticket_created routes to /admin/tickets only for admin, fallback /support for user', () {
-      final handler = NotificationHandlerService(router: mockRouter, appState: appState);
-
-      // Standard user
-      handler.handleNotification({'type': 'support_ticket_created'});
+      final handler = NotificationHandlerService(router: mockRouter, appState: appState)
+        // Standard user
+        ..handleNotification({'type': 'support_ticket_created'});
       expect(mockRouter.lastGoPath, equals('/support'));
 
       // Admin user

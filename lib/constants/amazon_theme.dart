@@ -83,6 +83,12 @@ class AmazonColors {
     return Theme.of(context).brightness == Brightness.dark ? darkAmberCta : amber;
   }
 
+  static Color getDealRed(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFFF8B72)
+        : dealRed;
+  }
+
   /// Meka, difuzna organska senka za kartice
   static List<BoxShadow> getCardShadow(BuildContext context, {bool isHovered = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

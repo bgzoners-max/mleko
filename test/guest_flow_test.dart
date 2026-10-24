@@ -9,8 +9,8 @@ import 'package:provider/provider.dart';
 
 void main() {
   testWidgets('GuestNoticeBanner renders SizedBox.shrink for everyone', (tester) async {
-    final appState = AppState(ordersService: OrdersService());
-    appState.setUserForTesting(null);
+    final appState = AppState(ordersService: OrdersService())
+      ..setUserForTesting(null);
 
     await tester.pumpWidget(
       ChangeNotifierProvider<AppState>.value(
@@ -29,8 +29,8 @@ void main() {
   });
 
   testWidgets('ProfileScreen shows login prompt instead of personal data when user is null', (tester) async {
-    final appState = AppState(ordersService: OrdersService());
-    appState.setUserForTesting(null);
+    final appState = AppState(ordersService: OrdersService())
+      ..setUserForTesting(null);
 
     await tester.pumpWidget(
       ChangeNotifierProvider<AppState>.value(
@@ -50,8 +50,8 @@ void main() {
 
   testWidgets('OrdersScreen shows login prompt instead of order query when user is null', (tester) async {
     final ordersService = OrdersService();
-    final appState = AppState(ordersService: ordersService);
-    appState.setUserForTesting(null);
+    final appState = AppState(ordersService: ordersService)
+      ..setUserForTesting(null);
 
     await tester.pumpWidget(
       MultiProvider(

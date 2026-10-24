@@ -35,9 +35,8 @@ void main() {
     });
 
     test('reset allows immediate acquire again', () {
-      final throttle =
-          RefetchThrottle(minInterval: const Duration(minutes: 1));
-      throttle.tryAcquire();
+      final throttle = RefetchThrottle(minInterval: const Duration(minutes: 1))
+        ..tryAcquire();
       expect(throttle.tryAcquire(), isFalse);
       throttle.reset();
       expect(throttle.tryAcquire(), isTrue);

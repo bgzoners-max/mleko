@@ -269,14 +269,12 @@ void main() {
     });
 
     test('setForegroundHandler and setMessageOpenedHandler handle rapid double invocation safely', () async {
-      final router = PushRouter();
-
-      // Poziv 2x uzastopno ne sme baciti exception niti ući u race condition sa stream otkazivanjem
-      router.setForegroundHandler((_) {});
-      router.setForegroundHandler((_) {});
-
-      router.setMessageOpenedHandler((_) {});
-      router.setMessageOpenedHandler((_) {});
+      PushRouter()
+        // Poziv 2x uzastopno ne sme baciti exception niti ući u race condition sa stream otkazivanjem
+        ..setForegroundHandler((_) {})
+        ..setForegroundHandler((_) {})
+        ..setMessageOpenedHandler((_) {})
+        ..setMessageOpenedHandler((_) {});
 
       expect(PushRouter.hasForegroundHandler, isTrue);
       expect(PushRouter.hasMessageOpenedHandler, isTrue);

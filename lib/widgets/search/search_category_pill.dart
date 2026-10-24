@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../constants/amazon_theme.dart';
 import '../category_icon.dart';
 
 class SearchCategoryPill extends StatefulWidget {
@@ -28,16 +29,24 @@ class _SearchCategoryPillState extends State<SearchCategoryPill> {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = const Color(0xFF1F5A3B);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final activeColor = isDark ? theme.colorScheme.primary : const Color(0xFF1F5A3B);
     final selected = widget.selected;
     final hasCount = widget.count != null;
-    final foregroundColor = selected ? Colors.white : const Color(0xFF244030);
+    final foregroundColor = selected
+        ? Colors.white
+        : (isDark ? AmazonColors.darkTextPrimary : const Color(0xFF244030));
     final backgroundColor = selected
         ? activeColor
-        : (_hovered ? const Color(0xFFE6F0E9) : Colors.white);
+        : (_hovered
+            ? (isDark ? AmazonColors.darkCard.withValues(alpha: 0.8) : const Color(0xFFE6F0E9))
+            : (isDark ? AmazonColors.darkCard : Colors.white));
     final borderColor = selected
         ? activeColor
-        : (_hovered ? const Color(0xFF7FA489) : const Color(0xFFD6E1D9));
+        : (_hovered
+            ? (isDark ? theme.colorScheme.primary.withValues(alpha: 0.5) : const Color(0xFF7FA489))
+            : (isDark ? AmazonColors.darkBorder : const Color(0xFFD6E1D9)));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),

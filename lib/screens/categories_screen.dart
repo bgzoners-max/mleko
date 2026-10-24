@@ -78,10 +78,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       );
     }
     if (sections.isEmpty) {
-      return const AppEmptyState(
+      return AppEmptyState(
         icon: Icons.category_outlined,
         title: 'Nema kategorija',
         subtitle: 'Kategorije će se pojaviti kada budu dodate.',
+        ctaLabel: 'Osveži prikaz',
+        ctaIcon: Icons.refresh,
+        onCtaPressed: () => catProvider.refresh(),
       );
     }
 

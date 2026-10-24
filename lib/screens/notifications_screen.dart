@@ -36,6 +36,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   StreamSubscription? _notifEventsSub;
   String? _lastUserId;
   bool? _notificationPermissionGranted;
+  List<NotificationModel> _loadedNotifications = [];
+  bool _hasMore = true;
+  bool _loadingMore = false;
+  static const int _pageSize = 20;
 
   @override
   void initState() {
@@ -125,9 +129,44 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Future<void> _load() async {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) return;
-    final notifs = await _service.getNotifications(user.id);
+    _loadedNotifications = [];
+    _hasMore = true;
+    final notifs = await _service.getNotifications(user.id, limit: _pageSize);
+    if (!mounted) return;
+    setState(() {
+      _loadedNotifications = notifs;
+      _hasMore = notifs.length >= _pageSize;
+    });
     if (!_notificationsController.isClosed) {
-      _notificationsController.add(notifs);
+      _notificationsController.add(_loadedNotifications);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _loadedNotifications.isEmpty) return;
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) return;
+    setState(() => _loadingMore = true);
+    try {
+      final older = await _service.getNotifications(
+        user.id,
+        limit: _pageSize,
+        beforeCreatedAt: _loadedNotifications.last.createdAt,
+      );
+      if (mounted) {
+        setState(() {
+          final existingIds = _loadedNotifications.map((n) => n.id).toSet();
+          final newItems =
+              older.where((n) => !existingIds.contains(n.id)).toList();
+          _loadedNotifications.addAll(newItems);
+          _hasMore = older.length >= _pageSize;
+        });
+        if (!_notificationsController.isClosed) {
+          _notificationsController.add(_loadedNotifications);
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -474,8 +513,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                   Expanded(
                     child: ListView.builder(
                       padding: EdgeInsets.all(contentPadding),
-                      itemCount: list.length,
+                      itemCount: list.length + (_hasMore ? 1 : 0),
                       itemBuilder: (_, i) {
+                        if (i == list.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: _loadingMore
+                                  ? const CircularProgressIndicator()
+                                  : OutlinedButton.icon(
+                                      icon: const Icon(Icons.expand_more, size: 18),
+                                      label: const Text('Učitaj starija obaveštenja'),
+                                      onPressed: _loadMore,
+                                    ),
+                            ),
+                          );
+                        }
                         final n = list[i];
                         return NotificationCard(
                           notification: n,

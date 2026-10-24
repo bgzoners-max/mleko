@@ -1,90 +1,159 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../models/app_error.dart';
 import '../../models/conversation_model.dart';
 import '../../models/message_model.dart';
-import '../../models/app_error.dart';
+import '../../models/message_reaction_model.dart';
+import '../../repositories/chat/chat_repository.dart';
 import '../core/logger_service.dart';
 import 'chat_room_manager.dart';
-import 'mixins/chat_media_mixin.dart';
-import 'mixins/chat_reactions_mixin.dart';
-import 'mixins/chat_stats_mixin.dart';
-import 'mixins/chat_typing_mixin.dart';
+import 'realtime_channel_manager.dart';
+import 'handlers/chat_media_handler.dart';
+import 'handlers/chat_reactions_handler.dart';
+import 'handlers/chat_stats_handler.dart';
+import 'handlers/chat_typing_handler.dart';
+
+export '../../repositories/chat/chat_repository.dart';
+export 'handlers/chat_media_handler.dart';
+export 'handlers/chat_reactions_handler.dart';
+export 'handlers/chat_stats_handler.dart';
+export 'handlers/chat_typing_handler.dart';
+export 'mixins/chat_media_mixin.dart';
+export 'mixins/chat_reactions_mixin.dart';
+export 'mixins/chat_stats_mixin.dart';
+export 'mixins/chat_typing_mixin.dart';
 
 /// Broj poruka u jednoj stranici (najnovijih).
 const _kMsgPageSize = 50;
 
-class ChatService
-    with ChatReactionsMixin, ChatTypingMixin, ChatMediaMixin, ChatStatsMixin {
+/// Servis za ćaskanje baziran na čistoj kompoziciji zavisnosti (Composition over Inheritance).
+class ChatService {
   static final ChatService _instance = ChatService._();
-  factory ChatService({SupabaseClient? client}) {
-    if (client != null) return ChatService._(client: client);
+
+  factory ChatService({
+    ChatRepository? repository,
+    ChatRoomManager? roomManager,
+    ChatReactionsHandler? reactionsHandler,
+    ChatTypingHandler? typingHandler,
+    ChatMediaHandler? mediaHandler,
+    ChatStatsHandler? statsHandler,
+    SupabaseClient? client,
+  }) {
+    if (repository != null ||
+        roomManager != null ||
+        reactionsHandler != null ||
+        typingHandler != null ||
+        mediaHandler != null ||
+        statsHandler != null ||
+        client != null) {
+      return ChatService._(
+        repository: repository,
+        roomManager: roomManager,
+        reactionsHandler: reactionsHandler,
+        typingHandler: typingHandler,
+        mediaHandler: mediaHandler,
+        statsHandler: statsHandler,
+        client: client,
+      );
+    }
     return _instance;
   }
-  ChatService._({SupabaseClient? client}) : _customClient = client;
+
+  ChatService._({
+    ChatRepository? repository,
+    ChatRoomManager? roomManager,
+    ChatReactionsHandler? reactionsHandler,
+    ChatTypingHandler? typingHandler,
+    ChatMediaHandler? mediaHandler,
+    ChatStatsHandler? statsHandler,
+    SupabaseClient? client,
+  })  : _customClient = client,
+        _roomManager = roomManager ?? ChatRoomManager(),
+        _repository = repository ?? SupabaseChatRepository(client: client),
+        _reactions = reactionsHandler ??
+            ChatReactionsHandler(
+              client: client,
+              roomManager: roomManager ?? ChatRoomManager(),
+            ),
+        _typing = typingHandler ??
+            ChatTypingHandler(
+              client: client,
+              roomManager: roomManager ?? ChatRoomManager(),
+            ),
+        _media = mediaHandler ?? ChatMediaHandler(client: client),
+        _stats = statsHandler ?? ChatStatsHandler(client: client);
+
+  /// Konstruktor namenjen isključivo jediničnom testiranju uz mockovanje repozitorijuma i hendlera.
+  @visibleForTesting
+  ChatService.forTesting({
+    required ChatRepository repository,
+    ChatRoomManager? roomManager,
+    ChatReactionsHandler? reactionsHandler,
+    ChatTypingHandler? typingHandler,
+    ChatMediaHandler? mediaHandler,
+    ChatStatsHandler? statsHandler,
+    SupabaseClient? client,
+  })  : _customClient = client,
+        _roomManager = roomManager ?? ChatRoomManager(),
+        _repository = repository,
+        _reactions = reactionsHandler ??
+            ChatReactionsHandler(
+              client: client,
+              roomManager: roomManager ?? ChatRoomManager(),
+            ),
+        _typing = typingHandler ??
+            ChatTypingHandler(
+              client: client,
+              roomManager: roomManager ?? ChatRoomManager(),
+            ),
+        _media = mediaHandler ?? ChatMediaHandler(client: client),
+        _stats = statsHandler ?? ChatStatsHandler(client: client);
 
   final SupabaseClient? _customClient;
-  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
+  final ChatRoomManager _roomManager;
+  final ChatRepository _repository;
+  final ChatReactionsHandler _reactions;
+  final ChatTypingHandler _typing;
+  final ChatMediaHandler _media;
+  final ChatStatsHandler _stats;
 
-  @override
+  SupabaseClient get _client => _customClient ?? Supabase.instance.client;
   SupabaseClient get client => _client;
 
-  @override
   ChatRoomManager get roomManager => _roomManager;
+  ChatRepository get repository => _repository;
+  ChatReactionsHandler get reactions => _reactions;
+  ChatTypingHandler get typing => _typing;
+  ChatMediaHandler get media => _media;
+  ChatStatsHandler get stats => _stats;
 
-  static const typingStaleThreshold = ChatTypingMixin.typingStaleThreshold;
+  static const typingStaleThreshold = ChatTypingHandler.typingStaleThreshold;
 
-  static void clearSignedUrlCache() => ChatMediaMixin.clearSignedUrlCache();
+  static void clearSignedUrlCache() => ChatMediaHandler.clearSignedUrlCache();
 
   static String? extractChatImagePath(String pathOrUrl) =>
-      ChatMediaMixin.extractChatImagePath(pathOrUrl);
+      ChatMediaHandler.extractChatImagePath(pathOrUrl);
 
-  Future<String?> _findConversationId(
+  // ─── Razgovori ─────────────────────────────────────────────────────────────
+
+  Future<String?> findConversationId(
     String buyerId,
     String sellerId, {
     String? productId,
     String? adId,
     String? orderId,
-  }) async {
-    try {
-      if (orderId != null) {
-        final existingByOrder = await _client
-            .from('conversations')
-            .select('id')
-            .eq('order_id', orderId)
-            .maybeSingle();
-        if (existingByOrder != null) {
-          return existingByOrder['id'] as String?;
-        }
-      }
+  }) =>
+      _repository.findConversationId(
+        buyerId,
+        sellerId,
+        productId: productId,
+        adId: adId,
+        orderId: orderId,
+      );
 
-      var query = _client
-          .from('conversations')
-          .select('id')
-          .eq('buyer_id', buyerId)
-          .eq('seller_id', sellerId);
 
-      if (productId != null) {
-        query = query.eq('product_id', productId);
-      } else if (adId != null) {
-        query = query.eq('ad_id', adId);
-      } else {
-        query = query.isFilter('product_id', null).isFilter('ad_id', null);
-      }
-
-      final existing = await query.maybeSingle();
-      return existing?['id'] as String?;
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
-
-  // ─── Razgovori ─────────────────────────────────────────────────────────────
-
-  /// Pronađi ili kreiraj razgovor između kupca i prodavca vezan za konkretan
-  /// proizvod ([productId]), oglas ([adId]) ili porudžbinu ([orderId]).
-  ///
-  /// Ako je prosleđen [orderId], razgovor je scoped na tu porudžbinu i neće
-  /// pregaziti zaglavlje postojećih razgovora.
   Future<String> getOrCreateConversation(
     String buyerId,
     String sellerId, {
@@ -92,250 +161,47 @@ class ChatService
     String? adId,
     String? orderId,
     bool updateOrderIdIfPresent = true,
-  }) async {
-    if (buyerId == sellerId) {
-      throw AppError(
-        message: 'Buyer and seller cannot be the same user',
-        userMessage: 'Ne možete započeti razgovor sa samim sobom.',
-        type: ErrorType.validation,
-      );
-    }
-
-    try {
-      final shouldUpdateOrderId = orderId != null && updateOrderIdIfPresent;
-      final payload = <String, dynamic>{
-        'buyer_id': buyerId,
-        'seller_id': sellerId,
-        if (productId != null) 'product_id': productId,
-        if (adId != null) 'ad_id': adId,
-        if (shouldUpdateOrderId) 'order_id': orderId,
-      };
-
-      final onConflict = orderId != null
-          ? 'order_id'
-          : productId != null
-              ? 'buyer_id,seller_id,product_id'
-              : adId != null
-                  ? 'buyer_id,seller_id,ad_id'
-                  : 'buyer_id,seller_id';
-
-      final res = await _client
-          .from('conversations')
-          .upsert(payload, onConflict: onConflict)
-          .select('id')
-          .single();
-      return res['id'] as String;
-    } on PostgrestException catch (e, st) {
-      LoggerService.warning(
-        'Conversation upsert failed, retrying with fetch fallback',
-        extra: {'error': e.toString()},
-      );
-      final existingId = await _findConversationId(
+  }) =>
+      _repository.getOrCreateConversation(
         buyerId,
         sellerId,
         productId: productId,
         adId: adId,
         orderId: orderId,
+        updateOrderIdIfPresent: updateOrderIdIfPresent,
       );
-      if (existingId == null) {
-        throw AppError.from(e, stackTrace: st);
-      }
-      if (orderId != null && updateOrderIdIfPresent) {
-        final existingConv = await _client
-            .from('conversations')
-            .select('order_id')
-            .eq('id', existingId)
-            .maybeSingle();
-        final currentOrderId = existingConv?['order_id'] as String?;
-        // Ne overwrite-ovati order_id ako već postoji definisana porudžbina
-        if (currentOrderId == null) {
-          await _client
-              .from('conversations')
-              .update({'order_id': orderId}).eq('id', existingId);
-        }
-      }
-      return existingId;
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
 
-  /// Učitava razgovore koristeći get_conversations_for_user RPC.
-  Future<List<ConversationModel>> getConversations(String userId) async {
-    try {
-      final result = await _client.rpc(
-        'get_conversations_for_user',
-        params: {'p_user_id': userId},
-      );
-      final list = result as List? ?? [];
-      return list
-          .map((e) => ConversationModel.fromJson(
-                e is Map<String, dynamic>
-                    ? e
-                    : Map<String, dynamic>.from(e as Map),
-              ))
-          .toList();
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
+  Future<List<ConversationModel>> getConversations(String userId) =>
+      _repository.getConversations(userId);
 
   Future<void> setConversationUserPrefs(
     String conversationId, {
     bool? isFavorite,
     bool? hidden,
-  }) async {
-    try {
-      await _client.rpc(
-        'set_conversation_user_prefs',
-        params: {
-          'p_conversation_id': conversationId,
-          'p_is_favorite': isFavorite,
-          'p_hidden': hidden,
-        },
+  }) =>
+      _repository.setConversationUserPrefs(
+        conversationId,
+        isFavorite: isFavorite,
+        hidden: hidden,
       );
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
 
   Stream<List<ConversationModel>> watchConversations(
     String userId, {
     Stream<void>? refreshTrigger,
-  }) {
-    StreamSubscription? refreshSub;
-    RealtimeChannel? channel;
-    List<String> lastConvIds = [];
-    Timer? debounceTimer;
-
-    late final StreamController<List<ConversationModel>> controller;
-
-    Future<void> refetch() async {
-      try {
-        final list = await getConversations(userId);
-        if (!controller.isClosed) controller.add(list);
-
-        final convIds = list.map((c) => c.id).toList();
-        final idsChanged = lastConvIds.length != convIds.length ||
-            !Set.of(lastConvIds).containsAll(convIds);
-        if (idsChanged && channel != null) {
-          lastConvIds = convIds;
-          unawaited(_client.removeChannel(channel!));
-          channel = _subscribeConversations(userId, convIds, () {
-            debounceTimer?.cancel();
-            debounceTimer = Timer(const Duration(milliseconds: 300), refetch);
-          });
-          channel!.subscribe();
-        } else {
-          lastConvIds = convIds;
-        }
-      } catch (e, st) {
-        LoggerService.error('Failed to watch conversations', e, stackTrace: st);
-        if (!controller.isClosed) controller.addError(e, st);
-      }
-    }
-
-    void onEvent() {
-      debounceTimer?.cancel();
-      debounceTimer = Timer(const Duration(milliseconds: 300), refetch);
-    }
-
-    controller = StreamController<List<ConversationModel>>.broadcast(
-      onListen: () {
-        refetch().then((_) {
-          if (controller.isClosed) return;
-          channel = _subscribeConversations(userId, lastConvIds, onEvent);
-          channel!.subscribe();
-        });
-
-        refreshSub = refreshTrigger?.listen((_) => refetch());
-      },
-      onCancel: () {
-        debounceTimer?.cancel();
-        refreshSub?.cancel();
-        if (channel != null) {
-          unawaited(_client.removeChannel(channel!));
-          channel = null;
-        }
-        if (!controller.isClosed) {
-          controller.close();
-        }
-      },
-    );
-
-    return controller.stream;
-  }
-
-  RealtimeChannel _subscribeConversations(
-    String userId,
-    List<String> convIds,
-    void Function() onEvent,
-  ) {
-    final ch = _client.channel('conversations-$userId');
-    ch
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'conversations',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'buyer_id',
-            value: userId,
-          ),
-          callback: (_) => onEvent(),
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'conversations',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'seller_id',
-            value: userId,
-          ),
-          callback: (_) => onEvent(),
-        );
-    if (convIds.isNotEmpty) {
-      ch.onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'messages',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.inFilter,
-          column: 'conversation_id',
-          value: convIds,
-        ),
-        callback: (_) => onEvent(),
+  }) =>
+      _repository.watchConversations(
+        userId,
+        refreshTrigger: refreshTrigger,
       );
-    }
-    return ch;
-  }
 
   // ─── Poruke ────────────────────────────────────────────────────────────────
 
-  /// Učitava najnovijih [limit] poruka u razgovoru, sortirano uzlazno za prikaz.
   Future<List<MessageModel>> getMessages(
     String conversationId, {
     int limit = _kMsgPageSize,
-  }) async {
-    try {
-      final list = await _client
-          .from('messages')
-          .select()
-          .eq('conversation_id', conversationId)
-          .order('created_at', ascending: false)
-          .limit(limit);
-      return (list as List)
-          .reversed
-          .map((e) => MessageModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
+  }) =>
+      _repository.getMessages(conversationId, limit: limit);
 
-  /// Poruke starije od [before] — za paginaciju "učitaj starije".
-  /// Koristi keyset paginaciju (created_at, id) radi sprečavanja duplikata i preskakanja.
   Future<List<MessageModel>> getOlderMessages(
     String conversationId, {
     required DateTime before,
@@ -370,15 +236,8 @@ class ChatService
     }
   }
 
-  final ChatRoomManager _roomManager = ChatRoomManager();
-
-  /// Broj trenutno aktivnih deljenih soba za razgovore (za dijagnostiku i testove)
   int get activeConversationRoomCount => _roomManager.activeRoomCount;
 
-  /// Prati poruke u razgovoru inkrementalno:
-  /// - Pri otvaranju / retry-u radi pun fetch najnovijih poruka.
-  /// - Na realtime insert dodaje poruku uz deduplikaciju po ID-u bez ponovnog učitavanja svih 50 poruka.
-  /// - Na realtime update / delete inkrementalno ažurira lokalnu listu.
   Stream<List<MessageModel>> watchMessages(
     String conversationId, {
     Stream<void>? refreshTrigger,
@@ -411,12 +270,13 @@ class ChatService
             final newMsg = MessageModel.fromJson(raw);
             final exists = currentMessages.any((m) => m.id == newMsg.id);
             if (!exists) {
-              currentMessages.add(newMsg);
-              currentMessages.sort((a, b) {
-                final cmp = a.createdAt.compareTo(b.createdAt);
-                if (cmp != 0) return cmp;
-                return a.id.compareTo(b.id);
-              });
+              currentMessages
+                ..add(newMsg)
+                ..sort((a, b) {
+                  final cmp = a.createdAt.compareTo(b.createdAt);
+                  if (cmp != 0) return cmp;
+                  return a.id.compareTo(b.id);
+                });
               if (!controller.isClosed) {
                 controller.add(List.unmodifiable(currentMessages));
               }
@@ -427,7 +287,8 @@ class ChatService
           final raw = payload.newRecord;
           if (raw.isNotEmpty) {
             final updatedMsg = MessageModel.fromJson(raw);
-            final idx = currentMessages.indexWhere((m) => m.id == updatedMsg.id);
+            final idx =
+                currentMessages.indexWhere((m) => m.id == updatedMsg.id);
             if (idx != -1) {
               currentMessages[idx] = updatedMsg;
               if (!controller.isClosed) {
@@ -437,7 +298,8 @@ class ChatService
             }
           }
         } else if (payload.eventType == PostgresChangeEvent.delete) {
-          final id = (payload.oldRecord['id'] ?? payload.newRecord['id']) as String?;
+          final id =
+              (payload.oldRecord['id'] ?? payload.newRecord['id']) as String?;
           if (id != null) {
             currentMessages.removeWhere((m) => m.id == id);
             if (!controller.isClosed) {
@@ -446,7 +308,6 @@ class ChatService
             return;
           }
         }
-        // Sigurnosni fallback na pun fetch ako je payload neuobičajen
         fullFetch();
       } catch (_) {
         fullFetch();
@@ -473,30 +334,21 @@ class ChatService
     return controller.stream;
   }
 
-  // ─── Slanje i čitanje ──────────────────────────────────────────────────────
-
   Future<void> sendMessage(
     String conversationId,
     String senderId,
     String body, {
     String? imageUrl,
-  }) async {
-    try {
-      await _client.from('messages').insert({
-        'conversation_id': conversationId,
-        'sender_id': senderId,
-        'body': body,
-        if (imageUrl != null) 'image_url': imageUrl,
-      });
-    } catch (e, st) {
-      throw AppError.from(e, stackTrace: st);
-    }
-  }
-
+  }) =>
+      _repository.sendMessage(
+        conversationId: conversationId,
+        senderId: senderId,
+        body: body,
+        imageUrl: imageUrl,
+      );
 
   Future<void> deleteMessage(String messageId) async {
     try {
-      // Security: Proveri da je trenutni korisnik pošiljalac poruke pre brisanja
       final currentUserId = _client.auth.currentUser?.id;
       if (currentUserId == null) {
         throw AppError(
@@ -505,13 +357,13 @@ class ChatService
           type: ErrorType.unauthorized,
         );
       }
-      
+
       final message = await _client
           .from('messages')
           .select('sender_id')
           .eq('id', messageId)
           .maybeSingle();
-      
+
       if (message == null) {
         throw AppError(
           message: 'Message not found: $messageId',
@@ -519,7 +371,7 @@ class ChatService
           type: ErrorType.notFound,
         );
       }
-      
+
       final senderId = message['sender_id'] as String?;
       if (senderId != currentUserId) {
         throw AppError(
@@ -528,8 +380,12 @@ class ChatService
           type: ErrorType.forbidden,
         );
       }
-      
-      await _client.from('messages').delete().eq('id', messageId).eq('sender_id', currentUserId);
+
+      await _client
+          .from('messages')
+          .delete()
+          .eq('id', messageId)
+          .eq('sender_id', currentUserId);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -541,7 +397,6 @@ class ChatService
     int limit = 200,
   }) async {
     try {
-      // 1. Primarno: Server-side RPC sa limitom i atomic auth proverom
       try {
         await _client.rpc(
           'mark_conversation_read',
@@ -552,11 +407,9 @@ class ChatService
         );
         return;
       } on PostgrestException catch (e) {
-        // Ako funkcija još ne postoji u bazi (kod 42883), pređi na fallback
         if (e.code != '42883') rethrow;
       }
 
-      // 2. Fallback: PostgREST update sa autorizacijom i ograničenim brojem redova
       final conversation = await _client
           .from('conversations')
           .select('buyer_id, seller_id')
@@ -607,9 +460,62 @@ class ChatService
     }
   }
 
+  // ─── Komponovane reakcije, kuckanje, mediji i statistika ──────────────────
+
+  Future<List<MessageReactionModel>> getMessageReactions(
+    String conversationId,
+    String currentUserId,
+  ) =>
+      _reactions.getMessageReactions(conversationId, currentUserId);
+
+  Stream<List<MessageReactionModel>> watchMessageReactions(
+    String conversationId,
+    String currentUserId,
+  ) =>
+      _reactions.watchMessageReactions(conversationId, currentUserId);
+
+  Future<void> toggleMessageReaction({
+    required String conversationId,
+    required String messageId,
+    required String userId,
+    required String reaction,
+  }) =>
+      _reactions.toggleMessageReaction(
+        conversationId: conversationId,
+        messageId: messageId,
+        userId: userId,
+        reaction: reaction,
+      );
+
+  Stream<Set<String>> watchTypingUsers(String conversationId) =>
+      _typing.watchTypingUsers(conversationId);
+
+  Future<void> setTyping({
+    required String conversationId,
+    required String userId,
+    required bool isTyping,
+  }) =>
+      _typing.setTyping(
+        conversationId: conversationId,
+        userId: userId,
+        isTyping: isTyping,
+      );
+
+  Future<String> getSignedChatImageUrl(String pathOrUrl) =>
+      _media.getSignedChatImageUrl(pathOrUrl);
+
+  Future<String> uploadMessageImage(
+    String conversationId,
+    String userId,
+    List<int> bytes,
+  ) =>
+      _media.uploadMessageImage(conversationId, userId, bytes);
+
+  Future<SellerResponseStats> getSellerResponseStats(String sellerId) =>
+      _stats.getSellerResponseStats(sellerId);
+
   // ─── Info o razgovoru ──────────────────────────────────────────────────────
 
-  /// Dohvata kompletne informacije o razgovoru sa imenima učesnika i podacima o predmetu/proizvodu.
   Future<
       ({
         String? id,
@@ -674,7 +580,6 @@ class ChatService
     }
   }
 
-  /// Ime druge strane u razgovoru (samo za ChatScreen AppBar).
   Future<String> getOtherPartyName(
     String conversationId,
     String currentUserId,
@@ -689,4 +594,20 @@ class ChatService
       throw AppError.from(e, stackTrace: st);
     }
   }
+
+  /// Odjavljuje sve aktivne sobe i čisti Realtime kanale (npr. pri odjavi korisnika ili gašenju aplikacije).
+  Future<void> cleanUp() async {
+    try {
+      await _roomManager.releaseAll(_client);
+      await RealtimeChannelManager().releaseAll(_client);
+    } catch (e) {
+      LoggerService.warning(
+        'Failed to clean up chat realtime channels',
+        extra: {'error': e.toString()},
+      );
+    }
+  }
+
+  /// Alias za [cleanUp] u skladu sa standardnim lifecycle obrascem.
+  Future<void> dispose() => cleanUp();
 }

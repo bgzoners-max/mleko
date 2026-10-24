@@ -515,13 +515,18 @@ class ClassifiedsProvider extends ChangeNotifier {
     loadInitialAds();
   }
 
+  int _subscriptionsSession = 0;
+
   Future<void> loadSubscriptions() async {
+    final session = ++_subscriptionsSession;
     try {
       final list = await _subService.getSubscriptions();
+      if (session != _subscriptionsSession) return;
       _subscriptions = list;
       _subscriptionsLoaded = true;
       notifyListeners();
     } catch (e) {
+      if (session != _subscriptionsSession) return;
       LoggerService.warning('loadSubscriptions error',
           extra: {'error': e.toString()});
     }
@@ -581,6 +586,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   }
 
   void clearSubscriptions() {
+    _subscriptionsSession++;
     _subscriptions = [];
     _subscriptionsLoaded = false;
     notifyListeners();

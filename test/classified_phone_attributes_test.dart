@@ -30,7 +30,7 @@ void main() {
 
     testWidgets('ClassifiedAttributesSection renders phone checkbox chips with micro flat icons',
         (tester) async {
-      final attributes = ClassifiedAttributesEngine.phoneAttributes;
+      const attributes = ClassifiedAttributesEngine.phoneAttributes;
       final currentAttributes = <String, dynamic>{
         'sim_free': true,
       };

@@ -357,8 +357,8 @@ void main() {
         ordersService: OrdersService(),
       );
 
-      final connectivity = ConnectivityService(reachabilityChecker: () async => false);
-      connectivity.reportNetworkFailure(const SocketException('No route to host'));
+      final connectivity = ConnectivityService(reachabilityChecker: () async => false)
+        ..reportNetworkFailure(const SocketException('No route to host'));
       expect(connectivity.isOffline, isTrue);
 
       final result = await syncService.syncPendingOrders(
@@ -377,8 +377,8 @@ void main() {
         ordersService: OrdersService(),
       );
 
-      final connectivity = ConnectivityService(reachabilityChecker: () async => true);
-      connectivity.reportNetworkSuccess();
+      final connectivity = ConnectivityService(reachabilityChecker: () async => true)
+        ..reportNetworkSuccess();
       expect(connectivity.isOnline, isTrue);
 
       final result = await syncService.syncPendingOrders(

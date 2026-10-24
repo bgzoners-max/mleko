@@ -47,7 +47,7 @@ void main() {
     });
 
     test('brandLogoAsset returns correct path for car brands and null for non-car brands', () {
-      final audi = const ClassifiedCategoryModel(
+      const audi = ClassifiedCategoryModel(
         id: 'auto_audi',
         name: 'Audi',
         iconName: 'directions_car',
@@ -55,7 +55,7 @@ void main() {
       );
       expect(audi.brandLogoAsset, 'assets/images/car_brands/auto_audi.png');
 
-      final bmw = const ClassifiedCategoryModel(
+      const bmw = ClassifiedCategoryModel(
         id: 'auto_bmw',
         name: 'BMW',
         iconName: 'directions_car',
@@ -63,7 +63,7 @@ void main() {
       );
       expect(bmw.brandLogoAsset, 'assets/images/car_brands/auto_bmw.png');
 
-      final zastava = const ClassifiedCategoryModel(
+      const zastava = ClassifiedCategoryModel(
         id: 'auto_zastava',
         name: 'Zastava',
         iconName: 'directions_car',
@@ -71,7 +71,7 @@ void main() {
       );
       expect(zastava.brandLogoAsset, 'assets/images/car_brands/auto_zastava.png');
 
-      final smart = const ClassifiedCategoryModel(
+      const smart = ClassifiedCategoryModel(
         id: 'auto_smart',
         name: 'Smart',
         iconName: 'directions_car',
@@ -79,7 +79,7 @@ void main() {
       );
       expect(smart.brandLogoAsset, 'assets/images/car_brands/auto_smart.png');
 
-      final mini = const ClassifiedCategoryModel(
+      const mini = ClassifiedCategoryModel(
         id: 'auto_mini',
         name: 'Mini',
         iconName: 'directions_car',
@@ -87,7 +87,7 @@ void main() {
       );
       expect(mini.brandLogoAsset, 'assets/images/car_brands/auto_mini.png');
 
-      final lancia = const ClassifiedCategoryModel(
+      const lancia = ClassifiedCategoryModel(
         id: 'auto_lancia',
         name: 'Lancia',
         iconName: 'directions_car',
@@ -95,7 +95,7 @@ void main() {
       );
       expect(lancia.brandLogoAsset, 'assets/images/car_brands/auto_lancia.png');
 
-      final traktori = const ClassifiedCategoryModel(
+      const traktori = ClassifiedCategoryModel(
         id: 'traktori',
         name: 'Traktori',
         iconName: 'agriculture',

@@ -245,8 +245,7 @@ void main() {
       appState = AppState(
         ordersService: mockOrdersService,
         connectivityService: connectivityService,
-      );
-      appState.setUserForTesting(testBuyer);
+      )..setUserForTesting(testBuyer);
 
       cartProvider = _TestCartProvider(productsService: mockProductsService);
       await cartProvider.loadFuture;

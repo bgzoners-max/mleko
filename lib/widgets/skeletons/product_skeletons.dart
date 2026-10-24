@@ -3,9 +3,6 @@ import 'package:shimmer/shimmer.dart';
 import '../app_shimmer.dart';
 import '../../core/design_system.dart';
 
-const _shimmerBaseColor = Color(0xFFE0E0E0);
-const _shimmerHighlightColor = Color(0xFFF5F5F5);
-
 /// Skeleton za listu proizvoda (ProductCard stil)
 class ProductListSkeleton extends StatelessWidget {
   const ProductListSkeleton({super.key, this.itemCount = 6});
@@ -14,7 +11,7 @@ class ProductListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
+    final baseColor = AppShimmer.getBaseColor(context);
     return ListView.builder(
       padding: AppDesign.paddingL,
       itemCount: itemCount,
@@ -26,7 +23,7 @@ class ProductListSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AspectRatio(
+                AspectRatio(
                   aspectRatio: 16 / 10,
                   child: ColoredBox(color: baseColor),
                 ),
@@ -100,7 +97,7 @@ class SellerProductListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
+    final baseColor = AppShimmer.getBaseColor(context);
     return ListView.separated(
       padding: AppDesign.paddingL,
       physics: const AlwaysScrollableScrollPhysics(),
@@ -147,8 +144,8 @@ class ProductCarouselSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
@@ -195,10 +192,10 @@ class ProductCarouselSkeleton extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: baseColor,
                           borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(12)),
+                              const BorderRadius.vertical(top: Radius.circular(12)),
                         ),
                       ),
                     ),
@@ -240,8 +237,8 @@ class ProductDetailSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
@@ -253,9 +250,9 @@ class ProductDetailSkeleton extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(
+                SizedBox(
                   height: 220,
-                  child: ColoredBox(color: _shimmerBaseColor),
+                  child: ColoredBox(color: baseColor),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),

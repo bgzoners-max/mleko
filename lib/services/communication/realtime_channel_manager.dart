@@ -61,14 +61,13 @@ class RealtimeChannelManager {
         }
       }
 
-      final channel = createChannel(client, notifyAll);
-      channel.subscribe();
+      final channel = createChannel(client, notifyAll)..subscribe();
       entry = SharedChannelSubscription(
         name: channelName,
         channel: channel,
-      );
-      entry.refCount = 1;
-      entry.callbacks.add(onEvent);
+      )
+        ..refCount = 1
+        ..callbacks.add(onEvent);
       _channels[channelName] = entry;
     }
 

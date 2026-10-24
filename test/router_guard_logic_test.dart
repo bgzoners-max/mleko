@@ -85,17 +85,19 @@ void main() {
       final res = routerRedirect(context, _FakeGoRouterState('/orders'), appState);
       expect(res, '/splash?returnTo=%2Forders');
 
-      appState.authChecked = true;
-      appState.isLoading = true;
+      appState
+        ..authChecked = true
+        ..isLoading = true;
 
       final resLoading = routerRedirect(context, _FakeGoRouterState('/profile'), appState);
       expect(resLoading, '/splash?returnTo=%2Fprofile');
     });
 
     test('redirects guest to /login?returnTo=... on protected routes', () {
-      appState.authChecked = true;
-      appState.isLoading = false;
-      appState.user = null; // guest
+      appState
+        ..authChecked = true
+        ..isLoading = false
+        ..user = null; // guest
 
       final protectedRoutes = [
         '/orders',

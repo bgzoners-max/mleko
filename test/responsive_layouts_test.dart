@@ -360,17 +360,16 @@ void main() {
       final appState = AppState(
         ordersService: OrdersService(),
         authService: AuthService(),
-      );
-      appState.setUserForTesting(
-        const UserModel(
-          id: 'test_seller_1',
-          displayName: 'Pera Perić',
-          email: 'pera@example.com',
-          role: UserRole.seller,
-          lat: 44.74442,
-          lng: 20.42008,
-        ),
-      );
+      )..setUserForTesting(
+          const UserModel(
+            id: 'test_seller_1',
+            displayName: 'Pera Perić',
+            email: 'pera@example.com',
+            role: UserRole.seller,
+            lat: 44.74442,
+            lng: 20.42008,
+          ),
+        );
 
       await tester.pumpWidget(
         MultiProvider(

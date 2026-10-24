@@ -13,8 +13,9 @@ class ImageCacheService {
   /// Očisti entire disk i memory cache – koristi nakon sign-out ili veće osvežavanja.
   Future<void> clearAllCaches() async {
     await _cacheManager.emptyCache();
-    imageCache.clear();
-    imageCache.clearLiveImages();
+    imageCache
+      ..clear()
+      ..clearLiveImages();
   }
 
   /// Očisti samo disk cache (memorija se očisti automatski nakon vremena).

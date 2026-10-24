@@ -135,11 +135,11 @@ void main() {
         'mleko_cart': 'p1:2.5;p2:1.0;p3:3.0',
       });
 
-      final service = FakeProductsService();
       // p1 and p2 belong to seller-A, p3 belongs to seller-B
-      service.addMockProduct(_createProduct(id: 'p1', sellerId: 'seller-A', name: 'Kravlji sir'));
-      service.addMockProduct(_createProduct(id: 'p2', sellerId: 'seller-A', name: 'Mleko'));
-      service.addMockProduct(_createProduct(id: 'p3', sellerId: 'seller-B', name: 'Kajmak'));
+      final service = FakeProductsService()
+        ..addMockProduct(_createProduct(id: 'p1', sellerId: 'seller-A', name: 'Kravlji sir'))
+        ..addMockProduct(_createProduct(id: 'p2', sellerId: 'seller-A', name: 'Mleko'))
+        ..addMockProduct(_createProduct(id: 'p3', sellerId: 'seller-B', name: 'Kajmak'));
 
       final provider = CartProvider(productsService: service);
       await provider.loadFuture;
@@ -171,9 +171,9 @@ void main() {
         'mleko_cart_ids': ['p1', 'p2'],
       });
 
-      final service = FakeProductsService();
-      service.addMockProduct(_createProduct(id: 'p1', sellerId: 'seller-X', name: 'Sir'));
-      service.addMockProduct(_createProduct(id: 'p2', sellerId: 'seller-Y', name: 'Jogurt'));
+      final service = FakeProductsService()
+        ..addMockProduct(_createProduct(id: 'p1', sellerId: 'seller-X', name: 'Sir'))
+        ..addMockProduct(_createProduct(id: 'p2', sellerId: 'seller-Y', name: 'Jogurt'));
 
       final provider = CartProvider(productsService: service);
       await provider.loadFuture;
@@ -193,8 +193,8 @@ void main() {
         'mleko_cart': 'existing:2.0;deleted-product:1.0',
       });
 
-      final service = FakeProductsService();
-      service.addMockProduct(_createProduct(id: 'existing', sellerId: 'seller-1', name: 'Puter'));
+      final service = FakeProductsService()
+        ..addMockProduct(_createProduct(id: 'existing', sellerId: 'seller-1', name: 'Puter'));
       // deleted-product is not in mock service
 
       final provider = CartProvider(productsService: service);
@@ -432,9 +432,9 @@ void main() {
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
-      service = FakeProductsService();
-      service.addMockProduct(_createProduct(id: 'p-1', sellerId: 's-1', name: 'Mleko'));
-      service.addMockProduct(_createProduct(id: 'p-2', sellerId: 's-2', name: 'Sir'));
+      service = FakeProductsService()
+        ..addMockProduct(_createProduct(id: 'p-1', sellerId: 's-1', name: 'Mleko'))
+        ..addMockProduct(_createProduct(id: 'p-2', sellerId: 's-2', name: 'Sir'));
     });
 
     test('switching between User A and User B preserves isolation without cross-contamination', () async {

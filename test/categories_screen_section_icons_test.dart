@@ -14,8 +14,8 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.resetPhysicalSize());
 
-    final catProvider = CategoriesProvider();
-    catProvider.setCategoriesForTesting([
+    final catProvider = CategoriesProvider()
+      ..setCategoriesForTesting([
       const Category(
         id: 'cat-1',
         name: 'Mlečni proizvodi',

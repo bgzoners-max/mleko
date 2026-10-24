@@ -27,8 +27,9 @@ import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
 import '../widgets/home/market_mode_switcher.dart';
 import '../widgets/beta_announcement_banner.dart';
-import '../widgets/app_footer.dart';
 import '../widgets/theme_toggle_switch.dart';
+import '../widgets/app_footer.dart';
+import '../widgets/skeletons/product_skeletons.dart';
 import 'classifieds/classifieds_feed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -121,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final outerHorizontalPadding =
         isWide ? 16.0 : (isLargeTablet ? 12.0 : (isSmallTablet ? 10.0 : 8.0));
     final sectionSpacing = isWide ? 16.0 : 8.0;
-    final compactSpacing = 6.0;
+    const compactSpacing = 6.0;
     final sidePanelSpacing = isWide ? 14.0 : 10.0;
     final productGridExtent = isWide
         ? 290.0
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
             title: const Text(AppConstants.appName,
                 style: TextStyle(color: Colors.white))),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const ProductListSkeleton(itemCount: 6),
       );
     }
 

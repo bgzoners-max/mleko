@@ -218,11 +218,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               child: SizedBox(
                 height: constraints.maxHeight,
                 child: favoritesOnly
-                    ? const AppEmptyState(
+                    ? AppEmptyState(
                         icon: Icons.star_border,
                         title: 'Nema omiljenih',
                         subtitle:
                             'Pritisnite i zadržite razgovor da ga dodate u omiljene.',
+                        ctaLabel: 'Prikaži sve razgovore',
+                        ctaIcon: Icons.chat_bubble_outline,
+                        onCtaPressed: () => _tabController.animateTo(0),
                       )
                     : AppEmptyState(
                         icon: Icons.chat_bubble_outline,

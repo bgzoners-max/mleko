@@ -33,6 +33,7 @@ import 'services/orders/order_services.dart';
 import 'services/social/social_services.dart';
 import 'services/classifieds/classifieds_service.dart';
 import 'services/classifieds/classified_reports_service.dart';
+import 'utils/image_precache_utils.dart';
 import 'widgets/global_keyboard_scroll.dart';
 import 'widgets/offline_indicator.dart';
 import 'supabase_config.dart';
@@ -152,12 +153,13 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppImageCache.configureMemoryLimits();
 
   // Preload Lucide font za garantovano renderovanje mikro ikonica na webu / CanvasKit-u pre crtanja UI-ja
   if (kIsWeb) {
     try {
-      final fontLoader = FontLoader('Lucide');
-      fontLoader.addFont(rootBundle.load('assets/fonts/lucide.ttf'));
+      final fontLoader = FontLoader('Lucide')
+        ..addFont(rootBundle.load('assets/fonts/lucide.ttf'));
       await fontLoader.load();
     } catch (e) {
       LoggerService.warning('Lucide font preload skipped or failed: $e');
@@ -181,10 +183,10 @@ void main() async {
     if (kDebugMode) {
       FlutterError.presentError(details);
     }
-    CrashReportingService.recordFlutterError(details);
+    CrashReportingService.recordFlutterError(details, fatal: true);
     LoggerService.error(
-      'FlutterError: ${details.exceptionAsString()}',
-      'FlutterError: ${details.exceptionAsString()}: ${details.exception}',
+      'Flutter error',
+      details.exception,
       stackTrace: details.stack,
     );
   };
@@ -198,21 +200,20 @@ void main() async {
     return true;
   };
 
-  if (!kIsWeb) {
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      await PushService.initialize();
-      await CrashReportingService.initialize();
-    } catch (e) {
-      LoggerService.warning(
-        'Firebase initialization failed - push notifications and crash reporting disabled',
-        extra: {'error': e.toString()},
-      );
-    }
-  } else {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await PushService.initialize();
     await CrashReportingService.initialize();
+  } catch (e) {
+    LoggerService.warning(
+      'Firebase initialization failed - push notifications or crash reporting disabled',
+      extra: {'error': e.toString()},
+    );
+    if (kIsWeb) {
+      await CrashReportingService.initialize();
+    }
   }
 
   await initializeDateFormatting('sr', null);
@@ -259,27 +260,42 @@ void main() async {
   final router = createRouter(appState);
 
   // Sinhronizacija omiljenih, korpe, praćenja oglasa i korisničkog ID-a za monitoring sa statusom prijave.
-  // Guard protiv redundantnih mrežnih poziva: AppState notificira na svaku promenu stanja
-  // (unread count, loading, sync status...), pa reagujemo SAMO kada se identitet prijavljenog
-  // korisnika zaista promeni (prijava/odjava/promena naloga).
+  // Guard protiv redundantnih poziva i trkačkih uslova (race conditions) pri brzoj odjavi/prijavi.
   String? lastSyncedUserId;
+  int lastSyncedAuthVersion = -1;
+  Future<void> syncChain = Future.value();
+
   appState.addListener(() {
     final user = appState.user;
     final userId = (user != null && !user.isGuest) ? user.id : null;
-    if (userId == lastSyncedUserId) return;
-    lastSyncedUserId = userId;
+    final currentAuthVersion = appState.authEventVersion;
 
-    if (userId != null) {
-      favoritesProvider.load(userId);
-      classifiedsProvider.loadSubscriptions();
-      CrashReportingService.setUserIdentifier(userId);
-      cartProvider.setUser(userId);
-    } else {
-      favoritesProvider.clear();
-      classifiedsProvider.clearSubscriptions();
-      CrashReportingService.setUserIdentifier(null);
-      cartProvider.clearForLogout();
-    }
+    if (userId == lastSyncedUserId && currentAuthVersion == lastSyncedAuthVersion) return;
+    lastSyncedUserId = userId;
+    lastSyncedAuthVersion = currentAuthVersion;
+
+    syncChain = syncChain.then((_) async {
+      // Provera da li je ovaj auth event još uvek aktuelan pre nego što počne sinhronizacija
+      if (appState.authEventVersion != currentAuthVersion) return;
+
+      if (userId != null) {
+        await CrashReportingService.setUserIdentifier(userId);
+        await cartProvider.setUser(userId);
+        if (appState.authEventVersion != currentAuthVersion) return;
+
+        await Future.wait([
+          favoritesProvider.load(userId),
+          classifiedsProvider.loadSubscriptions(),
+        ]);
+      } else {
+        await CrashReportingService.setUserIdentifier(null);
+        await cartProvider.clearForLogout();
+        favoritesProvider.clear();
+        classifiedsProvider.clearSubscriptions();
+      }
+    }).catchError((e, st) {
+      LoggerService.error('Auth state sync failed', e, stackTrace: st);
+    });
   });
 
   // Notification handling
@@ -305,8 +321,14 @@ void main() async {
         child: p_provider.Consumer<AppSettingsProvider>(
           builder: (_, settings, __) => MaterialApp.router(
             title: 'Domaći market',
-            theme: buildAppTheme(compact: settings.compactMode),
-            darkTheme: buildAppDarkTheme(compact: settings.compactMode),
+            theme: buildAppTheme(
+              compact: settings.compactMode,
+              fontScale: settings.fontScale,
+            ),
+            darkTheme: buildAppDarkTheme(
+              compact: settings.compactMode,
+              fontScale: settings.fontScale,
+            ),
             themeMode: settings.themeMode,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,

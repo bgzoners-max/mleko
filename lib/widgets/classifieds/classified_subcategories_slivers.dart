@@ -44,7 +44,8 @@ List<Widget> buildClassifiedSubcategoriesSlivers(
       final isGroupSelected = classifieds.selectedCategoryId == group.id;
 
       // 1. Naslov sekcije sa tačkom: • NEMAČKA, • ITALIJA, itd.
-      slivers.add(
+      slivers
+        ..add(
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 16, isDesktop ? 24 : 14, 6),
@@ -114,10 +115,9 @@ List<Widget> buildClassifiedSubcategoriesSlivers(
             ),
           ),
         ),
-      );
-
-      // 2. Mreža marki automobila za datu državu (Amazon compact 46px)
-      slivers.add(
+      )
+        // 2. Mreža marki automobila za datu državu (Amazon compact 46px)
+        ..add(
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 2),
           sliver: SliverGrid(
@@ -154,7 +154,8 @@ List<Widget> buildClassifiedSubcategoriesSlivers(
 
     // 3. Dodatne kategorije (Džipovi, Oldtajmeri, Ostale marke)
     if (standaloneItems.isNotEmpty) {
-      slivers.add(
+      slivers
+        ..add(
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(isDesktop ? 24 : 14, 18, isDesktop ? 24 : 14, 6),
@@ -182,9 +183,8 @@ List<Widget> buildClassifiedSubcategoriesSlivers(
             ),
           ),
         ),
-      );
-
-      slivers.add(
+      )
+        ..add(
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 12, vertical: 2),
           sliver: SliverGrid(

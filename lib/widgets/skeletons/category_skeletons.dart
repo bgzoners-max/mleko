@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-
-const _shimmerBaseColor = Color(0xFFE0E0E0);
-const _shimmerHighlightColor = Color(0xFFF5F5F5);
+import '../app_shimmer.dart';
 
 /// Skeleton za grid kategorija (2 kolone, card stil)
 class CategoryGridSkeleton extends StatelessWidget {
@@ -12,8 +10,8 @@ class CategoryGridSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,

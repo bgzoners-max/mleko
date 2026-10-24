@@ -51,9 +51,9 @@ void main() {
       expect(service.isOnline, isTrue);
 
       var notified = false;
-      service.addListener(() => notified = true);
-
-      service.reportNetworkFailure(const SocketException('Failed host lookup'));
+      service
+        ..addListener(() => notified = true)
+        ..reportNetworkFailure(const SocketException('Failed host lookup'));
 
       expect(service.isOnline, isFalse);
       expect(service.isOffline, isTrue);

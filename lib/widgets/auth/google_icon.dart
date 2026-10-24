@@ -41,21 +41,19 @@ class _GoogleLogoPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.butt;
 
-    // 1. Red (top): from -135° to -45° (approx 90 deg)
-    canvas.drawArc(rect, -math.pi * 0.75, math.pi * 0.5, false,
-        makePaint(const Color(0xFFEA4335)));
-
-    // 2. Yellow (left): from 135° to 225° (which is -135°)
-    canvas.drawArc(rect, math.pi * 0.75, math.pi * 0.5, false,
-        makePaint(const Color(0xFFFBBC05)));
-
-    // 3. Green (bottom): from 45° to 135°
-    canvas.drawArc(rect, math.pi * 0.25, math.pi * 0.5, false,
-        makePaint(const Color(0xFF34A853)));
-
-    // 4. Blue (bottom-right to center bar)
-    canvas.drawArc(rect, 0, math.pi * 0.25, false,
-        makePaint(const Color(0xFF4285F4)));
+    canvas
+      // 1. Red (top): from -135° to -45° (approx 90 deg)
+      ..drawArc(rect, -math.pi * 0.75, math.pi * 0.5, false,
+          makePaint(const Color(0xFFEA4335)))
+      // 2. Yellow (left): from 135° to 225° (which is -135°)
+      ..drawArc(rect, math.pi * 0.75, math.pi * 0.5, false,
+          makePaint(const Color(0xFFFBBC05)))
+      // 3. Green (bottom): from 45° to 135°
+      ..drawArc(rect, math.pi * 0.25, math.pi * 0.5, false,
+          makePaint(const Color(0xFF34A853)))
+      // 4. Blue (bottom-right to center bar)
+      ..drawArc(rect, 0, math.pi * 0.25, false,
+          makePaint(const Color(0xFF4285F4)));
 
     // Blue horizontal bar in the middle
     final barPaint = Paint()

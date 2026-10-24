@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthChangeEvent, AuthState;
 import '../models/user_model.dart';
 import '../services/auth/auth_service.dart';
+import '../services/communication/chat_service.dart';
 import '../services/communication/push_service.dart';
 import '../services/core/logger_service.dart';
 import '../services/media/image_cache_service.dart';
@@ -142,6 +143,9 @@ class AuthSessionProvider extends ChangeNotifier {
             return;
           }
           _unreadNotifications?.unbind();
+          try {
+            await ChatService().cleanUp();
+          } catch (_) {}
         }
       }
       _authChecked = true;
@@ -180,6 +184,9 @@ class AuthSessionProvider extends ChangeNotifier {
   void dispose() {
     _authSubscription?.cancel();
     unawaited(PushService.dispose());
+    try {
+      unawaited(ChatService().cleanUp());
+    } catch (_) {}
     super.dispose();
   }
 }

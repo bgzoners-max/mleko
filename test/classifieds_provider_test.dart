@@ -98,7 +98,7 @@ void main() {
   late FakeSubscriptionsService fakeSubService;
   late ClassifiedsProvider provider;
 
-  final List<ClassifiedCategoryModel> sampleTree = const [
+  const List<ClassifiedCategoryModel> sampleTree = [
     ClassifiedCategoryModel(
       id: 'automobili',
       name: 'Automobili',
@@ -224,8 +224,9 @@ void main() {
       await provider.loadCategories();
 
       // Step 1: select category that supports condition and pick condition
-      provider.selectCategory('automobili');
-      provider.selectCondition('Polovno');
+      provider
+        ..selectCategory('automobili')
+        ..selectCondition('Polovno');
       expect(provider.selectedCondition, equals('Polovno'));
       expect(provider.isConditionApplicableForSelectedCategory, isTrue);
 
@@ -238,8 +239,9 @@ void main() {
 
   group('ClassifiedsProvider Dynamic Attribute Filters & Clearing', () {
     test('setAttributeFilter adds and updates attributes', () async {
-      provider.setAttributeFilter('fuel', 'Dizel');
-      provider.setAttributeFilter('transmission', 'Manuelni');
+      provider
+        ..setAttributeFilter('fuel', 'Dizel')
+        ..setAttributeFilter('transmission', 'Manuelni');
       await Future<void>.delayed(Duration.zero);
 
       expect(provider.selectedAttributes['fuel'], equals('Dizel'));
@@ -256,11 +258,11 @@ void main() {
     });
 
     test('clearAttributeFilters clears attributes and resets featured/urgent filters', () async {
-      provider.setAttributeFilter('brand', 'VW');
-      provider.setOnlyFeatured(true);
-      provider.setOnlyUrgent(true);
-
-      provider.clearAttributeFilters();
+      provider
+        ..setAttributeFilter('brand', 'VW')
+        ..setOnlyFeatured(true)
+        ..setOnlyUrgent(true)
+        ..clearAttributeFilters();
       await Future<void>.delayed(Duration.zero);
 
       expect(provider.selectedAttributes.isEmpty, isTrue);
@@ -269,15 +271,15 @@ void main() {
     });
 
     test('clearAllFilters resets all search and filter properties', () async {
-      provider.selectCategory('automobili');
-      provider.selectCity('Nis');
-      provider.selectCondition('Novo');
-      provider.search('gume');
-      provider.setPriceRange(minPrice: 100, maxPrice: 5000);
-      provider.setAttributeFilter('color', 'Crvena');
-      provider.setOnlyFeatured(true);
-
-      provider.clearAllFilters();
+      provider
+        ..selectCategory('automobili')
+        ..selectCity('Nis')
+        ..selectCondition('Novo')
+        ..search('gume')
+        ..setPriceRange(minPrice: 100, maxPrice: 5000)
+        ..setAttributeFilter('color', 'Crvena')
+        ..setOnlyFeatured(true)
+        ..clearAllFilters();
       await Future<void>.delayed(Duration.zero);
 
       expect(provider.selectedCategoryId, isNull);

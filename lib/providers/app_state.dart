@@ -39,10 +39,8 @@ class AppState extends ChangeNotifier {
   @visibleForTesting
   void setUserForTesting(UserModel? user) => authSession.setUserForTesting(user);
 
-  @visibleForTesting
   int get authEventVersion => authSession.authEventVersion;
 
-  @visibleForTesting
   bool isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) =>
       authSession.isCurrentAuthEvent(authVersion, expectedUserId: expectedUserId);
 
@@ -114,6 +112,11 @@ class AppState extends ChangeNotifier {
     unreadNotifications.dispose();
     authSession.dispose();
     sync.dispose();
+
+    try {
+      unawaited(ChatService().cleanUp());
+    } catch (_) {}
+
     super.dispose();
   }
 }

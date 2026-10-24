@@ -242,12 +242,12 @@ class TopProductsList extends StatelessWidget {
           );
         }
 
-        final sorted = [...list];
-        sorted.sort((a, b) {
-          final sa = salesCounts[a.id] ?? 0;
-          final sb = salesCounts[b.id] ?? 0;
-          return sb.compareTo(sa);
-        });
+        final sorted = [...list]
+          ..sort((a, b) {
+            final sa = salesCounts[a.id] ?? 0;
+            final sb = salesCounts[b.id] ?? 0;
+            return sb.compareTo(sa);
+          });
         final top = sorted.take(5).toList();
 
         return ListView.separated(

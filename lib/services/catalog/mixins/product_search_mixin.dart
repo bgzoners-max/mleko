@@ -182,9 +182,8 @@ mixin ProductSearchMixin {
       }
 
       return matchesAllSearchTokens(p.name, tokens);
-    }).toList();
-
-    filtered.sort((a, b) => compareProducts(a, b, sort));
+    }).toList()
+      ..sort((a, b) => compareProducts(a, b, sort));
 
     if (offset >= filtered.length) {
       return (

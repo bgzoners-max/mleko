@@ -164,8 +164,8 @@ mixin OrderQueryMixin {
       bySeller.putIfAbsent(o.sellerId, () => []).add(o);
     }
     return bySeller.entries.map((e) {
-      final list = e.value;
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final list = e.value
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final last = list.first;
       final totalSpent = list.fold<double>(
         0,
@@ -251,18 +251,18 @@ mixin OrderQueryMixin {
           channelName: channelName,
           onEvent: refetch,
           createChannel: (c, notify) {
-            final ch = c.channel(channelName);
-            ch.onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: 'orders',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: filterColumn,
-                value: filterValue,
-              ),
-              callback: (_) => notify(),
-            );
+            final ch = c.channel(channelName)
+              ..onPostgresChanges(
+                event: PostgresChangeEvent.all,
+                schema: 'public',
+                table: 'orders',
+                filter: PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: filterColumn,
+                  value: filterValue,
+                ),
+                callback: (_) => notify(),
+              );
             return ch;
           },
         );

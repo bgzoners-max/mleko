@@ -185,8 +185,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
             subtitle: _isArchive
                 ? 'Kada ručno arhivirate porudžbinu, pojaviće se ovde.'
                 : 'Kreni od pregleda proizvoda i pošalji prvu porudžbinu.',
-            ctaLabel: _isArchive ? null : 'Pronađi proizvode',
-            onCtaPressed: _isArchive ? null : () => context.go('/'),
+            ctaLabel: _isArchive ? 'Prikaži aktivne porudžbine' : 'Pronađi proizvode',
+            ctaIcon: _isArchive ? Icons.arrow_back : Icons.search,
+            onCtaPressed: _isArchive
+                ? () => setState(() {
+                      _segmentIndex = 0;
+                      _initStream(userId);
+                    })
+                : () => context.go('/'),
           );
         }
         return RefreshIndicator(

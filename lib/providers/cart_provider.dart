@@ -95,8 +95,9 @@ class CartProvider extends ChangeNotifier {
         await prefs.remove(storageKeyFor(null));
       }
 
-      _sellerItems.clear();
-      _sellerItems.addAll(userItems);
+      _sellerItems
+        ..clear()
+        ..addAll(userItems);
       _hasMigratedFromGuest = hasClaimed;
 
       await _saveDirect(prefs);
@@ -121,8 +122,9 @@ class CartProvider extends ChangeNotifier {
 
     final newKey = storageKeyFor(userId);
     final loaded = _loadFromStorage(prefs, newKey);
-    _sellerItems.clear();
-    _sellerItems.addAll(loaded);
+    _sellerItems
+      ..clear()
+      ..addAll(loaded);
 
     _invalidateCache();
     notifyListeners();
@@ -220,8 +222,9 @@ class CartProvider extends ChangeNotifier {
           sellerMap[pEntry.key] = pEntry.value;
         }
       }
-      _sellerItems.clear();
-      _sellerItems.addAll(loaded);
+      _sellerItems
+        ..clear()
+        ..addAll(loaded);
 
       _invalidateCache();
       notifyListeners();
@@ -505,8 +508,9 @@ class CartProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final key = storageKeyFor(_currentUserId);
     final loaded = _loadFromStorage(prefs, key);
-    _sellerItems.clear();
-    _sellerItems.addAll(loaded);
+    _sellerItems
+      ..clear()
+      ..addAll(loaded);
     _invalidateCache();
     notifyListeners();
   }

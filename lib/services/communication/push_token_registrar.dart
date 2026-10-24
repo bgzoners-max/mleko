@@ -87,7 +87,23 @@ class PushTokenRegistrar {
 
   /// Proverava i po potrebi zahteva notifikacijske dozvole.
   static Future<bool> ensureNotificationPermission() async {
-    if (kIsWeb) return false;
+    if (kIsWeb) {
+      try {
+        final settings = await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        return settings.authorizationStatus == AuthorizationStatus.authorized ||
+            settings.authorizationStatus == AuthorizationStatus.provisional;
+      } catch (e) {
+        LoggerService.warning(
+          'PushTokenRegistrar: Web notification permission check failed',
+          extra: {'error': e.toString()},
+        );
+        return false;
+      }
+    }
     if (Platform.isIOS) {
       final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
@@ -139,7 +155,6 @@ class PushTokenRegistrar {
 
   /// Registruje FCM token za korisnika u bazi podataka uz verifikaciju generacije.
   Future<void> registerToken(String userId) async {
-    if (kIsWeb) return;
     try {
       final generation = ++_registrationGeneration;
       _registeredUserId = userId;
@@ -157,7 +172,7 @@ class PushTokenRegistrar {
       LoggerService.debug('PushTokenRegistrar: Permission check',
           extra: {'granted': granted});
       if (!granted) {
-        LoggerService.warning('PushTokenRegistrar: Notification permission DENIED');
+        LoggerService.warning('PushTokenRegistrar: Notification permission DENIED or skipped');
         return;
       }
 
@@ -183,8 +198,9 @@ class PushTokenRegistrar {
           'PushTokenRegistrar: getToken returned NULL/EMPTY after retries',
           extra: {
             'retries': retries,
-            'reason':
-                'Google Play Services unavailable or Firebase not initialized'
+            'reason': kIsWeb
+                ? 'Web Push token not available (browser unsupported or VAPID required); relying on in-app notifications'
+                : 'Google Play Services unavailable or Firebase not initialized'
           },
         );
         return;
@@ -193,7 +209,7 @@ class PushTokenRegistrar {
       LoggerService.debug(
           'PushTokenRegistrar: Got valid token, uploading to database');
 
-      final platform = Platform.isIOS ? 'ios' : 'android';
+      final platform = kIsWeb ? 'web' : (Platform.isIOS ? 'ios' : 'android');
 
       // Prvo očisti stare zapise drugih naloga za ovu instalaciju
       await removeOtherUsersForInstallation(installationId, userId);
@@ -217,7 +233,6 @@ class PushTokenRegistrar {
 
   /// Uklanja FCM token korisnika pri odjavi sa uređaja.
   Future<void> unregisterToken(String userId) async {
-    if (kIsWeb) return;
     try {
       final generation = ++_registrationGeneration;
       _registeredUserId = null;

@@ -96,6 +96,19 @@ class PushService {
                   notificationRenderer ?? LocalNotificationRenderer.instance,
             );
 
+  /// Konstruktor namenjen isključivo jediničnom testiranju uz injektovane mock komponente.
+  @visibleForTesting
+  PushService.forTesting({
+    required PushTokenRegistrar tokenRegistrar,
+    required PushRouter router,
+    LocalNotificationRenderer? notificationRenderer,
+    SupabaseClient? client,
+  })  : _customClient = client,
+        _tokenRegistrar = tokenRegistrar,
+        _notificationRenderer =
+            notificationRenderer ?? LocalNotificationRenderer.instance,
+        _router = router;
+
   final SupabaseClient? _customClient;
   final PushTokenRegistrar _tokenRegistrar;
   final LocalNotificationRenderer _notificationRenderer;
@@ -164,7 +177,10 @@ class PushService {
 
   /// Inicijalizacija push kanala i background handlera.
   static Future<void> initialize() async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      LoggerService.debug('Push service: initialized for Web with in-app & foreground fallback');
+      return;
+    }
     try {
       await LocalNotificationRenderer.instance.initialize();
       FirebaseMessaging.onBackgroundMessage(

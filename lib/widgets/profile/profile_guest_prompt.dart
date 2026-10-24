@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../constants/amazon_theme.dart';
 import '../app_back_button.dart';
 
 /// Ekran za neprijavljene korisnike: poziv na prijavu umesto profila.
@@ -18,14 +19,14 @@ class ProfileGuestPrompt extends StatelessWidget {
         toolbarHeight: 46,
         centerTitle: true,
         backgroundColor:
-            isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+            isDark ? AmazonColors.navNavy : theme.colorScheme.surface,
         foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
         elevation: 0,
         scrolledUnderElevation: 1,
         shape: isDark
             ? null
-            : const Border(
-                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+            : Border(
+                bottom: BorderSide(color: AmazonColors.getBorder(context), width: 1),
               ),
         leading: const AppBackButton(fallbackRoute: '/'),
         title: Text(
@@ -33,7 +34,7 @@ class ProfileGuestPrompt extends StatelessWidget {
           style: GoogleFonts.roboto(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : const Color(0xFF1B201C),
+            color: AmazonColors.getTextPrimary(context),
           ),
         ),
         actions: const [AppHomeButton()],

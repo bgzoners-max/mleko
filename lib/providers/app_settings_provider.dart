@@ -65,9 +65,7 @@ class AppSettingsProvider extends ChangeNotifier {
   /// Ako prethodni `_load()` neuspe, dozvoljava ponovni pokušaj pri sledećem
   /// pozivu (ne vraća keširani neuspešan future).
   Future<void> ensureLoaded() async {
-    if (_loadFuture == null) {
-      _loadFuture = _load();
-    }
+    _loadFuture ??= _load();
     return _loadFuture;
   }
 

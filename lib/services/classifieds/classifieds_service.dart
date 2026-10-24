@@ -129,13 +129,13 @@ class ClassifiedsService {
             ? c.copyWith(isConditionApplicable: effectiveApplicable)
             : c;
         return buildSubtree(updatedChild);
-      }).toList();
-      nestedChildren.sort(ClassifiedCategoryModel.compareCategories);
+      }).toList()
+        ..sort(ClassifiedCategoryModel.compareCategories);
       return node.copyWith(subcategories: nestedChildren);
     }
 
-    final list = roots.map(buildSubtree).toList();
-    list.sort(ClassifiedCategoryModel.compareCategories);
+    final list = roots.map(buildSubtree).toList()
+      ..sort(ClassifiedCategoryModel.compareCategories);
     return list;
   }
 

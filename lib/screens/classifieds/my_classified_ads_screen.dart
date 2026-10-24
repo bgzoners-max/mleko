@@ -14,6 +14,7 @@ import '../../widgets/app_network_image.dart';
 import '../../widgets/classifieds/featured_dialogs.dart';
 import '../../widgets/classifieds/metric_badge.dart';
 import '../../widgets/classifieds/seller_analytics_summary_card.dart';
+import '../../widgets/skeletons/product_skeletons.dart';
 
 class MyClassifiedAdsScreen extends StatefulWidget {
   const MyClassifiedAdsScreen({super.key});
@@ -204,7 +205,7 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
         future: _adsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ProductListSkeleton(itemCount: 4);
           }
 
           if (snapshot.hasError) {

@@ -31,7 +31,7 @@ void main() {
     });
 
     test('acquires channel lazily and ref-counts multiple listeners', () {
-      final channelName = 'products-seller-seller123';
+      const channelName = 'products-seller-seller123';
       int eventCountA = 0;
       int eventCountB = 0;
       void Function()? trigger;
@@ -83,7 +83,7 @@ void main() {
     });
 
     test('double release of the same callback is idempotent', () {
-      final channelName = 'orders-seller-seller999';
+      const channelName = 'orders-seller-seller999';
       final release = manager.acquire(
         client: mockClient,
         channelName: channelName,

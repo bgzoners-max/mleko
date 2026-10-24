@@ -60,8 +60,9 @@ class _RusticCratePainter extends CustomPainter {
 
     // ── Plodovi koji vire iznad sanduka (blaga asimetrija) ──
     final r = s * 0.11;
-    final fruitPaint = Paint()..style = PaintingStyle.fill;
-    fruitPaint.color = terracotta;
+    final fruitPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = terracotta;
     canvas.drawCircle(Offset(s * 0.36, s * 0.40), r, fruitPaint);
     fruitPaint.color = honey;
     canvas.drawCircle(Offset(s * 0.52, s * 0.35), r * 1.05, fruitPaint);
@@ -93,8 +94,9 @@ class _RusticCratePainter extends CustomPainter {
       ..lineTo(s * 0.72, s * 0.82)
       ..lineTo(s * 0.28, s * 0.82)
       ..close();
-    canvas.drawPath(crate, fill);
-    canvas.drawPath(crate, stroke);
+    canvas
+      ..drawPath(crate, fill)
+      ..drawPath(crate, stroke);
 
     // ── Letvice sanduka ──
     final slat = Paint()
@@ -102,8 +104,9 @@ class _RusticCratePainter extends CustomPainter {
       ..strokeWidth = s * 0.022
       ..strokeCap = StrokeCap.round
       ..color = wood.withValues(alpha: 0.7);
-    canvas.drawLine(Offset(s * 0.255, s * 0.64), Offset(s * 0.745, s * 0.64), slat);
-    canvas.drawLine(Offset(s * 0.267, s * 0.73), Offset(s * 0.733, s * 0.73), slat);
+    canvas
+      ..drawLine(Offset(s * 0.255, s * 0.64), Offset(s * 0.745, s * 0.64), slat)
+      ..drawLine(Offset(s * 0.267, s * 0.73), Offset(s * 0.733, s * 0.73), slat);
   }
 
   @override

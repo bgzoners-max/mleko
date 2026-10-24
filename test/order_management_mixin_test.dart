@@ -271,7 +271,7 @@ void main() {
       final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
       final service = _TestOrderManagementService(client: supabase);
 
-      final selection = const DeliverySelectionModel(
+      const selection = DeliverySelectionModel(
         method: DeliveryMethod.sellerDelivery,
         city: 'Beograd',
         pointId: 'point-1',

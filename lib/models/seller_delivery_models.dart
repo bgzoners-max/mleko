@@ -230,12 +230,12 @@ class SellerDeliveryPointModel {
   }
 
   List<SellerDeliverySlotModel> get activeSlots {
-    final active = slots.where((slot) => slot.isActive).toList();
-    active.sort((left, right) {
-      final weekdayCompare = left.weekday.compareTo(right.weekday);
-      if (weekdayCompare != 0) return weekdayCompare;
-      return left.timeFrom.compareTo(right.timeFrom);
-    });
+    final active = slots.where((slot) => slot.isActive).toList()
+      ..sort((left, right) {
+        final weekdayCompare = left.weekday.compareTo(right.weekday);
+        if (weekdayCompare != 0) return weekdayCompare;
+        return left.timeFrom.compareTo(right.timeFrom);
+      });
     return active;
   }
 

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
 import '../../models/app_error.dart';
 import '../../models/product_sort.dart';
+import '../../repositories/catalog/products_repository.dart';
 import 'mixins/product_search_mixin.dart';
 import 'mixins/product_listing_mixin.dart';
 import 'mixins/product_stats_mixin.dart';
@@ -10,6 +12,7 @@ import 'mixins/product_management_mixin.dart';
 
 export '../../models/product_autoflag.dart';
 export '../../models/product_sort.dart';
+export '../../repositories/catalog/products_repository.dart';
 export '../../utils/search_utils.dart';
 
 class ProductsService
@@ -19,13 +22,33 @@ class ProductsService
         ProductStatsMixin,
         ProductManagementMixin {
   static final ProductsService _instance = ProductsService._();
-  factory ProductsService({SupabaseClient? client}) {
-    if (client != null) return ProductsService._(client: client);
+
+  factory ProductsService({
+    ProductsRepository? repository,
+    SupabaseClient? client,
+  }) {
+    if (repository != null || client != null) {
+      return ProductsService._(repository: repository, client: client);
+    }
     return _instance;
   }
-  ProductsService._({SupabaseClient? client}) : _customClient = client;
+
+  ProductsService._({
+    ProductsRepository? repository,
+    SupabaseClient? client,
+  })  : _customClient = client,
+        _repository = repository ?? SupabaseProductsRepository(client: client);
+
+  @visibleForTesting
+  ProductsService.forTesting({
+    required ProductsRepository repository,
+  })  : _customClient = null,
+        _repository = repository;
 
   final SupabaseClient? _customClient;
+  final ProductsRepository _repository;
+
+  ProductsRepository get repository => _repository;
 
   @override
   SupabaseClient get client => _customClient ?? Supabase.instance.client;

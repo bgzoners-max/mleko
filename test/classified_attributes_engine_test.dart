@@ -5,7 +5,7 @@ import 'package:mleko/utils/classified_attributes_engine.dart';
 void main() {
   group('CategoryAttribute & ClassifiedAttributesEngine Decimal Config Tests', () {
     test('carAttributes have isDecimal == false for integer-only specs', () {
-      final carAttrs = ClassifiedAttributesEngine.carAttributes;
+      const carAttrs = ClassifiedAttributesEngine.carAttributes;
 
       final year = carAttrs.firstWhere((a) => a.key == 'year');
       expect(year.type, equals(AttributeType.number));
@@ -25,7 +25,7 @@ void main() {
     });
 
     test('tractorAttributes have isDecimal == false for integer-only specs', () {
-      final tractorAttrs = ClassifiedAttributesEngine.tractorAttributes;
+      const tractorAttrs = ClassifiedAttributesEngine.tractorAttributes;
 
       final year = tractorAttrs.firstWhere((a) => a.key == 'year');
       expect(year.type, equals(AttributeType.number));
@@ -41,7 +41,7 @@ void main() {
     });
 
     test('realEstateApartmentAttributes have isDecimal == true for area_m2', () {
-      final apartmentAttrs = ClassifiedAttributesEngine.realEstateApartmentAttributes;
+      const apartmentAttrs = ClassifiedAttributesEngine.realEstateApartmentAttributes;
 
       final area = apartmentAttrs.firstWhere((a) => a.key == 'area_m2');
       expect(area.type, equals(AttributeType.number));
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('realEstateHouseAttributes have isDecimal == true for area_m2 and land_area_ari', () {
-      final houseAttrs = ClassifiedAttributesEngine.realEstateHouseAttributes;
+      const houseAttrs = ClassifiedAttributesEngine.realEstateHouseAttributes;
 
       final area = houseAttrs.firstWhere((a) => a.key == 'area_m2');
       expect(area.type, equals(AttributeType.number));
@@ -61,7 +61,7 @@ void main() {
     });
 
     test('realEstateLandAttributes have isDecimal == true for land_area_ari', () {
-      final landAttrs = ClassifiedAttributesEngine.realEstateLandAttributes;
+      const landAttrs = ClassifiedAttributesEngine.realEstateLandAttributes;
 
       final landArea = landAttrs.firstWhere((a) => a.key == 'land_area_ari');
       expect(landArea.type, equals(AttributeType.number));

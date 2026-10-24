@@ -6,6 +6,8 @@ import '../core/utils/error_messages.dart';
 import '../providers/app_state.dart';
 import '../services/services.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_empty_state.dart';
+import '../widgets/skeletons/order_skeletons.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -63,7 +65,10 @@ class _SupportScreenState extends State<SupportScreen>
                   _tabCtrl.animateTo(1);
                 },
               ),
-              _MyTicketsTab(key: ValueKey(_myTicketsReloadKey)),
+              _MyTicketsTab(
+                key: ValueKey(_myTicketsReloadKey),
+                onOpenNewTicket: () => _tabCtrl.animateTo(0),
+              ),
             ],
           ),
         ),
@@ -358,7 +363,8 @@ class _NewTicketTabState extends State<_NewTicketTab> {
 // Tab 2: Moji tiketi
 // ─────────────────────────────────────────────
 class _MyTicketsTab extends StatefulWidget {
-  const _MyTicketsTab({super.key});
+  final VoidCallback? onOpenNewTicket;
+  const _MyTicketsTab({super.key, this.onOpenNewTicket});
 
   @override
   State<_MyTicketsTab> createState() => _MyTicketsTabState();
@@ -401,7 +407,7 @@ class _MyTicketsTabState extends State<_MyTicketsTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const OrderListSkeleton(itemCount: 3);
     if (_error != null) {
       return Center(
         child: Column(
@@ -416,16 +422,14 @@ class _MyTicketsTabState extends State<_MyTicketsTab> {
     }
     final tickets = _tickets ?? [];
     if (tickets.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inbox_outlined,
-                size: 56, color: Theme.of(context).colorScheme.outlineVariant),
-            const SizedBox(height: 12),
-            const Text('Još nema poslatih tiketa'),
-          ],
-        ),
+      return AppEmptyState(
+        icon: Icons.support_agent_outlined,
+        title: 'Nemate otvorenih tiketa',
+        subtitle:
+            'Ukoliko imate problem ili pitanje, naš tim vam rado stoji na raspolaganju.',
+        ctaLabel: 'Pošalji novi tiket',
+        ctaIcon: Icons.add_comment_outlined,
+        onCtaPressed: widget.onOpenNewTicket,
       );
     }
 

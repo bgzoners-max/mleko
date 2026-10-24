@@ -4,7 +4,17 @@ import 'design_system.dart';
 import 'responsive.dart';
 
 const double _minTouchTarget = 48.0;
-const double _minTouchTargetCompact = 40.0;
+/// Minimalni dodirni cilj po WCAG 2.1 AA smernicama iznosi 44×44 dp.
+const double _minTouchTargetCompact = 44.0;
+
+/// Izračunava minimalnu veličinu dodirnog cilja poštujući WCAG AA (44×44 dp)
+/// i proporcionalno je skalira kada korisnik uveća font ([fontScale] > 1.0).
+double computeMinTouchTarget({required bool compact, double fontScale = 1.0}) {
+  final base = compact ? _minTouchTargetCompact : _minTouchTarget;
+  final scaleMultiplier =
+      fontScale > 1.0 ? (fontScale * 0.9).clamp(1.0, 1.4) : 1.0;
+  return (base * scaleMultiplier).roundToDouble();
+}
 
 /// Helper funkcija za kreiranje shared button tema
 ElevatedButtonThemeData _buildElevatedButtonTheme({
@@ -147,9 +157,11 @@ TextTheme _buildTextTheme(TextTheme base, Brightness brightness) {
   );
 }
 
-ThemeData _buildBaseTheme({required bool compact}) {
+ThemeData _buildBaseTheme({required bool compact, double fontScale = 1.0}) {
   // Kompaktan prikaz je podrazumevano uključen radi optimizacije prostora
-  final touch = Size.square(compact ? _minTouchTargetCompact : _minTouchTarget);
+  final minTarget =
+      computeMinTouchTarget(compact: compact, fontScale: fontScale);
+  final touch = Size.square(minTarget);
   final buttonPaddingV = compact ? AppDesign.spaceXS + 3 : AppDesign.spaceM;
   final buttonPaddingH = compact ? AppDesign.spaceM + 2 : AppDesign.spaceXL - 4;
   final listTilePaddingV = compact ? 0.0 : AppDesign.spaceXS;
@@ -375,8 +387,8 @@ ThemeData _buildBaseTheme({required bool compact}) {
   );
 }
 
-ThemeData buildAppTheme({bool compact = false}) {
-  final base = _buildBaseTheme(compact: compact);
+ThemeData buildAppTheme({bool compact = false, double fontScale = 1.0}) {
+  final base = _buildBaseTheme(compact: compact, fontScale: fontScale);
   final navBarHeight = compact ? 56.0 : 64.0;
   return base.copyWith(
     scaffoldBackgroundColor: const Color(0xFFF8F6F0),
@@ -469,8 +481,10 @@ ThemeData buildAppTheme({bool compact = false}) {
   );
 }
 
-ThemeData buildAppDarkTheme({bool compact = false}) {
-  final touch = Size.square(compact ? _minTouchTargetCompact : _minTouchTarget);
+ThemeData buildAppDarkTheme({bool compact = false, double fontScale = 1.0}) {
+  final minTarget =
+      computeMinTouchTarget(compact: compact, fontScale: fontScale);
+  final touch = Size.square(minTarget);
   final buttonPaddingV = compact ? 7.0 : 12.0;
   final buttonPaddingH = compact ? 14.0 : 20.0;
   final inputPaddingV = compact ? 8.0 : 12.0;

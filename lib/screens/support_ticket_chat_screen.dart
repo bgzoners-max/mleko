@@ -4,6 +4,7 @@ import '../core/responsive.dart';
 import '../core/utils/error_messages.dart';
 import '../services/services.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/skeletons/communication_skeletons.dart';
 
 const int _kMaxMessages = 5;
 
@@ -161,7 +162,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
             : null,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ChatMessagesSkeleton(itemCount: 8)
           : _error != null
               ? Center(child: Text('Greška: $_error'))
               : _buildBody(),

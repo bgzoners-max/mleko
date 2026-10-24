@@ -85,7 +85,7 @@ class OrderSyncService {
           }
 
           if (currentUser.id != pending.buyerId) {
-            final errorMsg =
+            const errorMsg =
                 'Prijavljeni nalog ne odgovara kupcu ove porudžbine.';
             await _queueService.recordOrderFailure(pending.id, error: errorMsg);
             failedCount++;

@@ -59,8 +59,7 @@ class ImageCompressionService {
     int maxConcurrency = 3,
     void Function(int current, int total)? onProgress,
   }) async {
-    final results = <Uint8List?>[];
-    results.length = images.length;
+    final results = <Uint8List?>[]..length = images.length;
     var processed = 0;
 
     var nextIndex = 0;

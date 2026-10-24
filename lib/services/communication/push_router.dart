@@ -40,7 +40,6 @@ class PushRouter {
   /// Stream pretplata se kreira jednom i trajno delegira na aktivni [_foregroundHandler],
   /// tako da uzastopni pozivi bezbedno i sinhrono ažuriraju callback bez kidanja pretplate.
   void setForegroundHandler(void Function(RemoteMessage) handler) {
-    if (kIsWeb) return;
     _foregroundHandler = handler;
     _ensureForegroundSubscription();
   }
@@ -50,8 +49,9 @@ class PushRouter {
 
     _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
       final shouldSkipLocalNotification =
-          (Platform.isIOS || Platform.isAndroid) &&
-              message.notification != null;
+          kIsWeb ||
+          ((Platform.isIOS || Platform.isAndroid) &&
+              message.notification != null);
 
       if (message.notification == null && message.data.isEmpty) return;
 
@@ -83,7 +83,6 @@ class PushRouter {
 
   /// Postavlja ili ažurira callback za otvaranje aplikacije iz notifikacije (background tap).
   void setMessageOpenedHandler(void Function(RemoteMessage) handler) {
-    if (kIsWeb) return;
     _messageOpenedHandler = handler;
     _ensureMessageOpenedSubscription();
   }
@@ -113,8 +112,11 @@ class PushRouter {
 
   /// Vraća poruku koja je pokrenula aplikaciju (cold start deep link).
   Future<RemoteMessage?> getInitialMessage() async {
-    if (kIsWeb) return null;
-    return FirebaseMessaging.instance.getInitialMessage();
+    try {
+      return await FirebaseMessaging.instance.getInitialMessage();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Oslobađa sve resurse.

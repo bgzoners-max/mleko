@@ -27,6 +27,7 @@ dependencies:
   go_router: ^18.1.1
   provider: ^6.1.1
   cached_network_image: ^4.0.4
+  flutter_cache_manager: ^3.4.1
   image_picker: ^1.2.4
   cupertino_icons: ^1.0.8
 

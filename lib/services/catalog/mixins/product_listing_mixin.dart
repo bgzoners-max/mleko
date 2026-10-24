@@ -34,6 +34,34 @@ mixin ProductListingMixin {
     return (items: products, hasMore: products.length >= limit);
   }
 
+  /// Cursor-based dobavljanje proizvoda po kategorijama (veoma efikasno za duboko skrolovanje).
+  Future<({List<ProductModel> items, DateTime? nextCursor, bool hasMore})>
+      getProductsByCategoriesCursor({
+    required List<String> categoryNames,
+    int limit = productsPageSize,
+    DateTime? beforeCreatedAt,
+  }) async {
+    if (categoryNames.isEmpty) {
+      return (items: <ProductModel>[], nextCursor: null, hasMore: false);
+    }
+    const table = 'products_with_ratings';
+    var query = client.from(table).select().inFilter('category', categoryNames);
+    if (beforeCreatedAt != null) {
+      query = query.lt('created_at', beforeCreatedAt.toIso8601String());
+    }
+    final list = await withRetry(() => query
+        .order('created_at', ascending: false)
+        .limit(limit));
+    final rows = list as List;
+    final products = rows
+        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final hasMore = products.length >= limit;
+    final nextCursor =
+        hasMore && products.isNotEmpty ? products.last.createdAt : null;
+    return (items: products, nextCursor: nextCursor, hasMore: hasMore);
+  }
+
   /// Stream proizvoda prodavca – Realtime umesto polling-a sa deljenim kanalom i lazy pretplatom
   Stream<List<ProductModel>> getProductsBySeller(String sellerId,
       {Stream<void>? refreshTrigger}) {
@@ -97,18 +125,18 @@ mixin ProductListingMixin {
           channelName: 'products-seller-$sellerId',
           onEvent: refetch,
           createChannel: (c, notify) {
-            final ch = c.channel('products-seller-$sellerId');
-            ch.onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: 'products',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: 'seller_id',
-                value: sellerId,
-              ),
-              callback: (_) => notify(),
-            );
+            final ch = c.channel('products-seller-$sellerId')
+              ..onPostgresChanges(
+                event: PostgresChangeEvent.all,
+                schema: 'public',
+                table: 'products',
+                filter: PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: 'seller_id',
+                  value: sellerId,
+                ),
+                callback: (_) => notify(),
+              );
             return ch;
           },
         );

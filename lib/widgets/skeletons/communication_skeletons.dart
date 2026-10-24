@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-
-const _shimmerBaseColor = Color(0xFFE0E0E0);
-const _shimmerHighlightColor = Color(0xFFF5F5F5);
+import '../app_shimmer.dart';
 
 /// Skeleton za listu obaveštenja
 class NotificationListSkeleton extends StatelessWidget {
@@ -12,8 +10,8 @@ class NotificationListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
@@ -26,7 +24,7 @@ class NotificationListSkeleton extends StatelessWidget {
             width: 44,
             height: 44,
             decoration:
-                const BoxDecoration(color: baseColor, shape: BoxShape.circle),
+                BoxDecoration(color: baseColor, shape: BoxShape.circle),
           ),
           title: Container(
             height: 14,
@@ -63,8 +61,8 @@ class ConversationListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
@@ -79,7 +77,7 @@ class ConversationListSkeleton extends StatelessWidget {
             width: 48,
             height: 48,
             decoration:
-                const BoxDecoration(color: baseColor, shape: BoxShape.circle),
+                BoxDecoration(color: baseColor, shape: BoxShape.circle),
           ),
           title: Container(
             height: 14,
@@ -116,8 +114,8 @@ class SellerAvatarRowSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     return SizedBox(
       height: 100,
       child: Shimmer.fromColors(
@@ -134,7 +132,7 @@ class SellerAvatarRowSkeleton extends StatelessWidget {
               Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: baseColor,
                   shape: BoxShape.circle,
                 ),
@@ -173,8 +171,8 @@ class ChatMessagesSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseColor = _shimmerBaseColor;
-    const highlightColor = _shimmerHighlightColor;
+    final baseColor = AppShimmer.getBaseColor(context);
+    final highlightColor = AppShimmer.getHighlightColor(context);
     final widths = [160.0, 200.0, 130.0, 180.0, 140.0, 210.0, 100.0, 170.0];
     return Shimmer.fromColors(
       baseColor: baseColor,

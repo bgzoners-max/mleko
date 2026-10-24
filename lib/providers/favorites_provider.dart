@@ -18,7 +18,10 @@ class FavoritesProvider extends ChangeNotifier {
   int get count => _ids.length;
   bool get isLoaded => _loaded;
 
+  int _loadSession = 0;
+
   Future<void> load(String? userId) async {
+    final session = ++_loadSession;
     if (userId == null) {
       _ids = {};
       _loaded = true;
@@ -29,18 +32,23 @@ class FavoritesProvider extends ChangeNotifier {
     if (_loaded && _loadedUserId == userId) return;
     try {
       final fetched = await _service.getFavoriteProductIds(userId);
+      if (session != _loadSession) return;
       _ids = fetched.toSet();
       _loadedUserId = userId;
     } catch (e, st) {
+      if (session != _loadSession) return;
       LoggerService.error('Failed to load favorites', e, stackTrace: st);
       _ids = {};
     } finally {
-      _loaded = true;
-      notifyListeners();
+      if (session == _loadSession) {
+        _loaded = true;
+        notifyListeners();
+      }
     }
   }
 
   void clear() {
+    _loadSession++;
     _ids = {};
     _loaded = false;
     _loadedUserId = null;

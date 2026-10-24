@@ -463,11 +463,12 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
                     TextButton.icon(
                       onPressed: () {
                         _searchController.clear();
-                        classifieds.selectCategory(null);
-                        classifieds.selectCity(null);
-                        classifieds.selectCondition(null);
-                        classifieds.clearAttributeFilters();
-                        classifieds.search(null);
+                        classifieds
+                          ..selectCategory(null)
+                          ..selectCity(null)
+                          ..selectCondition(null)
+                          ..clearAttributeFilters()
+                          ..search(null);
                       },
                       icon: Icon(
                         Icons.close,

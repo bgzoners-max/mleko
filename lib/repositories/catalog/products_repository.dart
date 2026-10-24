@@ -8,6 +8,9 @@ abstract interface class ProductsRepository {
   /// Učitava jedan proizvod po ID-ju (prioritetno iz view-a sa agregatima).
   Future<ProductModel?> getProduct(String id);
 
+  /// Alias za [getProduct] po standardnom Repository obrascu.
+  Future<ProductModel?> getProductById(String id);
+
   /// Učitava listu proizvoda po zadatim ID-jevima.
   Future<List<ProductModel>> getProductsByIds(List<String> ids);
 
@@ -61,6 +64,9 @@ class SupabaseProductsRepository implements ProductsRepository {
     if (res == null) return null;
     return ProductModel.fromJson(res);
   }
+
+  @override
+  Future<ProductModel?> getProductById(String id) => getProduct(id);
 
   @override
   Future<List<ProductModel>> getProductsByIds(List<String> ids) async {

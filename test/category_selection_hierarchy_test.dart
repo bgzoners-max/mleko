@@ -5,7 +5,7 @@ import 'package:mleko/widgets/classifieds/add_edit/category_selection_modal.dart
 
 void main() {
   test('ClassifiedCategoryModel.fallbackCategories has full rich tree', () {
-    final categories = ClassifiedCategoryModel.fallbackCategories;
+    const categories = ClassifiedCategoryModel.fallbackCategories;
     expect(categories.length, greaterThanOrEqualTo(16));
 
     final telefoni = categories.firstWhere((c) => c.id == 'telefoni');
@@ -96,7 +96,7 @@ void main() {
   });
 
   test('every root pillar has subcategories and every path ends in a terminal leaf node', () {
-    final categories = ClassifiedCategoryModel.fallbackCategories;
+    const categories = ClassifiedCategoryModel.fallbackCategories;
 
     for (final root in categories) {
       expect(root.subcategories, isNotEmpty, reason: 'Root [${root.id}] must not be a leaf node');

@@ -47,7 +47,7 @@ class _SellerOrdersInboxTabsState extends State<_SellerOrdersInboxTabs>
   @override
   Widget build(BuildContext context) {
     final animationsEnabled = context.watch<AppSettingsProvider>().animationsEnabled;
-    final children = const [
+    const children = [
       SellerOrdersScreen(showAppBar: false),
       SellerInboxScreen(showOnlyConversations: true, showAppBar: false),
     ];

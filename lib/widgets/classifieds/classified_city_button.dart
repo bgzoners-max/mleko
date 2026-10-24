@@ -68,8 +68,9 @@ class ClassifiedCityButton extends StatelessWidget {
               const SizedBox(width: 4),
               InkWell(
                 onTap: () {
-                  classifieds.selectCity(null);
-                  classifieds.selectDistrict(null);
+                  classifieds
+                    ..selectCity(null)
+                    ..selectDistrict(null);
                 },
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(

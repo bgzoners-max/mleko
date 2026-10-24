@@ -81,20 +81,20 @@ class _BasketPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..color = wood.withValues(alpha: isDark ? 0.14 : 0.18);
 
-    canvas.save();
-    // Blagi nagib — ručno pletena korpa nikad nije savršeno ravna.
-    canvas.translate(s * 0.5, s * 0.55);
-    canvas.rotate(0.05);
-    canvas.translate(-s * 0.5, -s * 0.55);
-
-    // Ručka
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(s * 0.5, s * 0.44), radius: s * 0.20),
-      math.pi,
-      math.pi,
-      false,
-      stroke,
-    );
+    canvas
+      ..save()
+      // Blagi nagib — ručno pletena korpa nikad nije savršeno ravna.
+      ..translate(s * 0.5, s * 0.55)
+      ..rotate(0.05)
+      ..translate(-s * 0.5, -s * 0.55)
+      // Ručka
+      ..drawArc(
+        Rect.fromCircle(center: Offset(s * 0.5, s * 0.44), radius: s * 0.20),
+        math.pi,
+        math.pi,
+        false,
+        stroke,
+      );
 
     // Telo korpe (blagi trapez)
     final body = Path()
@@ -103,8 +103,9 @@ class _BasketPainter extends CustomPainter {
       ..lineTo(s * 0.69, s * 0.85)
       ..lineTo(s * 0.31, s * 0.85)
       ..close();
-    canvas.drawPath(body, fill);
-    canvas.drawPath(body, stroke);
+    canvas
+      ..drawPath(body, fill)
+      ..drawPath(body, stroke);
 
     // Pletenje
     final weave = Paint()
@@ -112,11 +113,11 @@ class _BasketPainter extends CustomPainter {
       ..strokeWidth = s * 0.02
       ..strokeCap = StrokeCap.round
       ..color = wood.withValues(alpha: 0.55);
-    canvas.drawLine(Offset(s * 0.24, s * 0.64), Offset(s * 0.76, s * 0.64), weave);
-    canvas.drawLine(Offset(s * 0.27, s * 0.75), Offset(s * 0.73, s * 0.75), weave);
-    canvas.drawLine(Offset(s * 0.5, s * 0.54), Offset(s * 0.5, s * 0.85), weave);
-
-    canvas.restore();
+    canvas
+      ..drawLine(Offset(s * 0.24, s * 0.64), Offset(s * 0.76, s * 0.64), weave)
+      ..drawLine(Offset(s * 0.27, s * 0.75), Offset(s * 0.73, s * 0.75), weave)
+      ..drawLine(Offset(s * 0.5, s * 0.54), Offset(s * 0.5, s * 0.85), weave)
+      ..restore();
   }
 
   @override
@@ -169,49 +170,49 @@ class _FieldPainter extends CustomPainter {
       ..lineTo(s * 1.04, s * 0.92)
       ..lineTo(-s * 0.04, s * 0.92)
       ..close();
-    canvas.drawPath(
-      frontHill,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = green.withValues(alpha: isDark ? 0.28 : 0.32),
-    );
-
-    // Ambar: telo + krov
-    canvas.drawRect(
-      Rect.fromLTWH(s * 0.30, s * 0.56, s * 0.16, s * 0.14),
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = terracotta.withValues(alpha: isDark ? 0.6 : 0.85),
-    );
+    canvas
+      ..drawPath(
+        frontHill,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = green.withValues(alpha: isDark ? 0.28 : 0.32),
+      )
+      // Ambar: telo + krov
+      ..drawRect(
+        Rect.fromLTWH(s * 0.30, s * 0.56, s * 0.16, s * 0.14),
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = terracotta.withValues(alpha: isDark ? 0.6 : 0.85),
+      );
     final roof = Path()
       ..moveTo(s * 0.27, s * 0.56)
       ..lineTo(s * 0.38, s * 0.45)
       ..lineTo(s * 0.49, s * 0.56)
       ..close();
-    canvas.drawPath(
-      roof,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = wood.withValues(alpha: isDark ? 0.6 : 0.9),
-    );
-
-    // Drvo (krošnja + deblo)
-    canvas.drawCircle(
-      Offset(s * 0.66, s * 0.62),
-      s * 0.075,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = green.withValues(alpha: isDark ? 0.35 : 0.45),
-    );
-    canvas.drawLine(
-      Offset(s * 0.66, s * 0.68),
-      Offset(s * 0.66, s * 0.78),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.022
-        ..strokeCap = StrokeCap.round
-        ..color = wood.withValues(alpha: 0.8),
-    );
+    canvas
+      ..drawPath(
+        roof,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = wood.withValues(alpha: isDark ? 0.6 : 0.9),
+      )
+      // Drvo (krošnja + deblo)
+      ..drawCircle(
+        Offset(s * 0.66, s * 0.62),
+        s * 0.075,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = green.withValues(alpha: isDark ? 0.35 : 0.45),
+      )
+      ..drawLine(
+        Offset(s * 0.66, s * 0.68),
+        Offset(s * 0.66, s * 0.78),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.022
+          ..strokeCap = StrokeCap.round
+          ..color = wood.withValues(alpha: 0.8),
+      );
   }
 
   @override
@@ -245,26 +246,25 @@ class _SearchPainter extends CustomPainter {
     final center = Offset(s * 0.44, s * 0.44);
     final radius = s * 0.24;
 
-    canvas.drawCircle(center, radius, fillSoft);
-    canvas.drawCircle(center, radius, ring);
-
-    // Drška lupe
-    canvas.drawLine(
-      Offset(center.dx + radius * 0.72, center.dy + radius * 0.72),
-      Offset(s * 0.82, s * 0.82),
-      ring,
-    );
-
-    // Klica unutra — simbol svežeg, još nepronađenog
-    canvas.drawLine(
-      Offset(s * 0.44, s * 0.56),
-      Offset(s * 0.44, s * 0.36),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.028
-        ..strokeCap = StrokeCap.round
-        ..color = green,
-    );
+    canvas
+      ..drawCircle(center, radius, fillSoft)
+      ..drawCircle(center, radius, ring)
+      // Drška lupe
+      ..drawLine(
+        Offset(center.dx + radius * 0.72, center.dy + radius * 0.72),
+        Offset(s * 0.82, s * 0.82),
+        ring,
+      )
+      // Klica unutra — simbol svežeg, još nepronađenog
+      ..drawLine(
+        Offset(s * 0.44, s * 0.56),
+        Offset(s * 0.44, s * 0.36),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.028
+          ..strokeCap = StrokeCap.round
+          ..color = green,
+      );
 
     final leftLeaf = Path()
       ..moveTo(s * 0.44, s * 0.47)
@@ -279,17 +279,17 @@ class _SearchPainter extends CustomPainter {
     final leafPaint = Paint()
       ..style = PaintingStyle.fill
       ..color = green.withValues(alpha: isDark ? 0.55 : 0.75);
-    canvas.drawPath(leftLeaf, leafPaint);
-    canvas.drawPath(rightLeaf, leafPaint);
-
-    // Zrne
-    canvas.drawCircle(
-      Offset(s * 0.44, s * 0.33),
-      s * 0.028,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = amber,
-    );
+    canvas
+      ..drawPath(leftLeaf, leafPaint)
+      ..drawPath(rightLeaf, leafPaint)
+      // Zrne
+      ..drawCircle(
+        Offset(s * 0.44, s * 0.33),
+        s * 0.028,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = amber,
+      );
   }
 
   @override
@@ -313,27 +313,28 @@ class _FullBasketPainter extends CustomPainter {
     final terracotta = _soft(AmazonColors.badgeRed, isDark);
 
     // Plodovi koji vire iz korpe
-    canvas.drawCircle(
-      Offset(s * 0.34, s * 0.44),
-      s * 0.085,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = green.withValues(alpha: 0.85),
-    );
-    canvas.drawCircle(
-      Offset(s * 0.50, s * 0.38),
-      s * 0.105,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = terracotta.withValues(alpha: 0.9),
-    );
-    canvas.drawCircle(
-      Offset(s * 0.67, s * 0.45),
-      s * 0.08,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = amber,
-    );
+    canvas
+      ..drawCircle(
+        Offset(s * 0.34, s * 0.44),
+        s * 0.085,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = green.withValues(alpha: 0.85),
+      )
+      ..drawCircle(
+        Offset(s * 0.50, s * 0.38),
+        s * 0.105,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = terracotta.withValues(alpha: 0.9),
+      )
+      ..drawCircle(
+        Offset(s * 0.67, s * 0.45),
+        s * 0.08,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = amber,
+      );
 
     // Listić na srednjem plodu
     final leaf = Path()
@@ -355,21 +356,22 @@ class _FullBasketPainter extends CustomPainter {
       ..lineTo(s * 0.70, s * 0.84)
       ..lineTo(s * 0.30, s * 0.84)
       ..close();
-    canvas.drawPath(
-      body,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = wood.withValues(alpha: isDark ? 0.14 : 0.18),
-    );
-    canvas.drawPath(
-      body,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.032
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = wood,
-    );
+    canvas
+      ..drawPath(
+        body,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = wood.withValues(alpha: isDark ? 0.14 : 0.18),
+      )
+      ..drawPath(
+        body,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.032
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..color = wood,
+      );
 
     // Pletenje
     final weave = Paint()
@@ -377,10 +379,11 @@ class _FullBasketPainter extends CustomPainter {
       ..strokeWidth = s * 0.02
       ..strokeCap = StrokeCap.round
       ..color = wood.withValues(alpha: 0.55);
-    canvas.drawLine(Offset(s * 0.23, s * 0.62), Offset(s * 0.77, s * 0.62), weave);
-    canvas.drawLine(Offset(s * 0.26, s * 0.73), Offset(s * 0.74, s * 0.73), weave);
-    canvas.drawLine(Offset(s * 0.40, s * 0.52), Offset(s * 0.36, s * 0.84), weave);
-    canvas.drawLine(Offset(s * 0.60, s * 0.52), Offset(s * 0.64, s * 0.84), weave);
+    canvas
+      ..drawLine(Offset(s * 0.23, s * 0.62), Offset(s * 0.77, s * 0.62), weave)
+      ..drawLine(Offset(s * 0.26, s * 0.73), Offset(s * 0.74, s * 0.73), weave)
+      ..drawLine(Offset(s * 0.40, s * 0.52), Offset(s * 0.36, s * 0.84), weave)
+      ..drawLine(Offset(s * 0.60, s * 0.52), Offset(s * 0.64, s * 0.84), weave);
   }
 
   @override
@@ -418,8 +421,9 @@ class _DeliveryPainter extends CustomPainter {
       Rect.fromLTWH(s * 0.14, s * 0.40, s * 0.50, s * 0.26),
       Radius.circular(s * 0.04),
     );
-    canvas.drawRRect(body, lightFill);
-    canvas.drawRRect(body, stroke);
+    canvas
+      ..drawRRect(body, lightFill)
+      ..drawRRect(body, stroke);
 
     // Kabina
     final cabin = Path()
@@ -428,8 +432,9 @@ class _DeliveryPainter extends CustomPainter {
       ..lineTo(s * 0.88, s * 0.62)
       ..lineTo(s * 0.64, s * 0.62)
       ..close();
-    canvas.drawPath(cabin, lightFill);
-    canvas.drawPath(cabin, stroke);
+    canvas
+      ..drawPath(cabin, lightFill)
+      ..drawPath(cabin, stroke);
 
     // Prozor kabine
     final window = Path()
@@ -438,23 +443,23 @@ class _DeliveryPainter extends CustomPainter {
       ..lineTo(s * 0.83, s * 0.60)
       ..lineTo(s * 0.68, s * 0.60)
       ..close();
-    canvas.drawPath(
-      window,
-      Paint()
-        ..style = PaintingStyle.fill
-        ..color = green.withValues(alpha: 0.55),
-    );
-
-    // Ukrasna traka — "domaći potpis" na vozilu
-    canvas.drawLine(
-      Offset(s * 0.20, s * 0.545),
-      Offset(s * 0.58, s * 0.545),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.03
-        ..strokeCap = StrokeCap.round
-        ..color = terracotta.withValues(alpha: 0.8),
-    );
+    canvas
+      ..drawPath(
+        window,
+        Paint()
+          ..style = PaintingStyle.fill
+          ..color = green.withValues(alpha: 0.55),
+      )
+      // Ukrasna traka — "domaći potpis" na vozilu
+      ..drawLine(
+        Offset(s * 0.20, s * 0.545),
+        Offset(s * 0.58, s * 0.545),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.03
+          ..strokeCap = StrokeCap.round
+          ..color = terracotta.withValues(alpha: 0.8),
+      );
 
     // Točkovi
     final tyre = Paint()
@@ -463,21 +468,21 @@ class _DeliveryPainter extends CustomPainter {
     final hub = Paint()
       ..style = PaintingStyle.fill
       ..color = wood;
-    canvas.drawCircle(Offset(s * 0.30, s * 0.68), s * 0.075, tyre);
-    canvas.drawCircle(Offset(s * 0.30, s * 0.68), s * 0.03, hub);
-    canvas.drawCircle(Offset(s * 0.74, s * 0.68), s * 0.075, tyre);
-    canvas.drawCircle(Offset(s * 0.74, s * 0.68), s * 0.03, hub);
-
-    // Tlo
-    canvas.drawLine(
-      Offset(s * 0.12, s * 0.78),
-      Offset(s * 0.88, s * 0.78),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.022
-        ..strokeCap = StrokeCap.round
-        ..color = wood.withValues(alpha: 0.45),
-    );
+    canvas
+      ..drawCircle(Offset(s * 0.30, s * 0.68), s * 0.075, tyre)
+      ..drawCircle(Offset(s * 0.30, s * 0.68), s * 0.03, hub)
+      ..drawCircle(Offset(s * 0.74, s * 0.68), s * 0.075, tyre)
+      ..drawCircle(Offset(s * 0.74, s * 0.68), s * 0.03, hub)
+      // Tlo
+      ..drawLine(
+        Offset(s * 0.12, s * 0.78),
+        Offset(s * 0.88, s * 0.78),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.022
+          ..strokeCap = StrokeCap.round
+          ..color = wood.withValues(alpha: 0.45),
+      );
   }
 
   @override

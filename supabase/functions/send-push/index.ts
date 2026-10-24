@@ -3,6 +3,14 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
 import type { Database, Json } from "../../types/database.types.ts"
+import {
+  getLockscreenBody,
+  isLogLevelEnabled,
+  redactText,
+  resolveLogLevel,
+  shortId,
+  type LogLevel,
+} from "./push_helpers.ts"
 
 // Dozvoljeni domeni za CORS (ograniči attack surface)
 const PROD_ALLOWED_ORIGINS = [
@@ -43,29 +51,14 @@ const tokenCache = new Map<string, TokenCache>() // Key: project_id
 // Centralizovano logovanje sa nivom (env LOG_LEVEL: debug|info|warn|error).
 // Podrazumevano "info". U produkciji se PII (user_id, sadržaj poruke) NE loguje
 // sirovo — koriste se kratki, deterministički prefiksi radi debugging-a.
-const LOG_LEVEL = (Deno.env.get("LOG_LEVEL") ?? "info").toLowerCase()
-const LOG_LEVELS = ["debug", "info", "warn", "error"] as const
-type LogLevel = (typeof LOG_LEVELS)[number]
+const LOG_LEVEL = resolveLogLevel(Deno.env.get("LOG_LEVEL"))
 
 function logLevelEnabled(level: LogLevel): boolean {
-  const current = LOG_LEVELS.indexOf(LOG_LEVEL as LogLevel) >= 0
-    ? (LOG_LEVEL as LogLevel)
-    : "info"
-  return LOG_LEVELS.indexOf(level) >= LOG_LEVELS.indexOf(current)
+  return isLogLevelEnabled(level, LOG_LEVEL)
 }
 
-/// Skraćen, ne-reverzibilan prikaz identifikatora za logove (bez curenja punog UUID).
-function shortId(id: string | undefined | null): string {
-  if (!id) return "(nepoznato)"
-  return `${id.slice(0, 8)}…`
-}
-
-/// Skraćuje sadržaj poruke radi logovanja (ne menja stvarni payload).
-function redactText(text: string | undefined | null, maxLen = 30): string {
-  if (!text) return ""
-  const trimmed = (text || "").trim()
-  return trimmed.length <= maxLen ? trimmed : `${trimmed.slice(0, maxLen)}…`
-}
+// shortId/redactText/getLockscreenBody su izdvojeni u push_helpers.ts radi
+// unit-testiranja (deno test push_helpers.test.ts) — uvoz je na vrhu fajla.
 
 function log(level: LogLevel, message: string, data?: unknown) {
   if (!logLevelEnabled(level)) return
@@ -73,15 +66,6 @@ function log(level: LogLevel, message: string, data?: unknown) {
   if (level === "error") console.error(line)
   else if (level === "warn") console.warn(line)
   else console.log(line)
-}
-
-function getLockscreenBody(input: string, maxLen = 88): string {
-  const trimmed = (input || "").replace(/\s+/g, " ").trim()
-  if (trimmed.length <= maxLen) return trimmed
-  const cut = trimmed.slice(0, maxLen)
-  const lastSpace = cut.lastIndexOf(" ")
-  const safe = lastSpace > 24 ? cut.slice(0, lastSpace) : cut
-  return safe.trimEnd() + "..."
 }
 
 async function getAccessToken(sa: any): Promise<string> {
@@ -154,10 +138,13 @@ Deno.serve(async (req) => {
   const jwtSecret = Deno.env.get("SUPABASE_JWT_SECRET")
 
   let authorized = false
+  let isSystemOrAdmin = false
+  let callerUid: string | null = null
 
   // 1. Neposredno poklapanje sa tajnim service_role_key-em (koji šalje postgres trigger preko pg_net)
   if (expectedServiceKey && token === expectedServiceKey) {
     authorized = true
+    isSystemOrAdmin = true
   } else if (jwtSecret) {
     // 2. Kriptografska provera potpisa JWT tokena pomoću SUPABASE_JWT_SECRET
     try {
@@ -165,10 +152,29 @@ Deno.serve(async (req) => {
       const { payload } = await jose.jwtVerify(token, secretBytes)
       if (payload.role === "service_role") {
         authorized = true
+        isSystemOrAdmin = true
+      } else if (payload.role === "authenticated") {
+        callerUid = (payload.sub as string) || null
+        const payloadAny = payload as Record<string, any>
+        const isAdmin = payloadAny.is_admin === true ||
+          payloadAny.app_metadata?.is_admin === true ||
+          payloadAny.user_metadata?.is_admin === true
+        if (isAdmin) {
+          isSystemOrAdmin = true
+          authorized = true
+        } else if (callerUid) {
+          authorized = true
+        } else {
+          log("warn", "FCM: Odbijen zahtev - authenticated JWT bez validnog sub claim-a")
+          return new Response(
+            JSON.stringify({ error: "Unauthorized: invalid user claim" }),
+            { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+          )
+        }
       } else {
-        log("warn", `FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role'`)
+        log("warn", `FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role' ili 'authenticated'`)
         return new Response(
-          JSON.stringify({ error: "Forbidden: service_role required" }),
+          JSON.stringify({ error: "Forbidden: insufficient permissions" }),
           { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
         )
       }
@@ -191,7 +197,7 @@ Deno.serve(async (req) => {
 
   if (!authorized) {
     return new Response(
-      JSON.stringify({ error: "Forbidden: service_role required" }),
+      JSON.stringify({ error: "Forbidden: insufficient permissions" }),
       { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
@@ -328,6 +334,29 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "user_id required" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
+    }
+
+    // Bezbednosna provera: Običan korisnik sme slati push notifikaciju ISKLJUČIVO sebi (request.auth.uid === user_id)
+    if (!isSystemOrAdmin) {
+      if (!callerUid || callerUid !== user_id) {
+        log("warn", "FCM: Odbijen pokušaj slanja notifikacije drugom korisniku", {
+          callerUid: shortId(callerUid),
+          targetUserId: shortId(user_id),
+        })
+        await writeDeliveryLog({
+          userId: user_id,
+          title,
+          type: fcmData.type,
+          tokenCount: 0,
+          sentCount: 0,
+          status: "invalid_request",
+          errors: ["Forbidden: cannot send push notifications to other users"],
+        })
+        return new Response(
+          JSON.stringify({ error: "Forbidden: cannot send push notifications to other users" }),
+          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        )
+      }
     }
 
     // Preuzimamo sve tokene, ali filtriramo jedinstvene u memoriji 

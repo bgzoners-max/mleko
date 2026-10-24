@@ -8,13 +8,21 @@ class AppShimmer extends StatelessWidget {
 
   const AppShimmer({super.key, required this.child});
 
+  static Color getBaseColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? Colors.grey.shade800 : Colors.grey.shade300;
+  }
+
+  static Color getHighlightColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? Colors.grey.shade700 : Colors.grey.shade100;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
-      highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+      baseColor: getBaseColor(context),
+      highlightColor: getHighlightColor(context),
       period: const Duration(milliseconds: 1500),
       child: child,
     );

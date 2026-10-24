@@ -1,30 +1,13 @@
 import '../services/core/logger_service.dart';
+import '../utils/product_formatting_utils.dart';
 import '../utils/quantity_engine.dart';
 import '../utils/sales_counter_formatter.dart';
+import 'product_delivery_scope.dart';
+import 'product_stats.dart';
 
-enum ProductDeliveryMode { none, allSellerPoints, selectedPoints }
-
-extension ProductDeliveryModeX on ProductDeliveryMode {
-  String get dbValue => switch (this) {
-        ProductDeliveryMode.none => 'none',
-        ProductDeliveryMode.allSellerPoints => 'all_seller_points',
-        ProductDeliveryMode.selectedPoints => 'selected_points',
-      };
-
-  String get label => switch (this) {
-        ProductDeliveryMode.none => 'Bez lične dostave domaćina',
-        ProductDeliveryMode.allSellerPoints => 'Na svim mojim lokacijama',
-        ProductDeliveryMode.selectedPoints => 'Samo na izabranim lokacijama',
-      };
-}
-
-ProductDeliveryMode productDeliveryModeFromDb(String? value) {
-  return switch (value) {
-    'selected_points' => ProductDeliveryMode.selectedPoints,
-    'all_seller_points' => ProductDeliveryMode.allSellerPoints,
-    _ => ProductDeliveryMode.none,
-  };
-}
+export '../utils/product_formatting_utils.dart';
+export 'product_delivery_scope.dart';
+export 'product_stats.dart';
 
 class ProductModel {
   static const String unitKg = 'kg';
@@ -55,13 +38,27 @@ class ProductModel {
   final String location;
   final bool isDomestic;
   final bool availableNow;
+  final DateTime createdAt;
+
   final ProductDeliveryMode deliveryMode;
   final List<String> selectedDeliveryPointIds;
-  final DateTime createdAt;
   final bool sellerIsVerified;
   final double? avgRating;
   final int reviewCount;
   final int orderCount;
+
+  /// Modularne pod-komponente (rešenje za fat model):
+  ProductDeliveryScope get deliveryScope => ProductDeliveryScope(
+        mode: deliveryMode,
+        selectedPointIds: selectedDeliveryPointIds,
+      );
+
+  ProductStats get stats => ProductStats(
+        sellerIsVerified: sellerIsVerified,
+        avgRating: avgRating,
+        reviewCount: reviewCount,
+        orderCount: orderCount,
+      );
 
   const ProductModel({
     required this.id,
@@ -87,6 +84,8 @@ class ProductModel {
     this.reviewCount = 0,
     this.orderCount = 0,
   });
+
+
 
   // Sentinel vrednost za copyWith da razlikuje "nije prosleđeno" od "prosleđeno null"
   static const Object _undefined = Object();
@@ -114,7 +113,34 @@ class ProductModel {
     Object? avgRating = _undefined,
     int? reviewCount,
     int? orderCount,
+    ProductDeliveryScope? deliveryScope,
+    ProductStats? stats,
   }) {
+    final effectiveDeliveryScope = deliveryScope ??
+        ((deliveryMode != null || selectedDeliveryPointIds != null)
+            ? this.deliveryScope.copyWith(
+                  mode: deliveryMode,
+                  selectedPointIds: selectedDeliveryPointIds,
+                )
+            : this.deliveryScope);
+
+    final resolvedAvgRating = identical(avgRating, _undefined)
+        ? this.avgRating
+        : avgRating as double?;
+
+    final effectiveStats = stats ??
+        ((sellerIsVerified != null ||
+                !identical(avgRating, _undefined) ||
+                reviewCount != null ||
+                orderCount != null)
+            ? this.stats.copyWith(
+                  sellerIsVerified: sellerIsVerified,
+                  avgRating: resolvedAvgRating,
+                  reviewCount: reviewCount,
+                  orderCount: orderCount,
+                )
+            : this.stats);
+
     return ProductModel(
       id: id ?? this.id,
       sellerId: sellerId ?? this.sellerId,
@@ -131,16 +157,17 @@ class ProductModel {
       location: location ?? this.location,
       isDomestic: isDomestic ?? this.isDomestic,
       availableNow: availableNow ?? this.availableNow,
-      deliveryMode: deliveryMode ?? this.deliveryMode,
-      selectedDeliveryPointIds:
-          selectedDeliveryPointIds ?? this.selectedDeliveryPointIds,
+      deliveryMode: effectiveDeliveryScope.mode,
+      selectedDeliveryPointIds: effectiveDeliveryScope.selectedPointIds,
       createdAt: createdAt ?? this.createdAt,
-      sellerIsVerified: sellerIsVerified ?? this.sellerIsVerified,
-      avgRating: identical(avgRating, _undefined) ? this.avgRating : avgRating as double?,
-      reviewCount: reviewCount ?? this.reviewCount,
-      orderCount: orderCount ?? this.orderCount,
+      sellerIsVerified: effectiveStats.sellerIsVerified,
+      avgRating: effectiveStats.avgRating,
+      reviewCount: effectiveStats.reviewCount,
+      orderCount: effectiveStats.orderCount,
     );
   }
+
+
 
   /// Alias za [pricePerKg]. Predstavlja cenu po jedinici definisanoj u [unitType]
   /// (npr. RSD/kg, RSD/L, RSD/kom, RSD/veza, RSD/pak).
@@ -180,45 +207,17 @@ class ProductModel {
   String get priceFormatted =>
       '$priceNumber $priceCurrencyLabel$priceUnitSuffix';
 
-  /// Srpska konvencija decimala: zarez umesto tačke ("1,5" umesto "1.5").
-  /// Podržava preciznost do 3 decimale (npr. "2,25 kg", "0,125 kg")
-  /// uz uklanjanje suvišnih pratećih nula ("2" umesto "2,000", "1,5" umesto "1,500").
-  static String _formatDecimal(double value) {
-    if (!value.isFinite) return '0';
-    if (value.truncateToDouble() == value) {
-      return value.toInt().toString();
-    }
-    var str = value.toStringAsFixed(3);
-    str = str.replaceFirst(RegExp(r'0+$'), '');
-    str = str.replaceFirst(RegExp(r'\.$'), '');
-    return str.replaceAll('.', ',');
-  }
+  static String _formatDecimal(double value) =>
+      ProductFormattingUtils.formatDecimal(value);
 
-  /// Srpska gramatička pravila za množinu na osnovu broja (Slavic plural):
-  /// - n završava na 1, ali ne 11 -> [one] (npr. 1 veza, 21 veza, 1 pakovanje)
-  /// - n završava na 2-4, ali ne 12-14 -> [few] (npr. 2 veze, 24 veze, 2 pakovanja)
-  /// - svi ostali (0, 5-20, 25-30, 11-14...) -> [many] (npr. 5 veza, 11 veza, 5 pakovanja)
   static String pluralSr(
     num count, {
     required String one,
     required String few,
     required String many,
-  }) {
-    final int n = count.abs().round();
-    final int mod10 = n % 10;
-    final int mod100 = n % 100;
+  }) =>
+      ProductFormattingUtils.pluralSr(count, one: one, few: few, many: many);
 
-    if (mod100 >= 11 && mod100 <= 14) {
-      return many;
-    }
-    if (mod10 == 1) {
-      return one;
-    }
-    if (mod10 >= 2 && mod10 <= 4) {
-      return few;
-    }
-    return many;
-  }
 
   /// Za prikaz količine: "2 kg" ili "100 g" ili "1,5 L" ili "750 ml" ili "2 veze" ili "3 pakovanja".
   String formatQuantity(double value) => formatQuantityWithUnit(value, unitType);
@@ -333,97 +332,22 @@ class ProductModel {
       reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
       orderCount: (json['order_count'] as num?)?.toInt() ?? 0,
     );
+
+
   }
 
-  /// Parsira unos količine za kg: "0.1" / "0,1" → 0.1, "100g" / "100 g" → 0.1, "500g" → 0.5, "1.5 kg" → 1.5.
-  static double parseQuantityKg(String text) {
-    var raw = text.trim().toLowerCase();
-    if (raw.isEmpty) return 0;
+  static double parseQuantityKg(String text) =>
+      ProductFormattingUtils.parseQuantityKg(text);
 
-    final isGrams = (raw.endsWith('grama') ||
-            raw.endsWith('gram') ||
-            raw.endsWith('gr') ||
-            raw.endsWith('g')) &&
-        !raw.contains('kg');
+  static double parseQuantityL(String text) =>
+      ProductFormattingUtils.parseQuantityL(text);
 
-    if (isGrams) {
-      final numPart = raw.replaceAll(RegExp(r'[^0-9.,]'), '');
-      final v = double.tryParse(numPart.replaceAll(',', '.'));
-      if (v != null && v > 0) return v / 1000.0;
-    }
+  static String formatQuantityWithUnit(double value, String unitType) =>
+      ProductFormattingUtils.formatQuantityWithUnit(value, unitType);
 
-    raw = raw.replaceAll('kg', '').replaceAll(',', '.').trim();
-    final v = double.tryParse(raw);
-    if (v == null || v <= 0) return 0;
+  static double parseQuantityG(String text) =>
+      ProductFormattingUtils.parseQuantityG(text);
 
-    return v;
-  }
-
-  /// Parsira unos količine za L: "750" → 0.75, "750 ml" → 0.75, "0.75" → 0.75, "1" → 1, "1.5 L" → 1.5.
-  /// Brojevi >= 100 ili unosi sa "ml" tretiraju se kao mililitri i konvertuju u litre.
-  static double parseQuantityL(String text) {
-    var raw = text.trim().toLowerCase();
-    if (raw.isEmpty) return 0;
-
-    final isMl = raw.endsWith('ml') ||
-        raw.endsWith('mili') ||
-        raw.endsWith('mililitara') ||
-        raw.endsWith('mililitra');
-    if (isMl) {
-      final numPart = raw.replaceAll(RegExp(r'[^0-9.,]'), '');
-      final v = double.tryParse(numPart.replaceAll(',', '.'));
-      if (v != null && v > 0) return v / 1000.0;
-    }
-
-    raw = raw
-        .replaceAll('litara', '')
-        .replaceAll('litra', '')
-        .replaceAll('litar', '')
-        .replaceAll('l', '')
-        .replaceAll(',', '.')
-        .trim();
-    final v = double.tryParse(raw);
-    if (v == null || v <= 0) return 0;
-    if (v >= 100) return v / 1000.0; // ml bez sufiksa u litre
-
-    return v;
-  }
-
-  /// Formatira količinu za prikaz (npr. u porudžbini) kada imamo samo vrednost i jedinicu.
-  static String formatQuantityWithUnit(double value, String unitType) {
-    if (unitType == unitL) {
-      if (value < 1 && value > 0) return '${(value * 1000).round()} ml';
-      return '${_formatDecimal(value)} L';
-    }
-    if (unitType == unitG) {
-      final grams = (value * 1000).round();
-      return '$grams g';
-    }
-    if (unitType == unitPiece) {
-      return '${_formatDecimal(value)} kom';
-    }
-    if (unitType == unitVeza) {
-      final suffix = pluralSr(value, one: 'veza', few: 'veze', many: 'veza');
-      return '${_formatDecimal(value)} $suffix';
-    }
-    if (unitType == unitPak) {
-      final suffix = pluralSr(value, one: 'pakovanje', few: 'pakovanja', many: 'pakovanja');
-      return '${_formatDecimal(value)} $suffix';
-    }
-    // default: kg (vrednosti manje od 1 kg se prikazuju u gramima, npr. 0.1 -> 100 g)
-    if (value < 1 && value > 0) {
-      final grams = (value * 1000).round();
-      return '$grams g';
-    }
-    return '${_formatDecimal(value)} kg';
-  }
-
-  /// Parsira unos količine za g: "100" → 0.1, "250" → 0.25, "1000" → 1.0.
-  static double parseQuantityG(String text) {
-    final v = double.tryParse(text.replaceAll(',', '.').trim());
-    if (v == null) return 0;
-    return v / 1000; // grami u kilograme
-  }
 
   /// Mapa za perzistenciju u tabelu `products`.
   /// Isključuje izvedena polja iz SQL view-a (seller_is_verified, avg_rating, review_count)
@@ -499,14 +423,11 @@ class ProductModel {
           location == other.location &&
           isDomestic == other.isDomestic &&
           availableNow == other.availableNow &&
-          deliveryMode == other.deliveryMode &&
-          sellerIsVerified == other.sellerIsVerified &&
-          avgRating == other.avgRating &&
-          reviewCount == other.reviewCount &&
+          deliveryScope == other.deliveryScope &&
+          stats == other.stats &&
           createdAt == other.createdAt &&
           _listEquals(imageUrls, other.imageUrls) &&
-          _listEquals(pickupOptions, other.pickupOptions) &&
-          _listEquals(selectedDeliveryPointIds, other.selectedDeliveryPointIds);
+          _listEquals(pickupOptions, other.pickupOptions);
 
   @override
   int get hashCode => Object.hash(
@@ -521,12 +442,11 @@ class ProductModel {
         unitType,
         isDomestic,
         availableNow,
-        deliveryMode,
-        sellerIsVerified,
-        avgRating,
-        reviewCount,
+        deliveryScope,
+        stats,
         createdAt,
       );
+
 
   static bool _listEquals(List<String> a, List<String> b) {
     if (identical(a, b)) return true;

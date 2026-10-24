@@ -1,6 +1,10 @@
 # Push notifikacije – podešavanje
 
 **Detaljno uputstvo:** vidi [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
+**API ugovor Edge funkcije** (zahtev/odgovor, autorizacija, primeri):
+[supabase/functions/send-push/README.md](../supabase/functions/send-push/README.md)
+**Operativni incidenti** (ne stižu push-ovi, redeploy, token reset):
+[INCIDENT_RUNBOOK.md](INCIDENT_RUNBOOK.md)
 
 ## 1. Firebase projekat (rezime)
 

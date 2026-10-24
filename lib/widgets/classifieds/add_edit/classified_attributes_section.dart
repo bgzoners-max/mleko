@@ -113,7 +113,8 @@ class ClassifiedAttributesSection extends StatelessWidget {
       }
 
       // 2. SIM i povezivanje (Checkbox opcije)
-      items.add(
+      items
+        ..add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Column(
@@ -185,10 +186,9 @@ class ClassifiedAttributesSection extends StatelessWidget {
             ],
           ),
         ),
-      );
-
-      // 3. Garancija (Checkbox opcije)
-      items.add(
+      )
+        // 3. Garancija (Checkbox opcije)
+        ..add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Column(
@@ -271,10 +271,9 @@ class ClassifiedAttributesSection extends StatelessWidget {
             ],
           ),
         ),
-      );
-
-      // 4. Prateća oprema (Checkbox opcije)
-      items.add(
+      )
+        // 4. Prateća oprema (Checkbox opcije)
+        ..add(
         Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: Column(

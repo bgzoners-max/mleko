@@ -1,15 +1,17 @@
 # Migration squash — plan i status
 
-> **Status (2026-10-08):**
-> 1. Istorija od **221 linearne migracije** je sačuvana trajnim Git tagom: `migrations-pre-squash`.
-> 2. P0 seed čišćenje je primenjeno kroz `20261008180000_purge_legacy_seed_test_users.sql` i zaštićeno CI alatom `tool/check_no_seed_data_in_migrations.dart`.
-> 3. Sam fizički squash u jedan baseline fajl čeka pokretanje u kontrolisanom okruženju sa Docker-om (lokalni Docker Desktop, Staging baza ili GitHub Actions), kako bi se izbegao rizik od `Remote migration versions not found in local` na produkcijskoj bazi.
+> **Status (2026-10-24):**
+> 1. Istorija od **228 starijih linearnih migracija** je konsolidovana u snapshot fajl `supabase/schema.sql` putem `tool/squash_migrations.dart`.
+> 2. P0 seed čišćenje i RLS matrice su potpuno primenjene i zaštićene CI alatima (`tool/check_no_seed_data_in_migrations.dart`, `tool/scan_security_definer_migrations.dart`).
+> 3. Novo kreirane migracije se dodaju inkrementalno od datuma cutoff-a (`20261024*`), dok `supabase/schema.sql` služi kao instant uvid u celokupnu DDL šemu.
+> 4. Fizičko arhiviranje starih migracija u `supabase/migrations_archive/` podržano je kroz `dart run tool/squash_migrations.dart --apply` i zahteva prateći `supabase migration repair` na staging/prod instancama.
 
 ---
 
 ## 1. Kontekst
 
-- `supabase/migrations/`: **221 SQL fajl**, linearna istorija od `20260226100000_initial_schema.sql` do `20261008180000_purge_legacy_seed_test_users.sql`.
+- `supabase/migrations/`: **231 SQL fajl** (228 istorijskih + 3 današnje inkrementalne).
+- `supabase/schema.sql`: Konsolidovani DDL snapshot generisan putem `tool/squash_migrations.dart` (775 KB).
 - Git tag: `migrations-pre-squash` (omogućava `git checkout migrations-pre-squash` u svakom trenutku radi uvida u istoriju pojedinačnih DDL izmena).
 - CI mehanizam zaštite:
   - `tool/check_no_seed_data_in_migrations.dart` + `test/no_seed_in_migrations_test.dart` garantuju odsustvo seed naloga u migracijama.

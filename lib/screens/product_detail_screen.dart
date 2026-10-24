@@ -16,6 +16,7 @@ import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../services/services.dart';
 import '../supabase_config.dart';
+import '../utils/image_precache_utils.dart';
 
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
@@ -86,6 +87,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    AppImageCache.clearMemoryCache();
     super.dispose();
   }
 

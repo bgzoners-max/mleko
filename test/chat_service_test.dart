@@ -481,6 +481,36 @@ void main() {
       expect(fetchMessagesAttempted, isTrue);
       expect(updateMessagesAttempted, isTrue);
     });
+
+    test('getOrCreateConversation calls get_or_create_conversation RPC and returns id', () async {
+      String? rpcPayload;
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation') && req.method == 'POST') {
+          rpcPayload = body;
+          return http.Response(jsonEncode('conv-rpc-atomic-id'), 200, headers: {
+            'content-type': 'application/json',
+          });
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = ChatService(client: supabase);
+
+      final id = await service.getOrCreateConversation(
+        'buyer-1',
+        'seller-1',
+        productId: 'prod-1',
+        orderId: 'order-1',
+      );
+
+      expect(id, equals('conv-rpc-atomic-id'));
+      expect(rpcPayload, contains('"p_buyer_id":"buyer-1"'));
+      expect(rpcPayload, contains('"p_seller_id":"seller-1"'));
+      expect(rpcPayload, contains('"p_product_id":"prod-1"'));
+      expect(rpcPayload, contains('"p_order_id":"order-1"'));
+    });
   });
 }
+
 

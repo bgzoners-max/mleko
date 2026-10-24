@@ -87,8 +87,9 @@ class ClassifiedsSidebarLocationSection extends StatelessWidget {
                 if (hasSelection)
                   InkWell(
                     onTap: () {
-                      classifieds.selectCity(null);
-                      classifieds.selectDistrict(null);
+                      classifieds
+                        ..selectCity(null)
+                        ..selectDistrict(null);
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(2),

@@ -87,7 +87,7 @@ class ClassifiedAttributeFilterBar extends StatelessWidget {
                 ? AmazonColors.amber.withValues(alpha: 0.22)
                 : AmazonColors.amberLight.withValues(alpha: 0.35);
             final inactiveBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
-            final activeBorder = AmazonColors.amberDark;
+            const activeBorder = AmazonColors.amberDark;
             final inactiveBorder = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
 
             return PopupMenuButton<String>(

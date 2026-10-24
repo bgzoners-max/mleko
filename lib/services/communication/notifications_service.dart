@@ -14,14 +14,21 @@ class NotificationsService {
   final SupabaseClient? _customClient;
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
-  Future<List<NotificationModel>> getNotifications(String userId) async {
-    final list = await _client
-        .from('notifications')
-        .select()
-        .eq('user_id', userId)
+  Future<List<NotificationModel>> getNotifications(
+    String userId, {
+    int limit = 20,
+    DateTime? beforeCreatedAt,
+  }) async {
+    var query = _client.from('notifications').select().eq('user_id', userId);
+    if (beforeCreatedAt != null) {
+      query = query.lt('created_at', beforeCreatedAt.toIso8601String());
+    }
+    final list = await query
         .order('created_at', ascending: false)
-        .limit(50);
-    return (list as List).map((e) => NotificationModel.fromJson(e as Map<String, dynamic>)).toList();
+        .limit(limit);
+    return (list as List)
+        .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<int> getUnreadCount(String userId) async {

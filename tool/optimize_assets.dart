@@ -55,7 +55,7 @@ void main() {
       }
     }
 
-    final optimizedBytes = img.encodePng(image, level: 6);
+    final optimizedBytes = img.encodePng(image, level: 9);
     if (optimizedBytes.length < originalSize) {
       file.writeAsBytesSync(optimizedBytes);
       final saved = originalSize - optimizedBytes.length;
@@ -91,7 +91,7 @@ void main() {
   }
 
   // Optimizuj ključne slike
-  optimizeJpg('assets/images/hero_farm_banner.jpg', quality: 82);
+  optimizeJpg('assets/images/hero_farm_banner.jpg', quality: 80);
   optimizePng('assets/images/header_logo.png', maxDimension: 512);
   optimizePng('assets/images/domaci_market_logo_v2.png', maxDimension: 512);
   optimizePng('assets/icon/app_icon.png', maxDimension: 512);
@@ -110,6 +110,26 @@ void main() {
   final carBrandsDir = Directory('assets/images/car_brands');
   if (carBrandsDir.existsSync()) {
     for (final f in carBrandsDir.listSync().whereType<File>()) {
+      if (f.path.endsWith('.png')) {
+        optimizePng(f.path, maxDimension: 160);
+      }
+    }
+  }
+
+  // Optimizuj slike mobilnih brendova (prikazuju se kao ikonice)
+  final phoneBrandsDir = Directory('assets/images/phone_brands');
+  if (phoneBrandsDir.existsSync()) {
+    for (final f in phoneBrandsDir.listSync().whereType<File>()) {
+      if (f.path.endsWith('.png')) {
+        optimizePng(f.path, maxDimension: 160);
+      }
+    }
+  }
+
+  // Optimizuj slike traktorskih brendova (prikazuju se kao ikonice)
+  final tractorBrandsDir = Directory('assets/images/tractor_brands');
+  if (tractorBrandsDir.existsSync()) {
+    for (final f in tractorBrandsDir.listSync().whereType<File>()) {
       if (f.path.endsWith('.png')) {
         optimizePng(f.path, maxDimension: 160);
       }
