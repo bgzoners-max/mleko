@@ -27,6 +27,7 @@ import 'favorite_sellers_screen.dart';
 import 'orders_screen.dart';
 import 'support_screen.dart';
 import 'about_screen.dart';
+import 'settings_screen.dart';
 import 'seller/seller_settings_screen.dart';
 import 'edit_profile_screen.dart';
 import 'seller/becoming_seller_screen.dart';
@@ -76,6 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       'becoming-seller' => const BecomingSellerScreen(),
       'edit-profile' => const EditProfileScreen(),
       'seller-settings' => const SellerSettingsScreen(),
+      'settings' => const SettingsScreen(),
       'support' => const SupportScreen(),
       'about' => const AboutScreen(),
       _ => null,
