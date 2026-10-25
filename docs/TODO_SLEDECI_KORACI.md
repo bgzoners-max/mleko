@@ -25,6 +25,7 @@
    - **Type-safety:** `tsconfig.json` sada pokriva i `functions/` (Cloudflare) pored `api/` (Vercel); dodate ambient deklaracije (`functions/cloudflare-pages.d.ts`) i popravljen prethodno skriveni tip u `functions/api/upload.ts` (null check za `request.body`). `npm run type-check` prolazi bez grešaka.
    - **Validacija:** Funkcionalni test (12/12 prošao) — sitemap emituje hreflang za svaki URL, bot-SSR head sadrži canonical + hreflang sa očuvanim `?category=` parametrima.
    - **Strategija i sledeće faze:** Kompletan plan u [`docs/SEO_GLOBALNI_PREDLOZI.md`](./SEO_GLOBALNI_PREDLOZI.md).
+   - **Status (25. okt):** Faza 2 (lokalizovane verzije `/en/`, `/hr/`, `/bh/`...) je **ODLOŽENA** — trenutni poslovni fokus je isključivo srpsko tržište. hreflang infrastruktura iz Faze 1 ostaje aktivna u produkciji (eksplicitno `sr-RS` ciljanje + `x-default`, crawl budget zaštita) i čeka aktivaciju novih jezika jednim redom u `ENABLED_LOCALES` kada se poslovna odluka promeni.
 
 ---
 

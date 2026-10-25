@@ -5,6 +5,8 @@
 **Trenutno:** Srbija (.rs, srpski) → **Cilj:** globalna/međunarodna prisustvenost  
 **Osnova:** Odlična (sitemap, robots.txt, canonical, hreflang samo početna, OpenGraph, Schema.org, bot SSR), ali ograničena na jedno tržište i jezik.
 
+> **STATUS (25.10.2026):** Faza 1 (hreflang infrastruktura) je **implementirana, commitovana i u produkciji** (commit `48faffa`). Faza 2 (lokalizovane verzije) je **ODLOŽENA** — trenutni poslovni fokus je **isključivo srpsko tržište**. Infrastruktura je spremna: aktivacija novog jezika = jedan red u `ENABLED_LOCALES` (`functions/api/_shared/locales.ts`). Za srpsko tržište u međuvremenu videti preporuke u sekciji 7 (Srbija red) i 8 (lokalni SEO / GSC / GBP).
+
 ---
 
 ## 1. Analiza trenutnog stanja
