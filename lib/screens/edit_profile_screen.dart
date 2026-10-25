@@ -99,10 +99,10 @@ class EditProfileScreen extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: Breakpoints.formContentWidth(context),
+            maxWidth: Breakpoints.formContentWidth(context).clamp(0, 720),
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: EditProfileForm(
               user: user,
               isFullScreen: true,

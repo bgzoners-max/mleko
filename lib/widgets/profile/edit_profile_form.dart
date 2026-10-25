@@ -283,7 +283,8 @@ class _EditProfileFormState extends State<EditProfileForm> {
       key: _formKey,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth >= 560;
+          final isDesktop = constraints.maxWidth >= 600;
+          final isWide = constraints.maxWidth >= 520;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -296,17 +297,18 @@ class _EditProfileFormState extends State<EditProfileForm> {
                 onPickPhoto: _pickAndUploadPhoto,
                 onRemovePhoto: _removePhoto,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // 2. LIČNI PODACI
               Text(
                 'Osnovni podaci',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +319,7 @@ class _EditProfileFormState extends State<EditProfileForm> {
                         isSeller: isSeller,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: EditProfileFullNameField(controller: _nameCtrl),
                     ),
@@ -328,20 +330,21 @@ class _EditProfileFormState extends State<EditProfileForm> {
                   controller: _farmNameCtrl,
                   isSeller: isSeller,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 EditProfileFullNameField(controller: _nameCtrl),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // 3. KONTAKT I PRIVATNOST
               Text(
                 'Kontakt podaci',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               if (isWide)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,72 +352,80 @@ class _EditProfileFormState extends State<EditProfileForm> {
                     Expanded(
                       child: EditProfilePhoneField(controller: _phoneCtrl),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant
-                                .withValues(alpha: 0.7),
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: EditProfilePhonePrivacySwitch(
-                          value: _phonePublic,
-                          onChanged: (v) => setState(() => _phonePublic = v),
-                        ),
+                      child: EditProfilePhonePrivacySwitch(
+                        value: _phonePublic,
+                        onChanged: (v) => setState(() => _phonePublic = v),
                       ),
                     ),
                   ],
                 )
               else ...[
                 EditProfilePhoneField(controller: _phoneCtrl),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 EditProfilePhonePrivacySwitch(
                   value: _phonePublic,
                   onChanged: (v) => setState(() => _phonePublic = v),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // 4. LOKACIJA I ADRESA
               Text(
                 'Lokacija i adresa',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 12),
-              if (isWide) ...[
+              const SizedBox(height: 8),
+              if (isDesktop) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: EditProfileAddressField(controller: _addressCtrl),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: EditProfileCityField(controller: _cityCtrl),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 120,
+                      child: EditProfilePostalCodeField(
+                        controller: _postalCodeCtrl,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                EditProfileAddressField(controller: _addressCtrl),
+                const SizedBox(height: 8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: EditProfileCityField(controller: _cityCtrl),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 110,
                       child: EditProfilePostalCodeField(
-                          controller: _postalCodeCtrl),
+                        controller: _postalCodeCtrl,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                EditProfileAddressField(controller: _addressCtrl),
-              ] else ...[
-                EditProfileCityField(controller: _cityCtrl),
-                const SizedBox(height: 12),
-                EditProfilePostalCodeField(controller: _postalCodeCtrl),
-                const SizedBox(height: 12),
-                EditProfileAddressField(controller: _addressCtrl),
               ],
 
               // 5. OZNAKE PRODAVCA (ako je korisnik prodavac)
               if (isSeller) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: 14),
                 EditProfileSellerTagsSection(
                   selectedTags: _selectedTags,
                   onSelectionChanged: (tags) =>
@@ -422,54 +433,70 @@ class _EditProfileFormState extends State<EditProfileForm> {
                 ),
               ],
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
 
               // 6. INFORMACIJE O NALOGU
               Text(
                 'Informacije o nalogu',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               EditProfileAccountInfoSection(
                 email: widget.user.email,
                 sendingPasswordReset: _sendingPasswordReset,
                 onSendPasswordReset: _sendPasswordReset,
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
               // 7. DUGME ZA ČUVANJE
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              if (isWide)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 220,
+                    child: _buildSaveButton(),
                   ),
-                ),
-                onPressed: _saving ? null : _save,
-                icon: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.check_circle_outline),
-                label: Text(
-                  _saving ? 'Čuvanje izmena...' : 'Sačuvaj izmene',
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
+                )
+              else
+                _buildSaveButton(),
               const SizedBox(height: 16),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return FilledButton.icon(
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      onPressed: _saving ? null : _save,
+      icon: _saving
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(Icons.check_circle_outline, size: 18),
+      label: Text(
+        _saving ? 'Čuvanje izmena...' : 'Sačuvaj izmene',
+        style: const TextStyle(
+          fontSize: 14.5,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

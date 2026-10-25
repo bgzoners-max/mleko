@@ -27,14 +27,37 @@ class EditProfileDisplayNameField extends StatelessWidget {
             ? 'Naziv gazdinstva / Prikazano ime'
             : 'Prikazano ime (Display name)',
         hintText: isSeller
-            ? 'npr. Gazdinstvo Petrović ili Eko Farma'
-            : 'npr. Milan Jovanović ili Nadimak',
-        border: const OutlineInputBorder(),
-        prefixIcon: Icon(isSeller
-            ? Icons.storefront_outlined
-            : Icons.badge_outlined),
-        helperText:
-            'Ime koje se javno prikazuje na profilu, oglasima i porukama',
+            ? 'npr. Gazdinstvo Petrović'
+            : 'npr. Milan Jovanović',
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+        prefixIcon: Icon(
+          isSeller ? Icons.storefront_outlined : Icons.badge_outlined,
+          size: 20,
+        ),
+        helperText: 'Javno ime na profilu i oglasima',
+        helperMaxLines: 1,
+        helperStyle: TextStyle(
+          fontSize: 11,
+          color: Colors.grey.shade600,
+        ),
       ),
       textCapitalization: TextCapitalization.words,
     );
@@ -51,12 +74,35 @@ class EditProfileFullNameField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Puno ime i prezime',
         hintText: 'Vaše lično ime i prezime',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.person_outline),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+        prefixIcon: const Icon(Icons.person_outline, size: 20),
         helperText: 'Lično ime za porudžbine i dostavu',
+        helperMaxLines: 1,
+        helperStyle: TextStyle(
+          fontSize: 11,
+          color: Colors.grey.shade600,
+        ),
       ),
       textCapitalization: TextCapitalization.words,
     );
@@ -73,11 +119,29 @@ class EditProfilePhoneField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Broj telefona',
         hintText: 'npr. 064 1234567',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.phone_outlined),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
       ),
       keyboardType: TextInputType.phone,
       validator: (v) {
@@ -85,7 +149,7 @@ class EditProfilePhoneField extends StatelessWidget {
         if (val.isEmpty) return null;
         final digits = val.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
         if (!RegExp(r'^\d{7,15}$').hasMatch(digits)) {
-          return 'Unesite ispravan broj telefona (7-15 cifara)';
+          return 'Unesite ispravan broj (7-15 cifara)';
         }
         return null;
       },
@@ -93,7 +157,7 @@ class EditProfilePhoneField extends StatelessWidget {
   }
 }
 
-/// Prekidač za javnu vidljivost broja telefona.
+/// Prekidač za javnu vidljivost broja telefona (kompaktan, visina usklađena sa poljem).
 class EditProfilePhonePrivacySwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -107,31 +171,69 @@ class EditProfilePhonePrivacySwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SwitchListTile(
-      value: value,
-      onChanged: onChanged,
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      secondary: Icon(
-        value ? Icons.lock_open_outlined : Icons.lock_outline,
-        size: 20,
-        color: value
-            ? Colors.green.shade600
-            : theme.colorScheme.onSurfaceVariant,
-      ),
-      title: Text(
-        value ? 'Telefon je vidljiv svima' : 'Telefon je privatan',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: value ? Colors.green.shade700 : null,
+    return Tooltip(
+      message: value
+          ? 'Kupci i posetioci mogu videti vaš broj u oglasima i na profilu.'
+          : 'Broj je sakriven od javnosti i koristi se isključivo za realizaciju narudžbina.',
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+          color: value
+              ? Colors.green.withValues(alpha: 0.05)
+              : theme.colorScheme.surface,
         ),
-      ),
-      subtitle: Text(
-        value
-            ? 'Kupci i posetioci mogu videti vaš broj u oglasima i na profilu.'
-            : 'Broj je sakriven od javnosti i koristi se isključivo za realizaciju narudžbina.',
-        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+        child: Row(
+          children: [
+            Icon(
+              value ? Icons.lock_open_outlined : Icons.lock_outline,
+              size: 18,
+              color: value
+                  ? Colors.green.shade600
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value ? 'Telefon je vidljiv svima' : 'Telefon je privatan',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: value ? Colors.green.shade700 : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    value ? 'Javno prikazan' : 'Samo za porudžbine',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: Colors.grey.shade600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Transform.scale(
+              scale: 0.82,
+              child: Switch(
+                value: value,
+                onChanged: onChanged,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -173,21 +275,40 @@ class EditProfileCityField extends StatelessWidget {
         return TextFormField(
           controller: fieldTextEditingController,
           focusNode: fieldFocusNode,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Grad ili mesto',
-            hintText: 'npr. Beograd, Novi Sad, Čačak...',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.location_city_outlined),
+            hintText: 'npr. Beograd, Novi Sad...',
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.5,
+              ),
+            ),
+            prefixIcon:
+                const Icon(Icons.location_city_outlined, size: 20),
           ),
           textCapitalization: TextCapitalization.words,
           validator: (v) {
             final val = v?.trim() ?? '';
             if (val.isEmpty) return null;
             if (val.length < 2) {
-              return 'Grad mora imati najmanje 2 karaktera';
+              return 'Najmanje 2 karaktera';
             }
             if (RegExp(r'^\d+$').hasMatch(val)) {
-              return 'Unesite ispravan naziv grada';
+              return 'Unesite ispravan naziv';
             }
             return null;
           },
@@ -197,7 +318,7 @@ class EditProfileCityField extends StatelessWidget {
   }
 }
 
-/// Poštanski broj (samo cifre).
+/// Poštanski broj (samo cifre, kompaktan format).
 class EditProfilePostalCodeField extends StatelessWidget {
   final TextEditingController controller;
 
@@ -207,11 +328,30 @@ class EditProfilePostalCodeField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         labelText: 'Poštanski broj',
-        hintText: 'npr. 11000',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.markunread_mailbox_outlined),
+        hintText: '11000',
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+        prefixIcon:
+            const Icon(Icons.markunread_mailbox_outlined, size: 18),
       ),
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -231,11 +371,33 @@ class EditProfileAddressField extends StatelessWidget {
       controller: controller,
       decoration: InputDecoration(
         labelText: 'Adresa (ulica i broj)',
-        hintText: 'npr. Cara Dušana 12 / Stan 4',
-        border: const OutlineInputBorder(),
-        prefixIcon: const Icon(Icons.home_outlined),
-        helperText: 'Vidljiva samo tebi i drugoj strani pri naručivanju',
-        helperStyle: TextStyle(color: Colors.grey.shade600),
+        hintText: 'npr. Cara Dušana 12',
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+        prefixIcon: const Icon(Icons.home_outlined, size: 20),
+        helperText: 'Privatno — vidljivo samo pri naručivanju',
+        helperMaxLines: 1,
+        helperStyle: TextStyle(
+          fontSize: 11,
+          color: Colors.grey.shade600,
+        ),
         suffixIcon: Tooltip(
           message: 'Adresa nikada nije javno vidljiva posetiocima',
           child: Icon(Icons.lock_outline,
