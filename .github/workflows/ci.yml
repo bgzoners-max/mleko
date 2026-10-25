@@ -158,8 +158,30 @@ jobs:
           sudo apt-get update -o Acquire::Retries=3 || true
           sudo apt-get install -y --no-install-recommends postgresql-client
 
-      - name: Start local Supabase stack
-        run: npx supabase start
+      - name: Start local Supabase stack (ECR rate-limit retry)
+        shell: bash
+        run: |
+          # AWS Public ECR (public.ecr.aws) rate-limituje anonimne pull-ove sa
+          # deljenih GitHub Actions runner IP adresa ("429 Too Many Requests" /
+          # "Data limit exceeded"). Retry petlja sa pauzom ceka da se rate-limit
+          # window resetuje pre novog pokusaja.
+          for attempt in 1 2 3 4 5; do
+            echo "::group::Attempt $attempt/5: npx supabase start"
+            if npx supabase start; then
+              echo "::endgroup::"
+              echo "Supabase stack started on attempt $attempt."
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Attempt $attempt failed (usually AWS ECR rate limit on shared runner IPs)."
+            npx supabase stop --no-backup >/dev/null 2>&1 || true
+            if [ "$attempt" -lt 5 ]; then
+              echo "Waiting 75s for the rate-limit window to reset before retrying..."
+              sleep 75
+            fi
+          done
+          echo "::error::Supabase stack failed to start after 5 attempts (AWS ECR rate limit)."
+          exit 1
 
       - name: Reset local database
         run: npx supabase db reset --local --yes

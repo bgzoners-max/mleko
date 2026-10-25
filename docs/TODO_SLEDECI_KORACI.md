@@ -25,6 +25,12 @@
    - **Type-safety:** `tsconfig.json` sada pokriva i `functions/` (Cloudflare) pored `api/` (Vercel); dodate ambient deklaracije (`functions/cloudflare-pages.d.ts`) i popravljen prethodno skriveni tip u `functions/api/upload.ts` (null check za `request.body`). `npm run type-check` prolazi bez grešaka.
    - **Validacija:** Funkcionalni test (12/12 prošao) — sitemap emituje hreflang za svaki URL, bot-SSR head sadrži canonical + hreflang sa očuvanim `?category=` parametrima.
    - **Strategija i sledeće faze:** Kompletan plan u [`docs/SEO_GLOBALNI_PREDLOZI.md`](./SEO_GLOBALNI_PREDLOZI.md).
+4. **🧪 CI popravljen — sva 3 hronično padajuća unit-testa zelena (Završeno 25. okt):**
+   - **Korenski uzrok:** `AuthSessionProvider._initAuth()` zakazuje `Future.microtask` pozadinsku auth proveru koja u test okruženju (bez Supabase sesije) **prebriše `_user` sa null NAKON** što test postavi user-a preko `setUserForTesting`. User null je rušio: checkout prefill telefona (`0651122334`), offline red porudžbina (validacija blokirala submit) i seller lokaciju (`hasLocation` uvek false).
+   - **Fix (commit `e968cfe`):** `setUserForTesting` sada postavlja `_authChecked = true` — microtask se prekida early-return-om. Lokalno 820/820 testova, `flutter analyze` čist.
+   - **Coverage ratchet (commit `0756ea7`):** 36.04% → 37.22% (+1.18pp) jer popravljeni testovi sada pokrivaju više linija; ažuriran `tool/coverage_ratchet.json` + README bedž.
+   - **STATUS.md (commit `a0984f4`):** regenerisan (136 test fajlova, 37.22% coverage) — CI zahteva da bude uvek svež.
+   - **CI stanje posle popravke:** `flutter-checks` ✅ ZELEN (analyze + testovi + coverage + ratchet + STATUS), `integration-tests` ✅ ZELEN, `db-integration-checks` ❌ eksterni AWS ECR rate-limit („429/Data limit exceeded" pri docker pull-u `supabase/gotrue`) — dodata retry petlja sa 75s pauzom u `ci.yml` (5 pokušaja). `Web Preview Build` (Firebase) ❌ **zahteva ručni rad**: `PERMISSION_DENIED` na `serviceusage.services.get` za projekat `863024576523` — potrebno u Google Cloud Console uključiti **Firebase Hosting API** ili servisu dodeliti ulogu **Service Usage Consumer**, ili regenerisati `FIREBASE_TOKEN` secret.
    - **Status (25. okt):** Faza 2 (lokalizovane verzije `/en/`, `/hr/`, `/bh/`...) je **ODLOŽENA** — trenutni poslovni fokus je isključivo srpsko tržište. hreflang infrastruktura iz Faze 1 ostaje aktivna u produkciji (eksplicitno `sr-RS` ciljanje + `x-default`, crawl budget zaštita) i čeka aktivaciju novih jezika jednim redom u `ENABLED_LOCALES` kada se poslovna odluka promeni.
 
 ---
