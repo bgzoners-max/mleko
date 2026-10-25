@@ -46,8 +46,23 @@ Disallow: /classifieds/new
 Disallow: /classifieds/edit/
 Disallow: /classifieds/edit/*
 Disallow: /classifieds/my
+Disallow: /classifieds/saved-searches
 Disallow: /verify-email
 Disallow: /auth/confirmed
+Disallow: /auth/confirm
+Disallow: /onboarding
+Disallow: /splash
+Disallow: /login
+Disallow: /register
+Disallow: /favorites
+Disallow: /notifications
+Disallow: /seller-dashboard
+Disallow: /map-picker
+Disallow: /profile/edit
+
+# Interni JSON API endpoint-i (botovi ne treba da troše crawl budget na njih;
+# javni kratki linkovi su /ad/* i /p/*, a kanonski /classifieds/ad/* i /product/*)
+Disallow: /api/
 
 # Mapa sajta (XML Sitemap — dinamički generisana za Google i pretraživače)
 Sitemap: https://www.domacimarket.rs/sitemap.xml

@@ -57,6 +57,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const contentType =
       request.headers.get('Content-Type') || 'application/octet-stream';
 
+    if (!request.body) {
+      return jsonResponse({ error: 'Nedostaje telo zahteva (fajl).' }, 400);
+    }
+
     // Direktan striming iz request body-ja u Cloudflare R2
     await env.MEDIA_BUCKET.put(cleanPath, request.body, {
       httpMetadata: {

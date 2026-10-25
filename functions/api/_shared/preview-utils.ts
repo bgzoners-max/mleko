@@ -1,6 +1,8 @@
 // Shared SEO/HTML helpers for Cloudflare Pages Functions & Edge previews.
 // Both `product-preview` and `classified-preview` use these utilities.
 
+import { buildHreflangLinks } from "./locales.js";
+
 declare const process: any;
 
 export type HtmlPayload = {
@@ -124,6 +126,20 @@ function sanitizeJsonLd(jsonLd: Record<string, any>): string {
     .replace(/&/g, "\\u0026");
 }
 
+/**
+ * Gradi `<link rel="alternate" hreflang=...>` tagove iz kanonskog URL-a
+ * stranice (vidi `./locales.ts` — SEO na svetskom nivou, Faza 1).
+ * Vraća prazan string ako nema aktivnih verzija ili URL nije validan.
+ */
+function deriveHreflangLinks(canonicalUrl: string): string {
+  try {
+    const { origin } = new URL(canonicalUrl);
+    return buildHreflangLinks(canonicalUrl, resolvePublicBaseUrl(origin));
+  } catch {
+    return "";
+  }
+}
+
 export function buildHtml({
   title,
   description,
@@ -149,6 +165,8 @@ export function buildHtml({
   const escapedLinkLabel = escapeHtml(linkLabel);
   const escapedBodyHeading = bodyHeading ? escapeHtml(bodyHeading) : "";
 
+  const hreflangLinks = deriveHreflangLinks(canonicalUrl);
+
   const jsonLdScript = jsonLd
     ? `<script type="application/ld+json">${sanitizeJsonLd(jsonLd)}</script>`
     : "";
@@ -166,6 +184,8 @@ export function buildHtml({
   <meta name="description" content="${escapedDescription}">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <link rel="canonical" href="${escapedCanonicalUrl}">
+
+  ${hreflangLinks}
 
   <meta property="og:type" content="${escapedOgType}">
   <meta property="og:title" content="${escapedTitle}">

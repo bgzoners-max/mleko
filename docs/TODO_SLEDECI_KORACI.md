@@ -17,6 +17,14 @@
    - **Robots.txt & GSC 404:** Dodat `Disallow: /cdn-cgi/` u `robots.txt` radi sprečavanja grešaka 404 na Cloudflare sistemskim putanjama.
    - **308 Redirect Loop Fix:** Statičke stranice (`/politika-privatnosti`, `/uslovi-koriscenja`) konfigurisane preko čistih `index.html` direktorijuma, eliminisan 308 redirect loop.
    - **Automatski GitHub Actions CI/CD (`deploy-cloudflare.yml`):** Konfigurisan `CLOUDFLARE_API_TOKEN` i `npm ci` korak; svaki `git push origin master` automatski pokreće release build i deploy na Cloudflare Pages. Status: **success**.
+3. **🌍 SEO na svetskom nivou — Faza 1: hreflang infrastruktura (Završeno 25. okt):**
+   - **Nova centralna i18n konfiguracija (`functions/api/_shared/locales.ts` + `api/_shared/locales.ts`):** Plan svih verzija (sr-RS, bs-BA, hr-HR, de-DE, en) sa `ENABLED_LOCALES` listom — trenutno samo `sr-RS` + `x-default` da GSC ne bi prijavio hreflang greške („no return tag" / 404). Aktivacija novog jezika = jedan red u `ENABLED_LOCALES`.
+   - **hreflang u bot-SSR HTML:** Sve bot-SSR stranice (rute, kategorije, oglasi, proizvodi) automatski emituju `<link rel="alternate" hreflang=...>` izveden iz kanonskog URL-a (`preview-utils.ts`, obe verzije).
+   - **hreflang u sitemap-i:** Svaki `<url>` u `sitemap.xml` sada ima `<xhtml:link>` anotacije (sr-RS + x-default), konzistentno sa SPA shell-om (`web/index.html`).
+   - **Robots.txt:** Dodate privatne rute (`/onboarding`, `/splash`, `/login`, `/register`, `/favorites`, `/notifications`, `/seller-dashboard`, `/map-picker`, `/profile/edit`, `/classifieds/saved-searches`, `/auth/confirm`) + `Disallow: /api/` za zaštitu crawl budget-a.
+   - **Type-safety:** `tsconfig.json` sada pokriva i `functions/` (Cloudflare) pored `api/` (Vercel); dodate ambient deklaracije (`functions/cloudflare-pages.d.ts`) i popravljen prethodno skriveni tip u `functions/api/upload.ts` (null check za `request.body`). `npm run type-check` prolazi bez grešaka.
+   - **Validacija:** Funkcionalni test (12/12 prošao) — sitemap emituje hreflang za svaki URL, bot-SSR head sadrži canonical + hreflang sa očuvanim `?category=` parametrima.
+   - **Strategija i sledeće faze:** Kompletan plan u [`docs/SEO_GLOBALNI_PREDLOZI.md`](./SEO_GLOBALNI_PREDLOZI.md).
 
 ---
 

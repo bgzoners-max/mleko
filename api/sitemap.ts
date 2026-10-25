@@ -3,6 +3,7 @@ export const config = { runtime: "edge" };
 
 import { createClient } from "@supabase/supabase-js";
 import { normalizeBaseUrl, resolvePublicBaseUrl } from "./_shared/preview-utils.js";
+import { buildHreflangXmlLinks } from "./_shared/locales.js";
 
 declare const process: any;
 
@@ -64,10 +65,14 @@ function formatDate(dateValue?: string | null): string {
   }
 }
 
-function buildXml(entries: SitemapEntry[]): string {
+function buildXml(entries: SitemapEntry[], baseUrl: string): string {
   const urlsXml = entries
     .map((e) => {
       const parts = [`    <loc>${e.loc}</loc>`];
+      // hreflang anotacije (SEO na svetskom nivou, Faza 1) — videti
+      // `./_shared/locales.ts` za listu aktivnih jezičkih verzija.
+      const hreflangXml = buildHreflangXmlLinks(e.loc, baseUrl);
+      if (hreflangXml) parts.push(hreflangXml);
       if (e.lastmod) parts.push(`    <lastmod>${e.lastmod}</lastmod>`);
       if (e.changefreq) parts.push(`    <changefreq>${e.changefreq}</changefreq>`);
       if (e.priority) parts.push(`    <priority>${e.priority}</priority>`);
@@ -126,7 +131,7 @@ export async function GET(request: Request): Promise<Response> {
 
     if (!supabaseUrl || !supabaseAnonKey) {
       // Bez Supabase kredencijala, vrati statički sitemap
-      return new Response(buildXml(staticEntries), {
+      return new Response(buildXml(staticEntries, baseUrl), {
         status: 200,
         headers: {
           "Content-Type": "application/xml; charset=utf-8",
@@ -191,7 +196,7 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     const allEntries = [...staticEntries, ...dynamicEntries];
-    const xml = buildXml(allEntries);
+    const xml = buildXml(allEntries, baseUrl);
 
     return new Response(xml, {
       status: 200,
@@ -203,7 +208,7 @@ export async function GET(request: Request): Promise<Response> {
   } catch (err) {
     console.error("Dynamic sitemap generation error:", err);
     // Siguran fallback: u slučaju bilo koje greške vrati statički sitemap
-    return new Response(buildXml(staticEntries), {
+    return new Response(buildXml(staticEntries, baseUrl), {
       status: 200,
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
