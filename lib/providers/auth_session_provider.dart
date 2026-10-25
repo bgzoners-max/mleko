@@ -42,6 +42,13 @@ class AuthSessionProvider extends ChangeNotifier {
 
   void setUserForTesting(UserModel? user) {
     _user = user;
+    // Označi sesiju kao proverenu kako pozadinska auth provera iz
+    // `_initAuth()` (Future.microtask + authStateChanges) ne bi prebrisala
+    // test korisnika null vrednošću — u test okruženju nema Supabase sesije,
+    // pa bi mikro-task koji se izvrši NAKON što test postavi user-a resetovao
+    // `_user` na null, zbog čega bi padali svi e2e testovi koji računaju na
+    // user-a (prefill checkout forme, offline red porudžbina, seller lokacija).
+    _authChecked = true;
     notifyListeners();
   }
 
