@@ -173,5 +173,46 @@ void main() {
       expect(postalCtrl.text, '32000');
       expect(cityCtrl.text, 'Čačak');
     });
+
+    testWidgets('dropdown options expand to at least 300px even in a narrow (120px) input container', (tester) async {
+      final postalCtrl = TextEditingController();
+      final cityCtrl = TextEditingController();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 120,
+                child: PostalCodeAutocompleteField(
+                  controller: postalCtrl,
+                  cityController: cityCtrl,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextFormField), '11030');
+      await tester.pumpAndSettle();
+
+      // Find all options
+      expect(find.text('Beograd Čukarica'), findsOneWidget);
+      expect(find.text('Pećani (Beograd Čukarica)'), findsOneWidget);
+
+      // Verify the ListView inside Material has width 300
+      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+      final dropdownContainer = sizedBoxes.firstWhere((w) => w.width == 300.0);
+      expect(dropdownContainer.width, 300.0);
+
+      // Tap on Pećani
+      await tester.tap(find.text('Pećani (Beograd Čukarica)'));
+      await tester.pumpAndSettle();
+
+      expect(postalCtrl.text, '11030');
+      expect(cityCtrl.text, 'Pećani (Beograd Čukarica)');
+    });
   });
 }

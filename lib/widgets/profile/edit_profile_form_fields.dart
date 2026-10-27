@@ -335,11 +335,13 @@ class EditProfileCityField extends StatelessWidget {
 class EditProfilePostalCodeField extends StatelessWidget {
   final TextEditingController controller;
   final TextEditingController? cityController;
+  final String labelText;
 
   const EditProfilePostalCodeField({
     super.key,
     required this.controller,
     this.cityController,
+    this.labelText = 'Poštanski broj',
   });
 
   @override
@@ -347,6 +349,7 @@ class EditProfilePostalCodeField extends StatelessWidget {
     return PostalCodeAutocompleteField(
       controller: controller,
       cityController: cityController,
+      labelText: labelText,
     );
   }
 }

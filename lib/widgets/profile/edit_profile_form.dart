@@ -399,7 +399,7 @@ class _EditProfileFormState extends State<EditProfileForm> {
                     ),
                     const SizedBox(width: 12),
                     SizedBox(
-                      width: 120,
+                      width: 145,
                       child: EditProfilePostalCodeField(
                         controller: _postalCodeCtrl,
                         cityController: _cityCtrl,
@@ -421,10 +421,11 @@ class _EditProfileFormState extends State<EditProfileForm> {
                     ),
                     const SizedBox(width: 10),
                     SizedBox(
-                      width: 110,
+                      width: 125,
                       child: EditProfilePostalCodeField(
                         controller: _postalCodeCtrl,
                         cityController: _cityCtrl,
+                        labelText: 'Pošt. broj',
                       ),
                     ),
                   ],
