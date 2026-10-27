@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../models/seller_delivery_models.dart';
+import '../common/postal_code_autocomplete_field.dart';
 
 /// Reusable forma za unos podataka o kupcu (adresa, grad, poštanski broj, telefon, napomena).
 /// Koristi se na single checkout ekranu i u multi-item checkout formi.
@@ -80,10 +80,9 @@ class BuyerForm extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Grad'),
           ),
           const SizedBox(height: 12),
-          TextField(
+          PostalCodeAutocompleteField(
             controller: postalCodeController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            cityController: cityController,
             decoration: const InputDecoration(labelText: 'Poštanski broj'),
           ),
           const SizedBox(height: 12),

@@ -392,13 +392,17 @@ class _EditProfileFormState extends State<EditProfileForm> {
                     const SizedBox(width: 12),
                     Expanded(
                       flex: 3,
-                      child: EditProfileCityField(controller: _cityCtrl),
+                      child: EditProfileCityField(
+                        controller: _cityCtrl,
+                        postalCodeController: _postalCodeCtrl,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     SizedBox(
                       width: 120,
                       child: EditProfilePostalCodeField(
                         controller: _postalCodeCtrl,
+                        cityController: _cityCtrl,
                       ),
                     ),
                   ],
@@ -410,13 +414,17 @@ class _EditProfileFormState extends State<EditProfileForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: EditProfileCityField(controller: _cityCtrl),
+                      child: EditProfileCityField(
+                        controller: _cityCtrl,
+                        postalCodeController: _postalCodeCtrl,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     SizedBox(
                       width: 110,
                       child: EditProfilePostalCodeField(
                         controller: _postalCodeCtrl,
+                        cityController: _cityCtrl,
                       ),
                     ),
                   ],

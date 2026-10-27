@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../constants/serbian_cities.dart';
+import '../../constants/serbian_postal_codes.dart';
+import '../common/postal_code_autocomplete_field.dart';
 
 // Polja forme za izmenu profila — izdvojena iz EditProfileForm radi
 // održavanja fajla ispod limita od 700 linija (tool/check_file_size.dart).
@@ -239,11 +240,16 @@ class EditProfilePhonePrivacySwitch extends StatelessWidget {
   }
 }
 
-/// Grad/mesto sa autocomplete predlozima iz [SerbianCities].
+/// Grad/mesto sa autocomplete predlozima iz [SerbianCities] i dvosmernom vezom ka poštanskom broju.
 class EditProfileCityField extends StatelessWidget {
   final TextEditingController controller;
+  final TextEditingController? postalCodeController;
 
-  const EditProfileCityField({super.key, required this.controller});
+  const EditProfileCityField({
+    super.key,
+    required this.controller,
+    this.postalCodeController,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -257,6 +263,13 @@ class EditProfileCityField extends StatelessWidget {
       },
       onSelected: (String selection) {
         controller.text = selection;
+        if (postalCodeController != null &&
+            postalCodeController!.text.trim().isEmpty) {
+          final matchedCode = SerbianPostalCodes.codeForCity(selection);
+          if (matchedCode != null) {
+            postalCodeController!.text = matchedCode;
+          }
+        }
       },
       fieldViewBuilder: (
         BuildContext context,
@@ -318,43 +331,22 @@ class EditProfileCityField extends StatelessWidget {
   }
 }
 
-/// Poštanski broj (samo cifre, kompaktan format).
+/// Poštanski broj (samo cifre, kompaktan format sa pametnim autocomplete predlozima).
 class EditProfilePostalCodeField extends StatelessWidget {
   final TextEditingController controller;
+  final TextEditingController? cityController;
 
-  const EditProfilePostalCodeField({super.key, required this.controller});
+  const EditProfilePostalCodeField({
+    super.key,
+    required this.controller,
+    this.cityController,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return PostalCodeAutocompleteField(
       controller: controller,
-      decoration: InputDecoration(
-        labelText: 'Poštanski broj',
-        hintText: '11000',
-        isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 1.5,
-          ),
-        ),
-        prefixIcon:
-            const Icon(Icons.markunread_mailbox_outlined, size: 18),
-      ),
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      cityController: cityController,
     );
   }
 }

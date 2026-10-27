@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../constants/serbian_cities.dart';
+import '../../../constants/serbian_postal_codes.dart';
 
 class ClassifiedCityAutocomplete extends StatelessWidget {
   final TextEditingController controller;
@@ -14,10 +15,15 @@ class ClassifiedCityAutocomplete extends StatelessWidget {
     return Autocomplete<String>(
       initialValue: TextEditingValue(text: controller.text),
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.trim().isEmpty) {
+        final query = textEditingValue.text.trim();
+        if (query.isEmpty) {
           return const Iterable<String>.empty();
         }
-        return SerbianCities.suggestions(textEditingValue.text);
+        final cityMatches = SerbianCities.suggestions(query);
+        final postalMatches = SerbianPostalCodes.suggestions(query, limit: 10)
+            .map((e) => e.city)
+            .where((city) => !cityMatches.contains(city));
+        return [...cityMatches, ...postalMatches];
       },
       onSelected: (String selection) {
         controller.text = selection;
