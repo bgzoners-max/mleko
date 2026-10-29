@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants.dart';
-import '../../core/design_system.dart';
 import '../../core/responsive.dart';
 import '../../models/app_error.dart';
 import '../../models/home_products_data.dart';
@@ -16,11 +14,9 @@ import '../app_error_retry.dart';
 import '../guest_auth_prompt.dart';
 import '../cache_status_widget.dart';
 import '../app_shimmer.dart';
-import '../organic_divider.dart';
 import '../rustic_illustration.dart';
-import '../staggered_reveal.dart';
 
-import 'home_product_item.dart';
+import 'home_paginated_products_shelf.dart';
 import 'map_card.dart';
 import 'sellers_near_you_section.dart';
 
@@ -87,12 +83,9 @@ class HomeNarrowProductsSliver extends StatelessWidget {
         final list = snap.data?.products ?? [];
         final salesCounts = snap.data?.salesCounts ?? {};
         final ratings = snap.data?.ratings ?? {};
-        final newProducts = list
-            .where((p) =>
-                DateTime.now().difference(p.createdAt).inDays <
-                AppConstants.newProductDays)
-            .toList();
-        final displayList = newProducts.isNotEmpty ? newProducts : list;
+        // Uvek prikazujemo sve proizvode, poređane od najnovijeg ka starijem
+        final displayList = [...list]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         warmupCarouselImages(displayList);
         final user = context.read<AppState>().user;
         final canFavorite = user != null && !user.isGuest;
@@ -133,98 +126,27 @@ class HomeNarrowProductsSliver extends StatelessWidget {
           );
         }
 
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        // Prvi proizvod izlazi iz grida kao istaknuta "hero" kartica;
-        // ostatak (max 5) ostaje u mreži — ukupan broj prikazanih je i dalje 6.
-        final remaining = displayList.length - 1;
-        final gridCount = remaining > 5 ? 5 : remaining;
+        final productGridExtent = isTabletLayout
+            ? (isLargeTablet ? 300.0 : 310.0)
+            : 265.0;
 
         return SliverMainAxisGroup(
           slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  Breakpoints.horizontalPadding(context),
-                  sectionSpacing,
-                  Breakpoints.horizontalPadding(context),
-                  8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      newProducts.isNotEmpty
-                          ? 'Najnoviji proizvodi'
-                          : 'Poslednje dodato',
-                      style: AppFonts.display(
-                        isDark
-                            ? AmazonColors.darkTextPrimary
-                            : AmazonColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    // "Prošivena" organska linija umesto strogog pravilnog razdelnika.
-                    const SizedBox(width: 84, child: OrganicDivider()),
-                  ],
-                ),
-              ),
-            ),
-            // ── Istaknuti (prvi) proizvod — puna širina, izvan uniformnog grida.
-            // Uvodi asimetriju i vizuelni ritam; koristi postojeći "list" mod
-            // ProductCard kartice (slika + sadržaj + dugme).
-            SliverPadding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: Breakpoints.horizontalPadding(context)),
-              sliver: SliverToBoxAdapter(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: HomeProductItem(
-                      product: displayList.first,
-                      salesCount: salesCounts[displayList.first.id] ?? 0,
-                      canFavorite: canFavorite,
-                      userId: user?.id,
-                      avgRating: ratings[displayList.first.id]?.avg,
-                      reviewCount: ratings[displayList.first.id]?.count,
-                    ),
-                  ),
-                ),
-              ),
-            ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                  Breakpoints.horizontalPadding(context),
-                  12,
-                  Breakpoints.horizontalPadding(context),
-                  0),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isTabletLayout ? (isLargeTablet ? 3 : 2) : 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  mainAxisExtent:
-                      isTabletLayout ? (isLargeTablet ? 300 : 310) : 265,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    // Indeks i+1 — prvi proizvod je prikazan kao istaknuta kartica.
-                    final product = displayList[i + 1];
-                    final rating = ratings[product.id];
-                    // Kaskadni ulaz: mreža se "otvara" umesto da se pojavi odjednom.
-                    return StaggeredReveal(
-                      index: i,
-                      child: HomeProductItem(
-                        product: product,
-                        salesCount: salesCounts[product.id] ?? 0,
-                        canFavorite: canFavorite,
-                        userId: user?.id,
-                        avgRating: rating?.avg,
-                        reviewCount: rating?.count,
-                      ),
-                    );
-                  },
-                  childCount: gridCount,
+                Breakpoints.horizontalPadding(context),
+                sectionSpacing,
+                Breakpoints.horizontalPadding(context),
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: HomePaginatedProductsShelf(
+                  products: displayList,
+                  salesCounts: salesCounts,
+                  ratings: ratings,
+                  canFavorite: canFavorite,
+                  userId: user?.id,
+                  productGridExtent: productGridExtent,
                 ),
               ),
             ),
