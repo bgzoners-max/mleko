@@ -635,7 +635,18 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
               onPhonePublicChanged: (v) => setState(() => _phonePublic = v),
               descController: _descController,
               sellerType: _sellerType,
-              onSellerTypeChanged: (val) => setState(() => _sellerType = val),
+              onSellerTypeChanged: (val) {
+                setState(() {
+                  _sellerType = val;
+                  if (!isEdit && _isConditionApplicable) {
+                    if (val == 'business' && _condition == 'used') {
+                      _condition = 'new';
+                    } else if (val != 'business' && _condition == 'new') {
+                      _condition = 'used';
+                    }
+                  }
+                });
+              },
               isUrgent: _isUrgent,
               onUrgentChanged: (val) => setState(() => _isUrgent = val),
               loading: _loading,

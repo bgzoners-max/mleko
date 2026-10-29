@@ -5,6 +5,7 @@ class ClassifiedPriceSection extends StatelessWidget {
   final bool isConditionApplicable;
   final String? condition;
   final ValueChanged<String?>? onConditionChanged;
+  final String sellerType;
   final String priceType;
   final String currency;
   final TextEditingController priceController;
@@ -16,6 +17,7 @@ class ClassifiedPriceSection extends StatelessWidget {
     this.isConditionApplicable = false,
     this.condition,
     this.onConditionChanged,
+    this.sellerType = 'individual',
     required this.priceType,
     required this.currency,
     required this.priceController,
@@ -27,92 +29,44 @@ class ClassifiedPriceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 600;
-    final isDesktopWidth = width >= 720;
     final hasPriceInput = priceType == 'fixed' || priceType == 'negotiable';
 
-    // 1. Široki ekrani (Desktop / Tablet)
-    if (isWide) {
-      if (isConditionApplicable) {
-        // Kada kategorija IMA stanje predmeta:
-        if (hasPriceInput) {
-          if (isDesktopWidth) {
-            // Desktop: Sve u jednom redu sa kompaktno spojenom cenom i valutom
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 3, child: _buildConditionDropdown()),
-                const SizedBox(width: 8),
-                Expanded(flex: 4, child: _buildPriceTypeDropdown()),
-                const SizedBox(width: 8),
-                Expanded(flex: 5, child: _buildPriceWithCurrency()),
-              ],
-            );
-          } else {
-            // Srednji tablet ekran (600-719px): 2 reda
-            return Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildConditionDropdown()),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildPriceTypeDropdown()),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildPriceWithCurrency(),
-              ],
-            );
-          }
-        } else {
-          // Pozvati ili Besplatno: Nema polja cene, samo Stanje i Način formiranja
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _buildConditionDropdown()),
-              const SizedBox(width: 8),
-              Expanded(child: _buildPriceTypeDropdown()),
-            ],
-          );
-        }
-      } else {
-        // Kada kategorija NEMA stanje predmeta (nekretnine, životinje, usluge):
-        if (hasPriceInput) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 4, child: _buildPriceTypeDropdown()),
-              const SizedBox(width: 8),
-              Expanded(flex: 5, child: _buildPriceWithCurrency()),
-            ],
-          );
-        } else {
-          return _buildPriceTypeDropdown();
-        }
-      }
-    }
-
-    // 2. Mobilni prikaz (< 600px)
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (isConditionApplicable) ...[
-          _buildConditionDropdown(),
-          const SizedBox(height: 8),
+          _buildConditionSelector(),
+          const SizedBox(height: 10),
         ],
-        _buildPriceTypeDropdown(),
-        if (hasPriceInput) ...[
-          const SizedBox(height: 8),
-          _buildPriceWithCurrency(),
+        if (isWide) ...[
+          if (hasPriceInput)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildPriceTypeDropdown()),
+                const SizedBox(width: 8),
+                Expanded(child: _buildPriceWithCurrency(context)),
+              ],
+            )
+          else
+            _buildPriceTypeDropdown(),
+        ] else ...[
+          _buildPriceTypeDropdown(),
+          if (hasPriceInput) ...[
+            const SizedBox(height: 8),
+            _buildPriceWithCurrency(context),
+          ],
         ],
       ],
     );
   }
 
-  Widget _buildConditionDropdown() {
+  Widget _buildConditionSelector() {
     return ClassifiedConditionSelector(
       isConditionApplicable: true,
-      condition: condition ?? 'used',
+      condition: condition ?? (sellerType == 'business' ? 'new' : 'used'),
+      sellerType: sellerType,
       onChanged: onConditionChanged ?? (_) {},
     );
   }
@@ -167,8 +121,10 @@ class ClassifiedPriceSection extends StatelessWidget {
     );
   }
 
-  Widget _buildCurrencySelector() {
+  Widget _buildCurrencySelector(BuildContext context) {
     final selectedCurrency = currency.toUpperCase() == 'EUR' ? 'EUR' : 'RSD';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: 92,
       height: 42,
@@ -179,7 +135,10 @@ class ClassifiedPriceSection extends StatelessWidget {
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           padding: const WidgetStatePropertyAll(EdgeInsets.zero),
           side: WidgetStatePropertyAll(
-            BorderSide(color: Colors.grey.shade300, width: 1.0),
+            BorderSide(
+              color: isDark ? Colors.white24 : Colors.grey.shade300,
+              width: 1.0,
+            ),
           ),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -211,13 +170,13 @@ class ClassifiedPriceSection extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceWithCurrency() {
+  Widget _buildPriceWithCurrency(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: _buildPriceField()),
         const SizedBox(width: 8),
-        _buildCurrencySelector(),
+        _buildCurrencySelector(context),
       ],
     );
   }
