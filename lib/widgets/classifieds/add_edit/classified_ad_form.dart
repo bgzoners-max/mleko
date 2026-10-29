@@ -1,8 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../models/classified_category_model.dart';
+import '../../../providers/app_state.dart';
+import '../../guest_auth_prompt.dart';
 import 'classified_attributes_section.dart';
 import 'classified_category_selector.dart';
 import 'classified_city_autocomplete.dart';
@@ -149,6 +153,7 @@ class ClassifiedAdForm extends StatelessWidget {
                     onChanged: onSellerTypeChanged,
                   ),
                   const SizedBox(height: 10),
+                  _buildFoodHint(context),
 
                   // 2. Naslov oglasa
                   ClassifiedTitleField(controller: titleController),
@@ -294,6 +299,7 @@ class ClassifiedAdForm extends StatelessWidget {
             onChanged: onSellerTypeChanged,
           ),
           const SizedBox(height: 10),
+          _buildFoodHint(context),
 
           // 2. Naslov oglasa
           ClassifiedTitleField(controller: titleController),
@@ -417,6 +423,83 @@ class ClassifiedAdForm extends StatelessWidget {
             onSubmit: onSubmit,
           ),
           const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoodHint(BuildContext context) {
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF064E3B).withValues(alpha: 0.25)
+            : const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: isDark
+              ? const Color(0xFF059669).withValues(alpha: 0.4)
+              : const Color(0xFF86EFAC),
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.eco_rounded, color: Color(0xFF15803D), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Prodajete sir, med, meso ili drugu hranu? Preporučujemo unos na Pijacu sa online korpom.',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color:
+                    isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
+                height: 1.3,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          InkWell(
+            onTap: () {
+              final appState = context.read<AppState>();
+              final user = appState.user;
+              final isGuest = user == null || user.isGuest;
+              if (isGuest) {
+                showGuestAuthPrompt(
+                  context,
+                  title: 'Prodaja domaće hrane',
+                  message:
+                      'Prijavite se ili se besplatno registrujte da biste dodali domaće proizvode na Pijacu.',
+                  icon: Icons.storefront_rounded,
+                );
+              } else if (user.isSeller) {
+                context.push('/add-product');
+              } else {
+                context.push('/becoming-seller');
+              }
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF047857)
+                    : const Color(0xFFDCFCE7),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'Na Pijacu ➔',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF15803D),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

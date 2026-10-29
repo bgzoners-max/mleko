@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import '../../core/design_system.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
-import '../guest_auth_prompt.dart';
 import '../theme_toggle_switch.dart';
+import 'publish_chooser_dialog.dart';
 
 /// Akciono dugme sa ikonicom i opcionim bedžom brojača.
 class HeaderIconButton extends StatelessWidget {
@@ -279,20 +279,9 @@ class DesktopHeaderActions extends StatelessWidget {
 
         const SizedBox(width: 14),
 
-        // Hero CTA Dugme: "+ Postavi oglas"
+        // Hero CTA Dugme: "+ Postavi oglas" (otvara izbor između hrane i malih oglasa)
         ElevatedButton.icon(
-          onPressed: () {
-            if (isGuest) {
-              showGuestAuthPrompt(
-                context,
-                title: 'Postavljanje oglasa',
-                message: 'Prijavite se ili se besplatno registrujte da biste besplatno postavili oglas ili ponudili domaće proizvode.',
-                icon: Icons.campaign_rounded,
-              );
-            } else {
-              context.go('/profile?section=new-classified');
-            }
-          },
+          onPressed: () => showPublishChooserDialog(context),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFFE082),
             foregroundColor: AmazonColors.darkNavy,
