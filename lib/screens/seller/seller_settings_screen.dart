@@ -9,6 +9,7 @@ import '../../core/responsive.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
+import '../../core/utils/error_messages.dart';
 import '../../widgets/app_back_button.dart';
 import '../../widgets/seller_delivery_settings_tab.dart';
 
@@ -188,6 +189,10 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     final resultAction = await ErrorHandlerService()
         .executeWithResult('Add gallery photo', () async {
       final bytes = await xFile.readAsBytes();
+      final sizeErr = checkFileSize(bytes);
+      if (sizeErr != null) {
+        throw Exception(sizeErr);
+      }
       final url = await StorageService()
           .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
       final newUrls = [..._galleryUrls, url];

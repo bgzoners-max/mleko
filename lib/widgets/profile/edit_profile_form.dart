@@ -104,6 +104,13 @@ class _EditProfileFormState extends State<EditProfileForm> {
     setState(() => _uploadingPhoto = true);
     try {
       final bytes = await xFile.readAsBytes();
+      final sizeErr = checkFileSize(bytes);
+      if (sizeErr != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(sizeErr), backgroundColor: Colors.red),
+        );
+        return;
+      }
       final url =
           await StorageService().uploadProfileImage(widget.user.id, bytes);
       await usersService.updateProfileImage(widget.user.id, url);

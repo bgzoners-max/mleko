@@ -15,10 +15,20 @@ class ImageCompressionService {
   factory ImageCompressionService() => _instance;
   ImageCompressionService._();
 
-  /// Maksimalne standardne dimenzije za oglas/proizvod
-  static const int defaultMaxWidth = 1600;
-  static const int defaultMaxHeight = 1600;
-  static const int defaultQuality = 82;
+  /// Maksimalne standardne dimenzije za oglas/proizvod (target: 70–150 KB)
+  static const int defaultMaxWidth = 1200;
+  static const int defaultMaxHeight = 1200;
+  static const int defaultQuality = 78;
+
+  /// Standardne dimenzije za profilne fotografije / avatare (target: 30–60 KB)
+  static const int avatarMaxWidth = 512;
+  static const int avatarMaxHeight = 512;
+  static const int avatarQuality = 80;
+
+  /// Standardne dimenzije za slike u porukama / četu
+  static const int chatMaxWidth = 1200;
+  static const int chatMaxHeight = 1200;
+  static const int chatQuality = 75;
 
   /// Kompresuje pojedinačnu sliku u čisti JPEG format.
   /// Ako dekodiranje ne uspe (npr. nepoznat binarni format), bezbedno vraća originalne bajtove.
@@ -44,6 +54,22 @@ class ImageCompressionService {
       );
     }
   }
+
+  /// Kompresuje profilnu sliku (avatar) na dimenzije 512x512 i ~30–60 KB.
+  Future<Uint8List> compressProfileImage(Uint8List inputBytes) => compressImage(
+        inputBytes,
+        maxWidth: avatarMaxWidth,
+        maxHeight: avatarMaxHeight,
+        quality: avatarQuality,
+      );
+
+  /// Kompresuje sliku za slanje kroz poruke (čat).
+  Future<Uint8List> compressChatImage(Uint8List inputBytes) => compressImage(
+        inputBytes,
+        maxWidth: chatMaxWidth,
+        maxHeight: chatMaxHeight,
+        quality: chatQuality,
+      );
 
   /// Kompresuje listu slika sa ograničenom konkurentnošću i opcionalnim callback-om
   /// za napredak (redni broj po završetku, ne po pokretanju). Orderi rezultata su

@@ -294,6 +294,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
       setState(() => _uploadingImage = true);
       final bytes = await file.readAsBytes();
+      final sizeErr = checkFileSize(bytes);
+      if (sizeErr != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(sizeErr), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
 
       final url = await _chatService.uploadMessageImage(
         widget.conversationId,

@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import 'image_compression_service.dart';
+
 /// Storage za slike – podržava Cloudflare R2 (primarni sa 0$ egress troškovima)
 /// sa automatskim fallback-om na Supabase Storage.
 class StorageService {
@@ -120,8 +122,15 @@ class StorageService {
     return publicUrl;
   }
 
-  Future<String> uploadProfileImage(String userId, List<int> bytes) async {
-    final data = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+  Future<String> uploadProfileImage(
+    String userId,
+    List<int> bytes, {
+    bool compress = true,
+  }) async {
+    final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final data = compress
+        ? await ImageCompressionService().compressProfileImage(rawData)
+        : rawData;
     final mimeInfo = detectMimeAndExt(data);
     final subPath = '$userId.${mimeInfo.ext}';
     return _uploadFile(
@@ -136,9 +145,13 @@ class StorageService {
   Future<String> uploadProductImage(
     String userId,
     List<int> bytes,
-    int index,
-  ) async {
-    final data = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    int index, {
+    bool compress = true,
+  }) async {
+    final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final data = compress
+        ? await ImageCompressionService().compressImage(rawData)
+        : rawData;
     final mimeInfo = detectMimeAndExt(data);
     final name = '${_uuid.v4()}.${mimeInfo.ext}';
     final subPath = '$userId/$name';
@@ -154,9 +167,13 @@ class StorageService {
   Future<String> uploadFarmGalleryImage(
     String sellerId,
     List<int> bytes,
-    int index,
-  ) async {
-    final data = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    int index, {
+    bool compress = true,
+  }) async {
+    final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final data = compress
+        ? await ImageCompressionService().compressImage(rawData)
+        : rawData;
     final mimeInfo = detectMimeAndExt(data);
     final name = '${_uuid.v4()}.${mimeInfo.ext}';
     final subPath = '$sellerId/$name';

@@ -352,6 +352,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             user.id,
             bytes,
             imageUrls.length + index,
+            compress: false,
           );
           return MapEntry(index, url);
         }).toList();

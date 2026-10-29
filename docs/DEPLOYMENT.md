@@ -51,8 +51,10 @@ curl https://domacimarket.rs/health.json
 ```
 
 Tajne se čuvaju u **GitHub Secrets** (`SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) — nikada u repozitorijumu
+`CLOUDFLARE_API_TOKEN`) — nikada u repozitorijumu
 (vidi `tool/check_no_committed_secrets.dart` i `.gitignore`).
+`CLOUDFLARE_ACCOUNT_ID` nije tajna (javni identifikator naloga) i stoga je
+direktno definisan u `.github/workflows/deploy-cloudflare.yml`.
 
 ---
 

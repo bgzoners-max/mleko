@@ -38,6 +38,13 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
     setState(() => _loading = true);
     try {
       final bytes = await xFile.readAsBytes();
+      final sizeErr = checkFileSize(bytes);
+      if (sizeErr != null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(sizeErr), backgroundColor: Colors.red),
+        );
+        return;
+      }
       final url = await StorageService()
           .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
       final newUrls = [..._galleryUrls, url];

@@ -448,6 +448,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
             user.id,
             bytes,
             uploadedUrls.length + index,
+            compress: false,
           );
           completedCount++;
           if (mounted) {

@@ -41,7 +41,10 @@ jobs:
         run: npx wrangler pages deploy build/cloudflare-deploy --project-name=domacimarket --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || '11626edfa0823bc02363325d0792c18f' }}
+          # Account ID nije tajna (javni identifikator naloga, vidi
+          # .agents/rules/deployment.md) i ne postoji kao GitHub Secret —
+          # zbog toga je vrednost direktno u workflow-u.
+          CLOUDFLARE_ACCOUNT_ID: '11626edfa0823bc02363325d0792c18f'
 
       # Post-deploy smoke test: novi deployment mora biti "live" i zdrav.
       # /health.json generiše prepare_cloudflare_deploy.dart (status/version/commit).

@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/app_error.dart';
 import '../../core/logger_service.dart';
+import '../../media/image_compression_service.dart';
 
 mixin ChatMediaMixin {
   SupabaseClient get client;
@@ -62,12 +64,14 @@ mixin ChatMediaMixin {
     List<int> bytes,
   ) async {
     try {
+      final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+      final data = await ImageCompressionService().compressChatImage(rawData);
       final name = '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final path = '$userId/$conversationId/$name';
 
       await client.storage.from('chat-images').uploadBinary(
             path,
-            bytes as dynamic,
+            data,
             fileOptions:
                 const FileOptions(contentType: 'image/jpeg', upsert: true),
           );
