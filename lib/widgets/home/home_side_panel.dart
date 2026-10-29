@@ -54,72 +54,89 @@ class _HomeSidePanelState extends State<HomeSidePanel>
     final textScale = MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.4);
     final cardHeight = (240.0 * textScale).roundToDouble();
 
-    if (isWide) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SidePanelCard(
-            title: 'Najprodavaniji proizvodi',
-            icon: Icons.trending_up,
-            height: cardHeight,
-            child: TopProductsList(
-                homeProductsStream: widget.homeProductsStream,
-                initialData: widget.initialData),
-          ),
-          const SizedBox(height: 12),
-          SidePanelCard(
-            title: 'Omiljena gazdinstva',
-            icon: Icons.favorite_border,
-            height: cardHeight,
-            child: const FavoriteFarmsList(),
-          ),
-        ],
-      );
-    }
+    return StreamBuilder<HomeProductsData>(
+      initialData: widget.initialData,
+      stream: widget.homeProductsStream,
+      builder: (context, snapshot) {
+        final data = snapshot.data ?? widget.initialData;
+        final salesCounts = data?.salesCounts ?? {};
+        final hasBestSellers = salesCounts.values.any((c) => c >= 10);
+        final featuredTitle =
+            hasBestSellers ? 'Najprodavaniji proizvodi' : 'Izdvajamo za vas';
+        final featuredIcon =
+            hasBestSellers ? Icons.trending_up : Icons.auto_awesome;
 
-    final children = [
-      TopProductsList(
-          homeProductsStream: widget.homeProductsStream,
-          initialData: widget.initialData),
-      FavoriteFarmsList(tabController: _tabController),
-    ];
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-          width: 1.0,
-        ),
-        boxShadow: AmazonColors.getCardShadow(context),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            padding: EdgeInsets.zero,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 10),
-            onTap: (_) => HapticFeedback.selectionClick(),
-            labelColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-            unselectedLabelColor:
-                isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-            indicatorColor: AmazonColors.amberDark,
-            tabs: const [
-              Tab(text: 'Najprodavaniji proizvodi'),
-              Tab(text: 'Omiljena gazdinstva')
+        if (isWide) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SidePanelCard(
+                title: featuredTitle,
+                icon: featuredIcon,
+                height: cardHeight,
+                child: TopProductsList(
+                    homeProductsStream: widget.homeProductsStream,
+                    initialData: widget.initialData),
+              ),
+              const SizedBox(height: 12),
+              SidePanelCard(
+                title: 'Omiljena gazdinstva',
+                icon: Icons.favorite_border,
+                height: cardHeight,
+                child: const FavoriteFarmsList(),
+              ),
+            ],
+          );
+        }
+
+        final children = [
+          TopProductsList(
+              homeProductsStream: widget.homeProductsStream,
+              initialData: widget.initialData),
+          FavoriteFarmsList(tabController: _tabController),
+        ];
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+              width: 1.0,
+            ),
+            boxShadow: AmazonColors.getCardShadow(context),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                onTap: (_) => HapticFeedback.selectionClick(),
+                labelColor: isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary,
+                unselectedLabelColor: isDark
+                    ? AmazonColors.darkTextSecondary
+                    : AmazonColors.textSecondary,
+                indicatorColor: AmazonColors.amberDark,
+                tabs: [
+                  Tab(text: featuredTitle),
+                  const Tab(text: 'Omiljena gazdinstva'),
+                ],
+              ),
+              SizedBox(
+                  height: cardHeight,
+                  child: IndexedStack(
+                      index: _tabController.index,
+                      sizing: StackFit.expand,
+                      children: children)),
             ],
           ),
-          SizedBox(
-              height: cardHeight,
-              child: IndexedStack(
-                  index: _tabController.index,
-                  sizing: StackFit.expand,
-                  children: children)),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -242,11 +259,16 @@ class TopProductsList extends StatelessWidget {
           );
         }
 
+        final ratings = data?.ratings ?? {};
         final sorted = [...list]
           ..sort((a, b) {
             final sa = salesCounts[a.id] ?? 0;
             final sb = salesCounts[b.id] ?? 0;
-            return sb.compareTo(sa);
+            if (sa != sb) return sb.compareTo(sa);
+            final ra = ratings[a.id]?.avg ?? 0.0;
+            final rb = ratings[b.id]?.avg ?? 0.0;
+            if (ra != rb) return rb.compareTo(ra);
+            return b.createdAt.compareTo(a.createdAt);
           });
         final top = sorted.take(5).toList();
 
@@ -260,56 +282,71 @@ class TopProductsList extends StatelessWidget {
           itemBuilder: (context, index) {
             final p = top[index];
             final count = salesCounts[p.id] ?? 0;
-            return ListTile(
-              dense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-              onTap: () => context.push('/product/${p.id}'),
-              leading: p.imageUrls.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-                            width: 0.8,
+            return Material(
+              color: Colors.transparent,
+              child: ListTile(
+                dense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onTap: () => context.push('/product/${p.id}'),
+                leading: p.imageUrls.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isDark
+                                  ? AmazonColors.darkBorder
+                                  : AmazonColors.borderGray,
+                              width: 0.8,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          borderRadius: BorderRadius.circular(6),
+                          child: AppNetworkImage.icon(
+                            imageUrl: p.imageUrls.first,
+                            width: 38,
+                            height: 38,
+                          ),
                         ),
-                        child: AppNetworkImage.icon(
-                          imageUrl: p.imageUrls.first,
-                          width: 38,
-                          height: 38,
-                        ),
-                      ),
-                    )
-                  : const Icon(Icons.shopping_basket, size: 28),
-              title: Text(
-                p.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                ),
-              ),
-              subtitle: () {
-                final salesText = formatSalesCount(count);
-                return Text(
-                  salesText ?? p.priceFormatted,
+                      )
+                    : const Icon(Icons.shopping_basket, size: 28),
+                title: Text(
+                  p.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
-                    color: salesText != null
-                        ? (isDark ? AmazonColors.lightGreen : AmazonColors.link)
-                        : (isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary),
-                    fontWeight: salesText != null ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AmazonColors.darkTextPrimary
+                        : AmazonColors.textPrimary,
                   ),
-                );
-              }(),
-              trailing: Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                ),
+                subtitle: () {
+                  final salesText = formatSalesCount(count);
+                  return Text(
+                    salesText ?? p.priceFormatted,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: salesText != null
+                          ? (isDark
+                              ? AmazonColors.lightGreen
+                              : AmazonColors.link)
+                          : (isDark
+                              ? AmazonColors.darkTextSecondary
+                              : AmazonColors.textSecondary),
+                      fontWeight:
+                          salesText != null ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  );
+                }(),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: isDark
+                      ? AmazonColors.darkTextSecondary
+                      : AmazonColors.textSecondary,
+                ),
               ),
             );
           },

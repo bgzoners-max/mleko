@@ -77,4 +77,194 @@ void main() {
 
     await controller.close();
   });
+
+  testWidgets(
+      'HomeSidePanel displays "Izdvajamo za vas" when no products have >= 10 sales (cold start)',
+      (tester) async {
+    final now = DateTime.now();
+    final p1 = ProductModel(
+      id: 'p1',
+      sellerId: 's1',
+      category: 'sir',
+      name: 'Kajmak domaći',
+      pricePerKg: 1200,
+      minOrderKg: 0.5,
+      availableKg: 20,
+      description: '',
+      imageUrls: const [],
+      pickupOptions: const [],
+      location: 'Čačak',
+      createdAt: now,
+    );
+
+    final data = (
+      products: [p1],
+      salesCounts: {'p1': 4}, // < 10 prodaja (tek postavljeni proizvodi)
+      ratings: <String, ({double avg, int count})>{},
+    );
+
+    final controller = StreamController<HomeProductsData>.broadcast();
+
+    // Desktop/wide viewport
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+              create: (_) => AppState(ordersService: OrdersService())),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: HomeSidePanel(
+              homeProductsStream: controller.stream,
+              initialData: data,
+              isSeller: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Treba da prikazuje 'Izdvajamo za vas' a NE 'Najprodavaniji proizvodi'
+    expect(find.text('Izdvajamo za vas'), findsOneWidget);
+    expect(find.text('Najprodavaniji proizvodi'), findsNothing);
+    expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+    expect(find.byIcon(Icons.trending_up), findsNothing);
+
+    await controller.close();
+  });
+
+  testWidgets(
+      'HomeSidePanel displays "Najprodavaniji proizvodi" when at least one product has >= 10 sales',
+      (tester) async {
+    final now = DateTime.now();
+    final p1 = ProductModel(
+      id: 'p1',
+      sellerId: 's1',
+      category: 'sir',
+      name: 'Kajmak domaći',
+      pricePerKg: 1200,
+      minOrderKg: 0.5,
+      availableKg: 20,
+      description: '',
+      imageUrls: const [],
+      pickupOptions: const [],
+      location: 'Čačak',
+      createdAt: now,
+    );
+
+    final data = (
+      products: [p1],
+      salesCounts: {'p1': 15}, // >= 10 prodaja
+      ratings: <String, ({double avg, int count})>{},
+    );
+
+    final controller = StreamController<HomeProductsData>.broadcast();
+
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+              create: (_) => AppState(ordersService: OrdersService())),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: HomeSidePanel(
+              homeProductsStream: controller.stream,
+              initialData: data,
+              isSeller: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Treba da prikazuje 'Najprodavaniji proizvodi' sa ikonicom trending_up
+    expect(find.text('Najprodavaniji proizvodi'), findsOneWidget);
+    expect(find.text('Izdvajamo za vas'), findsNothing);
+    expect(find.byIcon(Icons.trending_up), findsOneWidget);
+    expect(find.byIcon(Icons.auto_awesome), findsNothing);
+
+    await controller.close();
+  });
+
+  testWidgets(
+      'HomeSidePanel displays "Izdvajamo za vas" in TabBar on mobile when cold start',
+      (tester) async {
+    final now = DateTime.now();
+    final p1 = ProductModel(
+      id: 'p1',
+      sellerId: 's1',
+      category: 'sir',
+      name: 'Kajmak domaći',
+      pricePerKg: 1200,
+      minOrderKg: 0.5,
+      availableKg: 20,
+      description: '',
+      imageUrls: const [],
+      pickupOptions: const [],
+      location: 'Čačak',
+      createdAt: now,
+    );
+
+    final data = (
+      products: [p1],
+      salesCounts: {'p1': 0},
+      ratings: <String, ({double avg, int count})>{},
+    );
+
+    final controller = StreamController<HomeProductsData>.broadcast();
+
+    // Mobile viewport
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+              create: (_) => AppState(ordersService: OrdersService())),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: HomeSidePanel(
+              homeProductsStream: controller.stream,
+              initialData: data,
+              isSeller: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tab bar treba da sadrži 'Izdvajamo za vas' i 'Omiljena gazdinstva'
+    expect(find.widgetWithText(Tab, 'Izdvajamo za vas'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Najprodavaniji proizvodi'), findsNothing);
+    expect(find.widgetWithText(Tab, 'Omiljena gazdinstva'), findsOneWidget);
+
+    await controller.close();
+  });
 }
