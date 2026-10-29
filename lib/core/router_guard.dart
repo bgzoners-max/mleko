@@ -26,6 +26,7 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
     return null;
   }
   if (loc == '/about') return null;
+  if (loc == '/vodic-za-proizvodjace') return null;
   if (loc == '/support') return null;
 
   // Email just confirmed — steer to success screen before anything else

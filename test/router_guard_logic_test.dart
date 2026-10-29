@@ -47,6 +47,7 @@ void main() {
         '/uslovi-koriscenja',
         '/politika-privatnosti',
         '/about',
+        '/vodic-za-proizvodjace',
         '/support',
         '/search',
         '/search?q=sir',

@@ -345,6 +345,10 @@ class AppFooter extends StatelessWidget {
           onTap: () => context.push('/classifieds'),
         ),
         _FooterLink(
+          title: 'Kako postaviti proizvode',
+          onTap: () => context.push('/vodic-za-proizvodjace'),
+        ),
+        _FooterLink(
           title: 'Mapa gazdinstava',
           onTap: () => context.push('/sellers-map'),
         ),

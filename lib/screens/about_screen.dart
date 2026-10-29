@@ -627,6 +627,20 @@ class _AboutContent extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
+                    onPressed: () => withHaptic(() => context.push('/vodic-za-proizvodjace')),
+                    icon: const Icon(Icons.menu_book_outlined, size: 18),
+                    label: const Text('Kako postaviti proizvode', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark ? AmazonColors.amberLight : const Color(0xFF245938),
+                      side: BorderSide(
+                        color: isDark ? AmazonColors.amberLight : const Color(0xFF245938),
+                        width: 1.2,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                     onPressed: () => withHaptic(() => context.push('/classifieds/new')),
                     icon: const Icon(Icons.add_circle_outline, size: 18),
                     label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.bold)),

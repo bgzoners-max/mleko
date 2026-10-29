@@ -85,6 +85,17 @@ const BASE_ROUTES: Record<string, RouteSeo> = {
       "Misija platforme je da vrati poverenje između domaćina i kupaca: svako gazdinstvo se registruje sa verifikovanom lokacijom i kontakt telefonom.",
     ],
   },
+  "/vodic-za-proizvodjace": {
+    title: `Kako postaviti domaće proizvode na Pijacu — Vodič za proizvođače | ${SITE_NAME}`,
+    description:
+      "Korak po korak vodič za gazdinstva i proizvođače domaće hrane: besplatna registracija, otvaranje prodavničkog profila na Pijaci, dodavanje proizvoda i primanje porudžbina — bez provizije. Saznajte i razliku između Pijace i Malih oglasa.",
+    heading:
+      "Vodič za proizvođače — kako postaviti domaće proizvode na domacimarket.rs",
+    paragraphs: [
+      "Domaći Market ima dva dela: Pijacu domaće hrane, gde poljoprivredna gazdinstva otvaraju svoju online tezgu i primaju porudžbine, i 100% besplatne Male oglase, namenjene mehanizaciji, vozilima, alatima, nekretninama i svemu što nije hrana. Domaća hrana — sir, kajmak, mleko, meso, med, zimnica, jaja, rakije — izlaže se isključivo na Pijaci.",
+      "Postavljanje proizvoda je jednostavno i besplatno: registrujte nalog, otvorite prodavnički profil („Postani prodavac“), dodajte proizvode sa fotografijama, cenom i mernom jedinicom, a kupci vas pronalaze kroz kategorije, pretragu i mapu gazdinstava i šalju porudžbine direktno vama. Platforma ne naplaćuje proviziju niti učestvuje u naplati.",
+    ],
+  },
 };
 // Classified ad categories (slugs must match CLASSIFIED_CATEGORIES in api/sitemap.ts).
 const CLASSIFIED_CATEGORY_SEO: Record<string, CategorySeo> = {

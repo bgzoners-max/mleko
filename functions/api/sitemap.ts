@@ -96,6 +96,7 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
     { loc: `${baseUrl}/categories`, lastmod: today, changefreq: "daily", priority: "0.90" },
     { loc: `${baseUrl}/search`, lastmod: today, changefreq: "daily", priority: "0.80" },
     { loc: `${baseUrl}/sellers-map`, lastmod: today, changefreq: "weekly", priority: "0.80" },
+    { loc: `${baseUrl}/vodic-za-proizvodjace`, lastmod: today, changefreq: "monthly", priority: "0.70" },
     { loc: `${baseUrl}/about`, lastmod: today, changefreq: "monthly", priority: "0.60" },
     { loc: `${baseUrl}/uslovi-koriscenja`, lastmod: today, changefreq: "yearly", priority: "0.40" },
     { loc: `${baseUrl}/politika-privatnosti`, lastmod: today, changefreq: "yearly", priority: "0.40" },

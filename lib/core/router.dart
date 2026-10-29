@@ -46,6 +46,7 @@ import '../screens/child_categories_screen.dart';
 import '../screens/privacy_policy_screen.dart';
 import '../screens/terms_screen.dart';
 import '../screens/about_screen.dart';
+import '../screens/seller_guide_screen.dart';
 import '../screens/classifieds/classifieds_feed_screen.dart';
 import '../screens/classifieds/classified_ad_detail_screen.dart';
 import '../screens/classifieds/add_edit_classified_ad_screen.dart';
@@ -401,6 +402,13 @@ GoRouter createRouter(AppState appState) {
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
           child: const AboutScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/vodic-za-proizvodjace',
+        pageBuilder: (context, state) => buildPageTransition(
+          state: state,
+          child: const SellerGuideScreen(),
         ),
       ),
       GoRoute(

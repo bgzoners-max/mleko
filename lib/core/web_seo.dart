@@ -330,6 +330,16 @@ void applyRouteSeo(String path) {
       keywords:
           'o nama domaći market, misija, domaća hrana, podrška selu, srpski domaćini',
     );
+  } else if (path == '/vodic-za-proizvodjace') {
+    setPageMetadata(
+      title:
+          'Vodič za Proizvođače: Kako Postaviti Domaće Proizvode na Pijacu | Domaći Market',
+      description:
+          'Korak po korak vodič za poljoprivredna gazdinstva i proizvođače domaće hrane: registrujte se, otvorite prodavnički profil na Pijaci, dodajte proizvode i primajte porudžbine — potpuno besplatno i bez provizije.',
+      path: '/vodic-za-proizvodjace',
+      keywords:
+          'kako prodati domaću hranu, postani prodavac, vodič za proizvođače, online prodaja domaće hrane, pijaca domaće hrane, prodaja sa gazdinstva, prodaja poljoprivrednih proizvoda, besplatna online tezga',
+    );
   } else if (path == '/uslovi-koriscenja') {
     setPageMetadata(
       title: 'Uslovi Korišćenja Platforme | Domaći Market',
