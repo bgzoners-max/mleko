@@ -51,25 +51,25 @@ class _ClassifiedSellerTypeSectionState
 
       return InkWell(
         onTap: () => widget.onChanged(type),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(9),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: _isExpanded ? 14 : 10,
+            horizontal: 10,
+            vertical: _isExpanded ? 10 : 7,
           ),
           decoration: BoxDecoration(
             color: selected
-                ? activeColor.withValues(alpha: isDark ? 0.22 : 0.08)
+                ? activeColor.withValues(alpha: isDark ? 0.20 : 0.08)
                 : (isDark
                     ? Colors.white.withValues(alpha: 0.03)
                     : Colors.black.withValues(alpha: 0.02)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(9),
             border: Border.all(
               color: selected
                   ? activeColor
-                  : colorScheme.outlineVariant.withValues(alpha: 0.6),
-              width: selected ? 2.0 : 1.0,
+                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: selected ? 1.5 : 1.0,
             ),
           ),
           child: Row(
@@ -78,7 +78,7 @@ class _ClassifiedSellerTypeSectionState
                 : CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
                   color: selected
                       ? activeColor.withValues(alpha: 0.15)
@@ -89,13 +89,13 @@ class _ClassifiedSellerTypeSectionState
                 ),
                 child: Icon(
                   icon,
-                  size: 20,
+                  size: 16,
                   color: selected
                       ? activeColor
                       : colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,28 +107,30 @@ class _ClassifiedSellerTypeSectionState
                           child: Text(
                             title,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 12.5,
                               fontWeight:
-                                  selected ? FontWeight.w800 : FontWeight.w600,
+                                  selected ? FontWeight.w700 : FontWeight.w500,
                               color: selected
                                   ? (isDark
                                       ? Colors.white
                                       : colorScheme.onSurface)
                                   : colorScheme.onSurface,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
-                          width: 20,
-                          height: 20,
+                          width: 16,
+                          height: 16,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: selected
                                   ? activeColor
                                   : (isDark ? Colors.white38 : Colors.black38),
-                              width: selected ? 6 : 1.5,
+                              width: selected ? 4.5 : 1.2,
                             ),
                           ),
                         ),
@@ -139,8 +141,8 @@ class _ClassifiedSellerTypeSectionState
                       Text(
                         subtitle,
                         style: TextStyle(
-                          fontSize: 12,
-                          height: 1.35,
+                          fontSize: 11,
+                          height: 1.3,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -156,21 +158,21 @@ class _ClassifiedSellerTypeSectionState
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 520;
+        final isWide = constraints.maxWidth >= 280;
 
         return Card(
           elevation: 0,
-          margin: const EdgeInsets.only(bottom: 10),
+          margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             side: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+              color: colorScheme.outlineVariant.withValues(alpha: 0.4),
               width: 1.0,
             ),
           ),
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.18),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: AnimatedSize(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
@@ -182,31 +184,33 @@ class _ClassifiedSellerTypeSectionState
                     children: [
                       Icon(
                         Icons.gavel_rounded,
-                        size: 18,
+                        size: 15,
                         color: colorScheme.primary,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Tip oglašivača * (Zakonska deklaracija)',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Prema Zakonu o zaštiti potrošača i Zakonu o elektronskoj trgovini, oglašivač je dužan da se izjasni da li nastupa kao fizičko ili pravno lice / trgovac.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.3,
+                  if (_isExpanded) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Prema Zakonu o zaštiti potrošača i Zakonu o elektronskoj trgovini, oglašivač je dužan da se izjasni da li nastupa kao fizičko ili pravno lice / trgovac.',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.3,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
+                  ],
+                  const SizedBox(height: 7),
                   if (isWide)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +247,7 @@ class _ClassifiedSellerTypeSectionState
                       icon: Icons.person_outline_rounded,
                       selected: !isBusiness,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     buildTypeCard(
                       type: 'business',
                       title: 'Pravno lice / Trgovac',
@@ -254,9 +258,10 @@ class _ClassifiedSellerTypeSectionState
                     ),
                   ],
                   if (_isExpanded) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
                         color: isBusiness
                             ? const Color(0xFF2563EB)
@@ -278,21 +283,21 @@ class _ClassifiedSellerTypeSectionState
                         children: [
                           Icon(
                             Icons.info_outline_rounded,
-                            size: 15,
+                            size: 14,
                             color: isBusiness
                                 ? (isDark
                                     ? const Color(0xFF93C5FD)
                                     : const Color(0xFF1D4ED8))
                                 : colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               isBusiness
                                   ? 'Kao registrovan trgovac / pravno lice, obavezni ste da poslujete u skladu sa Zakonom o zaštiti potrošača i obezbedite zakonska prava kupcima (pravo na jednostrani odustanak od ugovora na daljinu u roku od 14 dana, saobraznost robe, izdavanje računa).'
                                   : 'Na kupovinu od fizičkog lica ne primenjuju se odredbe Zakona o zaštiti potrošača o pravu na jednostrani odustanak od ugovora u roku od 14 dana.',
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 height: 1.3,
                                 color: isBusiness
                                     ? (isDark
@@ -306,7 +311,7 @@ class _ClassifiedSellerTypeSectionState
                       ),
                     ),
                   ],
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Center(
                     child: Tooltip(
                       message: _isExpanded
@@ -314,27 +319,29 @@ class _ClassifiedSellerTypeSectionState
                           : 'Prikaži objašnjenje za fizičko i pravno lice',
                       child: InkWell(
                         onTap: () => setState(() => _isExpanded = !_isExpanded),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                              horizontal: 10, vertical: 3),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                _isExpanded ? 'Sakrij objašnjenje' : 'Objašnjenje',
+                                _isExpanded
+                                    ? 'Sakrij objašnjenje'
+                                    : 'Objašnjenje',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: colorScheme.primary,
                                 ),
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 3),
                               Icon(
                                 _isExpanded
                                     ? Icons.keyboard_arrow_up_rounded
                                     : Icons.keyboard_arrow_down_rounded,
-                                size: 20,
+                                size: 17,
                                 color: colorScheme.primary,
                               ),
                             ],
