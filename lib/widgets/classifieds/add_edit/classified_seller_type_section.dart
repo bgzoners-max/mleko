@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-class ClassifiedSellerTypeSection extends StatelessWidget {
+class ClassifiedSellerTypeSection extends StatefulWidget {
   final ThemeData theme;
   final ColorScheme colorScheme;
   final String sellerType;
   final ValueChanged<String> onChanged;
+  final bool initialExpanded;
 
   const ClassifiedSellerTypeSection({
     super.key,
@@ -12,12 +13,30 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
     required this.colorScheme,
     required this.sellerType,
     required this.onChanged,
+    this.initialExpanded = false,
   });
 
   @override
+  State<ClassifiedSellerTypeSection> createState() =>
+      _ClassifiedSellerTypeSectionState();
+}
+
+class _ClassifiedSellerTypeSectionState
+    extends State<ClassifiedSellerTypeSection> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.initialExpanded;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final colorScheme = widget.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final isBusiness = sellerType == 'business';
+    final isBusiness = widget.sellerType == 'business';
 
     Widget buildTypeCard({
       required String type,
@@ -31,15 +50,20 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
           : colorScheme.primary;
 
       return InkWell(
-        onTap: () => onChanged(type),
+        onTap: () => widget.onChanged(type),
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: _isExpanded ? 14 : 10,
+          ),
           decoration: BoxDecoration(
             color: selected
                 ? activeColor.withValues(alpha: isDark ? 0.22 : 0.08)
-                : (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.black.withValues(alpha: 0.02)),
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : Colors.black.withValues(alpha: 0.02)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
@@ -49,14 +73,18 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
             ),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: _isExpanded
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: selected
                       ? activeColor.withValues(alpha: 0.15)
-                      : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                      : (isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.05)),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -71,6 +99,7 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
@@ -79,9 +108,12 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
                             title,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                              fontWeight:
+                                  selected ? FontWeight.w800 : FontWeight.w600,
                               color: selected
-                                  ? (isDark ? Colors.white : colorScheme.onSurface)
+                                  ? (isDark
+                                      ? Colors.white
+                                      : colorScheme.onSurface)
                                   : colorScheme.onSurface,
                             ),
                           ),
@@ -102,15 +134,17 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: colorScheme.onSurfaceVariant,
+                    if (_isExpanded) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.35,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -137,127 +171,180 @@ class ClassifiedSellerTypeSection extends StatelessWidget {
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.gavel_rounded,
-                      size: 18,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tip oglašivača * (Zakonska deklaracija)',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Prema Zakonu o zaštiti potrošača i Zakonu o elektronskoj trgovini, oglašivač je dužan da se izjasni da li nastupa kao fizičko ili pravno lice / trgovac.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (isWide)
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: buildTypeCard(
-                          type: 'individual',
-                          title: 'Fizičko lice',
-                          subtitle:
-                              'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
-                          icon: Icons.person_outline_rounded,
-                          selected: !isBusiness,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: buildTypeCard(
-                          type: 'business',
-                          title: 'Pravno lice / Trgovac',
-                          subtitle:
-                              'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo u okviru delatnosti.',
-                          icon: Icons.storefront_outlined,
-                          selected: isBusiness,
-                        ),
-                      ),
-                    ],
-                  )
-                else ...[
-                  buildTypeCard(
-                    type: 'individual',
-                    title: 'Fizičko lice',
-                    subtitle:
-                        'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
-                    icon: Icons.person_outline_rounded,
-                    selected: !isBusiness,
-                  ),
-                  const SizedBox(height: 8),
-                  buildTypeCard(
-                    type: 'business',
-                    title: 'Pravno lice / Trgovac',
-                    subtitle:
-                        'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo koje nastupa u okviru svoje delatnosti.',
-                    icon: Icons.storefront_outlined,
-                    selected: isBusiness,
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isBusiness
-                        ? const Color(0xFF2563EB).withValues(alpha: isDark ? 0.15 : 0.08)
-                        : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9)),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isBusiness
-                          ? const Color(0xFF2563EB).withValues(alpha: 0.3)
-                          : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        Icons.info_outline_rounded,
-                        size: 15,
-                        color: isBusiness
-                            ? (isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8))
-                            : colorScheme.onSurfaceVariant,
+                        Icons.gavel_rounded,
+                        size: 18,
+                        color: colorScheme.primary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          isBusiness
-                              ? 'Kao registrovan trgovac / pravno lice, obavezni ste da poslujete u skladu sa Zakonom o zaštiti potrošača i obezbedite zakonska prava kupcima (pravo na jednostrani odustanak od ugovora na daljinu u roku od 14 dana, saobraznost robe, izdavanje računa).'
-                              : 'Na kupovinu od fizičkog lica ne primenjuju se odredbe Zakona o zaštiti potrošača o pravu na jednostrani odustanak od ugovora u roku od 14 dana.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1.3,
-                            color: isBusiness
-                                ? (isDark ? const Color(0xFFBFDBFE) : const Color(0xFF1E3A8A))
-                                : colorScheme.onSurfaceVariant,
+                          'Tip oglašivača * (Zakonska deklaracija)',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.5,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'Prema Zakonu o zaštiti potrošača i Zakonu o elektronskoj trgovini, oglašivač je dužan da se izjasni da li nastupa kao fizičko ili pravno lice / trgovac.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (isWide)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: buildTypeCard(
+                            type: 'individual',
+                            title: 'Fizičko lice',
+                            subtitle:
+                                'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
+                            icon: Icons.person_outline_rounded,
+                            selected: !isBusiness,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: buildTypeCard(
+                            type: 'business',
+                            title: 'Pravno lice / Trgovac',
+                            subtitle:
+                                'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo u okviru delatnosti.',
+                            icon: Icons.storefront_outlined,
+                            selected: isBusiness,
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    buildTypeCard(
+                      type: 'individual',
+                      title: 'Fizičko lice',
+                      subtitle:
+                          'Prodaja ličnih i polovnih stvari, sopstvene robe ili poljoprivrednih proizvoda bez registrovane delatnosti.',
+                      icon: Icons.person_outline_rounded,
+                      selected: !isBusiness,
+                    ),
+                    const SizedBox(height: 8),
+                    buildTypeCard(
+                      type: 'business',
+                      title: 'Pravno lice / Trgovac',
+                      subtitle:
+                          'Preduzetnik, firma, registrovana radnja ili registrovano poljoprivredno gazdinstvo koje nastupa u okviru svoje delatnosti.',
+                      icon: Icons.storefront_outlined,
+                      selected: isBusiness,
+                    ),
+                  ],
+                  if (_isExpanded) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isBusiness
+                            ? const Color(0xFF2563EB)
+                                .withValues(alpha: isDark ? 0.15 : 0.08)
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isBusiness
+                              ? const Color(0xFF2563EB).withValues(alpha: 0.3)
+                              : (isDark
+                                  ? Colors.white12
+                                  : const Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 15,
+                            color: isBusiness
+                                ? (isDark
+                                    ? const Color(0xFF93C5FD)
+                                    : const Color(0xFF1D4ED8))
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              isBusiness
+                                  ? 'Kao registrovan trgovac / pravno lice, obavezni ste da poslujete u skladu sa Zakonom o zaštiti potrošača i obezbedite zakonska prava kupcima (pravo na jednostrani odustanak od ugovora na daljinu u roku od 14 dana, saobraznost robe, izdavanje računa).'
+                                  : 'Na kupovinu od fizičkog lica ne primenjuju se odredbe Zakona o zaštiti potrošača o pravu na jednostrani odustanak od ugovora u roku od 14 dana.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.3,
+                                color: isBusiness
+                                    ? (isDark
+                                        ? const Color(0xFFBFDBFE)
+                                        : const Color(0xFF1E3A8A))
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Tooltip(
+                      message: _isExpanded
+                          ? 'Sakrij objašnjenje'
+                          : 'Prikaži objašnjenje za fizičko i pravno lice',
+                      child: InkWell(
+                        onTap: () => setState(() => _isExpanded = !_isExpanded),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _isExpanded ? 'Sakrij objašnjenje' : 'Objašnjenje',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _isExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                size: 20,
+                                color: colorScheme.primary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
