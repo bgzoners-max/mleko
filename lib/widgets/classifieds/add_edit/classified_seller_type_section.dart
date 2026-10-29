@@ -55,8 +55,8 @@ class _ClassifiedSellerTypeSectionState
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: _isExpanded ? 10 : 7,
+            horizontal: 8,
+            vertical: _isExpanded ? 9 : 6.5,
           ),
           decoration: BoxDecoration(
             color: selected
@@ -95,7 +95,7 @@ class _ClassifiedSellerTypeSectionState
                       : colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,23 +104,26 @@ class _ClassifiedSellerTypeSectionState
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight:
-                                  selected ? FontWeight.w700 : FontWeight.w500,
-                              color: selected
-                                  ? (isDark
-                                      ? Colors.white
-                                      : colorScheme.onSurface)
-                                  : colorScheme.onSurface,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight:
+                                    selected ? FontWeight.w700 : FontWeight.w500,
+                                color: selected
+                                    ? (isDark
+                                        ? Colors.white
+                                        : colorScheme.onSurface)
+                                    : colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Container(
                           width: 16,
                           height: 16,
@@ -216,6 +219,7 @@ class _ClassifiedSellerTypeSectionState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
+                          flex: 7,
                           child: buildTypeCard(
                             type: 'individual',
                             title: 'Fizičko lice',
@@ -225,8 +229,9 @@ class _ClassifiedSellerTypeSectionState
                             selected: !isBusiness,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Expanded(
+                          flex: 10,
                           child: buildTypeCard(
                             type: 'business',
                             title: 'Pravno lice / Trgovac',
