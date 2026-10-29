@@ -249,7 +249,7 @@ class PublishChooserDialog extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Sir, kajmak, mleko, med, suvo meso, zimnica, jaja, voće, domaća rakija, vino...',
+              'Sir, kajmak, mleko, med, suvo meso, jaja, zimnica, voće i povrće, domaći sokovi...',
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
