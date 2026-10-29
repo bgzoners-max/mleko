@@ -85,12 +85,12 @@ void main() {
     final expandedChildren = rowWidget.children.whereType<Expanded>().toList();
     expect(expandedChildren.length, equals(2));
 
-    // Verify Leva kolona starts with SellerType (first option)
+    // Verify Leva kolona starts with SellerType and contains DescriptionField below PriceSection
     final leftColumn = expandedChildren[0].child as Column;
     expect(leftColumn.children.first, isA<ClassifiedSellerTypeSection>());
+    expect(leftColumn.children.whereType<ClassifiedDescriptionField>().length, equals(1));
 
-    // Verify Desna kolona ends with SubmitButton
-    expect(find.byType(ClassifiedDescriptionField), findsOneWidget);
+    // Verify Desna kolona contains PromotionSection and ends with SubmitButton
     expect(find.byType(ClassifiedPromotionSection), findsOneWidget);
     expect(find.byType(ClassifiedSubmitButton), findsOneWidget);
   });

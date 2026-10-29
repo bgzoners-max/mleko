@@ -176,7 +176,11 @@ class ClassifiedAdForm extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  // 5. Dinamički atributi kategorije
+                  // 5. Detaljan opis proizvoda (ispod cene)
+                  ClassifiedDescriptionField(controller: descController),
+                  const SizedBox(height: 10),
+
+                  // 6. Dinamički atributi kategorije
                   ClassifiedAttributesWrapper(
                     theme: theme,
                     colorScheme: colorScheme,
@@ -249,10 +253,7 @@ class ClassifiedAdForm extends StatelessWidget {
                     value: phonePublic,
                     onChanged: onPhonePublicChanged,
                   ),
-                  const SizedBox(height: 6),
-
-                  // Detaljan opis
-                  ClassifiedDescriptionField(controller: descController),
+                  const SizedBox(height: 10),
 
                   // Hitna prodaja / Promocija
                   ClassifiedPromotionSection(
@@ -320,7 +321,11 @@ class ClassifiedAdForm extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // 5. Dinamički atributi
+          // 5. Detaljan opis proizvoda (ispod cene)
+          ClassifiedDescriptionField(controller: descController),
+          const SizedBox(height: 10),
+
+          // 6. Dinamički atributi
           ClassifiedAttributesWrapper(
             theme: theme,
             colorScheme: colorScheme,
@@ -395,10 +400,7 @@ class ClassifiedAdForm extends StatelessWidget {
           ],
           const SizedBox(height: 10),
 
-          // 8. Detaljan opis
-          ClassifiedDescriptionField(controller: descController),
-
-          // 9. Hitna prodaja / Promocija
+          // Hitna prodaja / Promocija
           ClassifiedPromotionSection(
             theme: theme,
             colorScheme: colorScheme,
