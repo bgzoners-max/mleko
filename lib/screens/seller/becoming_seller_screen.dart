@@ -363,26 +363,29 @@ class _BecomingSellerScreenState extends State<BecomingSellerScreen> {
                             : const Color(0xFFD2E2D7),
                       ),
                     ),
-                    child: CheckboxListTile(
-                      value: _acceptedLiability,
-                      onChanged: _loading
-                          ? null
-                          : (val) => setState(() {
-                                _acceptedLiability = val ?? false;
-                                if (_acceptedLiability) _error = null;
-                              }),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      title: Text(
-                        SellerRegistrationValidator.legalLiabilityText,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          height: 1.4,
-                          color: isDark
-                              ? Colors.grey.shade200
-                              : const Color(0xFF26332A),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: CheckboxListTile(
+                        value: _acceptedLiability,
+                        onChanged: _loading
+                            ? null
+                            : (val) => setState(() {
+                                  _acceptedLiability = val ?? false;
+                                  if (_acceptedLiability) _error = null;
+                                }),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        title: Text(
+                          SellerRegistrationValidator.legalLiabilityText,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            height: 1.4,
+                            color: isDark
+                                ? Colors.grey.shade200
+                                : const Color(0xFF26332A),
+                          ),
                         ),
                       ),
                     ),

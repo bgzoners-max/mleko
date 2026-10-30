@@ -382,16 +382,19 @@ class ProductLegalLiabilityCheckbox extends StatelessWidget {
           color: isDark ? const Color(0xFF2D4B37) : const Color(0xFFD2E2D7),
         ),
       ),
-      child: CheckboxListTile(
-        value: value,
-        onChanged: onChanged == null ? null : (v) => onChanged!(v ?? false),
-        controlAffinity: ListTileControlAffinity.leading,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        title: Text(
-          SellerRegistrationValidator.legalLiabilityText,
-          style: theme.textTheme.bodySmall?.copyWith(
-            height: 1.4,
-            color: isDark ? Colors.grey.shade200 : const Color(0xFF26332A),
+      child: Material(
+        type: MaterialType.transparency,
+        child: CheckboxListTile(
+          value: value,
+          onChanged: onChanged == null ? null : (v) => onChanged!(v ?? false),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          title: Text(
+            SellerRegistrationValidator.legalLiabilityText,
+            style: theme.textTheme.bodySmall?.copyWith(
+              height: 1.4,
+              color: isDark ? Colors.grey.shade200 : const Color(0xFF26332A),
+            ),
           ),
         ),
       ),
