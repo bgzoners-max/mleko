@@ -20,6 +20,8 @@ import '../services/services.dart';
 
 import '../utils/image_precache_utils.dart';
 import '../widgets/sticky_search_header_delegate.dart';
+import '../widgets/home/home_location_widgets.dart';
+import '../widgets/home/home_mobile_app_bar.dart';
 import '../widgets/home/home_wide_layout.dart';
 import '../widgets/home/desktop_hero_banner.dart';
 import '../widgets/home/home_narrow_top_section.dart';
@@ -27,7 +29,6 @@ import '../widgets/home/home_narrow_products_sliver.dart';
 import '../widgets/home/seller_dashboard_sliver.dart';
 import '../widgets/home/market_mode_switcher.dart';
 import '../widgets/beta_announcement_banner.dart';
-import '../widgets/theme_toggle_switch.dart';
 import '../widgets/app_footer.dart';
 import '../widgets/skeletons/product_skeletons.dart';
 import 'classifieds/classifieds_feed_screen.dart';
@@ -108,8 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
     final topCategories = context.select<CategoriesProvider, List>((p) =>
         isTwoPaneLayout ? p.topCategories : p.topCategories.take(8).toList());
-    final isGuest = context.select<AppState, bool>((s) => s.user == null || s.user!.isGuest);
-    final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
+    final isGuest = context.select<AppState, bool>(
+        (s) => s.user == null || s.user!.isGuest);
+    final isSeller =
+        context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
     final unreadCount =
         context.select<AppState, int>((s) => s.unreadNotificationCount);
     final cartCount = context.select<CartProvider, int>((cart) => cart.count);
@@ -140,7 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final isDesktopWeb = Breakpoints.isDesktop(context);
 
     return Scaffold(
@@ -148,113 +150,12 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AmazonColors.getCanvas(context),
       appBar: isDesktopWeb
           ? null
-          : AppBar(
-              centerTitle: false,
-              elevation: 0,
-              backgroundColor:
-                  isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-              foregroundColor: isDark
-                  ? AmazonColors.darkTextPrimary
-                  : AmazonColors.textPrimary,
-              surfaceTintColor: Colors.transparent,
-              shape: Border(
-                bottom: BorderSide(
-                  color: isDark
-                      ? AmazonColors.darkBorder
-                      : AmazonColors.borderGray,
-                  width: 1.0,
-                ),
-              ),
-              titleSpacing: 8,
-              title: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () {
-                  context
-                      .read<AppSettingsProvider>()
-                      .setMarketMode(MarketMode.foodMarket);
-                  context.read<ClassifiedsProvider>().clearFilters();
-                  context.go('/');
-                },
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/images/domaci_market_logo_v2.png',
-                          width: 30,
-                          height: 30,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.storefront_rounded,
-                            size: 24,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        Text(
-                          AppConstants.appName,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 18,
-                            letterSpacing: -0.5,
-                            color: isDark
-                                ? AmazonColors.darkTextPrimary
-                                : AmazonColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const BetaBadge(showInfoIcon: false),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              actions: [
-                if (!isGuest)
-                  IconButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    constraints:
-                        const BoxConstraints(minWidth: 36, minHeight: 36),
-                    icon: Badge(
-                      isLabelVisible: unreadCount > 0,
-                      label: Text('$unreadCount'),
-                      backgroundColor: AmazonColors.dealRed,
-                      child: const Icon(Icons.notifications_none_rounded,
-                          size: 22),
-                    ),
-                    onPressed: () => context.push('/notifications'),
-                  ),
-                IconButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  constraints:
-                      const BoxConstraints(minWidth: 36, minHeight: 36),
-                  icon: Badge(
-                    isLabelVisible: cartCount > 0,
-                    label: Text('$cartCount'),
-                    backgroundColor: AmazonColors.amber,
-                    textColor: AmazonColors.darkNavy,
-                    child: const Icon(Icons.shopping_cart_outlined, size: 22),
-                  ),
-                  onPressed: () => context.push('/cart'),
-                ),
-                IconButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  constraints:
-                      const BoxConstraints(minWidth: 36, minHeight: 36),
-                  icon: const Icon(Icons.location_on_outlined, size: 22),
-                  tooltip: 'Izaberi lokaciju',
-                  onPressed: () => _showLocationPicker(context),
-                ),
-                const SizedBox(width: 4),
-                const Center(child: ThemeToggleSwitch()),
-                const SizedBox(width: 6),
-              ],
+          : HomeMobileAppBar(
+              isDark: isDark,
+              isGuest: isGuest,
+              unreadCount: unreadCount,
+              cartCount: cartCount,
+              onLocationTap: () => showHomeLocationPicker(context),
             ),
       body: SafeArea(
         top: !isDesktopWeb,
@@ -302,16 +203,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: DesktopHeroBanner(
                                         onExploreFood: () {},
                                         onExploreClassifieds: () {
-                                          context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
+                                          context
+                                              .read<AppSettingsProvider>()
+                                              .setMarketMode(
+                                                  MarketMode.classifieds);
                                           context.go('/classifieds');
                                         },
                                         onSearchTag: (tag) {
                                           if (tag.contains('Traktori')) {
-                                            context.read<AppSettingsProvider>().setMarketMode(MarketMode.classifieds);
-                                            context.read<ClassifiedsProvider>().search(tag);
+                                            context
+                                                .read<AppSettingsProvider>()
+                                                .setMarketMode(
+                                                    MarketMode.classifieds);
+                                            context
+                                                .read<ClassifiedsProvider>()
+                                                .search(tag);
                                             context.go('/classifieds');
                                           } else {
-                                            context.push('/search?q=${Uri.encodeComponent(tag)}');
+                                            context.push(
+                                                '/search?q=${Uri.encodeComponent(tag)}');
                                           }
                                         },
                                       ),
@@ -326,230 +236,95 @@ class _HomeScreenState extends State<HomeScreen> {
                                         outerHorizontalPadding,
                                         0,
                                       ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? AmazonColors.darkCard
-                                              : AmazonColors.cardWhite,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: isDark
-                                                ? AmazonColors.darkBorder
-                                                : AmazonColors.borderGray,
-                                            width: 1.0,
-                                          ),
-                                          boxShadow: [
-                                            if (!isDark)
-                                              BoxShadow(
-                                                color: Colors.black
-                                                    .withValues(alpha: 0.02),
-                                                blurRadius: 2,
-                                                offset: const Offset(0, 1),
-                                              ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on_outlined,
-                                              size: 16,
-                                              color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Expanded(
-                                              child: Text(
-                                                'Prikaz za region: $selectedRegion',
-                                                style: TextStyle(
-                                                  fontSize: 12.5,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: isDark
-                                                      ? AmazonColors
-                                                          .darkTextPrimary
-                                                      : AmazonColors.textPrimary,
-                                                ),
-                                                maxLines: 1,
-                                                overflow:
-                                                    TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            TextButton(
-                                              style: TextButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 2),
-                                                minimumSize: Size.zero,
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                              ),
-                                              onPressed: () =>
-                                                  _showLocationPicker(context),
-                                              child: Text(
-                                                'Promeni',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isDark ? AmazonColors.lightGreen : AmazonColors.link,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                      child: HomeRegionBanner(
+                                        selectedRegion: selectedRegion,
+                                        isDark: isDark,
+                                        onChangeTap: () =>
+                                            showHomeLocationPicker(context),
                                       ),
                                     ),
                                   ),
-
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              outerHorizontalPadding,
-                              12,
-                              outerHorizontalPadding,
-                              4,
-                            ),
-                            child: isWide
-                                ? HomeWideLayout(
-                                    topCategories: topCategories,
-                                    isSeller: isSeller,
-                                    sellerStatsFuture: _sellerStatsFuture,
+                                SliverToBoxAdapter(
+                                  child: Padding(
+                                    padding: EdgeInsets.fromLTRB(
+                                      outerHorizontalPadding,
+                                      12,
+                                      outerHorizontalPadding,
+                                      4,
+                                    ),
+                                    child: isWide
+                                        ? HomeWideLayout(
+                                            topCategories: topCategories,
+                                            isSeller: isSeller,
+                                            sellerStatsFuture:
+                                                _sellerStatsFuture,
+                                            stream: stream,
+                                            latestHomeData: _latestHomeData,
+                                            selectedRegion: selectedRegion,
+                                            refreshController:
+                                                _refreshController,
+                                            warmupCarouselImages:
+                                                _warmupCarouselImages,
+                                            productGridExtent:
+                                                productGridExtent,
+                                            compactSpacing: compactSpacing,
+                                            sectionSpacing: sectionSpacing,
+                                            sidePanelSpacing: sidePanelSpacing,
+                                            categoryHeader:
+                                                _buildCategoryHeader(context),
+                                            onSearchTap: () =>
+                                                _openSearch(context),
+                                          )
+                                        : HomeNarrowTopSection(
+                                            topCategories: topCategories,
+                                            isTabletLayout: isTabletLayout,
+                                            isLargeTablet: isLargeTablet,
+                                            compactSpacing: compactSpacing,
+                                            sectionSpacing: sectionSpacing,
+                                            stream: stream,
+                                            latestHomeData: _latestHomeData,
+                                            isSeller: isSeller,
+                                            selectedRegion: selectedRegion,
+                                            categoryHeader:
+                                                _buildCategoryHeader(context),
+                                          ),
+                                  ),
+                                ),
+                                if (!isWide && isSeller)
+                                  SliverToBoxAdapter(
+                                    child: RepaintBoundary(
+                                      child: SellerDashboardSliver(
+                                          statsFuture: _sellerStatsFuture),
+                                    ),
+                                  ),
+                                if (!isWide)
+                                  const SliverToBoxAdapter(
+                                      child: SizedBox(height: 12)),
+                                if (!isWide)
+                                  HomeNarrowProductsSliver(
                                     stream: stream,
                                     latestHomeData: _latestHomeData,
-                                    selectedRegion: selectedRegion,
                                     refreshController: _refreshController,
                                     warmupCarouselImages: _warmupCarouselImages,
-                                    productGridExtent: productGridExtent,
-                                    compactSpacing: compactSpacing,
-                                    sectionSpacing: sectionSpacing,
-                                    sidePanelSpacing: sidePanelSpacing,
-                                    categoryHeader:
-                                        _buildCategoryHeader(context),
-                                    onSearchTap: () => _openSearch(context),
-                                  )
-                                : HomeNarrowTopSection(
-                                    topCategories: topCategories,
                                     isTabletLayout: isTabletLayout,
                                     isLargeTablet: isLargeTablet,
-                                    compactSpacing: compactSpacing,
                                     sectionSpacing: sectionSpacing,
-                                    stream: stream,
-                                    latestHomeData: _latestHomeData,
-                                    isSeller: isSeller,
+                                    compactSpacing: compactSpacing,
                                     selectedRegion: selectedRegion,
-                                    categoryHeader:
-                                        _buildCategoryHeader(context),
+                                    onSearchTap: () => _openSearch(context),
                                   ),
-                          ),
-                        ),
-                        if (!isWide && isSeller)
-                          SliverToBoxAdapter(
-                            child: RepaintBoundary(
-                              child: SellerDashboardSliver(
-                                  statsFuture: _sellerStatsFuture),
+                                AppFooter.sliver(),
+                              ],
                             ),
                           ),
-                        if (!isWide)
-                          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                        if (!isWide)
-                          HomeNarrowProductsSliver(
-                            stream: stream,
-                            latestHomeData: _latestHomeData,
-                            refreshController: _refreshController,
-                            warmupCarouselImages: _warmupCarouselImages,
-                            isTabletLayout: isTabletLayout,
-                            isLargeTablet: isLargeTablet,
-                            sectionSpacing: sectionSpacing,
-                            compactSpacing: compactSpacing,
-                            selectedRegion: selectedRegion,
-                            onSearchTap: () => _openSearch(context),
-                          ),
-                        AppFooter.sliver(),
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _showLocationPicker(BuildContext context) async {
-    final loc = context.read<LocationProvider>();
-    if (!loc.gpsTried) {
-      final detected = await loc.tryDetectFromGps();
-      if (detected && context.mounted) {
-        return;
-      }
-    }
-    if (!context.mounted) return;
-    final chosen = await showModalBottomSheet<String>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text(
-                'Izaberi region',
-                style: Theme.of(ctx)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            ListTile(
-              leading: Icon(Icons.my_location,
-                  color: Theme.of(ctx).colorScheme.primary),
-              title: const Text('Pokušaj GPS ponovo'),
-              subtitle: const Text('Automatski odredi najbliži region'),
-              onTap: () => Navigator.pop(ctx, '__gps_retry__'),
-            ),
-            ListTile(
-              leading: Icon(Icons.location_off,
-                  color: Theme.of(ctx).colorScheme.outline),
-              title: const Text('Prikaži sve regione'),
-              subtitle: const Text('Bez filtera po lokaciji'),
-              onTap: () => Navigator.pop(ctx, ''),
-            ),
-            const Divider(height: 1),
-            ...AppConstants.regions.map((r) => ListTile(
-                  title: Text(r),
-                  trailing: loc.selectedRegion == r
-                      ? Icon(Icons.check,
-                          color: Theme.of(ctx).colorScheme.primary)
-                      : null,
-                  onTap: () => Navigator.pop(ctx, r),
-                )),
-          ],
-        ),
-      ),
-    );
-    if (chosen != null && context.mounted) {
-      if (chosen == '__gps_retry__') {
-        final detected = await loc.tryDetectFromGps(force: true);
-        if (!detected && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Lokacija nije dostupna. Izaberite region ručno.'),
-            ),
-          );
-        }
-      } else if (chosen.isEmpty) {
-        unawaited(loc.clearRegion());
-      } else {
-        await loc.setRegion(chosen);
-      }
-    }
   }
 
   Widget _buildCategoryHeader(BuildContext context) {
@@ -575,7 +350,9 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Theme.of(context).brightness == Brightness.dark ? AmazonColors.lightGreen : AmazonColors.link,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AmazonColors.lightGreen
+                  : AmazonColors.link,
             ),
           ),
         ),

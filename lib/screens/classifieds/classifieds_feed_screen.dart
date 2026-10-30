@@ -9,24 +9,9 @@ import '../../core/responsive.dart';
 import '../../core/web_seo.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../utils/classified_attributes_engine.dart';
 import '../../widgets/app_back_button.dart';
-import '../../widgets/app_empty_state.dart';
-import '../../widgets/guest_auth_prompt.dart';
-import '../../widgets/classifieds/classified_ad_card.dart';
-import '../../widgets/classifieds/classified_category_tiles.dart';
-import '../../widgets/classifieds/classified_sort_dropdown.dart';
-import '../../widgets/classifieds/classified_city_button.dart';
-import '../../widgets/classifieds/classified_condition_chips.dart';
-import '../../widgets/classifieds/classified_active_filters.dart';
-import '../../widgets/classifieds/classified_attribute_filter_bar.dart';
-import '../../widgets/classifieds/classified_category_chips_row.dart';
-import '../../widgets/classifieds/classified_subcategory_header.dart';
-import '../../widgets/classifieds/classified_feed_header.dart';
-import '../../widgets/classifieds/classified_search_bar.dart';
-import '../../widgets/classifieds/classified_subcategories_slivers.dart';
 import '../../widgets/classifieds/classifieds_desktop_feed_view.dart';
-import '../../widgets/app_footer.dart';
+import '../../widgets/classifieds/classifieds_mobile_feed_view.dart';
 import '../../widgets/theme_toggle_switch.dart';
 
 class ClassifiedsFeedScreen extends StatefulWidget {
@@ -99,24 +84,15 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 350), () {
       if (mounted) {
-        context.read<ClassifiedsProvider>().search(val.trim().isEmpty ? null : val);
+        context
+            .read<ClassifiedsProvider>()
+            .search(val.trim().isEmpty ? null : val);
       }
     });
   }
 
-
-
-
-
-
-
-
-
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final classifieds = context.watch<ClassifiedsProvider>();
     final appState = context.watch<AppState>();
     final user = appState.user;
@@ -149,8 +125,6 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       }
     }
 
-    final isDark = theme.brightness == Brightness.dark;
-    final crossAxisCount = Breakpoints.productGridColumns(context);
     final isDesktop = Breakpoints.isDesktop(context);
     final isRefreshing = classifieds.refreshing;
 
@@ -163,7 +137,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         classifieds.selectedAttributes.isNotEmpty ||
         classifieds.onlyFeatured ||
         classifieds.onlyUrgent ||
-        (classifieds.searchQuery != null && classifieds.searchQuery!.isNotEmpty);
+        (classifieds.searchQuery != null &&
+            classifieds.searchQuery!.isNotEmpty);
 
     // FAB — samo za prijavljene korisnike (gost može samo da pregleda)
     final isGuest = user == null || user.isGuest;
@@ -174,9 +149,13 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
             backgroundColor: const Color(0xFFFFE082),
             foregroundColor: AmazonColors.darkNavy,
             elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             icon: const Icon(Icons.add_circle_outline, size: 18),
-            label: const Text('Postavi oglas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+            label: const Text(
+              'Postavi oglas',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+            ),
           );
 
     final canvasColor = AmazonColors.getCanvas(context);
@@ -195,435 +174,20 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         onSearchChanged: _onSearchChanged,
       );
     } else {
-      final scrollBody = RefreshIndicator(
-        onRefresh: classifieds.refresh,
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            // Standalone Amazon Header ako nismo na početnoj (embedded) i nismo na desktopu
-            if (!widget.isEmbedded)
-              const SliverToBoxAdapter(
-                child: ClassifiedFeedHeader(),
-              ),
-
-            // Opcioni header (MarketModeSwitcher)
-            if (widget.headerWidget != null)
-              SliverToBoxAdapter(child: widget.headerWidget!),
-
-            // Suptilni progress bar tokom refresh-a (kada podaci vec postoje)
-            SliverToBoxAdapter(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: isRefreshing ? 3 : 0,
-                child: isRefreshing
-                    ? LinearProgressIndicator(
-                        minHeight: 3,
-                        backgroundColor: colorScheme.surfaceContainerHighest,
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ),
-            // Search bar + filteri
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (user?.isAdmin == true) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: InkWell(
-                          onTap: () => context.push('/admin/classifieds'),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.amber.shade900.withValues(alpha: 0.25)
-                                  : Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isDark
-                                    ? Colors.amber.shade700
-                                    : Colors.amber.shade300,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.shield_outlined,
-                                  size: 18,
-                                  color: isDark
-                                      ? Colors.amber.shade200
-                                      : Colors.amber.shade900,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Admin panel: Moderacija prijavljenih oglasa',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark
-                                          ? Colors.amber.shade200
-                                          : Colors.amber.shade900,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.chevron_right,
-                                  size: 18,
-                                  color: isDark
-                                      ? Colors.amber.shade200
-                                      : Colors.amber.shade900,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                    // Amazon Search bar
-                    ClassifiedSearchBar(
-                      classifieds: classifieds,
-                      searchController: _searchController,
-                      onSearchChanged: _onSearchChanged,
-                    ),
-
-                    // DVA REDA NA MOBILNOM / TABLETU:
-                    const SizedBox(height: 8),
-                    // Red 1: Grad + Sort
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClassifiedCityButton(classifieds: classifieds),
-                        ),
-                        const SizedBox(width: 8),
-                        ClassifiedSortDropdown(classifieds: classifieds),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Red 2: Stanje (ako važi) + Promocije (Istaknuto, Hitno)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: ClassifiedConditionChips(classifieds: classifieds),
-                    ),
-
-                    if (isFiltered)
-                      ClassifiedActiveFilters(
-                        classifieds: classifieds,
-                        colorScheme: colorScheme,
-                        searchController: _searchController,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── DISCOVERY MODE: kategorije + najnoviji ────────────────────────
-            if (!isFiltered) ...[
-              // Naslov sekcije kategorija
-              if (classifieds.categories.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Text(
-                      'Kategorije',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AmazonColors.darkTextPrimary
-                            : AmazonColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Grid kategorija organizovan kao na strani malih proizvođača (Amazon compact 46px)
-              if (classifieds.categories.isNotEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: Breakpoints.isLargeTablet(context)
-                          ? 4
-                          : (Breakpoints.isSmallTablet(context) ? 3 : 2),
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      mainAxisExtent: 46,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => CategoryGridTile(
-                        category: classifieds.categories[i],
-                        onTap: () => classifieds.selectCategory(classifieds.categories[i].id),
-                      ),
-                      childCount: classifieds.categories.length,
-                    ),
-                  ),
-                ),
-
-              // Separator
-              const SliverToBoxAdapter(child: SizedBox(height: 4)),
-
-              // Naslov sekcije najnovijih oglasa
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Najnoviji oglasi',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: isDark
-                              ? AmazonColors.darkTextPrimary
-                              : AmazonColors.textPrimary,
-                        ),
-                      ),
-                      if (!classifieds.loading && classifieds.ads.isNotEmpty)
-                        Text(
-                          '${classifieds.ads.length}+ oglasa',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? AmazonColors.darkTextSecondary
-                                : AmazonColors.textSecondary,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-            // ── FILTER MODE: Glavne kategorije (mobilni/tablet) + 2-kolonski raspored podkategorija ──
-            if (isFiltered && classifieds.categories.isNotEmpty) ...[
-              // Na mobilnom / tabletu: horizontalne kategorije kao 2. red
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: ClassifiedCategoryChipsRow(
-                    classifieds: classifieds,
-                    colorScheme: colorScheme,
-                    isDesktop: false,
-                    scrollController: _categoryChipsScrollController,
-                  ),
-                ),
-              ),
-
-              // Header podkategorija sa navigacijom (breadcrumbs) i dugmetom 'Sve u...'
-              if (classifieds.activeRootCategory != null)
-                SliverToBoxAdapter(
-                  child: ClassifiedSubcategoryHeader(
-                    classifieds: classifieds,
-                    theme: theme,
-                    colorScheme: colorScheme,
-                  ),
-                ),
-
-              // 2. Podkategorije (grupisane sekcije po državama ili standardna mreža)
-              if (classifieds.activeRootCategory != null)
-                ...buildClassifiedSubcategoriesSlivers(context, classifieds, theme, colorScheme),
-
-              // 3. Filteri parametara/karakteristika (gorivo, menjač, karoserija, sobe...)
-              () {
-                final catAttrs =
-                    ClassifiedAttributesEngine.getAttributesForCategory(
-                  classifieds.selectedCategoryId,
-                  breadcrumbs: classifieds.categoryBreadcrumbs,
-                );
-                if (catAttrs.isNotEmpty) {
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: ClassifiedAttributeFilterBar(
-                        classifieds: classifieds,
-                        colorScheme: colorScheme,
-                        attributes: catAttrs,
-                      ),
-                    ),
-                  );
-                }
-                return const SliverToBoxAdapter(child: SizedBox.shrink());
-              }(),
-
-              // Separator i naslov sekcije oglasa sa dugmetom za poništavanje
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Oglasi',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: isDark
-                              ? AmazonColors.darkTextPrimary
-                              : AmazonColors.textPrimary,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () {
-                          _searchController.clear();
-                          classifieds
-                            ..selectCategory(null)
-                            ..selectCity(null)
-                            ..selectCondition(null)
-                            ..clearAttributeFilters()
-                            ..search(null);
-                        },
-                        icon: Icon(
-                          Icons.close,
-                          size: 14,
-                          color: isDark
-                              ? AmazonColors.lightGreen
-                              : AmazonColors.link,
-                        ),
-                        label: Text(
-                          'Poništi filtere',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark
-                                ? AmazonColors.lightGreen
-                                : AmazonColors.link,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
-            const SliverToBoxAdapter(child: SizedBox(height: 4)),
-
-            // ── SADRŽAJ: loading / nema interneta / greška / prazan / mreža oglasa ──
-            if (classifieds.loading)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              )
-            else if (classifieds.ads.isEmpty && (isAppOffline || isNetworkErr))
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                  child: AppEmptyState(
-                    icon: Icons.wifi_off_rounded,
-                    title: 'Nema internet veze',
-                    subtitle: 'Proverite vašu internet konekciju i pokušajte ponovo da učitate oglase.',
-                    ctaLabel: 'Pokušaj ponovo',
-                    ctaIcon: Icons.refresh,
-                    onCtaPressed: classifieds.refresh,
-                  ),
-                ),
-              )
-            else if (classifieds.error != null && classifieds.ads.isEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                  child: AppEmptyState(
-                    icon: Icons.error_outline,
-                    title: 'Greška pri učitavanju',
-                    subtitle: classifieds.error,
-                    ctaLabel: 'Pokušaj ponovo',
-                    ctaIcon: Icons.refresh,
-                    onCtaPressed: classifieds.refresh,
-                  ),
-                ),
-              )
-            else if (classifieds.ads.isEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                  child: AppEmptyState(
-                    icon: Icons.search_off_outlined,
-                    title: isFiltered ? 'Nema pronađenih oglasa' : 'Još nema oglasa u ovoj kategoriji',
-                    subtitle: isFiltered
-                        ? 'Pokušajte sa promenom filtera ili pretrage.'
-                        : 'Budite prvi koji će postaviti besplatan oglas i privući kupce!',
-                    ctaLabel: isFiltered
-                        ? 'Poništi filtere'
-                        : 'Postavi besplatan oglas',
-                    ctaIcon: isFiltered
-                        ? Icons.refresh
-                        : Icons.add_circle_outline,
-                    onCtaPressed: isFiltered
-                        ? () {
-                            _searchController.clear();
-                            classifieds.clearAllFilters();
-                          }
-                        : () {
-                            if (isGuest) {
-                              showGuestAuthPrompt(
-                                context,
-                                title: 'Postavljanje oglasa',
-                                message:
-                                    'Prijavite se ili se besplatno registrujte da biste postavili oglas za samo 2 minuta.',
-                                icon: Icons.add_circle_outline,
-                              );
-                            } else {
-                              context.push('/classifieds/new');
-                            }
-                          },
-                  ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.72,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => RepaintBoundary(
-                      child: ClassifiedAdCard(ad: classifieds.ads[i]),
-                    ),
-                    childCount: classifieds.ads.length,
-                  ),
-                ),
-              ),
-
-            // Indikator load more
-            if (classifieds.loadingMore)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                ),
-              ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            const SliverToBoxAdapter(child: AppFooter()),
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
-          ],
-        ),
-      );
-
-      content = Material(
-        color: canvasColor,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: Breakpoints.maxContentWidth(context),
-            ),
-            child: scrollBody,
-          ),
-        ),
+      content = ClassifiedsMobileFeedView(
+        classifieds: classifieds,
+        user: user,
+        searchController: _searchController,
+        scrollController: _scrollController,
+        categoryChipsScrollController: _categoryChipsScrollController,
+        isEmbedded: widget.isEmbedded,
+        isRefreshing: isRefreshing,
+        isFiltered: isFiltered,
+        isGuest: isGuest,
+        isAppOffline: isAppOffline,
+        isNetworkErr: isNetworkErr,
+        headerWidget: widget.headerWidget,
+        onSearchChanged: _onSearchChanged,
       );
     }
 
@@ -659,11 +223,4 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
       body: content,
     );
   }
-
-
-
-
-
-
 }
-

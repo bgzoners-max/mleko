@@ -1,28 +1,17 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../widgets/search/search_widgets.dart';
-import '../core/constants.dart';
 import '../core/responsive.dart';
 import '../models/product_model.dart';
-import '../models/user_model.dart';
 import 'package:mleko/services/services.dart';
 import '../providers/app_state.dart';
 import '../providers/categories_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/location_provider.dart';
 import '../utils/image_precache_utils.dart';
-import '../widgets/search/search_filter_bar.dart';
-import '../widgets/search/search_filter_sidebar.dart';
-import '../widgets/search/search_history_panel.dart';
-import '../widgets/search/search_input_app_bar.dart';
-import '../widgets/search/search_mobile_categories.dart';
-import '../widgets/search/search_results_grid.dart';
-import '../widgets/search/search_tips_banner.dart';
+import '../widgets/search/search_body_content.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key, this.initialCategory, this.initialQuery});
@@ -366,332 +355,81 @@ class _SearchScreenState extends State<SearchScreen> {
     _onFilterChanged();
   }
 
-  Widget _buildProductCard(int i, UserModel? user) {
-    final p = _products[i];
-    final rating = _ratings[p.id];
-    final count = _salesCounts[p.id] ?? 0;
-    return SearchProductCard(
-      product: p,
-      user: user,
-      salesCount: count,
-      isPopular: count >= AppConstants.popularProductMinSales,
-      avgRating: rating?.avg,
-      reviewCount: rating?.count,
-    );
+  Future<void> _clearAllHistory() async {
+    await _searchHistoryService.clearHistory();
+    if (mounted) {
+      setState(() => _historyFuture = _searchHistoryService.getHistory());
+    }
   }
 
-  Widget _buildEmptyState() => SearchEmptyState(
-        hasFilters: _category != null || _region != null || _availableNow == true,
-        onResetFilters: _resetSearchFilters,
-      );
+  Future<void> _removeHistoryItem(String item) async {
+    await _searchHistoryService.removeFromHistory(item);
+    if (mounted) {
+      setState(() => _historyFuture = _searchHistoryService.getHistory());
+    }
+  }
+
+  void _updateFilter(VoidCallback update) {
+    setState(update);
+    _onFilterChanged();
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AppState>().user;
-    final categoriesProvider = context.watch<CategoriesProvider>();
-    final topCategories = categoriesProvider.topCategories;
+    final topCategories = context.watch<CategoriesProvider>().topCategories;
     _scheduleCategoryCountReload(topCategories);
     final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);
-    final isLargeTablet = Breakpoints.isLargeTablet(context);
-    final isSmallTablet = Breakpoints.isSmallTablet(context);
-    final contentPadding = Breakpoints.horizontalPadding(context);
     final hasActiveFilters =
         _category != null || _region != null || _availableNow == true;
-    final mobileResultsAsGrid = isSmallTablet || isLargeTablet;
-    final stackedResultColumns = isLargeTablet ? 3 : 2;
-    final stackedGridExtent = isLargeTablet ? 336.0 : 348.0;
-    final stackedGridSpacing = Breakpoints.adaptiveDouble(
-      context,
-      phone: 12,
-      smallTabletValue: 12,
-      largeTabletValue: 14,
-      desktop: 14,
-    );
-    final wideGridColumns = Breakpoints.isDesktop(context) ? 4 : 3;
-    final wideGridExtent = Breakpoints.isDesktop(context) ? 380.0 : 356.0;
-    final isDesktopOrWeb = kIsWeb ||
-        Theme.of(context).platform == TargetPlatform.windows ||
-        Theme.of(context).platform == TargetPlatform.macOS ||
-        Theme.of(context).platform == TargetPlatform.linux;
 
-    return CallbackShortcuts(
-      bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () {
-          _searchFocusNode.requestFocus();
-        },
-        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () {
-          _searchFocusNode.requestFocus();
-        },
-        const SingleActivator(LogicalKeyboardKey.slash): () {
-          if (!_searchFocusNode.hasFocus) {
-            _searchFocusNode.requestFocus();
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_searchController.text.isNotEmpty) {
-            _searchController.clear();
-            _applySearchImmediate('');
-          } else {
-            _searchFocusNode.unfocus();
-          }
-        },
+    return SearchBodyContent(
+      searchController: _searchController,
+      searchFocusNode: _searchFocusNode,
+      onClearSearch: () {
+        _searchController.clear();
+        _applySearchImmediate('');
       },
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        appBar: SearchInputAppBar(
-          controller: _searchController,
-          focusNode: _searchFocusNode,
-          isDesktopOrWeb: isDesktopOrWeb,
-          onClear: () {
-            _searchController.clear();
-            _applySearchImmediate('');
-          },
-          onSubmitted: (q) async {
-            await _searchHistoryService.addToHistory(q);
-            if (!mounted) return;
-            setState(() {
-              _historyFuture = _searchHistoryService.getHistory();
-            });
-            _applySearchImmediate(q);
-          },
-        ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isTwoPaneLayout
-                  ? Breakpoints.dataContentWidth(context)
-                  : Breakpoints.maxContentWidth(context),
-            ),
-            child: isTwoPaneLayout
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 20,
-                        child: SearchFilterSidebar(
-                          sort: _sort,
-                          onSortChanged: (s) {
-                            setState(() => _sort = s);
-                            _onFilterChanged();
-                          },
-                          region: _region,
-                          onRegionChanged: (r) {
-                            setState(() => _region = r);
-                            _onFilterChanged();
-                          },
-                          availableNow: _availableNow,
-                          onAvailableNowChanged: (a) {
-                            setState(() => _availableNow = a);
-                            _onFilterChanged();
-                          },
-                          categories: topCategories,
-                          selectedCategory: _category,
-                          categoryCounts: _categoryCounts,
-                          onCategorySelected: (cat) {
-                            setState(() => _category = cat);
-                            _onFilterChanged();
-                          },
-                        ),
-                      ),
-                      Expanded(
-                        flex: 80,
-                        child: Column(
-                          children: [
-                            if (_debounceTimer?.isActive == true ||
-                                _filterDebounceTimer?.isActive == true)
-                              const LinearProgressIndicator(minHeight: 2),
-                            SearchHistoryPanel(
-                              historyFuture: _historyFuture,
-                              isSearchEmpty: _searchController.text.isEmpty,
-                              onClearAll: () async {
-                                await _searchHistoryService.clearHistory();
-                                if (mounted) {
-                                  setState(() {
-                                    _historyFuture =
-                                        _searchHistoryService.getHistory();
-                                  });
-                                }
-                              },
-                              onSelectHistory: (h) {
-                                _searchController.text = h;
-                                _applySearchImmediate(h);
-                              },
-                              onRemoveHistory: (h) async {
-                                await _searchHistoryService
-                                    .removeFromHistory(h);
-                                if (mounted) {
-                                  setState(() {
-                                    _historyFuture =
-                                        _searchHistoryService.getHistory();
-                                  });
-                                }
-                              },
-                            ),
-                            if (hasActiveFilters)
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: contentPadding,
-                                  vertical: 4,
-                                ),
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    onPressed: _clearActiveFilters,
-                                    icon: const Icon(Icons.clear_all_rounded,
-                                        size: 18),
-                                    label: const Text('Očisti filtere'),
-                                  ),
-                                ),
-                              ),
-                            SearchTipsBanner(
-                              margin: EdgeInsets.symmetric(
-                                horizontal: contentPadding,
-                                vertical: 4,
-                              ),
-                            ),
-                            Expanded(
-                              child: SearchResultsGrid(
-                                products: _products,
-                                loading: _loading,
-                                loadingMore: _loadingMore,
-                                searchError: _searchError,
-                                scrollController: _scrollController,
-                                onRefresh: _onRefresh,
-                                onRetry: _loadFirstPage,
-                                itemBuilder: (ctx, i) => _buildProductCard(i, user),
-                                emptyStateWidget: _buildEmptyState(),
-                                crossAxisCount: wideGridColumns,
-                                mainAxisExtent: wideGridExtent,
-                                spacing: stackedGridSpacing,
-                                contentPadding: contentPadding,
-                                asGrid: true,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      if (_debounceTimer?.isActive == true ||
-                          _filterDebounceTimer?.isActive == true)
-                        const LinearProgressIndicator(minHeight: 2),
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: contentPadding,
-                          vertical: 12,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Kategorije',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            SearchMobileCategories(
-                              categories: topCategories,
-                              selectedCategory: _category,
-                              categoryCounts: _categoryCounts,
-                              onCategorySelected: (cat) {
-                                setState(() => _category = cat);
-                                _onFilterChanged();
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      SearchHistoryPanel(
-                        historyFuture: _historyFuture,
-                        isSearchEmpty: _searchController.text.isEmpty,
-                        onClearAll: () async {
-                          await _searchHistoryService.clearHistory();
-                          if (mounted) {
-                            setState(() {
-                              _historyFuture =
-                                  _searchHistoryService.getHistory();
-                            });
-                          }
-                        },
-                        onSelectHistory: (h) {
-                          _searchController.text = h;
-                          _applySearchImmediate(h);
-                        },
-                        onRemoveHistory: (h) async {
-                          await _searchHistoryService.removeFromHistory(h);
-                          if (mounted) {
-                            setState(() {
-                              _historyFuture =
-                                  _searchHistoryService.getHistory();
-                            });
-                          }
-                        },
-                      ),
-                      SearchFilterBar(
-                        sort: _sort,
-                        onSortChanged: (s) {
-                          setState(() => _sort = s);
-                          _onFilterChanged();
-                        },
-                        region: _region,
-                        onRegionChanged: (r) {
-                          setState(() => _region = r);
-                          _onFilterChanged();
-                        },
-                        availableNow: _availableNow,
-                        onAvailableNowChanged: (a) {
-                          setState(() => _availableNow = a);
-                          _onFilterChanged();
-                        },
-                      ),
-                      if (hasActiveFilters)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: _clearActiveFilters,
-                              icon:
-                                  const Icon(Icons.clear_all_rounded, size: 18),
-                              label: const Text('Očisti filtere'),
-                            ),
-                          ),
-                        ),
-                      SearchTipsBanner(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: contentPadding,
-                          vertical: 4,
-                        ),
-                      ),
-                      Expanded(
-                        child: SearchResultsGrid(
-                          products: _products,
-                          loading: _loading,
-                          loadingMore: _loadingMore,
-                          searchError: _searchError,
-                          scrollController: _scrollController,
-                          onRefresh: _onRefresh,
-                          onRetry: _loadFirstPage,
-                          itemBuilder: (ctx, i) => _buildProductCard(i, user),
-                          emptyStateWidget: _buildEmptyState(),
-                          crossAxisCount:
-                              mobileResultsAsGrid ? stackedResultColumns : 2,
-                          mainAxisExtent:
-                              mobileResultsAsGrid ? stackedGridExtent : 255,
-                          spacing: stackedGridSpacing,
-                          contentPadding: contentPadding,
-                          asGrid: mobileResultsAsGrid,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ),
+      onSubmittedSearch: (q) async {
+        await _searchHistoryService.addToHistory(q);
+        if (!mounted) return;
+        setState(() => _historyFuture = _searchHistoryService.getHistory());
+        _applySearchImmediate(q);
+      },
+      isTwoPaneLayout: isTwoPaneLayout,
+      isDebounceActive: _debounceTimer?.isActive == true ||
+          _filterDebounceTimer?.isActive == true,
+      sort: _sort,
+      onSortChanged: (s) => _updateFilter(() => _sort = s),
+      region: _region,
+      onRegionChanged: (r) => _updateFilter(() => _region = r),
+      availableNow: _availableNow,
+      onAvailableNowChanged: (a) => _updateFilter(() => _availableNow = a),
+      topCategories: topCategories,
+      selectedCategory: _category,
+      categoryCounts: _categoryCounts,
+      onCategorySelected: (cat) => _updateFilter(() => _category = cat),
+      historyFuture: _historyFuture,
+      isSearchEmpty: _searchController.text.isEmpty,
+      onClearAllHistory: _clearAllHistory,
+      onSelectHistory: (h) {
+        _searchController.text = h;
+        _applySearchImmediate(h);
+      },
+      onRemoveHistory: _removeHistoryItem,
+      hasActiveFilters: hasActiveFilters,
+      onClearActiveFilters: _clearActiveFilters,
+      onResetSearchFilters: _resetSearchFilters,
+      products: _products,
+      salesCounts: _salesCounts,
+      ratings: _ratings,
+      user: user,
+      loading: _loading,
+      loadingMore: _loadingMore,
+      searchError: _searchError,
+      scrollController: _scrollController,
+      onRefresh: _onRefresh,
+      onRetry: _loadFirstPage,
     );
   }
 }

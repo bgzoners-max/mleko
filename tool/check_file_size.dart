@@ -3,9 +3,7 @@ import 'dart:io';
 const int lineThreshold = 700;
 
 // Privremena lista za ekrane koji cekaju modularizaciju (preko 700 linija).
-const List<String> ignoreFiles = [
-  'lib/screens/seller/seller_settings_screen.dart',
-];
+const List<String> ignoreFiles = [];
 
 void main() {
   final dir = Directory('lib');
