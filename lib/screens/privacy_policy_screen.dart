@@ -22,29 +22,29 @@ class PrivacyPolicyScreen extends StatelessWidget {
       summaryText:
           'Ova politika objašnjava koje podatke prikupljamo, zašto ih obrađujemo, sa kim ih delimo i koja prava imate kao korisnik platforme domaćimarket.rs.',
       pageTitle: 'POLITIKA PRIVATNOSTI – domaćimarket.rs',
-      effectiveDate: '9. april 2026.',
+      effectiveDate: '30. oktobar 2026.',
       children: [
         b.section('1', 'Ko je rukovalac podacima', [
           'Rukovalac podacima o ličnosti u vezi sa platformom domaćimarket.rs je Vladimir Ivanović, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
-          'Rukovalac određuje svrhe i načine obrade podataka o ličnosti u okviru funkcionisanja platforme.',
+          'Rukovalac određuje svrhe i načine obrade podataka o ličnosti u okviru funkcionisanja platforme, u skladu sa Zakonom o zaštiti podataka o ličnosti Republike Srbije („Sl. glasnik RS“, br. 87/2018 – ZZPL).',
         ]),
         b.section('2', 'Status platforme', [
-          'Platforma domaćimarket.rs je trenutno u razvojnoj, pilot i startup fazi.',
-          'Korišćenje platforme je u ovom trenutku besplatno za sve korisnike.',
+          'Platforma domaćimarket.rs je digitalna platforma za povezivanje proizvođača domaće hrane, oglašivača malih oglasa i kupaca.',
+          'Korišćenje osnovnih funkcionalnosti platforme i oglašavanje je besplatno za korisnike.',
         ]),
         b.sectionBullets('3', 'Na koga se politika odnosi', [
-          'posetioce sajta i korisnike web verzije platforme',
+          'posetioce sajta i korisnike web i mobilne verzije platforme',
           'registrovane korisnike aplikacije i sajta',
-          'kupce, prodavce, goste i administratore, u meri u kojoj koriste platformu',
+          'kupce, prodavce, oglašivače malih oglasa, goste i administratore, u meri u kojoj koriste platformu',
           'lica koja nas kontaktiraju putem email-a ili drugih komunikacionih kanala',
         ]),
         b.sectionBullets(
             '4', 'Koje strane učestvuju u funkcionisanju platforme', [
           'Vladimir Ivanović, kao rukovalac i lice koje upravlja platformom domaćimarket.rs',
           'korisnici platforme, uključujući kupce, prodavce, goste i administratore',
-          'Supabase, kao pružalac tehničke infrastrukture za autentikaciju, bazu podataka i čuvanje sadržaja, uključujući slike profila i proizvoda',
-          'Google Firebase i Firebase Cloud Messaging, kao pružaoci infrastrukture za push notifikacije i obradu tokena uređaja',
-          'Vercel ili drugi pružaoci hostinga i isporuke web sadržaja, kada se koriste za objavu i dostupnost web verzije',
+          'Supabase, kao pružalac tehničke infrastrukture za autentikaciju i bazu podataka',
+          'Cloudflare (Cloudflare Pages i Cloudflare R2), kao pružalac infrastrukture za web hosting, CDN mrežu, bezbednosnu zaštitu i skladištenje medijskih datoteka (fotografija proizvoda i oglasa)',
+          'Google Firebase i Firebase Cloud Messaging (FCM), kao pružaoci infrastrukture za push notifikacije i obradu tokena uređaja',
           'sistemske usluge uređaja i operativnih sistema, kao što su lokacione usluge, galerija fotografija i notifikacioni sistemi, kada korisnik za to da dozvolu',
           'nadležni državni organi Republike Srbije, kada je dostavljanje podataka neophodno radi ispunjenja zakonske obaveze ili zaštite prava i bezbednosti',
         ]),
@@ -61,7 +61,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         b.sectionBullets('5', 'Koje podatke možemo obrađivati', [
           'identifikacione i nalogne podatke, kao što su email adresa, korisničko ime, prikazano ime i uloga korisnika',
           'kontakt podatke, kao što su broj telefona, grad i drugi podaci koje korisnik unese u profil ili komunikaciju',
-          'podatke o profilu prodavca, kao što su naziv gazdinstva, opis, fotografije i lokacija',
+          'podatke o profilu prodavca, kao što su naziv gazdinstva/firme, opis, fotografije, lokacija, opciono uneti BPG broj poljoprivrednog gazdinstva (12 cifara) ili PIB pravnog lica/preduzetnika (9 cifara), kao i datum i vreme elektronskog prihvatanja izjave o sanitarnoj i pravnoj odgovornosti',
           'podatke o proizvodima, uključujući naziv, opis, cenu, količinu, slike i druge podatke koje prodavac objavi',
           'podatke o porudžbinama i upitima, uključujući povezanu komunikaciju, statuse, podatke o mestu i vremenu isporuke ili preuzimanja, kao i kontakt podatke potrebne za realizaciju porudžbine',
           'podatke iz reklamacija, prijava problema i sporova između korisnika, uključujući opis prijavljenog nedostatka, vreme prijema robe, fotografije i drugu dokumentaciju koju korisnik dobrovoljno dostavi, uključujući slučajeve koji se odnose na kvarljive proizvode',
@@ -112,9 +112,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'drugi korisnici platforme, ali samo za one podatke koje korisnik sam objavi ili učini dostupnim u okviru platforme',
           'nadležni državni organi, sudovi, inspekcije i druga ovlašćena tela, kada to nalaže zakon ili zakonit zahtev',
         ]),
-        b.section('11', 'Javno dostupni podaci', [
-          'Korisnik, a naročito prodavac, može dobrovoljno objaviti određene podatke na platformi, kao što su prikazano ime, grad ili region, naziv gazdinstva, fotografije profila, fotografije proizvoda, opis ponude i druge informacije koje sam unese.',
-          'Takvi podaci mogu postati vidljivi drugim korisnicima platforme i javnosti, u skladu sa podešavanjima i funkcionalnostima platforme.',
+        b.section('11', 'Javno dostupni podaci i zaštita BPG broja', [
+          'Korisnik, a naročito prodavac, može dobrovoljno objaviti određene podatke na platformi, kao što su prikazano ime, grad ili region, naziv gazdinstva ili firme, PIB pravnog lica (koji je javni podatak u APR registru), fotografije profila, fotografije proizvoda i oglasa, opis ponude i druge informacije koje sam unese.',
+          'Pun 12-cifreni Broj poljoprivrednog gazdinstva (BPG) fizičkog lica – nosioca gazdinstva je zaštićen na nivou baze podataka i NIJE javno vidljiv drugim posetiocima sajta; posetiocima se prikazuje isključivo oznaka „Verifikovano gazdinstvo (BPG)“ uz maskiran prikaz poslednje 4 cifre (npr. ••••••••1234).',
         ]),
         b.section('12', 'Lokacija, slike i dozvole uređaja', [
           'Platforma može tražiti pristup lokaciji uređaja radi određivanja regiona, poboljšanja korisničkog iskustva i prikaza relevantnog sadržaja. Lokacija se obrađuje samo uz dozvolu korisnika.',

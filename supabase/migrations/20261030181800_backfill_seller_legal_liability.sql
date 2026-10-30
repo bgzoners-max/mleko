@@ -34,3 +34,4 @@ CREATE TRIGGER trg_ensure_seller_legal_liability
   BEFORE INSERT OR UPDATE ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.ensure_seller_legal_liability_accepted();
+
