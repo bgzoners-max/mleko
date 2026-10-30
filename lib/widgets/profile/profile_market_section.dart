@@ -131,7 +131,7 @@ class ProfileMarketSection extends StatelessWidget {
               headerColor: headerColor,
               icon: Icons.shopping_bag_outlined,
               title: 'Moje porudžbine hrane',
-              subtitle: 'Praćenje statusa i istorija porudžbina',
+              subtitle: 'Primljene i poslate porudžbine sa Pijace hrane',
               selected: isActiveSection('orders', isWide),
               onTap: () => onOpenPanel(
                 'orders',
@@ -183,10 +183,11 @@ class _SellerMapTile extends StatelessWidget {
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
       visualDensity: VisualDensity.compact,
-      leading: Icon(Icons.location_on_outlined, color: headerColor),
-      title: const Text('Moja lokacija i isporuke na mapi',
+      leading: Icon(Icons.tune_rounded, color: headerColor),
+      title: const Text('Podešavanja gazdinstva / prodavnice',
           style: TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: const Text('Podešavanje adrese i tačaka isporuke hrane'),
+      subtitle: const Text(
+          'BPG / PIB, lokacija na mapi, lična dostava, priča i galerija'),
       selected: selected,
       onTap: onTap,
     );

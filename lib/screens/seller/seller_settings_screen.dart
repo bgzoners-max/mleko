@@ -210,7 +210,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
               ),
         leading: const AppBackButton(fallbackRoute: '/'),
         title: Text(
-          'Podešavanja prodavca',
+          'Podešavanja gazdinstva / prodavnice',
           style: GoogleFonts.roboto(
             fontSize: 16,
             fontWeight: FontWeight.w700,

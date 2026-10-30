@@ -55,7 +55,7 @@ void main() {
       expect(find.text('MINI PIJACA'), findsOneWidget);
       expect(find.text('Moje porudžbine hrane'), findsOneWidget);
       expect(find.text('Omiljeni proizvodi'), findsOneWidget);
-      expect(find.text('Moja lokacija i isporuke na mapi'), findsOneWidget);
+      expect(find.text('Podešavanja gazdinstva / prodavnice'), findsOneWidget);
     });
     testWidgets('kupac bez narudžbe vidi i omiljene stavke', (tester) async {
       await tester.pumpWidget(
@@ -75,7 +75,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pratim gazdinstva i prodavce'), findsOneWidget);
-      expect(find.text('Moja lokacija i isporuke na mapi'), findsNothing);
+      expect(find.text('Podešavanja gazdinstva / prodavnice'), findsNothing);
     });
   });
 

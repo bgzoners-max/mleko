@@ -36,7 +36,7 @@ class MiniStoreCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Mini prodavnica',
+                      'Moji proizvodi (Tezga)',
                       style: Theme.of(context)
                           .textTheme
                           .titleSmall
@@ -44,7 +44,9 @@ class MiniStoreCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user.farmName ?? 'Moji proizvodi i porudžbine',
+                      user.farmName != null && user.farmName!.trim().isNotEmpty
+                          ? '${user.farmName!} • Dodavanje proizvoda, cene i zalihe'
+                          : 'Dodavanje proizvoda, cene i zalihe',
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall

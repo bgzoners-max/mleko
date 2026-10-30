@@ -346,22 +346,6 @@ class SettingsScreen extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right, size: 18),
           onTap: () => context.push('/notifications'),
         ),
-        if (user.isSeller) ...[
-          const Divider(height: 1, indent: 48, thickness: 0.5),
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-            leading: const Icon(Icons.store_outlined, size: 20),
-            title: const Text('Podešavanja prodavca',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            subtitle: const Text('Lokacija, priča, galerija, brzi odgovori',
-                style: TextStyle(fontSize: 11)),
-            trailing: const Icon(Icons.chevron_right, size: 18),
-            onTap: () => context.push('/seller-settings'),
-          ),
-        ],
       ],
     );
   }
