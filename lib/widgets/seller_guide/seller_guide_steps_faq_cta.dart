@@ -102,14 +102,14 @@ class SellerGuideStepsFaqAndCtaSection extends StatelessWidget {
                 context,
                 Icons.rule_folder_outlined,
                 'Mogu li hranu da objavim kao mali oglas?',
-                'Ne — domaća hrana se izlaže isključivo na Pijaci, gde kupci mogu da je naruče sa cenom, količinom i ocenama gazdinstva. Mali oglasi su namenjeni mehanizaciji, vozilima, alatima, nekretninama i ostalim stvarima.',
+                'Ne — domaća hrana se izlaže isključivo na Pijaci, gde kupci mogu da je naruče sa cenom, količinom i ocenama. U Malim oglasima svako može da postavi oglas za bilo šta drugo — telefone, tehniku, vozila, nameštaj, odeću, nekretnine, alate i usluge.',
               ),
               const SizedBox(height: 14),
               aboutFeatureRow(
                 context,
-                Icons.agriculture_rounded,
-                'Šta ako prodajem i traktor ili mašine?',
-                'Savršeno — pored tezge na Pijaci, besplatno postavite male oglase u kategoriji „Poljoprivreda" za mehanizaciju, opremu i stoku. Mnogi domaćini koriste oba dela platforme.',
+                Icons.campaign_outlined,
+                'Mogu li pored hrane da prodajem i druge stvari u Malim oglasima?',
+                'Naravno — u Malim oglasima svako može besplatno da postavi oglas za bilo šta (telefone, tehniku, automobile, nameštaj, odeću, alate, nekretnine ili mašine). Mnogi korisnici koriste oba dela platforme.',
               ),
               const SizedBox(height: 14),
               aboutFeatureRow(

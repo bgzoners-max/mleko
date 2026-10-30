@@ -13,7 +13,7 @@ final _slides = [
   {
     'title': '100% Besplatni mali oglasi',
     'subtitle':
-        'Besplatno oglasi ili pronađi poljoprivrednu mehanizaciju, stoku, alate, vozila i stvari za dom bez provizije.',
+        'Besplatno oglasi ili pronađi bilo šta — telefone, tehniku, automobile, nameštaj, nekretnine, alate i usluge bez provizije.',
     'motif': RusticMotif.field,
   },
   {

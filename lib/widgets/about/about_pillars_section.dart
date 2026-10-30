@@ -157,7 +157,7 @@ class AboutPillarsSection extends StatelessWidget {
           badgeIcon: Icons.campaign_rounded,
           title: 'Nacionalni Mali Oglasi za celu Srbiju',
           subtitle:
-              'Potpuno besplatna berza za oglašavanje poljoprivredne mehanizacije, stoke, alata, vozila, kućnih aparata, opreme za decu i nekretnina. Oglasite brzo i bez ikakvih skrivenih nameta.',
+              'Potpuno besplatan oglasnik u kom svako može da postavi oglas za bilo šta — telefone, računare, tehniku, automobile, nameštaj, odeću, opremu za decu, nekretnine, alate, kućne ljubimce ili poljoprivredu, brzo i bez ikakvih skrivenih nameta.',
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

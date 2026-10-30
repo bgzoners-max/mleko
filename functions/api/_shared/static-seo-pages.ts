@@ -38,11 +38,11 @@ const BASE_ROUTES: Record<string, RouteSeo> = {
   "/classifieds": {
     title: `Besplatni Mali Oglasi u Srbiji | ${SITE_NAME}`,
     description:
-      "Besplatni mali oglasi u Srbiji bez provizije: traktori, automobili, poljoprivredne mašine, alati, nekretnine, stoka, tehnika i oprema. Postavite oglas potpuno besplatno.",
+      "Besplatni mali oglasi u Srbiji bez provizije za sve vrste oglasa: telefoni, računari, tehnika, automobili, nekretnine, nameštaj, odeća, alati, poljoprivreda i usluge. Postavite oglas potpuno besplatno.",
     heading: "Besplatni Mali Oglasi u Srbiji — 0 dinara provizije",
     paragraphs: [
       "Postavite oglas potpuno besplatno, bez skrivenih troškova i bez limita. Vraćanje oglasa na vrh pretrage (obnavljanje) košta tačno 0 dinara kad god poželite.",
-      "Istražite kategorije malih oglasa: poljoprivreda i mehanizacija, vozila i auto-moto, mašine i alati, dom i bašta, mobilni telefoni, računari i elektronika, nekretnine, građevinarstvo, odeća i obuća, sve za decu i bebe, sport i hobi, kućni ljubimci, usluge, zdravlje i lepota, knjige i umetnost i rukotvorine.",
+      "Istražite sve kategorije malih oglasa gde svako može besplatno da postavi oglas za bilo šta: mobilni telefoni, računari i elektronika, vozila i auto-moto, nekretnine, dom i bašta, odeća i obuća, sve za decu i bebe, mašine i alati, sport i hobi, kućni ljubimci, poljoprivreda, usluge, zdravlje i lepota, knjige i umetnost.",
     ],
   },
   "/categories": {
@@ -81,7 +81,7 @@ const BASE_ROUTES: Record<string, RouteSeo> = {
       "Domaći Market povezuje lokalne poljoprivredne proizvođače i seoska gazdinstva sa kupcima širom Srbije — pijaca domaće hrane i besplatni mali oglasi bez provizije.",
     heading: "O Domaćem Marketu",
     paragraphs: [
-      "Domaći Market je platforma koja objedinjuje dve celine: direktnu pijacu domaće hrane sa seoskih poljoprivrednih gazdinstava i 100% besplatne male oglase za kupovinu i prodaju mehanizacije, vozila, alata, tehnike i nekretnina — bez posrednika i bez provizije.",
+      "Domaći Market je platforma koja objedinjuje dve celine: direktnu pijacu domaće hrane i 100% besplatne male oglase gde svako može da kupi ili proda bilo šta — telefone, tehniku, vozila, nameštaj, odeću, alate i nekretnine — bez posrednika i bez provizije.",
       "Misija platforme je da vrati poverenje između domaćina i kupaca: svako gazdinstvo se registruje sa verifikovanom lokacijom i kontakt telefonom.",
     ],
   },
@@ -92,7 +92,7 @@ const BASE_ROUTES: Record<string, RouteSeo> = {
     heading:
       "Vodič za proizvođače — kako postaviti domaće proizvode na domacimarket.rs",
     paragraphs: [
-      "Domaći Market ima dva dela: Pijacu domaće hrane, gde poljoprivredna gazdinstva otvaraju svoju online tezgu i primaju porudžbine, i 100% besplatne Male oglase, namenjene mehanizaciji, vozilima, alatima, nekretninama i svemu što nije hrana. Domaća hrana — sir, kajmak, mleko, meso, med, zimnica, jaja, rakije — izlaže se isključivo na Pijaci.",
+      "Domaći Market ima dva dela: Pijacu domaće hrane, gde proizvođači otvaraju svoju online tezgu i primaju porudžbine, i 100% besplatne Male oglase, gde svako može besplatno da postavi oglas za bilo šta (telefone, tehniku, vozila, nameštaj, odeću, nekretnine, alate i usluge). Domaća hrana — sir, kajmak, mleko, meso, med, zimnica, jaja, rakije — izlaže se isključivo na Pijaci.",
       "Postavljanje proizvoda je jednostavno i besplatno: registrujte nalog, otvorite prodavnički profil („Postani prodavac“), dodajte proizvode sa fotografijama, cenom i mernom jedinicom, a kupci vas pronalaze kroz kategorije, pretragu i mapu gazdinstava i šalju porudžbine direktno vama. Platforma ne naplaćuje proviziju niti učestvuje u naplati.",
     ],
   },

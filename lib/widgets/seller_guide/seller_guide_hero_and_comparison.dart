@@ -84,7 +84,7 @@ class SellerGuideHeroAndComparisonSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Domaći Market ima dva dela: Pijacu domaće hrane, gde proizvođači izlazu svoje proizvode i primaju porudžbine, i besplatne Male oglase, namenjene svemu ostalom — mehanizaciji, vozilima, alatima, nekretninama. Ovaj vodič objašnjava razliku i vodi vas kroz postavljanje ponude u nekoliko jednostavnih koraka.',
+                'Domaći Market ima dva dela: Pijacu domaće hrane, gde proizvođači izlažu svoje proizvode i primaju porudžbine, i besplatne Male oglase, gde svako može besplatno da postavi oglas za bilo šta — telefone, tehniku, automobile, nameštaj, odeću, alate ili nekretnine. Ovaj vodič objašnjava razliku i vodi vas kroz postavljanje ponude u nekoliko jednostavnih koraka.',
                 style: TextStyle(
                   fontSize: isTablet ? 15.5 : 14,
                   height: 1.5,
@@ -168,10 +168,10 @@ class SellerGuideHeroAndComparisonSection extends StatelessWidget {
                       badgeIcon: Icons.campaign_rounded,
                       title: 'Mali oglasi (100% besplatno)',
                       subtitle:
-                          'Za sve što nije hrana — jednostavno oglasi i dogovori se',
+                          'Oglasi za bilo šta — svako može da postavi oglas za sve vrste stvari',
                       bullets: const [
-                        'Traktori, poljoprivredne mašine, alati, vozila, bela tehnika...',
-                        'Nekretnine, nameštaj, stvari za decu, oprema, domaće životinje, usluge',
+                        'Telefoni, računari, tehnika, automobili, nameštaj, odeća, knjige...',
+                        'Nekretnine, stvari za decu, alati, poljoprivreda, kućni ljubimci, usluge',
                         'Postavljanje i obnavljanje oglasa uvek košta 0 dinara',
                         'Kupci vas kontaktiraju direktno — bez posrednika i provizije',
                       ],

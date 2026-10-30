@@ -355,7 +355,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Mali oglasi gazdinstva',
+                        'Mali oglasi',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -363,7 +363,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                         ),
                       ),
                       Text(
-                        'Stoka, mehanizacija, sirovine i ostali oglasi',
+                        'Telefoni, tehnika, vozila, nameštaj, alati, nekretnine i sve ostalo',
                         style: TextStyle(
                           fontSize: 11,
                           color: isDark

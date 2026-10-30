@@ -59,7 +59,7 @@ class ClassifiedSearchBar extends StatelessWidget {
                 color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: 'Pretraži male oglase (traktori, mehanizacija, alati, tehnika...)',
+                hintText: 'Pretraži male oglase (telefoni, automobili, nameštaj, tehnika, alati...)',
                 hintStyle: TextStyle(
                   fontSize: 13,
                   color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
