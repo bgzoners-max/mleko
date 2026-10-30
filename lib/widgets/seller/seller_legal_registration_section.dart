@@ -18,6 +18,7 @@ class SellerLegalRegistrationSection extends StatefulWidget {
 
 class _SellerLegalRegistrationSectionState
     extends State<SellerLegalRegistrationSection> {
+  bool _isRegisteredEntity = false;
   ProducerLegalType _legalType = ProducerLegalType.rpg;
   final _bpgController = TextEditingController();
   final _pibController = TextEditingController();
@@ -36,6 +37,10 @@ class _SellerLegalRegistrationSectionState
 
   void _populate(UserModel user) {
     _populatedUserId = user.id;
+    final hasBpgOrPib = (user.bpg != null && user.bpg!.isNotEmpty) ||
+        (user.pib != null && user.pib!.isNotEmpty) ||
+        user.hasRegisteredEntity;
+    _isRegisteredEntity = hasBpgOrPib;
     final parsed = ProducerLegalType.fromDbValue(user.legalType);
     if (parsed != null) {
       _legalType = parsed;
@@ -62,17 +67,19 @@ class _SellerLegalRegistrationSectionState
     if (user == null) return;
 
     final isRpg = _legalType == ProducerLegalType.rpg;
-    if (isRpg) {
-      final err = SellerRegistrationValidator.validateBpg(_bpgController.text);
-      if (err != null) {
-        setState(() => _error = err);
-        return;
-      }
-    } else {
-      final err = SellerRegistrationValidator.validatePib(_pibController.text);
-      if (err != null) {
-        setState(() => _error = err);
-        return;
+    if (_isRegisteredEntity) {
+      if (isRpg) {
+        final err = SellerRegistrationValidator.validateBpg(_bpgController.text);
+        if (err != null) {
+          setState(() => _error = err);
+          return;
+        }
+      } else {
+        final err = SellerRegistrationValidator.validatePib(_pibController.text);
+        if (err != null) {
+          setState(() => _error = err);
+          return;
+        }
       }
     }
 
@@ -81,10 +88,10 @@ class _SellerLegalRegistrationSectionState
       _saving = true;
     });
 
-    final cleanedBpg = isRpg
+    final cleanedBpg = (_isRegisteredEntity && isRpg)
         ? SellerRegistrationValidator.normalizeDigits(_bpgController.text)
         : null;
-    final cleanedPib = !isRpg
+    final cleanedPib = (_isRegisteredEntity && !isRpg)
         ? SellerRegistrationValidator.normalizeDigits(_pibController.text)
         : null;
 
@@ -92,7 +99,7 @@ class _SellerLegalRegistrationSectionState
       'Update seller legal registration',
       () => usersService.upsertProfile(
         user.id,
-        legalType: _legalType.dbValue,
+        legalType: _isRegisteredEntity ? _legalType.dbValue : null,
         bpg: cleanedBpg,
         pib: cleanedPib,
         legalLiabilityAcceptedAt:
@@ -149,7 +156,7 @@ class _SellerLegalRegistrationSectionState
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Status proizvođača (RPG / Pravno lice)',
+                  'Status proizvođača hrane',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -175,63 +182,96 @@ class _SellerLegalRegistrationSectionState
           ),
           const SizedBox(height: 8),
           Text(
-            'Unesite 12-cifreni BPG poljoprivrednog gazdinstva ili 9-cifreni PIB firme/preduzetnika. Kupcima se na vašem profilu prikazuje oznaka registrovanog proizvođača.',
+            'Izaberite da li nastupate kao domaćinstvo (fizičko lice) ili kao registrovano poljoprivredno gazdinstvo (BPG) / preduzetnik (PIB).',
             style: theme.textTheme.bodySmall?.copyWith(
               color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
               height: 1.35,
             ),
           ),
           const SizedBox(height: 14),
-          SegmentedButton<ProducerLegalType>(
+          SegmentedButton<bool>(
             segments: const [
-              ButtonSegment<ProducerLegalType>(
-                value: ProducerLegalType.rpg,
-                icon: Icon(Icons.agriculture_outlined, size: 17),
-                label: Text('Poljoprivredno gazdinstvo (BPG)'),
+              ButtonSegment<bool>(
+                value: false,
+                icon: Icon(Icons.home_outlined, size: 17),
+                label: Text('Domaćinstvo / Fizičko lice'),
               ),
-              ButtonSegment<ProducerLegalType>(
-                value: ProducerLegalType.company,
-                icon: Icon(Icons.business_outlined, size: 17),
-                label: Text('Pravno lice / Preduzetnik (PIB)'),
+              ButtonSegment<bool>(
+                value: true,
+                icon: Icon(Icons.verified_outlined, size: 17),
+                label: Text('Gazdinstvo ili Preduzetnik'),
               ),
             ],
-            selected: {_legalType},
+            selected: {_isRegisteredEntity},
             onSelectionChanged: (sel) {
               setState(() {
-                _legalType = sel.first;
+                _isRegisteredEntity = sel.first;
                 _error = null;
               });
             },
           ),
-          const SizedBox(height: 14),
-          if (isRpg)
-            TextField(
-              controller: _bpgController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-]')),
-                LengthLimitingTextInputFormatter(16),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'BPG (Broj poljoprivrednog gazdinstva – 12 cifara)',
-                hintText: 'npr. 801234567890',
-                helperText: 'Pun broj BPG-a nije javno vidljiv drugim korisnicima.',
-              ),
-            )
-          else
-            TextField(
-              controller: _pibController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-]')),
-                LengthLimitingTextInputFormatter(12),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'PIB (Poreski identifikacioni broj – 9 cifara)',
-                hintText: 'npr. 100001011',
-                helperText: 'Unesite 9-cifreni PIB sa ispravnom kontrolnom cifrom.',
+          if (!_isRegisteredEntity) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Trenutni status: Domaćinstvo / Fizičko lice (bez BPG/PIB broja). Ako imate registrovano gazdinstvo ili firmu, prebacite na drugu opciju za zeleni bedž verifikovanog proizvođača.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                height: 1.35,
               ),
             ),
+          ] else ...[
+            const SizedBox(height: 14),
+            SegmentedButton<ProducerLegalType>(
+              segments: const [
+                ButtonSegment<ProducerLegalType>(
+                  value: ProducerLegalType.rpg,
+                  icon: Icon(Icons.agriculture_outlined, size: 17),
+                  label: Text('Poljoprivredno gazdinstvo (BPG)'),
+                ),
+                ButtonSegment<ProducerLegalType>(
+                  value: ProducerLegalType.company,
+                  icon: Icon(Icons.business_outlined, size: 17),
+                  label: Text('Preduzetnik / Firma (PIB)'),
+                ),
+              ],
+              selected: {_legalType},
+              onSelectionChanged: (sel) {
+                setState(() {
+                  _legalType = sel.first;
+                  _error = null;
+                });
+              },
+            ),
+            const SizedBox(height: 14),
+            if (isRpg)
+              TextField(
+                controller: _bpgController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-]')),
+                  LengthLimitingTextInputFormatter(16),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'BPG (Broj poljoprivrednog gazdinstva – 12 cifara)',
+                  hintText: 'npr. 801234567890',
+                  helperText: 'Pun broj BPG-a nije javno vidljiv drugim korisnicima.',
+                ),
+              )
+            else
+              TextField(
+                controller: _pibController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-]')),
+                  LengthLimitingTextInputFormatter(12),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'PIB (Poreski identifikacioni broj – 9 cifara)',
+                  hintText: 'npr. 100001011',
+                  helperText: 'Unesite 9-cifreni PIB sa ispravnom kontrolnom cifrom.',
+                ),
+              ),
+          ],
           if (_error != null) ...[
             const SizedBox(height: 10),
             Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
@@ -253,7 +293,9 @@ class _SellerLegalRegistrationSectionState
                         ),
                       )
                     : const Icon(Icons.save_outlined, size: 18),
-                label: const Text('Sačuvaj BPG / PIB'),
+                label: Text(_isRegisteredEntity
+                    ? 'Sačuvaj BPG / PIB'
+                    : 'Sačuvaj status'),
               ),
             ),
           ),
@@ -295,7 +337,7 @@ class SellerUnregisteredWarningBanner extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Unesite BPG gazdinstva ili PIB firme kako bi vaš profil dobio oznaku verifikovanog proizvođača.',
+              'Nastupate kao domaćinstvo / fizičko lice. Ako imate registrovano gazdinstvo (BPG) ili firmu (PIB), možete ih uneti za zeleni bedž verifikovanog proizvođača.',
               style: TextStyle(
                 fontSize: 13,
                 height: 1.35,
