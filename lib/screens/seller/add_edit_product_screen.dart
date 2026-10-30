@@ -413,6 +413,17 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     setState(() => _loading = false);
 
     if (result.isSuccess) {
+      if (user.legalLiabilityAcceptedAt == null) {
+        try {
+          final appState = context.read<AppState>();
+          await UsersService().upsertProfile(
+            user.id,
+            legalLiabilityAcceptedAt: DateTime.now().toUtc(),
+          );
+          await appState.refreshUser();
+        } catch (_) {}
+      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content:
