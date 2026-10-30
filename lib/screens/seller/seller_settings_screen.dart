@@ -1,16 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/responsive.dart';
+import '../../models/user_model.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
-import '../../core/utils/error_messages.dart';
 import '../../widgets/app_back_button.dart';
+import '../../widgets/profile/seller_gallery_section.dart';
 import '../../widgets/seller_delivery_settings_tab.dart';
 
 /// Podešavanja prodavca: lokacija, priča, galerija
@@ -26,11 +25,12 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _storyController = TextEditingController();
+  late final List<TextEditingController> _quickReplyControllers =
+      List.generate(5, (_) => TextEditingController());
   bool _loading = false;
   bool _quickRepliesSaving = false;
   String _quickRepliesError = '';
   String? _error;
-  List<String> _galleryUrls = [];
 
   @override
   void initState() {
@@ -41,14 +41,26 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
     _tabController = TabController(length: 5, vsync: this, initialIndex: safeIndex);
     _tabController.addListener(() => setState(() {}));
     final user = context.read<AppState>().user;
+    _populateFromUser(user);
+  }
+
+  void _populateFromUser(UserModel? user) {
     _storyController.text = user?.sellerStory ?? '';
-    _galleryUrls = List.from(user?.farmGalleryUrls ?? []);
+    if (!_quickRepliesSaving) {
+      final existing = user?.sellerQuickReplies ?? const [];
+      for (int i = 0; i < _quickReplyControllers.length; i++) {
+        _quickReplyControllers[i].text = i < existing.length ? existing[i] : '';
+      }
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _storyController.dispose();
+    for (final c in _quickReplyControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -172,81 +184,6 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       }
     } else {
       setState(() => _error = resultAction.error?.getUserMessage());
-    }
-  }
-
-  Future<void> _addGalleryPhoto() async {
-    final appState = context.read<AppState>();
-    final usersService = context.read<UsersService>();
-    final messenger = ScaffoldMessenger.of(context);
-    final xFile = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (xFile == null) return;
-    final user = appState.user;
-    if (!mounted || user == null) return;
-    setState(() => _loading = true);
-
-    final resultAction = await ErrorHandlerService()
-        .executeWithResult('Add gallery photo', () async {
-      final bytes = await xFile.readAsBytes();
-      final sizeErr = checkFileSize(bytes);
-      if (sizeErr != null) {
-        throw Exception(sizeErr);
-      }
-      final url = await StorageService()
-          .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
-      final newUrls = [..._galleryUrls, url];
-      await usersService.updateFarmGallery(user.id, newUrls);
-      return newUrls;
-    });
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    if (resultAction.isSuccess) {
-      setState(() => _galleryUrls = resultAction.data!);
-      await appState.refreshUser();
-      if (mounted) {
-        messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
-      }
-    } else {
-      messenger.showSnackBar(SnackBar(
-          content: Text(resultAction.error?.getUserMessage() ?? 'Greška'),
-          backgroundColor: Colors.red));
-    }
-  }
-
-  Future<void> _removeGalleryPhoto(int index) async {
-    final appState = context.read<AppState>();
-    final usersService = context.read<UsersService>();
-    final user = appState.user;
-    if (user == null) return;
-    final removed = _galleryUrls[index];
-    final updated = List<String>.from(_galleryUrls)..removeAt(index);
-    setState(() {
-      _galleryUrls = updated;
-      _loading = true;
-    });
-
-    final resultAction = await ErrorHandlerService().executeWithResult(
-      'Remove gallery photo',
-      () => usersService.updateFarmGallery(user.id, updated),
-    );
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-
-    if (resultAction.isSuccess) {
-      await appState.refreshUser();
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Slika uklonjena.')));
-      }
-    } else {
-      setState(
-          () => _galleryUrls = List.from(_galleryUrls)..insert(index, removed));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(resultAction.error?.getUserMessage() ?? 'Greška')));
     }
   }
 
@@ -561,178 +498,117 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   }
 
   Widget _buildGalleryTab() {
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(16),
+      child: SellerGallerySection(),
+    );
+  }
+
+  Widget _buildQuickRepliesTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Dodajte fotografije gazdinstva, radionice, lokacije ili delatnosti (opciono).',
+            'Dodaj 3–5 poruka koje najčešće šalješ kupcima u chatu (npr. vreme preuzimanja, način dostave, zahvalnica). Ove poruke će se pojaviti kao brzi odgovori ispod polja za unos poruke.',
             style: TextStyle(color: Colors.grey.shade700),
           ),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ..._galleryUrls.asMap().entries.map((e) => Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: e.value,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          memCacheWidth: 200,
-                          memCacheHeight: 200,
-                        ),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white),
-                          style: IconButton.styleFrom(
-                              backgroundColor: Colors.black54),
-                          onPressed: () => _removeGalleryPhoto(e.key),
-                        ),
-                      ),
-                    ],
-                  )),
-              if (_galleryUrls.length < 10)
-                GestureDetector(
-                  onTap: _loading ? null : _addGalleryPhoto,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(8)),
-                    child: _loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : const Icon(Icons.add_photo_alternate, size: 40),
+          const SizedBox(height: 16),
+          for (int i = 0; i < _quickReplyControllers.length; i++) ...[
+            TextField(
+              controller: _quickReplyControllers[i],
+              decoration: InputDecoration(
+                labelText: 'Šablon ${i + 1}',
+                hintText: i == 0 ? 'npr. Dostupno sutra u 10 h' : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_quickRepliesError.isNotEmpty) ...[
+            Text(_quickRepliesError, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 12),
+          ],
+          const SizedBox(height: 12),
+          Align(
+            alignment: !Breakpoints.isPhone(context)
+                ? Alignment.centerRight
+                : Alignment.center,
+            child: SizedBox(
+              width: !Breakpoints.isPhone(context) ? null : double.infinity,
+              child: FilledButton.icon(
+                onPressed: _quickRepliesSaving
+                    ? null
+                    : () async {
+                        setState(() {
+                          _quickRepliesError = '';
+                          _quickRepliesSaving = true;
+                        });
+
+                        final appState = context.read<AppState>();
+                        final usersService = context.read<UsersService>();
+                        final u = appState.user;
+                        if (u == null) {
+                          setState(() => _quickRepliesSaving = false);
+                          return;
+                        }
+
+                        final resultAction = await ErrorHandlerService()
+                            .executeWithResult('Update quick replies', () {
+                          final replies = _quickReplyControllers
+                              .map((c) => c.text)
+                              .toList();
+                          return usersService.updateSellerQuickReplies(
+                              u.id, replies);
+                        });
+
+                        if (!mounted) return;
+                        setState(() => _quickRepliesSaving = false);
+
+                        if (resultAction.isSuccess) {
+                          await appState.refreshUser();
+                          if (mounted) {
+                            _populateFromUser(appState.user);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Brzi odgovori sačuvani.')));
+                          }
+                        } else {
+                          setState(() => _quickRepliesError =
+                              resultAction.error?.getUserMessage() ?? 'Greška');
+                        }
+                      },
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: !Breakpoints.isPhone(context) ? 24 : 16,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-            ],
+                icon: _quickRepliesSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check, size: 18),
+                label: const Text(
+                  'Sačuvaj brze odgovore',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildQuickRepliesTab() {
-    final user = context.watch<AppState>().user;
-    final existing = user?.sellerQuickReplies ?? const [];
-    final controllers = List<TextEditingController>.generate(
-      5,
-      (i) =>
-          TextEditingController(text: i < existing.length ? existing[i] : ''),
-    );
-    return StatefulBuilder(
-      builder: (ctx, setState) {
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Dodaj 3–5 poruka koje najčešće šalješ kupcima u chatu (npr. vreme preuzimanja, način dostave, zahvalnica). Ove poruke će se pojaviti kao brzi odgovori ispod polja za unos poruke.',
-                style: TextStyle(color: Colors.grey.shade700),
-              ),
-              const SizedBox(height: 16),
-              for (int i = 0; i < controllers.length; i++) ...[
-                TextField(
-                  controller: controllers[i],
-                  decoration: InputDecoration(
-                    labelText: 'Šablon ${i + 1}',
-                    hintText: i == 0 ? 'npr. Dostupno sutra u 10 h' : null,
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (_quickRepliesError.isNotEmpty) ...[
-                Text(_quickRepliesError,
-                    style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 12),
-              ],
-              const SizedBox(height: 12),
-              Align(
-                alignment: !Breakpoints.isPhone(context)
-                    ? Alignment.centerRight
-                    : Alignment.center,
-                child: SizedBox(
-                  width: !Breakpoints.isPhone(context) ? null : double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _quickRepliesSaving
-                        ? null
-                        : () async {
-                            this.setState(() {
-                              _quickRepliesError = '';
-                              _quickRepliesSaving = true;
-                            });
-
-                            final appState = context.read<AppState>();
-                            final usersService = context.read<UsersService>();
-                            final u = appState.user;
-                            if (u == null) return;
-
-                            final resultAction = await ErrorHandlerService()
-                                .executeWithResult('Update quick replies', () {
-                              final replies =
-                                  controllers.map((c) => c.text).toList();
-                              return usersService.updateSellerQuickReplies(
-                                  u.id, replies);
-                            });
-
-                            if (!mounted) return;
-                            this.setState(() => _quickRepliesSaving = false);
-
-                            if (resultAction.isSuccess) {
-                              await appState.refreshUser();
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Brzi odgovori sačuvani.')));
-                              }
-                            } else {
-                              this.setState(() => _quickRepliesError =
-                                  resultAction.error?.getUserMessage() ?? 'Greška');
-                            }
-                          },
-                    style: FilledButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: !Breakpoints.isPhone(context) ? 24 : 16,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    icon: _quickRepliesSaving
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check, size: 18),
-                    label: const Text(
-                      'Sačuvaj brze odgovore',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

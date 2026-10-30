@@ -112,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final isSeller = context.select<AppState, bool>((s) => s.user?.isSeller ?? false);
     final unreadCount =
         context.select<AppState, int>((s) => s.unreadNotificationCount);
+    final cartCount = context.select<CartProvider, int>((cart) => cart.count);
 
     final isWide = isTwoPaneLayout;
     final isTablet = Breakpoints.isTablet(context);
@@ -234,8 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   constraints:
                       const BoxConstraints(minWidth: 36, minHeight: 36),
                   icon: Badge(
-                    isLabelVisible: context.watch<CartProvider>().count > 0,
-                    label: Text('${context.watch<CartProvider>().count}'),
+                    isLabelVisible: cartCount > 0,
+                    label: Text('$cartCount'),
                     backgroundColor: AmazonColors.amber,
                     textColor: AmazonColors.darkNavy,
                     child: const Icon(Icons.shopping_cart_outlined, size: 22),

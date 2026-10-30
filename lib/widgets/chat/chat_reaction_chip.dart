@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/design_system.dart';
 import '../../models/message_reaction_model.dart';
 import '../emoji_text.dart';
 
@@ -10,6 +11,7 @@ class ChatReactionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -17,12 +19,12 @@ class ChatReactionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: reaction.reactedByMe
               ? Theme.of(context).colorScheme.primaryContainer
-              : Colors.grey.shade100,
+              : (isDark ? AmazonColors.darkCard : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: reaction.reactedByMe
                 ? Theme.of(context).colorScheme.primary
-                : Colors.grey.shade300,
+                : (isDark ? AmazonColors.darkBorder : Colors.grey.shade300),
           ),
         ),
         child: Row(

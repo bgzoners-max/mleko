@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/design_system.dart';
 import '../models/order_model.dart';
 
 class OrderStatusTimeline extends StatelessWidget {
@@ -51,9 +52,10 @@ class OrderStatusTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor =
         _isStopped ? Colors.red.shade600 : Colors.green.shade700;
-    final inactiveColor = Colors.grey.shade400;
+    final inactiveColor = isDark ? AmazonColors.darkBorder : Colors.grey.shade400;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +67,9 @@ class OrderStatusTimeline extends StatelessWidget {
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: i <= _activeIndex ? activeColor : Colors.white,
+                  color: i <= _activeIndex
+                      ? activeColor
+                      : (isDark ? AmazonColors.darkCard : Colors.white),
                   border: Border.all(
                     color: i <= _activeIndex ? activeColor : inactiveColor,
                     width: 2,
@@ -98,8 +102,12 @@ class OrderStatusTimeline extends StatelessWidget {
                     fontWeight:
                         i <= _activeIndex ? FontWeight.w600 : FontWeight.w400,
                     color: i <= _activeIndex
-                        ? Colors.grey.shade800
-                        : Colors.grey.shade500,
+                        ? (isDark
+                            ? AmazonColors.darkTextPrimary
+                            : Colors.grey.shade800)
+                        : (isDark
+                            ? AmazonColors.darkTextSecondary
+                            : Colors.grey.shade500),
                   ),
                   textAlign: i == 0
                       ? TextAlign.left
@@ -116,7 +124,11 @@ class OrderStatusTimeline extends StatelessWidget {
           _statusHint,
           style: TextStyle(
             fontSize: 12,
-            color: _isStopped ? Colors.red.shade700 : Colors.grey.shade800,
+            color: _isStopped
+                ? (isDark ? Colors.red.shade300 : Colors.red.shade700)
+                : (isDark
+                    ? AmazonColors.darkTextPrimary
+                    : Colors.grey.shade800),
             fontWeight: _isStopped ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

@@ -121,13 +121,25 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber.shade50,
+                                      color: isDark
+                                          ? Colors.amber.shade900.withValues(alpha: 0.25)
+                                          : Colors.amber.shade50,
                                       borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.amber.shade300),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? Colors.amber.shade700
+                                            : Colors.amber.shade300,
+                                      ),
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(Icons.shield_outlined, size: 18, color: Colors.amber.shade900),
+                                        Icon(
+                                          Icons.shield_outlined,
+                                          size: 18,
+                                          color: isDark
+                                              ? Colors.amber.shade200
+                                              : Colors.amber.shade900,
+                                        ),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
@@ -135,11 +147,19 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
                                             style: TextStyle(
                                               fontSize: 12.5,
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.amber.shade900,
+                                              color: isDark
+                                                  ? Colors.amber.shade200
+                                                  : Colors.amber.shade900,
                                             ),
                                           ),
                                         ),
-                                        Icon(Icons.chevron_right, size: 18, color: Colors.amber.shade900),
+                                        Icon(
+                                          Icons.chevron_right,
+                                          size: 18,
+                                          color: isDark
+                                              ? Colors.amber.shade200
+                                              : Colors.amber.shade900,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -262,7 +282,9 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
                                   mainAxisSpacing: 12,
                                   ),
                                 itemCount: classifieds.ads.length,
-                                itemBuilder: (ctx, i) => ClassifiedAdCard(ad: classifieds.ads[i]),
+                                itemBuilder: (ctx, i) => RepaintBoundary(
+                                  child: ClassifiedAdCard(ad: classifieds.ads[i]),
+                                ),
                               ),
                               if (classifieds.loadingMore)
                                 const Padding(

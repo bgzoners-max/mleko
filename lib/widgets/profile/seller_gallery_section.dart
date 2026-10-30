@@ -8,9 +8,9 @@ import '../../services/services.dart';
 import '../../core/utils/error_messages.dart';
 
 class SellerGallerySection extends StatefulWidget {
-  final UserModel user;
+  final UserModel? user;
 
-  const SellerGallerySection({super.key, required this.user});
+  const SellerGallerySection({super.key, this.user});
 
   @override
   State<SellerGallerySection> createState() => _SellerGallerySectionState();
@@ -23,7 +23,8 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
   @override
   void initState() {
     super.initState();
-    _galleryUrls = List.from(widget.user.farmGalleryUrls);
+    final initialUser = widget.user ?? context.read<AppState>().user;
+    _galleryUrls = List.from(initialUser?.farmGalleryUrls ?? const []);
   }
 
   Future<void> _addPhoto() async {
@@ -95,7 +96,7 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
   @override
   Widget build(BuildContext context) {
     final currentUser = context.watch<AppState>().user ?? widget.user;
-    final urls = currentUser.farmGalleryUrls;
+    final urls = currentUser?.farmGalleryUrls ?? const <String>[];
     final displayUrls = _galleryUrls.isNotEmpty ? _galleryUrls : urls;
     return Card(
       child: Padding(

@@ -428,12 +428,22 @@ class SupabaseChatRepository implements ChatRepository {
   @override
   Future<void> markAsRead(String conversationId, String currentUserId) async {
     try {
+      try {
+        await _client.rpc(
+          'mark_conversation_read',
+          params: {'p_conversation_id': conversationId},
+        );
+        return;
+      } on PostgrestException catch (e) {
+        if (e.code != '42883') rethrow;
+      }
+
       await _client
           .from('messages')
-          .update({'is_read': true})
+          .update({'read_at': DateTime.now().toUtc().toIso8601String()})
           .eq('conversation_id', conversationId)
           .neq('sender_id', currentUserId)
-          .eq('is_read', false);
+          .isFilter('read_at', null);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

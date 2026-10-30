@@ -6,6 +6,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../../supabase_config.dart';
 import '../core/logger_service.dart';
+import '../core/secure_local_storage.dart';
 import 'order_queue_service.dart';
 import 'order_sync_service.dart';
 import 'orders_service.dart';
@@ -113,6 +114,9 @@ class BackgroundSyncService {
     await Supabase.initialize(
       url: SupabaseConfig.url,
       publishableKey: SupabaseConfig.publishableKey,
+      authOptions: FlutterAuthClientOptions(
+        localStorage: SecureLocalStorage(),
+      ),
     );
 
     try {

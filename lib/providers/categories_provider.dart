@@ -15,6 +15,7 @@ class CategoriesProvider extends ChangeNotifier {
   List<CategoryGroup>? _groups;
   bool _loading = false;
   bool _loaded = false;
+  bool _isDisposed = false;
   Object? _error;
 
   List<Category>? get categories => _categories;
@@ -78,7 +79,11 @@ class CategoriesProvider extends ChangeNotifier {
     _error = null;
     // Defer to avoid calling notifyListeners during a build phase
     // (e.g. when load() is triggered from didChangeDependencies).
-    SchedulerBinding.instance.addPostFrameCallback((_) => notifyListeners());
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!_isDisposed) {
+        notifyListeners();
+      }
+    });
     try {
       final list = await _effectiveService.getAllCategories();
       _groups = _buildGroups(list);
@@ -89,8 +94,16 @@ class CategoriesProvider extends ChangeNotifier {
       LoggerService.error('Failed to load categories', e, stackTrace: st);
     } finally {
       _loading = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        notifyListeners();
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 
   /// Gradi grupe za dropdown: svaka kategorija sa decom = grupa (3 nivoa).

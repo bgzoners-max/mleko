@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/design_system.dart';
 
 class SearchHistoryPanel extends StatelessWidget {
   final Future<List<String>> historyFuture;
@@ -23,9 +24,11 @@ class SearchHistoryPanel extends StatelessWidget {
       builder: (context, snap) {
         final history = snap.data ?? [];
         if (history.isEmpty) return const SizedBox.shrink();
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           width: double.infinity,
-          color: Colors.white.withValues(alpha: 0.5),
+          color: (isDark ? AmazonColors.darkCard : Colors.white)
+              .withValues(alpha: 0.5),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

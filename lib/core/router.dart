@@ -73,7 +73,7 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 GoRouter createRouter(AppState appState) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    refreshListenable: appState,
+    refreshListenable: appState.authSession,
     initialLocation: kIsWeb ? '/' : '/splash',
     redirect: (context, state) => routerRedirect(context, state, appState),
     errorBuilder: (context, state) => Scaffold(

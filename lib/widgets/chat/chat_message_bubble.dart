@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/design_system.dart';
 import '../../models/message_model.dart';
 import '../../models/message_reaction_model.dart';
 import '../../services/communication/chat_service.dart';
@@ -35,6 +36,7 @@ class ChatMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment:
@@ -54,7 +56,7 @@ class ChatMessageBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isMe
                     ? Theme.of(context).colorScheme.primaryContainer
-                    : Colors.grey.shade200,
+                    : (isDark ? const Color(0xFF253229) : Colors.grey.shade200),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -78,7 +80,9 @@ class ChatMessageBubble extends StatelessWidget {
                       style: TextStyle(
                         color: isMe
                             ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Colors.black87,
+                            : (isDark
+                                ? AmazonColors.darkTextPrimary
+                                : Colors.black87),
                       ),
                     ),
                   Padding(
@@ -96,7 +100,7 @@ class ChatMessageBubble extends StatelessWidget {
                                     .colorScheme
                                     .onPrimaryContainer
                                     .withValues(alpha: 0.7)
-                                : Colors.black38,
+                                : (isDark ? Colors.white54 : Colors.black38),
                           ),
                         ),
                         if (isMe) ...[

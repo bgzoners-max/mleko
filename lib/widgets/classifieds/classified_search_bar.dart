@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/design_system.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 
 class ClassifiedSearchBar extends StatelessWidget {
   final ClassifiedsProvider classifieds;

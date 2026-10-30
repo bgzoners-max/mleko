@@ -117,7 +117,7 @@ class SupabaseProductsRepository implements ProductsRepository {
   Future<ProductModel> createProduct(ProductModel product) async {
     final res = await _client
         .from('products')
-        .insert(product.toJson())
+        .insert(product.toDbMap())
         .select()
         .single();
     return ProductModel.fromJson(res);
@@ -127,7 +127,7 @@ class SupabaseProductsRepository implements ProductsRepository {
   Future<ProductModel> updateProduct(ProductModel product) async {
     final res = await _client
         .from('products')
-        .update(product.toJson())
+        .update(product.toDbMap(includeId: false, includeCreatedAt: false))
         .eq('id', product.id)
         .select()
         .single();

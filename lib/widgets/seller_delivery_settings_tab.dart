@@ -27,6 +27,7 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     final sellerId = context.read<AppState>().user?.id;
     if (sellerId == null) {
       setState(() {
@@ -390,6 +391,7 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
     if (!confirmed) return;
 
     await _service.deleteDeliveryPoint(point.id);
+    if (!mounted) return;
     await _load();
   }
 
@@ -417,12 +419,14 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
     if (!confirmed) return;
 
     await _service.deleteDeliverySlot(slot.id);
+    if (!mounted) return;
     await _load();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -431,8 +435,9 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
         children: [
           Text(
             'Dodaj gradove, mesta preuzimanja i termine u kojima lično dostavljaš. Kupac će u checkout-u birati tačan grad, lokaciju i termin.',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: Colors.grey.shade700),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+            ),
           ),
           const SizedBox(height: 16),
           Align(
@@ -450,12 +455,20 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: isDark
+                    ? Colors.red.shade900.withValues(alpha: 0.25)
+                    : Colors.red.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(
+                  color: isDark ? Colors.red.shade700 : Colors.red.shade200,
+                ),
               ),
-              child:
-                  Text(_error!, style: TextStyle(color: Colors.red.shade800)),
+              child: Text(
+                _error!,
+                style: TextStyle(
+                  color: isDark ? Colors.red.shade200 : Colors.red.shade800,
+                ),
+              ),
             )
           else if (_points.isEmpty)
             Container(
@@ -477,6 +490,7 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
 
   Widget _buildPointCard(SellerDeliveryPointModel point) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -543,12 +557,17 @@ class _SellerDeliverySettingsTabState extends State<SellerDeliverySettingsTab> {
                   decoration: BoxDecoration(
                     color: slot.isActive
                         ? theme.colorScheme.surfaceContainerHighest
-                        : Colors.grey.shade100,
+                        : (isDark
+                            ? theme.colorScheme.surfaceContainerLow
+                            : Colors.grey.shade100),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: slot.isActive
                           ? theme.colorScheme.outlineVariant
-                          : Colors.grey.shade300,
+                          : (isDark
+                              ? theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.5)
+                              : Colors.grey.shade300),
                     ),
                   ),
                   child: Column(

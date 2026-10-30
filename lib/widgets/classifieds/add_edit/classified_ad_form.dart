@@ -447,7 +447,11 @@ class ClassifiedAdForm extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.eco_rounded, color: Color(0xFF15803D), size: 18),
+          Icon(
+            Icons.eco_rounded,
+            color: isDark ? const Color(0xFF4ADE80) : const Color(0xFF15803D),
+            size: 18,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -490,12 +494,14 @@ class ClassifiedAdForm extends StatelessWidget {
                     : const Color(0xFFDCFCE7),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Text(
+              child: Text(
                 'Na Pijacu ➔',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF15803D),
+                  color: isDark
+                      ? const Color(0xFFA7F3D0)
+                      : const Color(0xFF15803D),
                 ),
               ),
             ),

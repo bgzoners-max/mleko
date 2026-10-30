@@ -78,6 +78,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _category = widget.initialCategory;
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
       _searchController.text = widget.initialQuery!;
+      _lastSearchText = widget.initialQuery!;
     }
     _historyFuture = _searchHistoryService.getHistory();
     _scrollController.addListener(_onScroll);
@@ -244,6 +245,7 @@ class _SearchScreenState extends State<SearchScreen> {
   static const _debounceDuration = Duration(milliseconds: 300);
   static const _filterDebounceDuration = Duration(milliseconds: 250);
   String _debouncedQuery = '';
+  String _lastSearchText = '';
 
   @override
   void dispose() {
@@ -258,6 +260,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onSearchChanged() {
     final value = _searchController.text;
+    if (value == _lastSearchText) return;
+    _lastSearchText = value;
     setState(() {
       _historyFuture = _searchHistoryService.getSuggestions(value);
     });

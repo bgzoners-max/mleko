@@ -18,6 +18,7 @@ class ErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AlertDialog(
       title: Row(
         children: [
@@ -43,7 +44,9 @@ class ErrorDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: isDark
+                      ? Theme.of(context).colorScheme.surfaceContainerHighest
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -79,19 +82,30 @@ class ErrorDialog extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue[50],
+                  color: isDark
+                      ? const Color(0xFF1E3A5F).withValues(alpha: 0.4)
+                      : Colors.blue[50],
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.blue.shade700.withValues(alpha: 0.6)
+                        : Colors.blue[200]!,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue[700], size: 18),
+                    Icon(
+                      Icons.info_outline,
+                      color: isDark ? Colors.blue[300] : Colors.blue[700],
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Možeš pokušati ponovno.',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.blue[700],
+                              color:
+                                  isDark ? Colors.blue[200] : Colors.blue[700],
                             ),
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/design_system.dart';
 import '../../models/conversation_model.dart';
 import '../app_network_image.dart';
 
@@ -43,6 +44,7 @@ class _ConversationListTileState extends State<ConversationListTile> {
   @override
   Widget build(BuildContext context) {
     final conv = widget.conv;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: MouseRegion(
@@ -69,9 +71,15 @@ class _ConversationListTileState extends State<ConversationListTile> {
                         )
                       : CircleAvatar(
                           radius: 22,
-                          backgroundColor: Colors.grey.shade300,
-                          child:
-                              Icon(Icons.person, color: Colors.grey.shade600),
+                          backgroundColor: isDark
+                              ? AmazonColors.darkBorder
+                              : Colors.grey.shade300,
+                          child: Icon(
+                            Icons.person,
+                            color: isDark
+                                ? AmazonColors.darkTextSecondary
+                                : Colors.grey.shade600,
+                          ),
                         ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -136,8 +144,12 @@ class _ConversationListTileState extends State<ConversationListTile> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: conv.unreadCount > 0
-                                ? Colors.black87
-                                : Colors.grey.shade600,
+                                ? (isDark
+                                    ? AmazonColors.darkTextPrimary
+                                    : Colors.black87)
+                                : (isDark
+                                    ? AmazonColors.darkTextSecondary
+                                    : Colors.grey.shade600),
                             fontWeight: conv.unreadCount > 0
                                 ? FontWeight.w500
                                 : FontWeight.normal,

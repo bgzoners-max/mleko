@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/design_system.dart' show AmazonColors;
 import '../../../models/classified_ad_model.dart';
-import '../../../theme/amazon_colors.dart';
 import '../../../theme/app_design.dart';
 
 class ClassifiedMainInfoCard extends StatelessWidget {

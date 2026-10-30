@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/serbian_districts.dart';
+import '../../core/design_system.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 import '../../utils/classified_attributes_engine.dart';
 import 'classified_subscription_chip.dart';
 

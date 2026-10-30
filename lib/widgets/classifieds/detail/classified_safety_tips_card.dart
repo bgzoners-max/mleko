@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/design_system.dart' show AmazonColors;
 import '../../../theme/app_design.dart';
-import '../../../theme/amazon_colors.dart';
 
 class ClassifiedSafetyTipsCard extends StatelessWidget {
   final ColorScheme colorScheme;

@@ -99,7 +99,7 @@ class _EditProfileFormState extends State<EditProfileForm> {
     if (source == null) return;
 
     final xFile = await picker.pickImage(source: source, imageQuality: 80);
-    if (xFile == null) return;
+    if (xFile == null || !mounted) return;
 
     setState(() => _uploadingPhoto = true);
     try {

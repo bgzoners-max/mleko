@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../constants/serbian_districts.dart';
+import '../../core/design_system.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 import 'classified_filter_bottom_sheets.dart';
 
 class ClassifiedCityButton extends StatelessWidget {

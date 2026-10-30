@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/design_system.dart';
 import '../../models/classified_category_model.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 import 'classified_subscription_chip.dart';
 
 class ClassifiedSubcategoryHeader extends StatelessWidget {

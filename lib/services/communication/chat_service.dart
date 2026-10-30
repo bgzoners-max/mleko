@@ -20,10 +20,6 @@ export 'handlers/chat_media_handler.dart';
 export 'handlers/chat_reactions_handler.dart';
 export 'handlers/chat_stats_handler.dart';
 export 'handlers/chat_typing_handler.dart';
-export 'mixins/chat_media_mixin.dart';
-export 'mixins/chat_reactions_mixin.dart';
-export 'mixins/chat_stats_mixin.dart';
-export 'mixins/chat_typing_mixin.dart';
 
 /// Broj poruka u jednoj stranici (najnovijih).
 const _kMsgPageSize = 50;
@@ -69,21 +65,15 @@ class ChatService {
     ChatMediaHandler? mediaHandler,
     ChatStatsHandler? statsHandler,
     SupabaseClient? client,
-  })  : _customClient = client,
-        _roomManager = roomManager ?? ChatRoomManager(),
-        _repository = repository ?? SupabaseChatRepository(client: client),
-        _reactions = reactionsHandler ??
-            ChatReactionsHandler(
-              client: client,
-              roomManager: roomManager ?? ChatRoomManager(),
-            ),
-        _typing = typingHandler ??
-            ChatTypingHandler(
-              client: client,
-              roomManager: roomManager ?? ChatRoomManager(),
-            ),
-        _media = mediaHandler ?? ChatMediaHandler(client: client),
-        _stats = statsHandler ?? ChatStatsHandler(client: client);
+  }) : this._internal(
+          repository: repository ?? SupabaseChatRepository(client: client),
+          roomManager: roomManager ?? ChatRoomManager(),
+          reactionsHandler: reactionsHandler,
+          typingHandler: typingHandler,
+          mediaHandler: mediaHandler,
+          statsHandler: statsHandler,
+          client: client,
+        );
 
   /// Konstruktor namenjen isključivo jediničnom testiranju uz mockovanje repozitorijuma i hendlera.
   @visibleForTesting
@@ -95,18 +85,36 @@ class ChatService {
     ChatMediaHandler? mediaHandler,
     ChatStatsHandler? statsHandler,
     SupabaseClient? client,
+  }) : this._internal(
+          repository: repository,
+          roomManager: roomManager ?? ChatRoomManager(),
+          reactionsHandler: reactionsHandler,
+          typingHandler: typingHandler,
+          mediaHandler: mediaHandler,
+          statsHandler: statsHandler,
+          client: client,
+        );
+
+  ChatService._internal({
+    required ChatRepository repository,
+    required ChatRoomManager roomManager,
+    ChatReactionsHandler? reactionsHandler,
+    ChatTypingHandler? typingHandler,
+    ChatMediaHandler? mediaHandler,
+    ChatStatsHandler? statsHandler,
+    SupabaseClient? client,
   })  : _customClient = client,
-        _roomManager = roomManager ?? ChatRoomManager(),
+        _roomManager = roomManager,
         _repository = repository,
         _reactions = reactionsHandler ??
             ChatReactionsHandler(
               client: client,
-              roomManager: roomManager ?? ChatRoomManager(),
+              roomManager: roomManager,
             ),
         _typing = typingHandler ??
             ChatTypingHandler(
               client: client,
-              roomManager: roomManager ?? ChatRoomManager(),
+              roomManager: roomManager,
             ),
         _media = mediaHandler ?? ChatMediaHandler(client: client),
         _stats = statsHandler ?? ChatStatsHandler(client: client);
@@ -597,6 +605,7 @@ class ChatService {
 
   /// Odjavljuje sve aktivne sobe i čisti Realtime kanale (npr. pri odjavi korisnika ili gašenju aplikacije).
   Future<void> cleanUp() async {
+    ChatMediaHandler.clearSignedUrlCache();
     try {
       await _roomManager.releaseAll(_client);
       await RealtimeChannelManager().releaseAll(_client);

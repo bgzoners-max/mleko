@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/design_system.dart';
 import '../../core/utils/error_messages.dart';
 import '../../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
@@ -54,6 +55,7 @@ class _BySellerTabState extends State<BySellerTab> {
         }
         final list = snap.data ?? [];
         if (list.isEmpty) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return RefreshIndicator(
             onRefresh: () async => _refresh(),
             child: SingleChildScrollView(
@@ -67,22 +69,31 @@ class _BySellerTabState extends State<BySellerTab> {
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: isDark ? AmazonColors.darkCard : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(
+                        color: isDark ? AmazonColors.darkBorder : Colors.grey.shade200,
+                      ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.store_outlined,
-                            size: 64, color: Colors.grey.shade300),
+                        Icon(
+                          Icons.store_outlined,
+                          size: 64,
+                          color: isDark
+                              ? AmazonColors.darkTextSecondary
+                              : Colors.grey.shade300,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'Još nema porudžbina po prodavcima.',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade700,
+                                    color: isDark
+                                        ? AmazonColors.darkTextPrimary
+                                        : Colors.grey.shade700,
                                   ),
                           textAlign: TextAlign.center,
                         ),
@@ -92,7 +103,11 @@ class _BySellerTabState extends State<BySellerTab> {
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: Colors.grey.shade600),
+                              ?.copyWith(
+                                color: isDark
+                                    ? AmazonColors.darkTextSecondary
+                                    : Colors.grey.shade600,
+                              ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),

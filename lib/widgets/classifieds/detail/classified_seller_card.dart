@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/design_system.dart' show AmazonColors;
 import '../../../models/classified_ad_model.dart';
-import '../../../theme/amazon_colors.dart';
 import '../../../theme/app_design.dart';
 
 class ClassifiedSellerCard extends StatelessWidget {

@@ -94,7 +94,7 @@ class ClassifiedReportsService {
       dynamic query = _client.from('classified_ad_reports').select('''
         *,
         classified_ads(id, title, price, currency, images, status, reports_count, user_id),
-        reporter:profiles!reporter_id(full_name)
+        reporter:profiles!reporter_id(display_name, farm_name)
       ''');
 
       if (status != null && status.isNotEmpty) {

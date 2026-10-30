@@ -94,15 +94,6 @@ class AppNetworkImage extends StatefulWidget {
         memCacheHeight: 48,
         fit: BoxFit.cover,
         fadeInDuration: Duration.zero,
-        placeholder: Shimmer.fromColors(
-          baseColor: Colors.grey.shade300,
-          highlightColor: Colors.grey.shade100,
-          child: Container(
-            width: width ?? 48,
-            height: height ?? 48,
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          ),
-        ),
       );
 
   /// Za veće profile slike (120x120), bez fade-in.
@@ -122,15 +113,6 @@ class AppNetworkImage extends StatefulWidget {
         memCacheHeight: 120,
         fit: BoxFit.cover,
         fadeInDuration: Duration.zero,
-        placeholder: Shimmer.fromColors(
-          baseColor: Colors.grey.shade300,
-          highlightColor: Colors.grey.shade100,
-          child: Container(
-            width: width ?? 120,
-            height: height ?? 120,
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          ),
-        ),
       );
 
   /// Za seller banner slike (800x300), sa fade-in.
@@ -171,16 +153,29 @@ class AppNetworkImage extends StatefulWidget {
         fadeInDuration: const Duration(milliseconds: 300),
       );
 
-  static Widget _defaultPlaceholder() => Shimmer.fromColors(
-        baseColor: Colors.grey.shade200,
-        highlightColor: Colors.grey.shade100,
-        child: Container(color: Colors.white),
-      );
+  static Widget _buildShimmer(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF243028) : Colors.grey.shade200;
+    final highlightColor =
+        isDark ? const Color(0xFF2E3D33) : Colors.grey.shade100;
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Container(color: baseColor),
+    );
+  }
 
-  static Widget _defaultError({double iconSize = 48}) => ColoredBox(
-        color: Colors.grey.shade200,
-        child: Icon(Icons.broken_image, size: iconSize, color: Colors.grey.shade400),
-      );
+  static Widget _defaultError(BuildContext context, {double iconSize = 48}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ColoredBox(
+      color: isDark ? const Color(0xFF243028) : Colors.grey.shade200,
+      child: Icon(
+        Icons.broken_image,
+        size: iconSize,
+        color: isDark ? const Color(0xFF626C61) : Colors.grey.shade400,
+      ),
+    );
+  }
 
   @override
   State<AppNetworkImage> createState() => _AppNetworkImageState();
@@ -214,7 +209,7 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
           if (wasSynchronouslyLoaded || frame != null) {
             return child;
           }
-          return widget.placeholder ?? AppNetworkImage._defaultPlaceholder();
+          return widget.placeholder ?? AppNetworkImage._buildShimmer(context);
         },
         errorBuilder: (context, error, stackTrace) {
           if (_useServerTransform && serverUrl != null && mounted) {
@@ -224,7 +219,7 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
               }
             });
           }
-          return widget.errorWidget ?? AppNetworkImage._defaultError();
+          return widget.errorWidget ?? AppNetworkImage._defaultError(context);
         },
       );
     }
@@ -241,8 +236,8 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
       memCacheHeight: widget.memCacheHeight,
       fadeInDuration: widget.fadeInDuration ?? const Duration(milliseconds: 500),
       fadeInCurve: Curves.easeInCubic,
-      placeholder: (_, __) =>
-          widget.placeholder ?? AppNetworkImage._defaultPlaceholder(),
+      placeholder: (ctx, __) =>
+          widget.placeholder ?? AppNetworkImage._buildShimmer(ctx),
       errorWidget: (context, url, error) {
         // Ako server transform nije uspeo, jednom bezbedno padni na originalni URL
         if (_useServerTransform && serverUrl != null && mounted) {
@@ -252,7 +247,7 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
             }
           });
         }
-        return widget.errorWidget ?? AppNetworkImage._defaultError();
+        return widget.errorWidget ?? AppNetworkImage._defaultError(context);
       },
     );
   }

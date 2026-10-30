@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/design_system.dart';
 import '../../core/responsive.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 
 class ClassifiedFeedHeader extends StatelessWidget {
   const ClassifiedFeedHeader({super.key});

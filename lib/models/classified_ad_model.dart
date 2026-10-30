@@ -577,6 +577,30 @@ class ClassifiedAdModel {
     };
   }
 
+  /// Mapa namenjena za ažuriranje oglasa od strane vlasnika (`UPDATE`).
+  /// Izostavlja vlasničke, administrativne i analitičke kolone (`user_id`, `is_featured`,
+  /// `featured_until`, `is_urgent`, `reports_count`, `call_clicks_count`, `shares_count`, `views_count`)
+  /// kako izmene oglasa ne bi izazvale `42501` grešku na trigger-u ako se u međuvremenu promenio admin status.
+  Map<String, dynamic> toUpdateMap() {
+    return {
+      'title': title,
+      'description': description,
+      'price': price,
+      'currency': currency,
+      'price_type': priceType,
+      'category_id': categoryId,
+      'condition': condition,
+      'images': images,
+      'city': city,
+      if (phone != null) 'phone': phone,
+      'phone_public': phonePublic,
+      'status': status,
+      'seller_type': sellerType,
+      'attributes': attributes,
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
   ClassifiedAdModel copyWith({
     String? id,
     String? userId,

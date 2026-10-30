@@ -47,7 +47,6 @@ class ClassifiedAdDetailScreen extends StatefulWidget {
 class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   late ClassifiedsService _service;
   late Future<ClassifiedAdModel?> _adFuture;
-  final _pageController = PageController();
 
   bool _viewIncremented = false;
   String? _revealedPhone;
@@ -60,19 +59,14 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     _load();
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   Future<void> _load() async {
     final future = _service.getAd(widget.adId);
     setState(() => _adFuture = future);
 
-    if (!_viewIncremented) {
-      final ad = await future;
-      if (ad != null && mounted) {
+    final ad = await future;
+    if (ad != null && mounted) {
+      setClassifiedAdSeo(ad);
+      if (!_viewIncremented) {
         if (_revealedPhone == null && ad.phone != null && ad.phone!.isNotEmpty) {
           setState(() => _revealedPhone = ad.phone);
         }
@@ -392,7 +386,6 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         }
 
         final ad = snap.data!;
-        setClassifiedAdSeo(ad);
 
         final userId = context.watch<AppState>().user?.id;
         final isOwner = userId != null && userId == ad.userId;

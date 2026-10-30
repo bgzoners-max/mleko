@@ -321,7 +321,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget? _buildSectionContent(
+      BuildContext context, UserModel user, bool isSeller) {
+    return _getInitialWidget(_activeSection, widget.targetId);
+  }
+
   Widget _buildNarrow(BuildContext context, UserModel user) {
+    if (_activeSection != null && _activeSection != 'overview') {
+      final sectionContent =
+          _buildSectionContent(context, user, user.isSeller);
+      if (sectionContent != null) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Material(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: InkWell(
+                onTap: () => setState(() => _activeSection = 'overview'),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.arrow_back, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Nazad na pregled profila',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(child: sectionContent),
+          ],
+        );
+      }
+    }
+
     final isSmallTablet = Breakpoints.isSmallTablet(context);
     final profileCards = [
       if (!user.isGuest) SellerProfilePhotoSection(user: user),

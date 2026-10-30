@@ -175,6 +175,8 @@ class ClassifiedAdReportModel {
           adData?['reports_count'] as int?,
       sellerId: json['seller_id'] as String? ?? adData?['user_id'] as String?,
       reporterName: json['reporter_name'] as String? ??
+          reporterData?['display_name'] as String? ??
+          reporterData?['farm_name'] as String? ??
           reporterData?['full_name'] as String?,
     );
   }

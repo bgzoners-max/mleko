@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/design_system.dart';
 import '../../../models/classified_ad_model.dart';
 import '../../../providers/app_settings_provider.dart';
 import '../../../providers/classifieds_provider.dart';
-import '../../../theme/amazon_colors.dart';
 
 class ClassifiedBreadcrumbs extends StatelessWidget {
   final ClassifiedAdModel ad;

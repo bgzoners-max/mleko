@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/design_system.dart';
 import '../../models/category_attribute_model.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 
 class ClassifiedAttributeFilterBar extends StatelessWidget {
   final ClassifiedsProvider classifieds;

@@ -31,7 +31,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   bool _loadingMore = false;
   bool _hasMore = true;
   String? _error;
-  int _requestSeq = 0;
+  int _loadGeneration = 0;
 
   String? _selectedCategoryId;
   String? _selectedCity;
@@ -245,8 +245,8 @@ class ClassifiedsProvider extends ChangeNotifier {
 
   Future<void> loadInitialAds() async {
     // Race-safety: svako menjanje filtera/pretrage pokreće novi zahtev.
-    // Samo poslednji zahtev sme da upiše rezultate (request token).
-    final requestId = ++_requestSeq;
+    // Samo poslednji zahtev sme da upiše rezultate (generation token).
+    final generation = ++_loadGeneration;
 
     // If we already have data, use a subtle refresh indicator instead of
     // the full-screen spinner so categories remain visible.
@@ -287,15 +287,15 @@ class ClassifiedsProvider extends ChangeNotifier {
         offset: 0,
       );
 
-      if (requestId != _requestSeq) return; // stari odgovor – ignoriši
+      if (generation != _loadGeneration) return; // stari odgovor – ignoriši
       _ads = items;
       _hasMore = items.length >= _pageSize;
     } catch (e, st) {
-      if (requestId != _requestSeq) return;
+      if (generation != _loadGeneration) return;
       LoggerService.error('loadInitialAds error', e, stackTrace: st);
       _error = 'Greška pri učitavanju oglasa.';
     } finally {
-      if (requestId == _requestSeq) {
+      if (generation == _loadGeneration) {
         _loading = false;
         _refreshing = false;
         notifyListeners();
@@ -305,7 +305,7 @@ class ClassifiedsProvider extends ChangeNotifier {
 
   Future<void> loadMore() async {
     if (_loading || _loadingMore || !_hasMore) return;
-    final requestId = _requestSeq; // čitamo tekući; loadInitialAds povećava brojač
+    final generation = _loadGeneration; // čitamo tekući; loadInitialAds povećava brojač
     _loadingMore = true;
     notifyListeners();
 
@@ -341,7 +341,7 @@ class ClassifiedsProvider extends ChangeNotifier {
         lastCreatedAt: lastCreatedAt,
       );
 
-      if (requestId != _requestSeq) return; // filter se promenio – odbaci
+      if (generation != _loadGeneration) return; // filter se promenio – odbaci
       _ads = [..._ads, ...nextItems];
       _hasMore = nextItems.length >= _pageSize;
     } catch (e, st) {
@@ -350,7 +350,7 @@ class ClassifiedsProvider extends ChangeNotifier {
           extra: {'error': e.toString(), 'stackTrace': st.toString()});
     } finally {
       _loadingMore = false;
-      if (requestId == _requestSeq) {
+      if (generation == _loadGeneration) {
         notifyListeners();
       }
     }
@@ -421,6 +421,7 @@ class ClassifiedsProvider extends ChangeNotifier {
 
   Future<void> toggleAdFeatured(String adId, bool isFeatured, {DateTime? until}) async {
     final idx = _ads.indexWhere((a) => a.id == adId);
+    final previousAd = idx >= 0 ? _ads[idx] : null;
     if (idx >= 0) {
       _ads[idx] = _ads[idx].copyWith(
         isFeatured: isFeatured,
@@ -431,9 +432,12 @@ class ClassifiedsProvider extends ChangeNotifier {
     try {
       await _service.updateAdFeatured(adId, isFeatured, until: until);
     } catch (e) {
-      if (idx >= 0) {
-        _ads[idx] = _ads[idx].copyWith(isFeatured: !isFeatured);
-        notifyListeners();
+      if (previousAd != null) {
+        final currentIdx = _ads.indexWhere((a) => a.id == adId);
+        if (currentIdx != -1) {
+          _ads[currentIdx] = previousAd;
+          notifyListeners();
+        }
       }
       rethrow;
     }
@@ -441,6 +445,7 @@ class ClassifiedsProvider extends ChangeNotifier {
 
   Future<void> toggleAdUrgent(String adId, bool isUrgent) async {
     final idx = _ads.indexWhere((a) => a.id == adId);
+    final previousAd = idx >= 0 ? _ads[idx] : null;
     if (idx >= 0) {
       _ads[idx] = _ads[idx].copyWith(isUrgent: isUrgent);
       notifyListeners();
@@ -448,9 +453,12 @@ class ClassifiedsProvider extends ChangeNotifier {
     try {
       await _service.updateAdUrgent(adId, isUrgent);
     } catch (e) {
-      if (idx >= 0) {
-        _ads[idx] = _ads[idx].copyWith(isUrgent: !isUrgent);
-        notifyListeners();
+      if (previousAd != null) {
+        final currentIdx = _ads.indexWhere((a) => a.id == adId);
+        if (currentIdx != -1) {
+          _ads[currentIdx] = previousAd;
+          notifyListeners();
+        }
       }
       rethrow;
     }

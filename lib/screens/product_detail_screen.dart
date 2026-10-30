@@ -240,6 +240,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ? Breakpoints.dataContentWidth(context)
         : Breakpoints.maxContentWidth(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cartCount = context.select<CartProvider, int>((cart) => cart.count);
 
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
@@ -289,8 +290,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           IconButton(
             icon: Badge(
-              isLabelVisible: context.watch<CartProvider>().count > 0,
-              label: Text('${context.watch<CartProvider>().count}'),
+              isLabelVisible: cartCount > 0,
+              label: Text('$cartCount'),
               child: const Icon(Icons.shopping_cart_outlined),
             ),
             tooltip: 'Korpa',

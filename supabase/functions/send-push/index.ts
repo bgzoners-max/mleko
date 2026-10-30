@@ -157,8 +157,7 @@ Deno.serve(async (req) => {
         callerUid = (payload.sub as string) || null
         const payloadAny = payload as Record<string, any>
         const isAdmin = payloadAny.is_admin === true ||
-          payloadAny.app_metadata?.is_admin === true ||
-          payloadAny.user_metadata?.is_admin === true
+          payloadAny.app_metadata?.is_admin === true
         if (isAdmin) {
           isSystemOrAdmin = true
           authorized = true

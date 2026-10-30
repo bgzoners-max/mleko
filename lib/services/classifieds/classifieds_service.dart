@@ -514,7 +514,7 @@ class ClassifiedsService {
   /// Ažurira postojeći oglas
   Future<void> updateAd(ClassifiedAdModel ad) async {
     try {
-      final data = ad.toJson(includeId: false, includeCreatedAt: false);
+      final data = ad.toUpdateMap();
       data['updated_at'] = DateTime.now().toIso8601String();
       await _client.from('classified_ads').update(data).eq('id', ad.id);
     } catch (e, st) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/design_system.dart';
 import '../../../models/classified_ad_model.dart';
-import '../../../theme/amazon_colors.dart';
 import '../../../core/haptic.dart';
 
 class ClassifiedActionButtons extends StatelessWidget {

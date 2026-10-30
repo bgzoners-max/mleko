@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/design_system.dart';
 import '../../providers/classifieds_provider.dart';
-import '../../theme/amazon_colors.dart';
 import 'classified_filter_bottom_sheets.dart';
 
 class ClassifiedConditionChips extends StatelessWidget {
@@ -112,7 +112,7 @@ class ClassifiedConditionChips extends StatelessWidget {
             onTap: () => classifieds.setAttributeFilter('transaction_type', 'prodaja'),
             label: 'Prodaja',
             icon: Icons.sell_outlined,
-            activeColor: AmazonColors.navNavy,
+            activeColor: isDark ? AmazonColors.lightGreen : AmazonColors.darkNavy,
           ),
           const SizedBox(width: 5),
           buildChipItem(
