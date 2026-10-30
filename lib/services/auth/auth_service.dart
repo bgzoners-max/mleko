@@ -242,6 +242,11 @@ class AuthService {
     required String farmName,
     required String location,
     required String phone,
+    String? displayName,
+    String? legalType,
+    String? bpg,
+    String? pib,
+    DateTime? legalLiabilityAcceptedAt,
   }) async {
     try {
       final u = currentSupabaseUser;
@@ -252,14 +257,36 @@ class AuthService {
           type: ErrorType.unauthorized,
         );
       }
-      await _users.upsertProfile(
-        u.id,
-        role: 'seller',
-        farmName: farmName,
-        location: location,
-        phone: phone,
-        isGuest: false,
-      );
+      if (legalType != null ||
+          displayName != null ||
+          bpg != null ||
+          pib != null ||
+          legalLiabilityAcceptedAt != null) {
+        await _users.upsertProfile(
+          u.id,
+          role: 'seller',
+          farmName: farmName,
+          location: location,
+          phone: phone,
+          displayName: (displayName != null && displayName.trim().isNotEmpty)
+              ? displayName.trim()
+              : u.userMetadata?['display_name'],
+          legalType: legalType,
+          bpg: (bpg != null && bpg.trim().isNotEmpty) ? bpg.trim() : null,
+          pib: (pib != null && pib.trim().isNotEmpty) ? pib.trim() : null,
+          legalLiabilityAcceptedAt: legalLiabilityAcceptedAt,
+          isGuest: false,
+        );
+      } else {
+        await _users.upsertProfile(
+          u.id,
+          role: 'seller',
+          farmName: farmName,
+          location: location,
+          phone: phone,
+          isGuest: false,
+        );
+      }
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

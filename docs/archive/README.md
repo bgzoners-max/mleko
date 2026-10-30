@@ -6,3 +6,4 @@ Ovaj direktorijum sadrži istorijsku dokumentaciju i izveštaje o završenim faz
 - **[PHASE_3_DESKTOP_LAYOUT_REPORT.md](PHASE_3_DESKTOP_LAYOUT_REPORT.md)**: Prilagođavanje izgleda i rasporeda za desktop ekrane i veće rezolucije.
 - **[PHASE_3_TYPOGRAPHY_RESPONSIVE.md](PHASE_3_TYPOGRAPHY_RESPONSIVE.md)**: Tipografska hijerarhija i responsivni stilovi.
 - **[PHASE_4_COMPLETION.md](PHASE_4_COMPLETION.md)**: Rezime Faze 4 (mali oglasi, moderacija, bezbednosna očvršćavanja).
+- **[SEO_GLOBALNI_PREDLOZI.md](SEO_GLOBALNI_PREDLOZI.md)**: Arhivirani predlog međunarodne i18n SEO strategije (doneta konačna produkciona odluka: fokus isključivo na srpsko tržište i `sr-RS` jezik).

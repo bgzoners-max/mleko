@@ -18,6 +18,8 @@ Format prati [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`.vercelignore`** — bez funkcije bez Vercel deploja.
 
 ### Changed
+- **Jezička strategija (l10n odluka — samo srpski `sr-RS`)**: formalizovana odluka da platforma koristi isključivo srpski jezik (`sr-RS`, latinica direktno u kodu bez `.arb` i `AppLocalizations` sloja). Pojednostavljen `functions/api/_shared/locales.ts`, uklonjen prazan `lib/l10n/` direktorijum, dokumentovano pravilo u `CONTRIBUTING.md` i arhiviran nacrt višejezične SEO strategije u `docs/archive/SEO_GLOBALNI_PREDLOZI.md`.
+- **Refaktor velikih ekrana (#6)**: razbijeno 6 najvećih ekrana (`about_screen`, `seller_guide_screen`, `classifieds_feed_screen`, `classified_ad_detail_screen`, `home_screen`, `search_screen`) u 10 modularnih vidžeta i ispražnjena `ignoreFiles` lista u `tool/check_file_size.dart`.
 - **`tsconfig.json`**: `include` sada pokriva samo `functions/**/*.ts`.
 - **CI (`ci.yml`)**: korak preimenovan u „TypeScript type-check (Cloudflare
   Pages functions)" (bilo „Vercel edge functions").
@@ -41,6 +43,11 @@ Format prati [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `test/serbian_postal_codes_test.dart` (9 testova) prolazi.
 
 ### Added
+- **Identifikacija proizvođača hrane (BPG / PIB), pravna odgovornost i bedž poverenja**:
+  - Migracija `20261030170000_seller_bpg_pib_and_liability.sql`: kolone `legal_type` (`rpg` / `company`), `bpg` (12 cifara), `pib` (9 cifara + ISO 7064 MOD 11-10 kontrolna cifra preko `public.is_valid_serbian_pib`), `legal_liability_accepted_at` i zaštita punog BPG broja u `public_profiles` (`bpg_masked`).
+  - Validator `SellerRegistrationValidator` + 9 jediničnih testova u `test/seller_registration_validator_test.dart`.
+  - UI izbor RPG (BPG) / Pravno lice (PIB) i obavezna potvrda sanitarne i poreske odgovornosti na `BecomingSellerScreen`, `SellerSettingsScreen` (`SellerLegalRegistrationSection`) i `AddEditProductScreen`.
+  - Javni bedž „Verifikovano gazdinstvo (BPG)" / „Registrovani proizvođač (PIB)" na profilu prodavca i stranici proizvoda + dopunjen Član 4 u `web/uslovi-koriscenja.html` (status informatičkog posrednika po čl. 16–20. Zakona o elektronskoj trgovini).
 - **Testovi kritičnih putanja (repositories + cart widgeti, 36 novih testova):**
   - `test/repositories/orders_repository_test.dart` (18): `SupabaseOrdersRepository`
     kroz MockHttpHandlerClient obrazac — `getOrderById`/`getOrderItems`/

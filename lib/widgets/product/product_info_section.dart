@@ -140,6 +140,50 @@ class _SellerBadgeHeader extends StatelessWidget {
                   const SizedBox(width: 4),
                   const Icon(Icons.verified, size: 14, color: Colors.blue),
                 ],
+                if (seller?.isRegisteredProducer == true) ...[
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: (seller!.pib != null && seller.pib!.isNotEmpty)
+                        ? 'PIB: ${seller.pib}'
+                        : ((seller.bpgMasked != null &&
+                                seller.bpgMasked!.isNotEmpty)
+                            ? 'BPG: ${seller.bpgMasked}'
+                            : 'Registrovano poljoprivredno gazdinstvo'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.verified_user_rounded,
+                            size: 12,
+                            color: Color(0xFF2E7D32),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            seller.registeredProducerBadgeLabel ??
+                                'Verifikovano gazdinstvo (BPG)',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2E7D32),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 Icon(
                   Icons.chevron_right,
                   size: 15,

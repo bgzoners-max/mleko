@@ -10,6 +10,7 @@ import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../../widgets/app_back_button.dart';
 import '../../widgets/profile/seller_gallery_section.dart';
+import '../../widgets/seller/seller_legal_registration_section.dart';
 import '../../widgets/seller_delivery_settings_tab.dart';
 
 /// Podešavanja prodavca: lokacija, priča, galerija
@@ -277,7 +278,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
   Widget _buildTabContent() {
     switch (_tabController.index) {
       case 0:
-        return _buildLocationTab();
+        return _buildBasicTab();
       case 1:
         return const SellerDeliverySettingsTab();
       case 2:
@@ -287,11 +288,11 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       case 4:
         return _buildQuickRepliesTab();
       default:
-        return _buildLocationTab();
+        return _buildBasicTab();
     }
   }
 
-  Widget _buildLocationTab() {
+  Widget _buildBasicTab() {
     final isDesktop = !Breakpoints.isPhone(context);
     final user = context.watch<AppState>().user;
     final hasLocation = user?.lat != null && user?.lng != null;
@@ -300,6 +301,8 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SellerLegalRegistrationSection(),
+          const SizedBox(height: 24),
           Text(
             hasLocation
                 ? 'Tvoja lokacija je postavljena. Kupci te vide na mapi prodavaca.'

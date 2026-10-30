@@ -18,6 +18,7 @@ import '../../widgets/app_back_button.dart';
 import '../../widgets/seller/product_basic_info_section.dart';
 import '../../widgets/seller/product_delivery_section.dart';
 import '../../widgets/seller/product_images_section.dart';
+import '../../widgets/seller/seller_legal_registration_section.dart';
 
 class AddEditProductScreen extends StatefulWidget {
   final String? productId;
@@ -55,6 +56,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   ProductDeliveryMode _deliveryMode = ProductDeliveryMode.none;
   final Set<String> _selectedDeliveryPointIds = <String>{};
   DateTime? _existingCreatedAt;
+  bool _acceptedLiability = false;
 
   bool get isEdit => widget.productId != null && widget.productId!.isNotEmpty;
 
@@ -96,6 +98,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   @override
   void initState() {
     super.initState();
+    _acceptedLiability = isEdit;
     _loadSellerDeliveryPoints();
     if (isEdit) _load();
   }
@@ -338,6 +341,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     if (desc.length > AppConstants.maxProductDescriptionLength) {
       return fail('Opis max ${AppConstants.maxProductDescriptionLength} karaktera.');
     }
+    if (!_acceptedLiability) {
+      return fail(
+        'Morate potvrditi izjavu o tačnosti podataka i ispravnosti proizvoda pre objave.',
+      );
+    }
     setState(() {
       _error = null;
       _loading = true;
@@ -529,6 +537,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (user != null && !user.isRegisteredProducer)
+                      SellerUnregisteredWarningBanner(
+                        onNavigateToSettings: () =>
+                            context.push('/seller-settings'),
+                      ),
                     ProductBasicInfoSection(
                       groups: groups,
                       category: _category,
@@ -585,6 +598,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       onAvailableNowChanged: (v) => setState(() => _availableNow = v),
                     ),
                     const SizedBox(height: 16),
+                    ProductLegalLiabilityCheckbox(
+                      value: _acceptedLiability,
+                      onChanged: _loading
+                          ? null
+                          : (val) => setState(() {
+                                _acceptedLiability = val;
+                                if (_acceptedLiability) _error = null;
+                              }),
+                    ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       Text(_error!, style: const TextStyle(color: Colors.red)),

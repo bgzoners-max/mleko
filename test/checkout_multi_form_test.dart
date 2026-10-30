@@ -117,6 +117,10 @@ class _MockUsersService implements UsersService {
     List<String>? farmGalleryUrls,
     List<String>? sellerTags,
     List<String>? sellerQuickReplies,
+    Object? legalType,
+    Object? bpg,
+    Object? pib,
+    DateTime? legalLiabilityAcceptedAt,
   }) async {
     upsertCalls.add({
       'userId': userId,

@@ -117,6 +117,52 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                 ],
               ],
             ),
+            if (seller.isRegisteredProducer) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: Tooltip(
+                  message: (seller.pib != null && seller.pib!.isNotEmpty)
+                      ? 'PIB: ${seller.pib}'
+                      : ((seller.bpgMasked != null &&
+                              seller.bpgMasked!.isNotEmpty)
+                          ? 'BPG: ${seller.bpgMasked}'
+                          : 'Registrovano poljoprivredno gazdinstvo'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.verified_user_rounded,
+                          size: 15,
+                          color: Color(0xFF2E7D32),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          seller.registeredProducerBadgeLabel ??
+                              'Verifikovano gazdinstvo (BPG)',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2E7D32),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [

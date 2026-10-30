@@ -1,45 +1,29 @@
-// Centralna i18n/hreflang konfiguracija — SEO na svetskom nivou (Faza 1).
+// Centralna jezička i hreflang konfiguracija.
 //
-// `LOCALE_PLAN` opisuje SVE jezičko-regionalne verzije sajta iz globalne SEO
-// strategije (docs/SEO_GLOBALNI_PREDLOZI.md). `ENABLED_LOCALES` navodi SAMO
-// verzije koje su trenutno dostupne (HTTP 200, indeksabilne, sa lokalizovanim
-// sadržajem).
-//
-// PRAVILO: Google zahteva da svaki hreflang link bude reciprocan, kanonski i
-// dostupan. Verziju dodajte u `ENABLED_LOCALES` TEK kada zaista postoji
-// (npr. /en/ verzija sa engleskim prevodom) — u suprotnom će Google Search
-// Console prijaviti hreflang greške ("no return tag" / 404).
-//
-// Ovaj modul nema spoljnih import-a da bi bio upotrebljiv i u Cloudflare
-// Pages Functions (`functions/`) i u Vercel Edge funkcijama (`api/`) bez
-// cirkularnih zavisnosti.
+// Produkciona odluka: Domaći Market je isključivo na srpskom jeziku (`sr-RS`).
+// `ENABLED_LOCALES` navodi jedinu aktivnu verziju sajta (`sr-RS`), a hreflang
+// mapa emituje `sr-RS` + `x-default` (na istu URL adresu) — konzistentno sa
+// SPA shell-om (`web/index.html`) i XML sitemapom.
 
 export type LocaleConfig = {
   /** hreflang vrednost (ISO 639-1 jezik + ISO 3166-1 zemlja, npr. "sr-RS"). */
   hreflang: string;
-  /** URL prefiks verzije ("" = osnovna verzija bez prefiksa, npr. "en"). */
+  /** URL prefiks verzije ("" = osnovna verzija bez prefiksa). */
   urlPrefix: string;
   /** Open Graph `og:locale` vrednost (npr. "sr_RS"). */
   ogLocale: string;
 };
 
-/** Potpuni plan verzija po globalnoj SEO strategiji. */
+/** Aktivna jezička konfiguracija sajta (isključivo srpski, `sr-RS`). */
 export const LOCALE_PLAN: LocaleConfig[] = [
   { hreflang: "sr-RS", urlPrefix: "", ogLocale: "sr_RS" },
-  { hreflang: "bs-BA", urlPrefix: "bh", ogLocale: "bs_BA" },
-  { hreflang: "hr-HR", urlPrefix: "hr", ogLocale: "hr_HR" },
-  { hreflang: "de-DE", urlPrefix: "de", ogLocale: "de_DE" },
-  { hreflang: "en", urlPrefix: "en", ogLocale: "en_US" },
 ];
 
 /**
- * Trenutno AKTIVNE verzije. Dok postoji samo srpska verzija sajta, hreflang
- * mapa emituje `sr-RS` + `x-default` (na istu URL adresu) — konzistentno sa
- * SPA shell-om (`web/index.html`). Dodavanje nove verzije = jedan red ovde.
+ * Trenutno AKTIVNE verzije (`sr-RS`). Hreflang mapa emituje `sr-RS` + `x-default`
+ * na istu kanonsku URL adresu — konzistentno sa SPA shell-om (`web/index.html`).
  */
-export const ENABLED_LOCALES: LocaleConfig[] = LOCALE_PLAN.filter(
-  (locale) => locale.hreflang === "sr-RS",
-);
+export const ENABLED_LOCALES: LocaleConfig[] = LOCALE_PLAN;
 
 /** hreflang vrednost koja se koristi za `x-default` fallback. */
 export const X_DEFAULT_FALLBACK = "sr-RS";

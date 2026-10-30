@@ -84,6 +84,10 @@ class UsersService {
     List<String>? farmGalleryUrls,
     List<String>? sellerTags,
     List<String>? sellerQuickReplies,
+    Object? legalType = _undefined,
+    Object? bpg = _undefined,
+    Object? pib = _undefined,
+    DateTime? legalLiabilityAcceptedAt,
   }) async {
     try {
       final updateData = <String, dynamic>{
@@ -110,6 +114,13 @@ class UsersService {
       if (sellerTags != null) updateData['seller_tags'] = sellerTags;
       if (sellerQuickReplies != null) {
         updateData['seller_quick_replies'] = sellerQuickReplies;
+      }
+      if (!identical(legalType, _undefined)) updateData['legal_type'] = legalType;
+      if (!identical(bpg, _undefined)) updateData['bpg'] = bpg;
+      if (!identical(pib, _undefined)) updateData['pib'] = pib;
+      if (legalLiabilityAcceptedAt != null) {
+        updateData['legal_liability_accepted_at'] =
+            legalLiabilityAcceptedAt.toIso8601String();
       }
 
       final updated = await _client
@@ -170,6 +181,19 @@ class UsersService {
         }
         if (!_listEquals(user.sellerQuickReplies, previous.sellerQuickReplies)) {
           updateData['seller_quick_replies'] = user.sellerQuickReplies;
+        }
+        if (user.legalType != previous.legalType) {
+          updateData['legal_type'] = user.legalType;
+        }
+        if (user.bpg != previous.bpg) {
+          updateData['bpg'] = user.bpg;
+        }
+        if (user.pib != previous.pib) {
+          updateData['pib'] = user.pib;
+        }
+        if (user.legalLiabilityAcceptedAt != previous.legalLiabilityAcceptedAt) {
+          updateData['legal_liability_accepted_at'] =
+              user.legalLiabilityAcceptedAt?.toIso8601String();
         }
       } else {
         updateData

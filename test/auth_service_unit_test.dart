@@ -155,6 +155,10 @@ class _FakeUsersService implements UsersService {
     List<String>? farmGalleryUrls,
     List<String>? sellerTags,
     List<String>? sellerQuickReplies,
+    Object? legalType = _sentinel,
+    Object? bpg = _sentinel,
+    Object? pib = _sentinel,
+    DateTime? legalLiabilityAcceptedAt,
   }) async {
     upsertCalls.add({
       'userId': userId,

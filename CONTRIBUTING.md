@@ -91,6 +91,12 @@ Kratko uputstvo: [docs/MIGRATIONS_SOLO.md](docs/MIGRATIONS_SOLO.md).
 
 Novi ili izmenjeni RPC-ovi: vidi [docs/SECURITY_DEFINER_RPC.md](docs/SECURITY_DEFINER_RPC.md) — `DEFINER` zaobilazi RLS; parametri moraju da se poklope sa `auth.uid()` gde podaci nisu javni.
 
+## Jezik i lokalizacija (samo srpski, `sr-RS`)
+
+- Aplikacija je **isključivo na srpskom jeziku (`Locale('sr', 'RS')`)** — ne koriste se `.arb` fajlovi niti `AppLocalizations` generisani kod.
+- Svi stringovi u Dart fajlovima pišu se direktno na **srpskoj latinici** sa punim dijakriticima (`č`, `ć`, `š`, `ž`, `đ`), što proverava CI skripta `dart run tool/check_cyrillic_strings.dart`.
+- `flutter_localizations` u `pubspec.yaml` služi isključivo za lokalizaciju ugrađenih Flutter vidžeta (`GlobalMaterialLocalizations`, `GlobalWidgetsLocalizations`, `GlobalCupertinoLocalizations`).
+
 ## Napomena
 
 CI (`.github/workflows/ci.yml`) vec proverava:

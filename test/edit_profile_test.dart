@@ -43,6 +43,10 @@ class _FakeUsersService extends Fake implements UsersService {
     List<String>? farmGalleryUrls,
     List<String>? sellerTags,
     List<String>? sellerQuickReplies,
+    Object? legalType = _undefined,
+    Object? bpg = _undefined,
+    Object? pib = _undefined,
+    DateTime? legalLiabilityAcceptedAt,
   }) async {
     lastUpsertParams = {
       'userId': userId,

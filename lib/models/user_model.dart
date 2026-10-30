@@ -113,6 +113,12 @@ class SellerProfile {
   final List<String> sellerTags;
   final List<String> sellerQuickReplies;
   final DateTime? createdAt;
+  final String? legalType;
+  final String? bpg;
+  final String? bpgMasked;
+  final String? pib;
+  final bool hasRegisteredEntity;
+  final DateTime? legalLiabilityAcceptedAt;
 
   const SellerProfile({
     required this.id,
@@ -134,6 +140,12 @@ class SellerProfile {
     this.sellerTags = const [],
     this.sellerQuickReplies = const [],
     this.createdAt,
+    this.legalType,
+    this.bpg,
+    this.bpgMasked,
+    this.pib,
+    this.hasRegisteredEntity = false,
+    this.legalLiabilityAcceptedAt,
   });
 
   factory SellerProfile.fromUserModel(UserModel user) {
@@ -157,10 +169,24 @@ class SellerProfile {
       sellerTags: user.sellerTags,
       sellerQuickReplies: user.sellerQuickReplies,
       createdAt: user.createdAt,
+      legalType: user.legalType,
+      bpg: user.bpg,
+      bpgMasked: user.bpgMasked,
+      pib: user.pib,
+      hasRegisteredEntity: user.hasRegisteredEntity,
+      legalLiabilityAcceptedAt: user.legalLiabilityAcceptedAt,
     );
   }
 
   factory SellerProfile.fromJson(Map<String, dynamic> json) {
+    final bpg = json['bpg'] as String?;
+    final bpgMasked = json['bpg_masked'] as String?;
+    final pib = json['pib'] as String?;
+    final hasRegisteredEntity = (json['has_registered_entity'] as bool?) ??
+        ((bpg != null && bpg.length == 12) ||
+            (bpgMasked != null && bpgMasked.isNotEmpty) ||
+            (pib != null && pib.length == 9));
+
     return SellerProfile(
       id: json['id'] as String,
       email: json['email'] as String?,
@@ -192,6 +218,14 @@ class SellerProfile {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
+      legalType: json['legal_type'] as String?,
+      bpg: bpg,
+      bpgMasked: bpgMasked,
+      pib: pib,
+      hasRegisteredEntity: hasRegisteredEntity,
+      legalLiabilityAcceptedAt: json['legal_liability_accepted_at'] != null
+          ? DateTime.tryParse(json['legal_liability_accepted_at'] as String)
+          : null,
     );
   }
 
@@ -217,6 +251,12 @@ class SellerProfile {
       sellerTags: sellerTags,
       sellerQuickReplies: sellerQuickReplies,
       createdAt: createdAt,
+      legalType: legalType,
+      bpg: bpg,
+      bpgMasked: bpgMasked,
+      pib: pib,
+      hasRegisteredEntity: hasRegisteredEntity,
+      legalLiabilityAcceptedAt: legalLiabilityAcceptedAt,
     );
   }
 
@@ -241,6 +281,12 @@ class SellerProfile {
       if (sellerTags.isNotEmpty) 'seller_tags': sellerTags,
       if (sellerQuickReplies.isNotEmpty)
         'seller_quick_replies': sellerQuickReplies,
+      if (legalType != null) 'legal_type': legalType,
+      if (bpg != null) 'bpg': bpg,
+      if (pib != null) 'pib': pib,
+      if (legalLiabilityAcceptedAt != null)
+        'legal_liability_accepted_at':
+            legalLiabilityAcceptedAt!.toIso8601String(),
     };
   }
 }
@@ -272,6 +318,12 @@ class UserModel {
   final List<String> sellerQuickReplies;
 
   final bool isAdmin;
+  final String? legalType;
+  final String? bpg;
+  final String? bpgMasked;
+  final String? pib;
+  final bool hasRegisteredEntity;
+  final DateTime? legalLiabilityAcceptedAt;
 
   const UserModel({
     required this.id,
@@ -296,9 +348,29 @@ class UserModel {
     this.createdAt,
     this.sellerQuickReplies = const [],
     this.isAdmin = false,
+    this.legalType,
+    this.bpg,
+    this.bpgMasked,
+    this.pib,
+    this.hasRegisteredEntity = false,
+    this.legalLiabilityAcceptedAt,
   });
 
   bool get isSeller => role == UserRole.seller;
+
+  bool get isRegisteredProducer =>
+      hasRegisteredEntity ||
+      (bpg != null && bpg!.length == 12) ||
+      (bpgMasked != null && bpgMasked!.isNotEmpty) ||
+      (pib != null && pib!.length == 9);
+
+  String? get registeredProducerBadgeLabel {
+    if (!isRegisteredProducer) return null;
+    if (legalType == 'company' || (pib != null && pib!.isNotEmpty)) {
+      return 'Registrovani proizvođač (PIB)';
+    }
+    return 'Verifikovano gazdinstvo (BPG)';
+  }
 
   /// Kanonski getter za adresu kupca (osigurava da se ne meša sa gazdinstvom).
   String? get buyerAddress => isSeller ? address : (address ?? location);
@@ -324,6 +396,13 @@ class UserModel {
     // radi kompatibilnosti sa prikazom na karticama.
     final String? location = rawLocation;
     final String? address = rawAddress ?? rawLocation;
+    final bpg = json['bpg'] as String?;
+    final bpgMasked = json['bpg_masked'] as String?;
+    final pib = json['pib'] as String?;
+    final hasRegisteredEntity = (json['has_registered_entity'] as bool?) ??
+        ((bpg != null && bpg.length == 12) ||
+            (bpgMasked != null && bpgMasked.isNotEmpty) ||
+            (pib != null && pib.length == 9));
 
     return UserModel(
       id: json['id'] as String,
@@ -359,6 +438,14 @@ class UserModel {
               .toList() ??
           [],
       isAdmin: json['is_admin'] as bool? ?? false,
+      legalType: json['legal_type'] as String?,
+      bpg: bpg,
+      bpgMasked: bpgMasked,
+      pib: pib,
+      hasRegisteredEntity: hasRegisteredEntity,
+      legalLiabilityAcceptedAt: json['legal_liability_accepted_at'] != null
+          ? DateTime.tryParse(json['legal_liability_accepted_at'] as String)
+          : null,
     );
   }
 
@@ -388,6 +475,12 @@ class UserModel {
       if (sellerTags.isNotEmpty) 'seller_tags': sellerTags,
       if (sellerQuickReplies.isNotEmpty)
         'seller_quick_replies': sellerQuickReplies,
+      if (legalType != null) 'legal_type': legalType,
+      if (bpg != null) 'bpg': bpg,
+      if (pib != null) 'pib': pib,
+      if (legalLiabilityAcceptedAt != null)
+        'legal_liability_accepted_at':
+            legalLiabilityAcceptedAt!.toIso8601String(),
     };
   }
 
@@ -419,6 +512,12 @@ class UserModel {
     Object? createdAt = _undefined,
     List<String>? sellerQuickReplies,
     bool? isAdmin,
+    Object? legalType = _undefined,
+    Object? bpg = _undefined,
+    Object? bpgMasked = _undefined,
+    Object? pib = _undefined,
+    bool? hasRegisteredEntity,
+    Object? legalLiabilityAcceptedAt = _undefined,
   }) {
     final nextRole = role ?? this.role;
     final nextAddress = identical(address, _undefined) ? this.address : address as String?;
@@ -430,6 +529,12 @@ class UserModel {
             ? nextAddress
             : this.location)
         : location as String?;
+
+    final nextBpg = identical(bpg, _undefined) ? this.bpg : bpg as String?;
+    final nextBpgMasked = identical(bpgMasked, _undefined)
+        ? this.bpgMasked
+        : bpgMasked as String?;
+    final nextPib = identical(pib, _undefined) ? this.pib : pib as String?;
 
     return UserModel(
       id: id ?? this.id,
@@ -454,6 +559,17 @@ class UserModel {
       createdAt: identical(createdAt, _undefined) ? this.createdAt : createdAt as DateTime?,
       sellerQuickReplies: sellerQuickReplies ?? this.sellerQuickReplies,
       isAdmin: isAdmin ?? this.isAdmin,
+      legalType: identical(legalType, _undefined) ? this.legalType : legalType as String?,
+      bpg: nextBpg,
+      bpgMasked: nextBpgMasked,
+      pib: nextPib,
+      hasRegisteredEntity: hasRegisteredEntity ??
+          ((nextBpg != null && nextBpg.length == 12) ||
+              (nextBpgMasked != null && nextBpgMasked.isNotEmpty) ||
+              (nextPib != null && nextPib.length == 9)),
+      legalLiabilityAcceptedAt: identical(legalLiabilityAcceptedAt, _undefined)
+          ? this.legalLiabilityAcceptedAt
+          : legalLiabilityAcceptedAt as DateTime?,
     );
   }
 }
