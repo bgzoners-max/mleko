@@ -20,8 +20,8 @@ class SellerRegistrationValidator {
   SellerRegistrationValidator._();
 
   static const String legalLiabilityText =
-      'Potvrđujem da su navedeni podaci o gazdinstvu/firmi tačni i da proizvod '
-      'ispunjava zakonske sanitarne i higijenske uslove za stavljanje u promet. '
+      'Potvrđujem da su navedeni podaci tačni i da proizvodi koje oglašavam '
+      'ispunjavaju zakonske sanitarne i higijenske uslove za stavljanje u promet. '
       'Kao oglašivač, snosim punu pravnu i materijalnu odgovornost za tačnost '
       'podataka i ispravnost proizvoda.';
 
