@@ -79,7 +79,7 @@ class ProductCacheService {
   }
 
   // Cache keys
-  static const String homeProductsKey = '${_prefix}home';
+  static const String homeProductsKey = '${_prefix}home_v2';
   static String searchKey(String query) =>
       '${_prefix}search_${query.replaceAll(' ', '_')}';
   static String sellerKey(String sellerId) => '${_prefix}seller_$sellerId';
