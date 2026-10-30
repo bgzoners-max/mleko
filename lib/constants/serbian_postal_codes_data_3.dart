@@ -219,7 +219,7 @@ const List<PostalCodeEntry> serbianPostalCodesPart3 = [
   PostalCodeEntry(code: '19228', city: 'Gamzigradska Banja'),
   PostalCodeEntry(code: '19229', city: 'Borski Brestovac'),
   PostalCodeEntry(code: '19231', city: 'Borsko Bucje'),
-  PostalCodeEntry(code: '19232', city: 'Duboчane'),
+  PostalCodeEntry(code: '19232', city: 'Dubočane'),
   PostalCodeEntry(code: '19233', city: 'Podgorac'),
   PostalCodeEntry(code: '19234', city: 'Luka'),
   PostalCodeEntry(code: '19235', city: 'Velika Jasikova'),

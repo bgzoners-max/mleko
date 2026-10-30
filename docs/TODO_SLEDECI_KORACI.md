@@ -22,7 +22,7 @@
    - **hreflang u bot-SSR HTML:** Sve bot-SSR stranice (rute, kategorije, oglasi, proizvodi) automatski emituju `<link rel="alternate" hreflang=...>` izveden iz kanonskog URL-a (`preview-utils.ts`, obe verzije).
    - **hreflang u sitemap-i:** Svaki `<url>` u `sitemap.xml` sada ima `<xhtml:link>` anotacije (sr-RS + x-default), konzistentno sa SPA shell-om (`web/index.html`).
    - **Robots.txt:** Dodate privatne rute (`/onboarding`, `/splash`, `/login`, `/register`, `/favorites`, `/notifications`, `/seller-dashboard`, `/map-picker`, `/profile/edit`, `/classifieds/saved-searches`, `/auth/confirm`) + `Disallow: /api/` za zaštitu crawl budget-a.
-   - **Type-safety:** `tsconfig.json` sada pokriva i `functions/` (Cloudflare) pored `api/` (Vercel); dodate ambient deklaracije (`functions/cloudflare-pages.d.ts`) i popravljen prethodno skriveni tip u `functions/api/upload.ts` (null check za `request.body`). `npm run type-check` prolazi bez grešaka.
+   - **Type-safety:** `tsconfig.json` sada pokriva samo `functions/` (Cloudflare) nakon uklanjanja `api/` (Vercel); dodate ambient deklaracije (`functions/cloudflare-pages.d.ts`) i popravljen prethodno skriveni tip u `functions/api/upload.ts` (null check za `request.body`). `npm run type-check` prolazi bez grešaka.
    - **Validacija:** Funkcionalni test (12/12 prošao) — sitemap emituje hreflang za svaki URL, bot-SSR head sadrži canonical + hreflang sa očuvanim `?category=` parametrima.
    - **Strategija i sledeće faze:** Kompletan plan u [`docs/SEO_GLOBALNI_PREDLOZI.md`](./SEO_GLOBALNI_PREDLOZI.md).
 4. **🧪 CI popravljen — sva 3 hronično padajuća unit-testa zelena (Završeno 25. okt):**

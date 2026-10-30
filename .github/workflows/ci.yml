@@ -36,6 +36,9 @@ jobs:
       - name: Guard against seed test users in migrations
         run: dart run tool/check_no_seed_data_in_migrations.dart
 
+      - name: Verify schema.sql snapshot sync (drift guard)
+        run: dart run tool/squash_migrations.dart --check
+
       # Info nalazi su fatalni: analyzer je 2026-10 sa 0 grešaka/upozorenja, pa se
       # svako buduće štetno labavljenje kvaliteta (novo info upozorenje) blokira.
       - name: Flutter analyze
@@ -135,7 +138,7 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: TypeScript type-check (Vercel edge functions)
+      - name: TypeScript type-check (Cloudflare Pages functions)
         run: npm run type-check
 
       - name: Validate Digital Asset Links (assetlinks.json)

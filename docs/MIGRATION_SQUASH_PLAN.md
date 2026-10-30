@@ -5,6 +5,7 @@
 > 2. P0 seed čišćenje i RLS matrice su potpuno primenjene i zaštićene CI alatima (`tool/check_no_seed_data_in_migrations.dart`, `tool/scan_security_definer_migrations.dart`).
 > 3. Novo kreirane migracije se dodaju inkrementalno od datuma cutoff-a (`20261024*`), dok `supabase/schema.sql` služi kao instant uvid u celokupnu DDL šemu.
 > 4. Fizičko arhiviranje starih migracija u `supabase/migrations_archive/` podržano je kroz `dart run tool/squash_migrations.dart --apply` i zahteva prateći `supabase migration repair` na staging/prod instancama.
+> 5. **Drift guard (2026-10-30):** CI korak `Verify schema.sql snapshot sync` pokreće `dart run tool/squash_migrations.dart --check` — regeneriše očekivani sadržaj snapshot-a u memoriji i pada ako commitovani `schema.sql` odstupa od migracija (ručna izmena snapshot-a ili pre-cutoff migracije). Snapshot je time **dokazano** sinhron; `--check` ne dira fajlove na disku.
 
 ---
 

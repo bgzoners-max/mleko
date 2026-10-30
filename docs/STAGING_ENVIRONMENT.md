@@ -1,5 +1,13 @@
 # Staging okruženje (D2)
 
+> **Zastarelo (2026-10-30):** Vercel stack (`vercel.json`, `api/`, `.vercelignore`)
+> je uklonjen iz repozitorijuma — hosting je isključivo Cloudflare Pages.
+> Staging okruženje treba graditi na istom stacku: poseban Cloudflare Pages
+> projekat (npr. `domacimarket-staging`) + poseban Supabase projekat, deploy kroz
+> `npx wrangler pages deploy ... --branch staging`. Sekcije ispod koje opisuju
+> Vercel projekat, `VERCEL_*` secret-e i `deploy-staging.yml` više nisu relevantne
+> i zadržane su samo kao istorijski kontekst.
+
 Ovaj dokument opisuje arhitekturu, postavljanje i održavanje izolovanog **Staging** okruženja za Domaći market.
 
 ---

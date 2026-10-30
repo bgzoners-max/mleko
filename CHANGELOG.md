@@ -3,6 +3,71 @@
 Sve značajne promene na projektu **Domaći Market** (`mleko`) dokumentuju se u ovom fajlu.
 Format prati [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Nepotpisano] - 2026-10-30 — Uklanjanje Vercel legacy stacka (hosting konsolidacija)
+
+### Removed
+- **`api/` direktorijum (Vercel serverless funkcije)** — 6 fajlova koji su
+  duplikat novije Cloudflare Pages varijante u `functions/api/` (koja je
+  nadskup: sadrži i `static-seo-pages.ts` i `upload.ts`) i već su **divergirali**
+  (npr. `sitemap.ts`). Vercel deploy je ionako bio onemogućen
+  (`"deploymentEnabled": false`), pa je ovo bio mrtav kod sa rizikom drift-a.
+- **`vercel.json`** — sva bezbednosna zaglavlja (CSP, HSTS, X-Frame-Options...)
+  već žive u `web/_headers` za Cloudflare Pages, koja je **nadskup** (uključuje
+  i R2 storage domen u CSP-u kojeg vercel.json nije imao). Cache pravila su
+  identična.
+- **`.vercelignore`** — bez funkcije bez Vercel deploja.
+
+### Changed
+- **`tsconfig.json`**: `include` sada pokriva samo `functions/**/*.ts`.
+- **CI (`ci.yml`)**: korak preimenovan u „TypeScript type-check (Cloudflare
+  Pages functions)" (bilo „Vercel edge functions").
+- **`web-preview.yml`**: uklonjen `push` trigger na master — Firebase Hosting
+  deploy se sada dešava **samo za PR-ove** (channel `pr-<broj>`). Time je
+  uklonjen neočekivani treći „produkcioni" deploy na Firebase `live` kanal
+  koji je bio van smoke testa i rollback procedure iz `docs/DEPLOYMENT.md`.
+  Produkciona verzija ide isključivo kroz `deploy-cloudflare.yml`.
+- **`.gitignore`**: uklonjena dupla `.vercel` stavka.
+- **Dokumentacija**: `docs/SECURITY.md` (zaglavlja sada u `web/_headers`),
+  `docs/STAGING_ENVIRONMENT.md` (označeno zastarelim — staging treba graditi
+  na Cloudflare stacku), `docs/DEPLOYMENT.md` (dopuna o PR-only preview deployu).
+
+### Fixed
+- **Ćirilični karakteri u poštanskim brojevima (pre-existing CI break):** 9 unosa u
+  `lib/constants/serbian_postal_codes_data_*.dart` je sadržalo ćirilično slovo
+  č (U+0447) umesto latiničnog č (U+010D) (npr. `Lipnički Šor`, `Čačak`,
+  `Dubočane`, `Novi Bračin`) —
+  komit `fd4ab97` je time lomio CI korak „Enforce cyrillic-free code”
+  (`tool/check_cyrillic_strings.dart`). Zamenjeno svih 9 pojavljivanja;
+  `test/serbian_postal_codes_test.dart` (9 testova) prolazi.
+
+### Added
+- **Testovi kritičnih putanja (repositories + cart widgeti, 36 novih testova):**
+  - `test/repositories/orders_repository_test.dart` (18): `SupabaseOrdersRepository`
+    kroz MockHttpHandlerClient obrazac — `getOrderById`/`getOrderItems`/
+    `getOrderStatusAuditLogs`/stats mapiranje; **sve validacije**
+    `createOrderWithItems` (prazne stavke, nepostojeći proizvod, seller
+    mismatch, količina van `order_step`) + happy put sa proverom
+    `create_order_with_items` RPC parametara; arhiviranje (PATCH filteri po
+    buyer/seller, `archive_order` RPC) i `confirmOrderReceivedByBuyer`
+    (uspeh/odbitak).
+  - `test/repositories/products_repository_test.dart` (13):
+    `getProduct` happy put iz view-a, **fallback na `products` tabelu kad view
+    pukne (500)**, null kada ne postoji; `getProductsByIds`/`getProductsByCategories`
+    (prazni ulazi bez ijednog HTTP poziva, `hasMore` semantika); `createProduct`/
+    `updateProduct`/`deleteProduct` (INSERT/PATCH/DELETE + `toDbMap` bez `id`/`created_at`).
+  - `test/cart_widgets_test.dart` (5): `CartGuestBanner` (prikaz + onDismiss),
+    `CartItemTile` (naziv/količina/izračunata cena + onRemove) i
+    `CartSellerGroupCard` (render grupe, navigacija „Naruči" na
+    `/checkout-seller/:id`, uklanjanje stavke uz `onRefresh` i animaciju).
+- **Schema snapshot drift guard**: `tool/squash_migrations.dart --check` —
+  regeneriše očekivani sadržaj `supabase/schema.sql` u memoriji (bez pisanja
+  na disk) i poredi ga sa commitovanom verzijom (ignoriše `-- Generated at`
+  oznaku i CRLF razlike). Novi CI korak „Verify schema.sql snapshot sync" u
+  `ci.yml` garantuje da snapshot ne može tiho da zastari ili bude ručno
+  izmenjen bez uočavanja. Prilikom refaktora alata očišćena su sva 10 info
+  nalaza analyzer-a (`prefer_final_locals`, `cascade_invocations`) — fajl je
+  sada čist pod `--fatal-infos` pravilima.
+
 ## [Nepotpisano] - 2026-10-24 — Testiranje i CI/CD (tačka 7 hardening audita)
 
 ### Added

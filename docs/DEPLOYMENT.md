@@ -158,9 +158,15 @@ Hook se ponegde ignoriše sa `--no-verify`, ali to se **ne preporučuje**.
 ## 5. Pre-producijsi peek (preview deploy)
 
 Za svaki PR se pokreće `web-preview.yml` (Firebase Hosting, channel
-`pr-<broj>`), što omogućava pregled promena pre merge-a u `master`.
-Cloudflare Pages produkcija se deploy-uje samo nakon merge-a u `master`
+`pr-<broj>`, ističe za 7 dana), što omogućava pregled promena pre merge-a u
+`master`. Cloudflare Pages produkcija se deploy-uje samo nakon merge-a u `master`
 kroz `deploy-cloudflare.yml`.
+
+> **Važno:** `web-preview.yml` se pokreće **samo** na `pull_request` događaje —
+> push na master se ne deployuje na Firebase `live` kanal. Jedini produkcioni
+> web deploy je Cloudflare Pages (`domacimarket.rs`) sa smoke testom i rollback
+> procedurom iz ovog dokumenta. Firebase postoji u stacku samo zbog PR preview
+> kanala, FCM push notifikacija i Crashlyticsa.
 
 ---
 

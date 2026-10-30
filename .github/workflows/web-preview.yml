@@ -1,7 +1,5 @@
 name: Web Preview Build
 on:
-  push:
-    branches: [ main, master ]
   pull_request: # Pokreće staging preview za svaki PR
   workflow_dispatch: # Omogućava ručno pokretanje build-a iz GitHub UI-a
 
@@ -27,11 +25,17 @@ jobs:
           name: web-build
           path: build/web
 
-      - name: Deploy to Firebase Hosting
+      # Preview deploy SAMO za PR-ove (Firebase channel `pr-<broj>`, ističe za 7d).
+      # Push na master se NE deployuje ovde: produkciona verzija ide isključivo
+      # kroz deploy-cloudflare.yml (Cloudflare Pages, domacimarket.rs).
+      # Time se sprečava da Firebase Hosting `live` kanal postane neočekivani
+      # drugi produkcioni deploy van rollback procedura iz docs/DEPLOYMENT.md.
+      - name: Deploy to Firebase Hosting (PR preview only)
+        if: github.event_name == 'pull_request'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MLEKO }}'
           expires: 7d
           projectId: mleko-686eb
-          channelId: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'live' }}
+          channelId: 'pr-${{ github.event.number }}'

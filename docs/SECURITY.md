@@ -1,8 +1,13 @@
 # Bezbednosna politika i mrežna zaglavlja (Security & Headers)
 
-## 1. Mrežna bezbednosna zaglavlja (Vercel)
+> **Napomena (2026-10-30):** Vercel stack (`vercel.json`, `api/`) je uklonjen iz
+> repozitorijuma — produkcija je isključivo na Cloudflare Pages. Sva bezbednosna
+> zaglavlja sada žive u `web/_headers` (kopira se u deploy bundle kroz
+> `tool/prepare_cloudflare_deploy.dart`).
 
-U `vercel.json` su konfigurisana sledeća bezbednosna zaglavlja za sve rute (`/(.*)`):
+## 1. Mrežna bezbednosna zaglavlja (Cloudflare Pages, `web/_headers`)
+
+U `web/_headers` su konfigurisana sledeća bezbednosna zaglavlja za sve rute (`/*`):
 
 - **Strict-Transport-Security (HSTS)**: `max-age=63072000; includeSubDomains; preload`
   - Prisiljava sve pretraživače da isključivo komuniciraju putem HTTPS protokola naredne 2 godine, uključujući sve poddomene.
@@ -18,7 +23,7 @@ U `vercel.json` su konfigurisana sledeća bezbednosna zaglavlja za sve rute (`/(
 ## 2. Content Security Policy (CSP) i Prihvaćen rizik (`unsafe-eval`)
 
 ### Trenutno stanje (Flutter Web CanvasKit)
-U `vercel.json` CSP direktiva glasi:
+U `web/_headers` CSP direktiva glasi:
 ```text
 default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com blob:; ...
 ```
@@ -35,4 +40,4 @@ Ovo je dokumentovan i prihvaćen arhitekturni rizik za trenutnu verziju Flutter 
 ### Roadmap: Tranzicija na WASM (WasmGC)
 Sa stabilizacijom Flutter Web WasmGC kompajlera (`flutter build web --wasm`):
 - WasmGC uklanja potrebu za `dart2js` runtime generatorom.
-- Kada se produkcijski build prebaci na WASM, `unsafe-eval` će biti uklonjen iz `script-src` u `vercel.json`.
+- Kada se produkcijski build prebaci na WASM, `unsafe-eval` će biti uklonjen iz `script-src` u `web/_headers`.
