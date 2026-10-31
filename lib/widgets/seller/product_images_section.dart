@@ -32,6 +32,14 @@ class ProductImagesSection extends StatelessWidget {
         Text(
             'Slike proizvoda (max ${AppConstants.maxProductImages})',
             style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 2),
+        Text(
+          'Preporučujemo bar 1 fotografiju — oglasi sa slikom prikazuju se na vrhu početne strane.',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Colors.grey.shade600),
+        ),
         const SizedBox(height: 8),
         SizedBox(
           height: 120,

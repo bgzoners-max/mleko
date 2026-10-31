@@ -116,9 +116,16 @@ class HomeWideLayout extends StatelessWidget {
                   final list = snap.data?.products ?? [];
                   final salesCounts = snap.data?.salesCounts ?? {};
                   final ratings = snap.data?.ratings ?? {};
-                  // Uvek prikazujemo sve proizvode, poređane od najnovijeg ka starijem
+                  // Prikazujemo prvo proizvode sa slikom (od najnovijeg), a bez slike na kraju
                   final displayList = [...list]
-                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                    ..sort((a, b) {
+                      final aHasImg = a.imageUrls.isNotEmpty ? 1 : 0;
+                      final bHasImg = b.imageUrls.isNotEmpty ? 1 : 0;
+                      if (aHasImg != bHasImg) {
+                        return bHasImg.compareTo(aHasImg);
+                      }
+                      return b.createdAt.compareTo(a.createdAt);
+                    });
                   warmupCarouselImages(displayList);
                   final user =
                       context.select<AppState, UserModel?>((s) => s.user);

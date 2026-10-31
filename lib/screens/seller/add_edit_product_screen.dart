@@ -253,6 +253,34 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     setState(() => _newImageBytes.removeAt(index));
   }
 
+  Future<bool> _confirmPublishWithoutImage() async {
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Objava bez fotografije?'),
+        content: const Text(
+          'Oglasi bez fotografije prikazuju se na dnu početne strane i imaju znatno manje porudžbina. Preporučujemo da dodate bar jednu fotografiju proizvoda.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('publish'),
+            child: const Text('Objavi bez slike'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(ctx).pop('pick'),
+            icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+            label: const Text('Dodaj fotografiju'),
+          ),
+        ],
+      ),
+    );
+    if (action == 'pick') {
+      await _pickImage();
+      return false;
+    }
+    return action == 'publish';
+  }
+
   Future<void> _submit() async {
     final user = context.read<AppState>().user;
     final productsService = context.read<ProductsService>();
@@ -345,6 +373,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       return fail(
         'Morate potvrditi izjavu o tačnosti podataka i ispravnosti proizvoda pre objave.',
       );
+    }
+    if (_totalImages == 0) {
+      final proceed = await _confirmPublishWithoutImage();
+      if (!proceed || !mounted) return;
     }
     setState(() {
       _error = null;
