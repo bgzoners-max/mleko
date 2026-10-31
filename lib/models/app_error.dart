@@ -1,5 +1,5 @@
 /// Strukturovana reprezentacija greške u aplikaciji
-class AppError {
+class AppError implements Exception {
   final String message;
   final String? userMessage;
   final String? code;

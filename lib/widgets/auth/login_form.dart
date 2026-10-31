@@ -22,6 +22,8 @@ class LoginFormState extends State<LoginForm> {
   final _password = TextEditingController();
   bool _obscure = true;
   String? _error;
+  bool _isUnconfirmedEmailError = false;
+  bool _resendingConfirmation = false;
   final bool _guestLoading = false;
   bool _googleLoading = false;
 
@@ -75,7 +77,10 @@ class LoginFormState extends State<LoginForm> {
       return;
     }
 
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _isUnconfirmedEmailError = false;
+    });
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
       setState(() => _error = 'Unesite email i lozinku.');
       return;
@@ -93,14 +98,22 @@ class LoginFormState extends State<LoginForm> {
         final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
         context.go(returnTo ?? '/');
       }
-    } on Exception catch (e) {
+    } catch (e) {
       if (mounted) {
-        _failedAttempts++;
-        if (_failedAttempts >= _maxFailedAttempts) {
-          _startLockout(30);
+        final rawLower = e.toString().toLowerCase();
+        final isUnconfirmed = rawLower.contains('email not confirmed') ||
+            rawLower.contains('not confirmed');
+        if (!isUnconfirmed) {
+          _failedAttempts++;
+          if (_failedAttempts >= _maxFailedAttempts) {
+            _startLockout(30);
+          }
         }
         final errorMsg = _formatAuthError(e);
-        setState(() => _error = errorMsg);
+        setState(() {
+          _error = errorMsg;
+          _isUnconfirmedEmailError = isUnconfirmed;
+        });
         final error = AppError.from(e,
             stackTrace: StackTrace.current, userMessage: errorMsg);
         await ErrorDialog.show(context,
@@ -158,13 +171,44 @@ class LoginFormState extends State<LoginForm> {
     }
   }
 
-  String _formatAuthError(Exception e) {
+  Future<void> _resendConfirmation() async {
+    final email = _email.text.trim();
+    if (email.isEmpty) return;
+    setState(() => _resendingConfirmation = true);
+    try {
+      await context.read<AppState>().authService.resendConfirmationEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Novi link za aktivaciju naloga je poslat na vaš email. Proverite i Spam/Nepoželjno.'),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_formatAuthError(e)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _resendingConfirmation = false);
+    }
+  }
+
+  String _formatAuthError(Object e) {
     final msg = e.toString().toLowerCase();
+    if (msg.contains('email not confirmed') || msg.contains('not confirmed')) {
+      return 'Email adresa još nije potvrđena. Kliknite na link za aktivaciju u mejlu (proverite i Spam/Nepoželjno) ili pošaljite novi link ispod.';
+    }
     if (msg.contains('invalid login') ||
         msg.contains('invalid') ||
         msg.contains('wrong') ||
         msg.contains('credentials') ||
-        msg.contains('email not confirmed') ||
         msg.contains('user not found') ||
         msg.contains('email already') ||
         msg.contains('already registered')) {
@@ -277,17 +321,44 @@ class LoginFormState extends State<LoginForm> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(
-                          color: Colors.red, fontSize: 13, height: 1.3),
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                              color: Colors.red, fontSize: 13, height: 1.3),
+                        ),
+                      ),
+                    ],
                   ),
+                  if (_isUnconfirmedEmailError) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _resendingConfirmation ? null : _resendConfirmation,
+                        icon: _resendingConfirmation
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.mark_email_read_outlined,
+                                size: 16),
+                        label: const Text(
+                            'Pošalji ponovo aktivacioni email'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

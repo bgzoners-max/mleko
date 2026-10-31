@@ -70,11 +70,24 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 /// Poštuje sistemsko smanjenje animacija (pristupačnost): kada je na uređaju
 /// uključeno "Remove animations" / "Reduce motion", vraća običnu stranicu
 /// bez Fade+Slide+Scale tranzicije.
+String _resolveWebInitialLocation() {
+  if (!kIsWeb) return '/splash';
+  final uri = Uri.base;
+  if (uri.fragment.isNotEmpty && uri.fragment.startsWith('/')) {
+    return uri.fragment;
+  }
+  if (uri.path.isNotEmpty && uri.path != '/') {
+    final query = uri.hasQuery ? '?${uri.query}' : '';
+    return '${uri.path}$query';
+  }
+  return '/';
+}
+
 GoRouter createRouter(AppState appState) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     refreshListenable: appState.authSession,
-    initialLocation: kIsWeb ? '/' : '/splash',
+    initialLocation: _resolveWebInitialLocation(),
     redirect: (context, state) => routerRedirect(context, state, appState),
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(
