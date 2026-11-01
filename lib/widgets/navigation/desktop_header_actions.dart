@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/design_system.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
+import '../home/favorite_farms_drawer.dart';
 import '../theme_toggle_switch.dart';
 import 'publish_chooser_dialog.dart';
 
@@ -84,6 +85,14 @@ class DesktopHeaderActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Omiljena gazdinstva (Slide-over bočni panel)
+        HeaderIconButton(
+          icon: Icons.favorite_border_rounded,
+          tooltip: 'Omiljena gazdinstva',
+          onTap: () => showFavoriteFarmsDrawer(context),
+        ),
+        const SizedBox(width: 4),
+
         // Korpa
         HeaderIconButton(
           icon: Icons.shopping_cart_outlined,

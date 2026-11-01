@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../constants/amazon_theme.dart';
+import '../../core/responsive.dart';
 import '../../models/product_model.dart';
+import 'favorite_farms_drawer.dart';
 import 'home_product_item.dart';
 
 /// Prikaz najnovijih proizvoda u 2 reda sa horizontalnim listanjem (paginacijom)
@@ -67,15 +69,17 @@ class _HomePaginatedProductsShelfState
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final int columns;
-        if (width >= 960) {
-          columns = 4;
+        if (width >= 1150) {
+          columns = 6;
+        } else if (width >= 960) {
+          columns = 5;
         } else if (width >= 620) {
           columns = 3;
         } else {
           columns = 2;
         }
 
-        const maxRows = 2;
+        final maxRows = width >= 960 ? 3 : 2;
         final itemsPerPage = columns * maxRows;
         final totalPages =
             (widget.products.length / itemsPerPage).ceil().clamp(1, 9999);
@@ -85,8 +89,9 @@ class _HomePaginatedProductsShelfState
           _currentPage = totalPages - 1;
         }
 
-        // Visina: ako ima 1 red (npr. samo 4 proizvoda na 4 kolone), ne ostavljamo prazan prostor
-        final displayedRows = widget.products.length <= columns ? 1 : maxRows;
+        // Visina: dinamički se prilagođava broju popunjenih redova
+        final displayedRows =
+            (widget.products.length / columns).ceil().clamp(1, maxRows);
         const mainAxisSpacing = 8.0;
         final shelfHeight = (displayedRows * widget.productGridExtent) +
             ((displayedRows - 1) * mainAxisSpacing);
@@ -95,7 +100,7 @@ class _HomePaginatedProductsShelfState
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Zaglavlje: Naslov sa leve strane, brojač i strelice za listanje sa desne
+            // Zaglavlje: Naslov sa leve strane, dugme za omiljena gazdinstva, brojač i strelice za listanje
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
@@ -112,6 +117,42 @@ class _HomePaginatedProductsShelfState
                       ),
                     ),
                   ),
+                  if (Breakpoints.isDesktop(context)) ...[
+                    OutlinedButton.icon(
+                      onPressed: () => showFavoriteFarmsDrawer(context),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        side: BorderSide(
+                          color: isDark
+                              ? AmazonColors.darkBorder
+                              : AmazonColors.borderGray,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.favorite_rounded,
+                        size: 15,
+                        color: AmazonColors.dealRed,
+                      ),
+                      label: Text(
+                        'Omiljena gazdinstva',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? Colors.white70
+                              : AmazonColors.darkNavy,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   if (totalPages > 1) ...[
                     // Brojač stranica (npr. "1 / 3")
                     Container(

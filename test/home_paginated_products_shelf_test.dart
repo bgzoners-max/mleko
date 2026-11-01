@@ -35,7 +35,7 @@ Widget _wrapWithProviders({required Widget child}) {
     ],
     child: MaterialApp(
       home: Scaffold(
-        body: child,
+        body: SingleChildScrollView(child: child),
       ),
     ),
   );
@@ -97,9 +97,9 @@ void main() {
       });
 
       final now = DateTime.now();
-      // 10 proizvoda: na desktopu (4 kolone x 2 reda = 8 po strani) -> 2 stranice (8 + 2)
+      // 20 proizvoda: na desktopu (6 kolona x 3 reda = 18 po strani) -> 2 stranice (18 + 2)
       final products = List.generate(
-        10,
+        20,
         (i) => _createProduct('p_$i', 'Proizvod $i', now.subtract(Duration(hours: i))),
       );
 
@@ -121,7 +121,7 @@ void main() {
       // Prva stranica: prikazuje "1 / 2"
       expect(find.text('1 / 2'), findsOneWidget);
       expect(find.text('Proizvod 0'), findsOneWidget);
-      expect(find.text('Proizvod 7'), findsOneWidget);
+      expect(find.text('Proizvod 17'), findsOneWidget);
 
       // Klik na desnu strelicu (sledeća strana)
       final nextArrow = find.byTooltip('Sledeća stranica');
@@ -131,8 +131,8 @@ void main() {
 
       // Druga stranica: prikazuje "2 / 2"
       expect(find.text('2 / 2'), findsOneWidget);
-      expect(find.text('Proizvod 8'), findsOneWidget);
-      expect(find.text('Proizvod 9'), findsOneWidget);
+      expect(find.text('Proizvod 18'), findsOneWidget);
+      expect(find.text('Proizvod 19'), findsOneWidget);
 
       // Klik na levu strelicu (nazad)
       final prevArrow = find.byTooltip('Prethodna stranica');
