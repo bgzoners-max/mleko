@@ -45,6 +45,130 @@ class ProductDeliverySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = Breakpoints.isTabletOrLarger(context);
+
+    final pickupWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Način preuzimanja *',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: 4),
+        ...AppConstants.pickupOptions.map(
+          (opt) => CheckboxListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text(opt),
+            value: pickupOptions.contains(opt),
+            onChanged: (_) => onPickupOptionToggled(opt),
+          ),
+        ),
+      ],
+    );
+
+    final deliveryModeWidget = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Lična dostava domaćina za ovaj proizvod',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: onEditDeliveryLocations,
+              icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+              label: const Text('Uredi lokacije'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        if (deliveryPointsLoading)
+          const LinearProgressIndicator()
+        else ...[
+          _ModeTile(
+            value: ProductDeliveryMode.none,
+            groupValue: deliveryMode,
+            title: 'Bez lične dostave domaćina',
+            onChanged: onDeliveryModeChanged,
+          ),
+          _ModeTile(
+            value: ProductDeliveryMode.allSellerPoints,
+            groupValue: deliveryMode,
+            title: 'Na svim mojim lokacijama',
+            enabled: sellerDeliveryPoints.isNotEmpty,
+            onChanged: onDeliveryModeChanged,
+          ),
+          _ModeTile(
+            value: ProductDeliveryMode.selectedPoints,
+            groupValue: deliveryMode,
+            title: 'Samo na izabranim lokacijama',
+            enabled: sellerDeliveryPoints.isNotEmpty,
+            onChanged: onDeliveryModeChanged,
+          ),
+          if (sellerDeliveryPoints.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Još nemate definisane lokacije lične dostave. Dodajte '
+                    'ih u podešavanjima da biste ih ponudili kupcima.',
+                    style: TextStyle(color: Colors.orange.shade800),
+                  ),
+                  const SizedBox(height: 6),
+                  OutlinedButton.icon(
+                    onPressed: onEditDeliveryLocations,
+                    icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                    label: const Text('Dodaj punktove dostave'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (deliveryMode == ProductDeliveryMode.selectedPoints &&
+              sellerDeliveryPoints.isNotEmpty) ...[
+            ...sellerDeliveryPoints.map(
+              (point) => CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(point.summaryLabel),
+                subtitle: Text(
+                  point.isActive
+                      ? '${point.city} • ${point.activeSlots.length} aktivnih termina'
+                      : '${point.city} • neaktivna lokacija',
+                ),
+                value: selectedDeliveryPointIds.contains(point.id),
+                onChanged: (_) => onDeliveryPointToggled(point.id),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 4),
+              child: OutlinedButton.icon(
+                onPressed: onEditDeliveryLocations,
+                icon: const Icon(Icons.tune, size: 16),
+                label: const Text('Dodaj ili izmeni punktove dostave'),
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -96,110 +220,28 @@ class ProductDeliverySection extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
-        Text('Način preuzimanja *',
-            style: Theme.of(context).textTheme.labelLarge),
-        ...AppConstants.pickupOptions.map((opt) => CheckboxListTile(
-              title: Text(opt),
-              value: pickupOptions.contains(opt),
-              onChanged: (_) => onPickupOptionToggled(opt),
-            )),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Lična dostava domaćina za ovaj proizvod',
-                style: Theme.of(context).textTheme.labelLarge,
+        if (isWide) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 4,
+                child: pickupWidget,
               ),
-            ),
-            TextButton.icon(
-              onPressed: onEditDeliveryLocations,
-              icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
-              label: const Text('Uredi lokacije'),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+              const SizedBox(width: 24),
+              Expanded(
+                flex: 5,
+                child: deliveryModeWidget,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (deliveryPointsLoading)
-          const LinearProgressIndicator()
-        else ...[
-          _ModeTile(
-            value: ProductDeliveryMode.none,
-            groupValue: deliveryMode,
-            title: 'Bez lične dostave domaćina',
-            onChanged: onDeliveryModeChanged,
+            ],
           ),
-          _ModeTile(
-            value: ProductDeliveryMode.allSellerPoints,
-            groupValue: deliveryMode,
-            title: 'Na svim mojim lokacijama',
-            enabled: sellerDeliveryPoints.isNotEmpty,
-            onChanged: onDeliveryModeChanged,
-          ),
-          _ModeTile(
-            value: ProductDeliveryMode.selectedPoints,
-            groupValue: deliveryMode,
-            title: 'Samo na izabranim lokacijama',
-            enabled: sellerDeliveryPoints.isNotEmpty,
-            onChanged: onDeliveryModeChanged,
-          ),
-          if (sellerDeliveryPoints.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Još nemate definisane lokacije lične dostave. Dodajte '
-                    'ih u podešavanjima da biste ih ponudili kupcima.',
-                    style: TextStyle(color: Colors.orange.shade800),
-                  ),
-                  const SizedBox(height: 6),
-                  OutlinedButton.icon(
-                    onPressed: onEditDeliveryLocations,
-                    icon: const Icon(Icons.add_location_alt_outlined, size: 16),
-                    label: const Text('Dodaj punktove dostave'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (deliveryMode == ProductDeliveryMode.selectedPoints &&
-              sellerDeliveryPoints.isNotEmpty) ...[
-            ...sellerDeliveryPoints.map(
-              (point) => CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(point.summaryLabel),
-                subtitle: Text(
-                  point.isActive
-                      ? '${point.city} • ${point.activeSlots.length} aktivnih termina'
-                      : '${point.city} • neaktivna lokacija',
-                ),
-                value: selectedDeliveryPointIds.contains(point.id),
-                onChanged: (_) => onDeliveryPointToggled(point.id),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 4),
-              child: OutlinedButton.icon(
-                onPressed: onEditDeliveryLocations,
-                icon: const Icon(Icons.tune, size: 16),
-                label: const Text('Dodaj ili izmeni punktove dostave'),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ),
-          ],
+        ] else ...[
+          pickupWidget,
+          const SizedBox(height: 12),
+          deliveryModeWidget,
         ],
-        if (Breakpoints.isTabletOrLarger(context)) ...[
+        const SizedBox(height: 16),
+        if (isWide) ...[
           Row(
             children: [
               Expanded(
@@ -210,7 +252,7 @@ class ProductDeliverySection extends StatelessWidget {
                   onChanged: onDomesticChanged,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 24),
               Expanded(
                 child: SwitchListTile(
                   contentPadding: EdgeInsets.zero,
@@ -223,11 +265,13 @@ class ProductDeliverySection extends StatelessWidget {
           ),
         ] else ...[
           SwitchListTile(
+            contentPadding: EdgeInsets.zero,
             title: const Text('Domaće / Porodično gazdinstvo'),
             value: isDomestic,
             onChanged: onDomesticChanged,
           ),
           SwitchListTile(
+            contentPadding: EdgeInsets.zero,
             title: const Text('Dostupno sada'),
             value: availableNow,
             onChanged: onAvailableNowChanged,
