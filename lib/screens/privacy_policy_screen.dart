@@ -25,7 +25,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
       effectiveDate: '30. oktobar 2026.',
       children: [
         b.section('1', 'Ko je rukovalac podacima', [
-          'Rukovalac podacima o ličnosti u vezi sa platformom domaćimarket.rs je Vladimir Ivanović, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
+          'Rukovalac podacima o ličnosti u vezi sa platformom domaćimarket.rs je Tim platforme Domaći Market, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
           'Rukovalac određuje svrhe i načine obrade podataka o ličnosti u okviru funkcionisanja platforme, u skladu sa Zakonom o zaštiti podataka o ličnosti Republike Srbije („Sl. glasnik RS“, br. 87/2018 – ZZPL).',
         ]),
         b.section('2', 'Status platforme', [
@@ -40,7 +40,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         ]),
         b.sectionBullets(
             '4', 'Koje strane učestvuju u funkcionisanju platforme', [
-          'Vladimir Ivanović, kao rukovalac i lice koje upravlja platformom domaćimarket.rs',
+          'Tim platforme Domaći Market, kao rukovalac i lice koje upravlja platformom domaćimarket.rs',
           'korisnici platforme, uključujući kupce, prodavce, goste i administratore',
           'Supabase, kao pružalac tehničke infrastrukture za autentikaciju i bazu podataka',
           'Cloudflare (Cloudflare Pages i Cloudflare R2), kao pružalac infrastrukture za web hosting, CDN mrežu, bezbednosnu zaštitu i skladištenje medijskih datoteka (fotografija proizvoda i oglasa)',
@@ -163,7 +163,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           'Aktuelna verzija politike biće objavljena na platformi, uz naznačen datum stupanja na snagu.',
         ]),
         b.section('21', 'Kontakt', [
-          'Za sva pitanja u vezi sa ovom Politikom privatnosti i obradom podataka o ličnosti možete se obratiti na: Vladimir Ivanović, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
+          'Za sva pitanja u vezi sa ovom Politikom privatnosti i obradom podataka o ličnosti možete se obratiti na: Tim platforme Domaći Market, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
         ]),
       ],
     );

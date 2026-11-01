@@ -25,7 +25,7 @@ class TermsScreen extends StatelessWidget {
       effectiveDate: '1. avgust 2026. (poslednje ažuriranje: 30. oktobar 2026.)',
       children: [
         b.section('1', 'Opšte odredbe i pravni okvir', [
-          'Dobrodošli na platformu domaćimarket.rs, digitalnu platformu kojom upravlja Vladimir Ivanović, Beograd, Republika Srbija (kontakt: podrska@domacimarket.rs), a koja omogućava povezivanje proizvođača domaće hrane, oglašivača opštih malih oglasa i krajnjih kupaca.',
+          'Dobrodošli na platformu domaćimarket.rs, digitalnu platformu kojom upravlja Tim platforme Domaći Market, Beograd, Republika Srbija (kontakt: podrska@domacimarket.rs), a koja omogućava povezivanje proizvođača domaće hrane, oglašivača opštih malih oglasa i krajnjih kupaca.',
           'Korišćenjem platforme korisnik potvrđuje da je u celosti upoznat sa ovim Uslovima korišćenja i da ih prihvata kao obavezujuće ugovorne odredbe.',
           'Poslovanje i oglašavanje na platformi podležu zakonodavstvu Republike Srbije, naročito Zakonu o elektronskoj trgovini, Zakonu o zaštiti potrošača, izmenama Zakona o trgovini ("Sl. glasnik RS", br. 35/2026), Zakonu o bezbednosti hrane, Zakonu o obligacionim odnosima i Zakonu o oglašavanju.',
         ]),
@@ -135,7 +135,7 @@ class TermsScreen extends StatelessWidget {
           'Na ove Uslove korišćenja primenjuje se pravo Republike Srbije. Za sporove koji nastanu u vezi sa korišćenjem platforme nadležan je stvarno nadležni sud u Beogradu, Republika Srbija, osim ako obavezujući propisi nalažu drugačije.',
         ]),
         b.section('19', 'Kontakt podaci', [
-          'Za sva pitanja, primedbe ili prijave nezakonitog sadržaja u vezi sa ovim Uslovima korišćenja možete se obratiti na: Vladimir Ivanović, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
+          'Za sva pitanja, primedbe ili prijave nezakonitog sadržaja u vezi sa ovim Uslovima korišćenja možete se obratiti na: Tim platforme Domaći Market, Beograd, Republika Srbija, email: podrska@domacimarket.rs.',
         ]),
       ],
     );
