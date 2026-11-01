@@ -6,8 +6,6 @@ const kEditProfileSellerTags = [
   'Direktna dostava',
   'Preuzimanje na licu mesta',
   'Plaćanje gotovinom',
-  'Plaćanje karticom',
-  'PDV obveznik',
   'Organski uzgoj',
   'Sezonski',
 ];
