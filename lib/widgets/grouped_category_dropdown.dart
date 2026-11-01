@@ -59,7 +59,7 @@ class GroupedCategoryDropdown extends StatelessWidget {
       key: ValueKey(effectiveValue),
       initialValue: effectiveValue,
       isExpanded: true,
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(labelText: label, isDense: true),
       items: items,
       onChanged: (v) {
         if (v != null && !v.startsWith(_headerPrefix)) {

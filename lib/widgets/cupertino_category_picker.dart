@@ -52,6 +52,7 @@ class _CupertinoCategoryPickerState extends State<CupertinoCategoryPicker> {
           return TextFormField(
             enabled: false,
             decoration: InputDecoration(
+              isDense: true,
               labelText: widget.label,
               hintText: 'Nema kategorija',
             ),
@@ -66,6 +67,7 @@ class _CupertinoCategoryPickerState extends State<CupertinoCategoryPicker> {
           onTap: () => _showPicker(context, categoryNames),
           child: InputDecorator(
             decoration: InputDecoration(
+              isDense: true,
               labelText: widget.label,
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

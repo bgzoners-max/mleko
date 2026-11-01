@@ -30,19 +30,12 @@ class ProductImagesSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-            'Slike proizvoda (max ${AppConstants.maxProductImages})',
-            style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 2),
-        Text(
-          'Preporučujemo bar 1 fotografiju — oglasi sa slikom prikazuju se na vrhu početne strane.',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: Colors.grey.shade600),
+          'Slike proizvoda (max ${AppConstants.maxProductImages})',
+          style: Theme.of(context).textTheme.labelLarge,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         SizedBox(
-          height: 120,
+          height: 80,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
@@ -54,22 +47,31 @@ class ProductImagesSection extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                           child: CachedNetworkImage(
                             imageUrl: e.value,
-                            width: 100,
-                            memCacheWidth: 200,
-                            memCacheHeight: 200,
-                            height: 100,
+                            width: 80,
+                            memCacheWidth: 160,
+                            memCacheHeight: 160,
+                            height: 80,
                             fit: BoxFit.cover,
                           ),
                         ),
                         Positioned(
-                          top: 4,
-                          right: 4,
-                          child: IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white, size: 20),
-                            style: IconButton.styleFrom(
-                                backgroundColor: Colors.black54),
-                            onPressed: () => onRemoveExisting(e.key),
+                          top: 2,
+                          right: 2,
+                          child: InkWell(
+                            onTap: () => onRemoveExisting(e.key),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -81,18 +83,31 @@ class ProductImagesSection extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.memory(e.value,
-                              width: 100, height: 100, fit: BoxFit.cover),
+                          child: Image.memory(
+                            e.value,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                         Positioned(
-                          top: 4,
-                          right: 4,
-                          child: IconButton(
-                            icon: const Icon(Icons.close,
-                                color: Colors.white, size: 20),
-                            style: IconButton.styleFrom(
-                                backgroundColor: Colors.black54),
-                            onPressed: () => onRemoveNew(e.key),
+                          top: 2,
+                          right: 2,
+                          child: InkWell(
+                            onTap: () => onRemoveNew(e.key),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -102,14 +117,17 @@ class ProductImagesSection extends StatelessWidget {
                 GestureDetector(
                   onTap: onPickImage,
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey.shade400),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.add_photo_alternate,
-                        size: 40, color: Colors.grey.shade400),
+                    child: Icon(
+                      Icons.add_photo_alternate,
+                      size: 32,
+                      color: Colors.grey.shade400,
+                    ),
                   ),
                 ),
             ],

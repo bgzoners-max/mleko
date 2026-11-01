@@ -572,10 +572,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               constraints: BoxConstraints(maxWidth: maxFormWidth),
               child: Padding(
                 padding: EdgeInsets.only(
-                  left: 24,
-                  right: 24,
-                  top: 24,
-                  bottom: 24 + MediaQuery.of(context).padding.bottom,
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: 20 + MediaQuery.of(context).padding.bottom,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -602,7 +602,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       onChanged: () => setState(() {}),
                     ),
 // BASIC-SECTION-END
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     ProductImagesSection(
                       imageUrls: _imageUrls,
                       newImageBytes: _newImageBytes,
@@ -610,7 +610,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       onRemoveNew: _removeNewImage,
                       onPickImage: _pickImage,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     ProductDeliverySection(
                       farmLocation: user?.city ?? user?.location ?? _existingLocation,
                       onEditDeliveryLocations: _openDeliverySettings,
@@ -640,7 +640,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       availableNow: _availableNow,
                       onAvailableNowChanged: (v) => setState(() => _availableNow = v),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     ProductLegalLiabilityCheckbox(
                       value: _acceptedLiability,
                       onChanged: _loading
@@ -651,10 +651,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                               }),
                     ),
                     if (_error != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(_error!, style: const TextStyle(color: Colors.red)),
                     ],
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _loading ? null : _submit,
                       child: _loading
@@ -666,7 +666,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           : Text(isEdit ? 'Sačuvaj' : 'Objavi'),
                     ),
                     if (isEdit) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,

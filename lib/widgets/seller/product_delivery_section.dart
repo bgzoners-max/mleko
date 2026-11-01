@@ -58,6 +58,7 @@ class ProductDeliverySection extends StatelessWidget {
         ...AppConstants.pickupOptions.map(
           (opt) => CheckboxListTile(
             dense: true,
+            visualDensity: VisualDensity.compact,
             contentPadding: EdgeInsets.zero,
             title: Text(opt),
             value: pickupOptions.contains(opt),
@@ -103,6 +104,7 @@ class ProductDeliverySection extends StatelessWidget {
             ...sellerDeliveryPoints.map(
               (point) => CheckboxListTile(
                 dense: true,
+                visualDensity: VisualDensity.compact,
                 contentPadding: EdgeInsets.zero,
                 title: Text(point.summaryLabel),
                 subtitle: Text(
@@ -116,7 +118,7 @@ class ProductDeliverySection extends StatelessWidget {
             ),
           ],
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 2),
             child: TextButton.icon(
               onPressed: onEditDeliveryLocations,
               icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
@@ -129,7 +131,7 @@ class ProductDeliverySection extends StatelessWidget {
           ),
           if (sellerDeliveryPoints.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 2),
               child: OutlinedButton.icon(
                 onPressed: onEditDeliveryLocations,
                 icon: const Icon(Icons.add_location_alt_outlined, size: 16),
@@ -148,12 +150,12 @@ class ProductDeliverySection extends StatelessWidget {
       children: [
         if (farmLocation != null && farmLocation!.trim().isNotEmpty) ...[
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white.withValues(alpha: 0.05)
                   : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.white12
@@ -164,7 +166,7 @@ class ProductDeliverySection extends StatelessWidget {
               children: [
                 Icon(
                   Icons.location_on_outlined,
-                  size: 18,
+                  size: 16,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
@@ -192,7 +194,7 @@ class ProductDeliverySection extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
         ],
         if (isWide) ...[
           Row(
@@ -202,7 +204,7 @@ class ProductDeliverySection extends StatelessWidget {
                 flex: 4,
                 child: pickupWidget,
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 20),
               Expanded(
                 flex: 5,
                 child: deliveryModeWidget,
@@ -211,17 +213,17 @@ class ProductDeliverySection extends StatelessWidget {
           ),
         ] else ...[
           pickupWidget,
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           deliveryModeWidget,
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerLeft,
           child: InkWell(
             onTap: () => onAvailableNowChanged(!availableNow),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -231,23 +233,29 @@ class ProductDeliverySection extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                   ),
-                  const SizedBox(width: 12),
-                  Switch(
-                    value: availableNow,
-                    onChanged: onAvailableNowChanged,
+                  const SizedBox(width: 8),
+                  Transform.scale(
+                    scale: 0.85,
+                    child: Switch(
+                      value: availableNow,
+                      onChanged: onAvailableNowChanged,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         TextField(
           controller: descriptionController,
+          minLines: 2,
           maxLines: 3,
           maxLength: AppConstants.maxProductDescriptionLength,
           decoration: const InputDecoration(
-              labelText: 'Opis (max 300 karaktera)'),
+            labelText: 'Opis (max 300 karaktera)',
+            isDense: true,
+          ),
         ),
       ],
     );
@@ -277,6 +285,7 @@ class _ModeTile extends StatelessWidget {
       groupValue: groupValue,
       contentPadding: EdgeInsets.zero,
       dense: true,
+      visualDensity: VisualDensity.compact,
       title: Text(title),
       // ignore: deprecated_member_use
       onChanged: enabled

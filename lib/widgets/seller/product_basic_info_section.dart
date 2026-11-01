@@ -69,7 +69,7 @@ class ProductBasicInfoSection extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: unitType,
       isExpanded: true,
-      decoration: const InputDecoration(labelText: 'Jedinica'),
+      decoration: const InputDecoration(labelText: 'Jedinica', isDense: true),
       items: const [
         DropdownMenuItem(
           value: ProductModel.unitKg,
@@ -99,7 +99,7 @@ class ProductBasicInfoSection extends StatelessWidget {
   Widget _buildNameField() {
     return TextField(
       controller: nameController,
-      decoration: const InputDecoration(labelText: 'Naziv *'),
+      decoration: const InputDecoration(labelText: 'Naziv *', isDense: true),
     );
   }
 
@@ -108,6 +108,7 @@ class ProductBasicInfoSection extends StatelessWidget {
       controller: priceController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
+        isDense: true,
         labelText: switch (unitType) {
           ProductModel.unitL => 'Cena po litru (RSD) *',
           ProductModel.unitPiece => 'Cena po komadu (RSD) *',
@@ -125,6 +126,7 @@ class ProductBasicInfoSection extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => onChanged(),
       decoration: InputDecoration(
+        isDense: true,
         labelText: isWide
             ? switch (unitType) {
                 ProductModel.unitL => 'Min. porudžbina (L / ml) *',
@@ -164,6 +166,7 @@ class ProductBasicInfoSection extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => onChanged(),
       decoration: InputDecoration(
+        isDense: true,
         labelText: isWide
             ? switch (unitType) {
                 ProductModel.unitL => 'Korak porudžbine (L / ml)',
@@ -206,6 +209,7 @@ class ProductBasicInfoSection extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged: (_) => onChanged(),
       decoration: InputDecoration(
+        isDense: true,
         labelText: switch (unitType) {
           ProductModel.unitL => 'Dostupna količina (L / ml)',
           ProductModel.unitPiece => 'Dostupna količina (kom)',
@@ -235,14 +239,14 @@ class ProductBasicInfoSection extends StatelessWidget {
                 flex: 3,
                 child: _buildCategoryPicker(hasGroupedCategories),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 flex: 2,
                 child: _buildUnitDropdown(),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -250,25 +254,25 @@ class ProductBasicInfoSection extends StatelessWidget {
                 flex: 3,
                 child: _buildNameField(),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 flex: 2,
                 child: _buildPriceField(),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _buildMinOrderField(isWide: true),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildOrderStepField(isWide: true),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildAvailableField(isWide: true),
               ),
@@ -282,17 +286,17 @@ class ProductBasicInfoSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildCategoryPicker(hasGroupedCategories),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         _buildUnitDropdown(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         _buildNameField(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         _buildPriceField(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         _buildMinOrderField(isWide: false),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         _buildOrderStepField(isWide: false),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         _buildAvailableField(isWide: false),
       ],
     );

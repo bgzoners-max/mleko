@@ -317,11 +317,11 @@ class SellerUnregisteredWarningBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF332914) : const Color(0xFFFFF8E6),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark ? const Color(0xFF7A5F28) : const Color(0xFFF3D078),
         ),
@@ -377,7 +377,7 @@ class ProductLegalLiabilityCheckbox extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1B2B20) : const Color(0xFFF3F7F4),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark ? const Color(0xFF2D4B37) : const Color(0xFFD2E2D7),
         ),
@@ -388,11 +388,14 @@ class ProductLegalLiabilityCheckbox extends StatelessWidget {
           value: value,
           onChanged: onChanged == null ? null : (v) => onChanged!(v ?? false),
           controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
           title: Text(
             SellerRegistrationValidator.legalLiabilityText,
             style: theme.textTheme.bodySmall?.copyWith(
-              height: 1.4,
+              fontSize: 12,
+              height: 1.3,
               color: isDark ? Colors.grey.shade200 : const Color(0xFF26332A),
             ),
           ),
