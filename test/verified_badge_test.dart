@@ -3,36 +3,48 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/widgets/common/verified_badge.dart';
 
 void main() {
-  testWidgets('VerifiedBadge renders standalone icon-only badge with custom size', (tester) async {
+  testWidgets('VerifiedBadge renders standalone badge with default leaf emoji', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
           body: VerifiedBadge(
             size: 32,
-            shimmer: false,
           ),
         ),
       ),
     );
 
-    expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
-    expect(find.byType(Text), findsNothing);
+    expect(find.text('🌿'), findsOneWidget);
   });
 
-  testWidgets('VerifiedBadge renders text and default icon in pill mode', (tester) async {
+  testWidgets('VerifiedBadge renders with custom icon when provided', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: VerifiedBadge(
+            icon: Icons.eco,
+            size: 28,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.eco), findsOneWidget);
+  });
+
+  testWidgets('VerifiedBadge renders text and leaf emoji in pill mode', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
           body: VerifiedBadge(
             text: 'VERIFIKOVANO GAZDINSTVO',
-            shimmer: false,
           ),
         ),
       ),
     );
 
     expect(find.text('VERIFIKOVANO GAZDINSTVO'), findsOneWidget);
-    expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
+    expect(find.text('🌿'), findsOneWidget);
   });
 
   testWidgets('VerifiedBadge renders in compact mode without error', (tester) async {
@@ -41,13 +53,12 @@ void main() {
         home: Scaffold(
           body: VerifiedBadge(
             compact: true,
-            shimmer: false,
           ),
         ),
       ),
     );
 
-    expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
+    expect(find.text('🌿'), findsOneWidget);
   });
 
   testWidgets('VerifiedBadge displays tooltip message when provided on standalone badge', (tester) async {
@@ -56,7 +67,6 @@ void main() {
         home: Scaffold(
           body: VerifiedBadge(
             tooltip: 'Registrovano gazdinstvo 123456',
-            shimmer: false,
           ),
         ),
       ),
