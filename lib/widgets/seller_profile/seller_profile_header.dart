@@ -10,6 +10,7 @@ import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../../widgets/app_network_image.dart';
+import '../common/verified_badge.dart';
 
 class SellerProfileHeader extends StatefulWidget {
   final UserModel seller;
@@ -162,58 +163,22 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                               ),
                             ),
                           if (seller.isRegisteredProducer)
-                            Tooltip(
-                              message: (seller.pib != null &&
+                            VerifiedBadge(
+                              compact: isPhone,
+                              text: isPhone
+                                  ? (seller.pib != null &&
+                                          seller.pib!.isNotEmpty
+                                      ? 'PIB'
+                                      : 'BPG')
+                                  : (seller.registeredProducerBadgeLabel ??
+                                      'Verifikovano gazdinstvo'),
+                              tooltip: (seller.pib != null &&
                                       seller.pib!.isNotEmpty)
                                   ? 'PIB: ${seller.pib}'
                                   : ((seller.bpgMasked != null &&
                                           seller.bpgMasked!.isNotEmpty)
                                       ? 'BPG: ${seller.bpgMasked}'
                                       : 'Registrovano poljoprivredno gazdinstvo'),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2E7D32)
-                                      .withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: const Color(0xFF2E7D32)
-                                        .withValues(alpha: 0.35),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.verified_user_rounded,
-                                      size: 13,
-                                      color: Color(0xFF2E7D32),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        isPhone
-                                            ? (seller.pib != null &&
-                                                    seller.pib!.isNotEmpty
-                                                ? 'PIB'
-                                                : 'BPG')
-                                            : (seller.registeredProducerBadgeLabel ??
-                                                'Verifikovano gazdinstvo (BPG)'),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF2E7D32),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
                         ],
                       ),

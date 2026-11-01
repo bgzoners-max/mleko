@@ -8,6 +8,7 @@ import '../../models/product_model.dart';
 import '../../models/product_reviews_data.dart';
 import '../../models/user_model.dart';
 import '../../services/services.dart';
+import '../common/verified_badge.dart';
 import 'product_cart_block.dart';
 import 'rating_summary_badge.dart';
 
@@ -142,46 +143,16 @@ class _SellerBadgeHeader extends StatelessWidget {
                 ],
                 if (seller?.isRegisteredProducer == true) ...[
                   const SizedBox(width: 6),
-                  Tooltip(
-                    message: (seller!.pib != null && seller.pib!.isNotEmpty)
+                  VerifiedBadge(
+                    compact: true,
+                    text: seller!.registeredProducerBadgeLabel ??
+                        'Verifikovano gazdinstvo',
+                    tooltip: (seller.pib != null && seller.pib!.isNotEmpty)
                         ? 'PIB: ${seller.pib}'
                         : ((seller.bpgMasked != null &&
                                 seller.bpgMasked!.isNotEmpty)
                             ? 'BPG: ${seller.bpgMasked}'
                             : 'Registrovano poljoprivredno gazdinstvo'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.verified_user_rounded,
-                            size: 12,
-                            color: Color(0xFF2E7D32),
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            seller.registeredProducerBadgeLabel ??
-                                'Verifikovano gazdinstvo (BPG)',
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF2E7D32),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ],
                 Icon(

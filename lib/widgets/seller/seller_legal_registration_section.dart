@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
 import '../../utils/seller_registration_validator.dart';
+import '../common/verified_badge.dart';
 
 class SellerLegalRegistrationSection extends StatefulWidget {
   const SellerLegalRegistrationSection({super.key});
@@ -163,20 +164,9 @@ class _SellerLegalRegistrationSectionState
                 ),
               ),
               if (user?.isRegisteredProducer == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    user!.registeredProducerBadgeLabel ?? 'Verifikovano',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2E7D32),
-                    ),
-                  ),
+                VerifiedBadge(
+                  compact: true,
+                  text: user!.registeredProducerBadgeLabel ?? 'Verifikovano',
                 ),
             ],
           ),
