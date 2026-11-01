@@ -128,29 +128,16 @@ class ProductDeliverySection extends StatelessWidget {
         if (deliveryPointsLoading)
           const LinearProgressIndicator()
         else ...[
-          const _InfoBox(
-            text: 'Izaberite kako ovaj proizvod koristi vašu ličnu dostavu. '
-                'Ako prodajete isti proizvod samo u određenom gradu ili na '
-                'određenoj adresi, koristite opciju '
-                '"Samo na izabranim lokacijama".',
-          ),
-          const SizedBox(height: 8),
           _ModeTile(
             value: ProductDeliveryMode.none,
             groupValue: deliveryMode,
             title: 'Bez lične dostave domaćina',
-            subtitle: 'Koristite ovo ako proizvod nije za vašu organizovanu '
-                'dostavu. Kupac se može dogovoriti sa vama direktno, ali ne '
-                'bira vaše definisane punktove i termine.',
             onChanged: onDeliveryModeChanged,
           ),
           _ModeTile(
             value: ProductDeliveryMode.allSellerPoints,
             groupValue: deliveryMode,
             title: 'Na svim mojim lokacijama',
-            subtitle: 'Koristite ovo ako ovaj proizvod može da ide na svaki '
-                'vaš aktivan punkt dostave. Kupac bira bilo koji grad, '
-                'adresu i termin koje ste već definisali.',
             enabled: sellerDeliveryPoints.isNotEmpty,
             onChanged: onDeliveryModeChanged,
           ),
@@ -158,9 +145,6 @@ class ProductDeliverySection extends StatelessWidget {
             value: ProductDeliveryMode.selectedPoints,
             groupValue: deliveryMode,
             title: 'Samo na izabranim lokacijama',
-            subtitle: 'Koristite ovo kada proizvod nosite samo na određene '
-                'gradove ili adrese. Ispod zatim čekirate tačne punktove na '
-                'kojima je proizvod dostupan.',
             enabled: sellerDeliveryPoints.isNotEmpty,
             onChanged: onDeliveryModeChanged,
           ),
@@ -185,15 +169,6 @@ class ProductDeliverySection extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-          if (deliveryMode == ProductDeliveryMode.selectedPoints)
-            Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 8),
-              child: Text(
-                'Čekirajte samo one lokacije na kojima kupac stvarno može '
-                'da poruči ovaj proizvod.',
-                style: TextStyle(color: Colors.grey.shade700),
               ),
             ),
           if (deliveryMode == ProductDeliveryMode.selectedPoints &&
@@ -271,33 +246,10 @@ class ProductDeliverySection extends StatelessWidget {
   }
 }
 
-class _InfoBox extends StatelessWidget {
-  final String text;
-  const _InfoBox({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.green.shade100),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: Colors.green.shade900, height: 1.4),
-      ),
-    );
-  }
-}
-
 class _ModeTile extends StatelessWidget {
   final ProductDeliveryMode value;
   final ProductDeliveryMode groupValue;
   final String title;
-  final String subtitle;
   final bool enabled;
   final ValueChanged<ProductDeliveryMode> onChanged;
 
@@ -305,7 +257,6 @@ class _ModeTile extends StatelessWidget {
     required this.value,
     required this.groupValue,
     required this.title,
-    required this.subtitle,
     this.enabled = true,
     required this.onChanged,
   });
@@ -317,8 +268,8 @@ class _ModeTile extends StatelessWidget {
       // ignore: deprecated_member_use
       groupValue: groupValue,
       contentPadding: EdgeInsets.zero,
+      dense: true,
       title: Text(title),
-      subtitle: Text(subtitle),
       // ignore: deprecated_member_use
       onChanged: enabled
           ? (v) {
