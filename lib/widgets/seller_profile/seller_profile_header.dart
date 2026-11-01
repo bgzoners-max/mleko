@@ -175,6 +175,23 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                             ),
                         ],
                       ),
+                      if (seller.isRegisteredProducer) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          seller.legalType == 'company' ||
+                                  (seller.pib != null && seller.pib!.isNotEmpty)
+                              ? 'Registrovani proizvođač (PIB)'
+                              : 'Registrovano poljoprivredno gazdinstvo',
+                          style: TextStyle(
+                            fontSize: isPhone ? 12 : 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFF81C784)
+                                : const Color(0xFF2E7D32),
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 6),
 
                       // Meta informacije: Lokacija, Član od, Ocene, Isporuke

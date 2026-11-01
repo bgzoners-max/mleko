@@ -123,6 +123,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Gazdinstvo Vuksa'), findsOneWidget);
+      expect(find.text('Registrovano poljoprivredno gazdinstvo'), findsOneWidget);
       expect(find.text('Glogonj'), findsOneWidget);
       expect(find.byType(VerifiedBadge), findsOneWidget);
       expect(tester.takeException(), isNull);
