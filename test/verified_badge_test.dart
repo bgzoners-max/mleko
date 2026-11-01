@@ -15,7 +15,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.workspace_premium_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
     expect(find.byType(Text), findsNothing);
   });
 
@@ -32,7 +32,7 @@ void main() {
     );
 
     expect(find.text('VERIFIKOVANO GAZDINSTVO'), findsOneWidget);
-    expect(find.byIcon(Icons.workspace_premium_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
   });
 
   testWidgets('VerifiedBadge renders in compact mode without error', (tester) async {
@@ -47,7 +47,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.workspace_premium_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.eco_rounded), findsOneWidget);
   });
 
   testWidgets('VerifiedBadge displays tooltip message when provided on standalone badge', (tester) async {

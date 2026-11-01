@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Prestizni LoL/Hextech-inspirisani bedz za verifikovana gazdinstva i proizvodjace.
+/// Autenticni organski Nature bedz za verifikovana domaca gazdinstva i proizvodjace.
 ///
-/// Podrzava cist amblem/bedz mod (samo veci prestizni bedz bez teksta) ili
-/// opcioni pil mod sa tekstom. Koristi dvostruki Container sa zlatnim
-/// gradijentnim okvirom, smaragdnom bazom, glow efektom i periodicnom
-/// animacijom presijavanja (shimmer / glint).
+/// Odisi prirodnom, socnom zelenom bojom svezeg lista i ciste prirode (bez
+/// tamnih/crnih tonova). Prikazuje se kao cist organski amblem sa belim listom
+/// (Icons.eco_rounded), bogatim zelenim gradijentom, mekim zelenim sjajem i
+/// blagom animacijom presijavanja suncevog zraka (shimmer / glint).
 class VerifiedBadge extends StatefulWidget {
   final String? text;
   final IconData icon;
@@ -18,7 +18,7 @@ class VerifiedBadge extends StatefulWidget {
   const VerifiedBadge({
     super.key,
     this.text,
-    this.icon = Icons.workspace_premium_rounded,
+    this.icon = Icons.eco_rounded,
     this.tooltip,
     this.compact = false,
     this.size,
@@ -86,9 +86,9 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
     final borderWidth = effectiveSize >= 28 ? 1.8 : 1.5;
     final borderRadiusVal = hasText
         ? (isCompact ? 9.0 : 12.0)
-        : (effectiveSize * 0.28).clamp(6.0, 14.0);
+        : (effectiveSize * 0.32).clamp(7.0, 14.0);
     final innerRadiusVal = (borderRadiusVal - borderWidth).clamp(4.0, 12.0);
-    final iconSize = (effectiveSize * 0.58).roundToDouble().clamp(13.0, 24.0);
+    final iconSize = (effectiveSize * 0.60).roundToDouble().clamp(13.0, 24.0);
 
     Widget innerContent;
     if (hasText) {
@@ -102,12 +102,12 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
           children: [
             Icon(
               widget.icon,
-              color: const Color(0xFFFDE68A),
+              color: Colors.white,
               size: isCompact ? 13.0 : 16.0,
               shadows: const [
                 Shadow(
-                  color: Color(0x99000000),
-                  blurRadius: 2.5,
+                  color: Color(0x4D064E3B),
+                  blurRadius: 2.0,
                   offset: Offset(0, 1),
                 ),
               ],
@@ -119,10 +119,10 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: const Color(0xFFFDE68A),
+                  color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: isCompact ? 10.0 : 11.5,
-                  letterSpacing: isCompact ? 0.6 : 0.9,
+                  letterSpacing: isCompact ? 0.5 : 0.8,
                   height: 1.1,
                 ),
               ),
@@ -137,12 +137,12 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
         child: Center(
           child: Icon(
             widget.icon,
-            color: const Color(0xFFFDE68A),
+            color: Colors.white,
             size: iconSize,
             shadows: const [
               Shadow(
-                color: Color(0x99000000),
-                blurRadius: 3.0,
+                color: Color(0x4D064E3B),
+                blurRadius: 2.5,
                 offset: Offset(0, 1),
               ),
             ],
@@ -155,31 +155,31 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
       width: hasText ? null : effectiveSize,
       height: hasText ? null : effectiveSize,
       decoration: BoxDecoration(
-        // Zlatni gradijent za metalik okvir
+        // Prirodni organski okvir: svez prolecni list sa jutarnjom rosom
         gradient: const LinearGradient(
           colors: [
-            Color(0xFFFFDF70),
-            Color(0xFFF59E0B),
-            Color(0xFFD97706),
-            Color(0xFF92400E),
+            Color(0xFFDCFCE7), // svetla jutarnja rosa / mint
+            Color(0xFF86EFAC), // mladi zeleni list
+            Color(0xFF4ADE80), // vibrantna svezina prirode
+            Color(0xFF22C55E), // cista livadska zelena
           ],
           stops: [0.0, 0.35, 0.7, 1.0],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(borderRadiusVal),
-        // Zlatni sjaj (glow efekat) i 3D senka
+        // Svez zeleni prirodni sjaj (aura) - bez crnih i teskih senki
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF59E0B).withValues(alpha: isCompact ? 0.28 : 0.4),
-            blurRadius: isCompact ? 6.0 : 8.5,
+            color: const Color(0xFF22C55E).withValues(alpha: isCompact ? 0.28 : 0.40),
+            blurRadius: isCompact ? 6.0 : 9.0,
             spreadRadius: 0.5,
             offset: const Offset(0, 1.5),
           ),
-          const BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 3.0,
-            offset: Offset(0, 1.0),
+          BoxShadow(
+            color: const Color(0xFF16A34A).withValues(alpha: 0.22),
+            blurRadius: 3.5,
+            offset: const Offset(0, 1.0),
           ),
         ],
       ),
@@ -187,13 +187,13 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
         padding: EdgeInsets.all(borderWidth),
         child: Container(
           decoration: BoxDecoration(
-            // Duboka smaragdno-zelena baza (Hextech Emerald)
+            // Socna, 100% prirodna zelena baza (nije crna, cista organska priroda)
             gradient: const LinearGradient(
               colors: [
-                Color(0xFF2E7D32),
-                Color(0xFF1B5E20),
-                Color(0xFF0F3D17),
-                Color(0xFF05200C),
+                Color(0xFF2E7D32), // socna tamnija zelena
+                Color(0xFF1E8238), // ziva organska livada
+                Color(0xFF15803D), // bogato sumsko zelenilo
+                Color(0xFF14532D), // najdublja topla borova zelena (100% zelena, 0% crna)
               ],
               stops: [0.0, 0.3, 0.7, 1.0],
               begin: Alignment.topCenter,
@@ -230,9 +230,9 @@ class _VerifiedBadgeState extends State<VerifiedBadge>
                 end: Alignment(-1.5 + (progress * 5.0), 1.0),
                 colors: const [
                   Colors.transparent,
-                  Color(0x33FFFFFF),
-                  Color(0x99FFF9C4), // topao zlatno-beli zrak
-                  Color(0x33FFFFFF),
+                  Color(0x22FFFFFF),
+                  Color(0xCCFFFFFF), // cist suncev sjaj preko rose na listu
+                  Color(0x22FFFFFF),
                   Colors.transparent,
                 ],
                 stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
