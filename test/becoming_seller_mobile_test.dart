@@ -24,7 +24,6 @@ class _MockAppState extends ChangeNotifier implements AppState {
   @override
   final AuthService authService = _MockAuthService();
 
-  @override
   bool get isAuthenticated => true;
 
   @override

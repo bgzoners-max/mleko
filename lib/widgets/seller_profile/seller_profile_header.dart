@@ -3,13 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/profile_display_names.dart';
+import '../../core/responsive.dart';
 import '../../models/seller_stats_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
-
-import '../../core/responsive.dart';
-import '../../core/profile_display_names.dart';
 import '../../widgets/app_network_image.dart';
 
 class SellerProfileHeader extends StatefulWidget {
@@ -67,268 +66,340 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
   @override
   Widget build(BuildContext context) {
     final seller = widget.seller;
-    final cardPadding = Breakpoints.cardPadding(context);
-    final avatarSize = Breakpoints.adaptiveDouble(
-      context,
-      phone: 80,
-      smallTabletValue: 86,
-      largeTabletValue: 92,
-      desktop: 92,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isPhone = Breakpoints.isPhone(context);
+
+    final avatarSize = isPhone ? 64.0 : 74.0;
+    final displayName = resolveProfileDisplayName(
+      seller.farmName,
+      seller.displayName,
     );
-    final titleSize = Breakpoints.adaptiveDouble(
-      context,
-      phone: 24,
-      smallTabletValue: 28,
-      largeTabletValue: 30,
-      desktop: 30,
-    );
+
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark ? const Color(0xFF2B3A2E) : const Color(0xFFE5E7EB),
+          width: 1,
+        ),
+      ),
+      color: isDark ? const Color(0xFF1A241C) : Colors.white,
       child: Padding(
-        padding: EdgeInsets.all(cardPadding),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    resolveProfileDisplayName(
-                      seller.farmName,
-                      seller.displayName,
-                    ),
-                    textAlign: TextAlign.center,
-                    style: Breakpoints.heroTitleStyle(
-                      context,
-                      Theme.of(context).textTheme.titleLarge,
-                    )?.copyWith(fontSize: titleSize),
-                  ),
-                ),
-                if (seller.isVerified) ...[
-                  const SizedBox(width: 8),
-                  Tooltip(
-                    message: 'Proveren prodavac',
-                    child: Icon(Icons.verified,
-                        color: Theme.of(context).colorScheme.primary, size: 20),
-                  ),
-                ],
-              ],
-            ),
-            if (seller.isRegisteredProducer) ...[
-              const SizedBox(height: 8),
-              Center(
-                child: Tooltip(
-                  message: (seller.pib != null && seller.pib!.isNotEmpty)
-                      ? 'PIB: ${seller.pib}'
-                      : ((seller.bpgMasked != null &&
-                              seller.bpgMasked!.isNotEmpty)
-                          ? 'BPG: ${seller.bpgMasked}'
-                          : 'Registrovano poljoprivredno gazdinstvo'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.verified_user_rounded,
-                          size: 15,
-                          color: Color(0xFF2E7D32),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          seller.registeredProducerBadgeLabel ??
-                              'Verifikovano gazdinstvo (BPG)',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2E7D32),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
+                // 1. Profilna slika / Avatar
                 seller.profileImageUrl != null
-                    ? ClipOval(
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
                         child: AppNetworkImage.profileLarge(
                           imageUrl: seller.profileImageUrl!,
                           width: avatarSize,
                           height: avatarSize,
                         ),
                       )
-                    : CircleAvatar(
-                        radius: avatarSize / 2,
-                        backgroundColor: Colors.grey.shade300,
-                        child: Icon(Icons.store,
-                            size: avatarSize / 2, color: Colors.grey.shade600),
+                    : Container(
+                        width: avatarSize,
+                        height: avatarSize,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E3A27)
+                              : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF2C4A35)
+                                : const Color(0xFFC8E6C9),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.storefront_rounded,
+                          size: avatarSize * 0.48,
+                          color: isDark
+                              ? const Color(0xFF81C784)
+                              : const Color(0xFF2E7D32),
+                        ),
                       ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
+
+                // 2. Glavni podaci: Ime, bedževi i meta podaci
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (seller.createdAt != null) ...[
-                        Text(
-                          'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(seller.createdAt!)}',
-                          style: Breakpoints.supportingTextStyle(
-                            context,
-                            Theme.of(context).textTheme.bodySmall,
-                            phone: 13,
-                            largeTabletValue: 14,
-                            desktop: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                      if (seller.location != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on,
-                                size: 16, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text(seller.location!,
-                                style: Breakpoints.supportingTextStyle(
-                                  context,
-                                  Theme.of(context).textTheme.bodyMedium,
-                                  phone: 14,
-                                  largeTabletValue: 14,
-                                  desktop: 14,
-                                  color: Colors.grey.shade700,
-                                  height: 1.2,
-                                )),
-                          ],
-                        ),
-                      ],
-                      FutureBuilder<SellerStatsModel>(
-                        future: context.read<ReviewsService>().getSellerStats(seller.id),
-                        builder: (context, snap) {
-                          final stats = snap.data;
-                          if (stats == null) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final response = stats.responseLabel;
-                          final orders = stats.ordersCount;
-
-                          String? deliveredLabel() {
-                            final n = orders;
-                            if (n <= 0) return null;
-                            if (n == 1) return '1 isporuka';
-                            if (n >= 2 && n <= 4) return '$n isporuke';
-                            return '$n isporuka';
-                          }
-
-                          if ((response == null || response.isEmpty) &&
-                              (deliveredLabel() == null)) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final delivered = deliveredLabel();
-
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (response != null && response.isNotEmpty)
-                                  Row(
-                                    children: [
-                                      Icon(Icons.schedule,
-                                          size: 14,
-                                          color: Colors.grey.shade600),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        response,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                if (delivered != null) ...[
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.local_shipping_outlined,
-                                          size: 14,
-                                          color: Colors.grey.shade600),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        delivered,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
+                      // Ime prodavca + bedževi
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: isPhone ? 18 : 21,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1B201C),
+                              letterSpacing: -0.3,
                             ),
-                          );
-                        },
+                          ),
+                          if (seller.isVerified)
+                            Tooltip(
+                              message: 'Proveren prodavac',
+                              child: Icon(
+                                Icons.verified,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 18,
+                              ),
+                            ),
+                          if (seller.isRegisteredProducer)
+                            Tooltip(
+                              message: (seller.pib != null &&
+                                      seller.pib!.isNotEmpty)
+                                  ? 'PIB: ${seller.pib}'
+                                  : ((seller.bpgMasked != null &&
+                                          seller.bpgMasked!.isNotEmpty)
+                                      ? 'BPG: ${seller.bpgMasked}'
+                                      : 'Registrovano poljoprivredno gazdinstvo'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2E7D32)
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: const Color(0xFF2E7D32)
+                                        .withValues(alpha: 0.35),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.verified_user_rounded,
+                                      size: 13,
+                                      color: Color(0xFF2E7D32),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        isPhone
+                                            ? (seller.pib != null &&
+                                                    seller.pib!.isNotEmpty
+                                                ? 'PIB'
+                                                : 'BPG')
+                                            : (seller.registeredProducerBadgeLabel ??
+                                                'Verifikovano gazdinstvo (BPG)'),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF2E7D32),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      // Broj pratilaca — vidljiv kupcima
-                      FutureBuilder<int>(
-                        future: _followersFuture,
-                        builder: (_, snap) {
-                          final count = snap.data ?? 0;
-                          if (count == 0) return const SizedBox.shrink();
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Row(
+                      const SizedBox(height: 6),
+
+                      // Meta informacije: Lokacija, Član od, Ocene, Isporuke
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (seller.location != null &&
+                              seller.location!.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.people_outline,
-                                    size: 14, color: Colors.grey.shade500),
-                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 14,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 3),
                                 Text(
-                                  '$count pratilac${count == 1 ? '' : 'a'}',
+                                  seller.location!,
                                   style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade500),
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? Colors.grey.shade300
+                                        : Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
-                          );
-                        },
+                          if (seller.createdAt != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 13,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Član od ${DateFormat('dd.MM.yyyy', 'sr').format(seller.createdAt!)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          FutureBuilder<int>(
+                            future: _followersFuture,
+                            builder: (_, snap) {
+                              final count = snap.data ?? 0;
+                              if (count == 0) return const SizedBox.shrink();
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.people_outline,
+                                    size: 14,
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$count pratilac${count == 1 ? '' : 'a'}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          FutureBuilder<SellerStatsModel>(
+                            future: context
+                                .read<ReviewsService>()
+                                .getSellerStats(seller.id),
+                            builder: (context, snap) {
+                              final stats = snap.data;
+                              if (stats == null) return const SizedBox.shrink();
+                              final orders = stats.ordersCount;
+                              if (orders <= 0) return const SizedBox.shrink();
+                              final delivered = orders == 1
+                                  ? '1 isporuka'
+                                  : (orders <= 4
+                                      ? '$orders isporuke'
+                                      : '$orders isporuka');
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_shipping_outlined,
+                                    size: 14,
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    delivered,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                if (_checked) ...[
-                  const SizedBox(width: 8),
-                  FilledButton.tonal(
+
+                // 3. Dugme za praćenje (desno na tablet/desktop ekranima)
+                if (!isPhone && _checked) ...[
+                  const SizedBox(width: 12),
+                  FilledButton.tonalIcon(
                     onPressed: _loading ? null : _toggleFollow,
-                    child: _loading
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: _loading
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(_isFollowing ? 'Ne prati' : 'Prati'),
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            _isFollowing
+                                ? Icons.check_rounded
+                                : Icons.person_add_outlined,
+                            size: 16,
+                          ),
+                    label: Text(_isFollowing ? 'Pratim' : 'Zaprati'),
                   ),
                 ],
               ],
             ),
+
+            // Ako je telefon: dugme za praćenje ide ispod
+            if (isPhone && _checked) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: _loading ? null : _toggleFollow,
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: _loading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          _isFollowing
+                              ? Icons.check_rounded
+                              : Icons.person_add_outlined,
+                          size: 16,
+                        ),
+                  label: Text(_isFollowing ? 'Pratim gazdinstvo' : 'Zaprati gazdinstvo'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
