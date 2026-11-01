@@ -18,8 +18,8 @@ class ProductDeliverySection extends StatelessWidget {
   final Set<String> selectedDeliveryPointIds;
   final ValueChanged<String> onDeliveryPointToggled;
   final TextEditingController descriptionController;
-  final bool isDomestic;
-  final ValueChanged<bool> onDomesticChanged;
+  final bool? isDomestic;
+  final ValueChanged<bool>? onDomesticChanged;
   final bool availableNow;
   final ValueChanged<bool> onAvailableNowChanged;
   final VoidCallback onEditDeliveryLocations;
@@ -36,8 +36,8 @@ class ProductDeliverySection extends StatelessWidget {
     required this.selectedDeliveryPointIds,
     required this.onDeliveryPointToggled,
     required this.descriptionController,
-    required this.isDomestic,
-    required this.onDomesticChanged,
+    this.isDomestic,
+    this.onDomesticChanged,
     required this.availableNow,
     required this.onAvailableNowChanged,
     required this.onEditDeliveryLocations,
@@ -70,25 +70,9 @@ class ProductDeliverySection extends StatelessWidget {
     final deliveryModeWidget = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                'Lična dostava domaćina za ovaj proizvod',
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: onEditDeliveryLocations,
-              icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
-              label: const Text('Uredi lokacije'),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-            ),
-          ],
+        Text(
+          'Lična dostava domaćina za ovaj proizvod',
+          style: Theme.of(context).textTheme.labelLarge,
         ),
         const SizedBox(height: 4),
         if (deliveryPointsLoading)
@@ -114,29 +98,6 @@ class ProductDeliverySection extends StatelessWidget {
             enabled: sellerDeliveryPoints.isNotEmpty,
             onChanged: onDeliveryModeChanged,
           ),
-          if (sellerDeliveryPoints.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Još nemate definisane lokacije lične dostave. Dodajte '
-                    'ih u podešavanjima da biste ih ponudili kupcima.',
-                    style: TextStyle(color: Colors.orange.shade800),
-                  ),
-                  const SizedBox(height: 6),
-                  OutlinedButton.icon(
-                    onPressed: onEditDeliveryLocations,
-                    icon: const Icon(Icons.add_location_alt_outlined, size: 16),
-                    label: const Text('Dodaj punktove dostave'),
-                    style: OutlinedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           if (deliveryMode == ProductDeliveryMode.selectedPoints &&
               sellerDeliveryPoints.isNotEmpty) ...[
             ...sellerDeliveryPoints.map(
@@ -153,18 +114,31 @@ class ProductDeliverySection extends StatelessWidget {
                 onChanged: (_) => onDeliveryPointToggled(point.id),
               ),
             ),
+          ],
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: TextButton.icon(
+              onPressed: onEditDeliveryLocations,
+              icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+              label: const Text('Uredi lokacije'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            ),
+          ),
+          if (sellerDeliveryPoints.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 4),
+              padding: const EdgeInsets.only(top: 4),
               child: OutlinedButton.icon(
                 onPressed: onEditDeliveryLocations,
-                icon: const Icon(Icons.tune, size: 16),
-                label: const Text('Dodaj ili izmeni punktove dostave'),
+                icon: const Icon(Icons.add_location_alt_outlined, size: 16),
+                label: const Text('Dodaj punktove dostave'),
                 style: OutlinedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                 ),
               ),
             ),
-          ],
         ],
       ],
     );
@@ -240,43 +214,13 @@ class ProductDeliverySection extends StatelessWidget {
           const SizedBox(height: 12),
           deliveryModeWidget,
         ],
-        const SizedBox(height: 16),
-        if (isWide) ...[
-          Row(
-            children: [
-              Expanded(
-                child: SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Domaće / Porodično gazdinstvo'),
-                  value: isDomestic,
-                  onChanged: onDomesticChanged,
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Dostupno sada'),
-                  value: availableNow,
-                  onChanged: onAvailableNowChanged,
-                ),
-              ),
-            ],
-          ),
-        ] else ...[
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Domaće / Porodično gazdinstvo'),
-            value: isDomestic,
-            onChanged: onDomesticChanged,
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Dostupno sada'),
-            value: availableNow,
-            onChanged: onAvailableNowChanged,
-          ),
-        ],
+        const SizedBox(height: 12),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Dostupno sada'),
+          value: availableNow,
+          onChanged: onAvailableNowChanged,
+        ),
         const SizedBox(height: 16),
         TextField(
           controller: descriptionController,
