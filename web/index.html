@@ -374,9 +374,28 @@
       font-weight: 700;
       text-decoration: underline;
     }
+    @keyframes dm-spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+  <!-- Glavni loading ekran tokom inicijalizacije Flutter motora i preuzimanja resursa -->
+  <div id="app-loading-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background-color:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <img src="icons/Icon-192.png" alt="Domaći Market" width="72" height="72" style="width:72px;height:72px;border-radius:18px;box-shadow:0 6px 16px rgba(0,0,0,0.08);margin-bottom:16px;">
+    <div style="font-size:18px;font-weight:700;color:#1B5E20;margin-bottom:12px;letter-spacing:-0.2px;">Domaći Market</div>
+    <div id="loading-spinner" style="width:28px;height:28px;border:3px solid #E8F5E9;border-top-color:#1B5E20;border-radius:50%;animation:dm-spin 0.8s linear infinite;margin-bottom:10px;"></div>
+    <div id="loading-text" style="font-size:13px;color:#555555;font-weight:500;">Učitavanje...</div>
+    <div id="loading-fallback" style="display:none;margin-top:16px;text-align:center;padding:0 20px;">
+      <p style="font-size:12px;color:#777777;margin:0 0 10px 0;">Učitavanje traje duže nego obično.</p>
+      <button type="button" onclick="window.location.reload(true)" style="background-color:#1B5E20;color:#ffffff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;">Osveži stranicu</button>
+    </div>
+  </div>
+  <script>
+    setTimeout(function() {
+      var fb = document.getElementById('loading-fallback');
+      if (fb) fb.style.display = 'block';
+    }, 7000);
+  </script>
+
   <!-- Semantički SEO HTML Fallback za Googlebot, pretraživače i pristupačnost -->
   <div id="seo-crawler-content" aria-label="Informacije o sajtu">
     <header>
@@ -718,7 +737,9 @@
       var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       if (isStandalone) return;
 
-      var dismissedUntil = localStorage.getItem('dm_pwa_dismissed_until');
+      var dismissedUntil = (function () {
+        try { return localStorage.getItem('dm_pwa_dismissed_until'); } catch (e) { return null; }
+      })();
       if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
         return;
       }
@@ -756,7 +777,9 @@
             deferredPrompt.userChoice.then(function (choice) {
               deferredPrompt = null;
               if (choice.outcome === 'accepted') {
-                localStorage.setItem('dm_pwa_dismissed_until', String(Date.now() + 365 * 24 * 60 * 60 * 1000));
+                try {
+                  localStorage.setItem('dm_pwa_dismissed_until', String(Date.now() + 365 * 24 * 60 * 60 * 1000));
+                } catch (e) {}
               }
             });
           } else if (isIOS && iosGuide) {
@@ -777,7 +800,9 @@
         iosDoneBtn.addEventListener('click', function () {
           if (banner) banner.classList.remove('pwa-visible');
           // Nakon što je korisnik video uputstvo, odloži ponovno prikazivanje na 14 dana
-          localStorage.setItem('dm_pwa_dismissed_until', String(Date.now() + 14 * 24 * 60 * 60 * 1000));
+          try {
+            localStorage.setItem('dm_pwa_dismissed_until', String(Date.now() + 14 * 24 * 60 * 60 * 1000));
+          } catch (e) {}
         });
       }
 
@@ -785,7 +810,9 @@
         dismissBtn.addEventListener('click', function () {
           if (banner) banner.classList.remove('pwa-visible');
           // Standardno 7-dnevno odlaganje (snooze)
-          localStorage.setItem('dm_pwa_dismissed_until', String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+          try {
+            localStorage.setItem('dm_pwa_dismissed_until', String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+          } catch (e) {}
         });
       }
     })();
@@ -794,8 +821,15 @@
   <script>
     // Automatsko ciscenje Service Worker-a i lokalnog kesa za svaki novi build
     (function () {
+      function safeGetItem(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+      }
+      function safeSetItem(key, val) {
+        try { localStorage.setItem(key, val); } catch (e) {}
+      }
+
       var currentBuild = '__BUILD_HASH__';
-      var lastBuild = localStorage.getItem('dm_build_hash');
+      var lastBuild = safeGetItem('dm_build_hash');
       if (currentBuild && currentBuild.indexOf('__') === -1 && lastBuild && lastBuild !== currentBuild) {
         var cleanupTasks = [];
         if ('serviceWorker' in navigator) {
@@ -813,14 +847,14 @@
           );
         }
         Promise.all(cleanupTasks).then(function () {
-          localStorage.setItem('dm_build_hash', currentBuild);
+          safeSetItem('dm_build_hash', currentBuild);
           window.location.reload();
         }).catch(function () {
-          localStorage.setItem('dm_build_hash', currentBuild);
+          safeSetItem('dm_build_hash', currentBuild);
           window.location.reload();
         });
       } else if (currentBuild && currentBuild.indexOf('__') === -1 && !lastBuild) {
-        localStorage.setItem('dm_build_hash', currentBuild);
+        safeSetItem('dm_build_hash', currentBuild);
       }
     })();
   </script>

@@ -31,22 +31,34 @@ class SecureLocalStorage extends LocalStorage {
 
   @override
   Future<bool> hasAccessToken() async {
-    final value = await _storage.read(key: persistSessionKey);
-    return value != null && value.isNotEmpty;
+    try {
+      final value = await _storage.read(key: persistSessionKey);
+      return value != null && value.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
   Future<String?> accessToken() async {
-    return _storage.read(key: persistSessionKey);
+    try {
+      return await _storage.read(key: persistSessionKey);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
   Future<void> removePersistedSession() async {
-    await _storage.delete(key: persistSessionKey);
+    try {
+      await _storage.delete(key: persistSessionKey);
+    } catch (_) {}
   }
 
   @override
   Future<void> persistSession(String persistSessionString) async {
-    await _storage.write(key: persistSessionKey, value: persistSessionString);
+    try {
+      await _storage.write(key: persistSessionKey, value: persistSessionString);
+    } catch (_) {}
   }
 }

@@ -218,17 +218,21 @@ void main() async {
 
   await initializeDateFormatting('sr', null);
 
-  SupabaseConfig.validateConfig();
+  try {
+    SupabaseConfig.validateConfig();
 
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    publishableKey: SupabaseConfig.publishableKey,
-    // Čuva sesiju (access + refresh token) u flutter_secure_storage
-    // (Keystore/Keychain) umesto plaintext SharedPreferences / localStorage.
-    authOptions: FlutterAuthClientOptions(
-      localStorage: SecureLocalStorage(),
-    ),
-  );
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      publishableKey: SupabaseConfig.publishableKey,
+      // Čuva sesiju (access + refresh token) u flutter_secure_storage
+      // (Keystore/Keychain) umesto plaintext SharedPreferences / localStorage.
+      authOptions: FlutterAuthClientOptions(
+        localStorage: SecureLocalStorage(),
+      ),
+    );
+  } catch (e, st) {
+    LoggerService.error('Supabase initialization failed', e, stackTrace: st);
+  }
 
   try {
     await BackgroundSyncService.initialize();
@@ -248,7 +252,14 @@ void main() async {
 
   final appState = AppState(ordersService: ordersService);
   final appSettings = AppSettingsProvider();
-  await appSettings.ensureLoaded();
+  try {
+    await appSettings.ensureLoaded();
+  } catch (e, st) {
+    LoggerService.warning(
+      'AppSettings ensureLoaded failed',
+      extra: {'error': e.toString(), 'stackTrace': st.toString()},
+    );
+  }
   final cartProvider = CartProvider(productsService: productsService);
   final categoriesProvider = CategoriesProvider();
   final favoritesProvider = FavoritesProvider();
