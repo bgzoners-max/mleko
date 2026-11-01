@@ -214,12 +214,32 @@ class ProductDeliverySection extends StatelessWidget {
           const SizedBox(height: 12),
           deliveryModeWidget,
         ],
-        const SizedBox(height: 12),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Dostupno sada'),
-          value: availableNow,
-          onChanged: onAvailableNowChanged,
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: InkWell(
+            onTap: () => onAvailableNowChanged(!availableNow),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Dostupno sada',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(width: 12),
+                  Switch(
+                    value: availableNow,
+                    onChanged: onAvailableNowChanged,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         TextField(
