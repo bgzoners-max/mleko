@@ -189,6 +189,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                                   ? _buildGreenMiniProdavnicaContainer(
                                       context: context,
                                       isDark: isDark,
+                                      isOwnProfile: isOwnProfile,
                                       child: SellerProductGrid(
                                         sellerId: seller.id,
                                         forceColumns: isDesktop ? 3 : 2,
@@ -197,6 +198,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                                   : _buildOglasiContainer(
                                       context: context,
                                       isDark: isDark,
+                                      isOwnProfile: isOwnProfile,
                                       child: SellerClassifiedsGrid(
                                         sellerId: seller.id,
                                         forceColumns: isDesktop ? 3 : 2,
@@ -219,6 +221,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                             child: _buildGreenMiniProdavnicaContainer(
                               context: context,
                               isDark: isDark,
+                              isOwnProfile: isOwnProfile,
                               child: SellerProductGrid(
                                 sellerId: seller.id,
                                 forceColumns: isSmallTablet ? 2 : null,
@@ -231,6 +234,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                             child: _buildOglasiContainer(
                               context: context,
                               isDark: isDark,
+                              isOwnProfile: isOwnProfile,
                               child: SellerClassifiedsGrid(
                                 sellerId: seller.id,
                                 forceColumns: isSmallTablet ? 2 : null,
@@ -241,7 +245,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                           SellerReviewsSection(sellerId: seller.id),
                       ],
 
-                      const SizedBox(height: 100),
+                      const SizedBox(height: 160),
                     ],
                   ),
                 ),
@@ -257,6 +261,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
   Widget _buildGreenMiniProdavnicaContainer({
     required BuildContext context,
     required bool isDark,
+    required bool isOwnProfile,
     required Widget child,
   }) {
     final bgColor = isDark ? const Color(0xFF132B1D) : const Color(0xFFEFF8F2);
@@ -312,6 +317,21 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                     ],
                   ),
                 ),
+                if (isOwnProfile) ...[
+                  const SizedBox(width: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () => context.push('/add-product'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('Dodaj proizvod'),
+                  ),
+                ],
               ],
             ),
           ),
@@ -326,6 +346,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
   Widget _buildOglasiContainer({
     required BuildContext context,
     required bool isDark,
+    required bool isOwnProfile,
     required Widget child,
   }) {
     final headerColor =
@@ -374,6 +395,27 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                     ],
                   ),
                 ),
+                if (isOwnProfile) ...[
+                  const SizedBox(width: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () => context.push('/classifieds/new'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      backgroundColor: isDark
+                          ? const Color(0xFFE65100).withValues(alpha: 0.25)
+                          : const Color(0xFFFFE0B2),
+                      foregroundColor: isDark
+                          ? const Color(0xFFFFB74D)
+                          : const Color(0xFFE65100),
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('Dodaj oglas'),
+                  ),
+                ],
               ],
             ),
           ),

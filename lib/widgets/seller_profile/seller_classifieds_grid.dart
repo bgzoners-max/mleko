@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/responsive.dart';
 import '../../models/classified_ad_model.dart';
+import '../../providers/app_state.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/classifieds/classified_ad_card.dart';
@@ -82,7 +83,26 @@ class _SellerClassifiedsGridState extends State<SellerClassifiedsGrid> {
         // Prikazujemo aktivne oglase posetiocima
         final activeAds = allAds.where((ad) => ad.status == 'active').toList();
 
+        final isOwnProfile = context.select<AppState, bool>(
+          (app) => app.user?.id == widget.sellerId,
+        );
+
         if (activeAds.isEmpty) {
+          if (isOwnProfile) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: AppEmptyState(
+                icon: Icons.campaign_outlined,
+                title: 'Nemate objavljenih malih oglasa',
+                subtitle:
+                    'Postavite oglas za mehanizaciju, alate, opremu ili druge proizvode besplatno.',
+                ctaLabel: 'Postavi mali oglas',
+                ctaIcon: Icons.add_circle_outline,
+                onCtaPressed: () => context.push('/classifieds/new'),
+              ),
+            );
+          }
+
           return Padding(
             padding: const EdgeInsets.all(16),
             child: AppEmptyState(

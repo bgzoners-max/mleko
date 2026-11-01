@@ -53,7 +53,26 @@ class _SellerProductGridState extends State<SellerProductGrid> {
           return const SellerProductListSkeleton(itemCount: 3);
         }
         final list = snap.data ?? [];
+        final isOwnProfile = context.select<AppState, bool>(
+          (app) => app.user?.id == widget.sellerId,
+        );
+
         if (list.isEmpty) {
+          if (isOwnProfile) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: AppEmptyState(
+                icon: Icons.inventory_2_outlined,
+                title: 'Nemate objavljenih proizvoda',
+                subtitle:
+                    'Dodajte domaće proizvode sa vašeg gazdinstva i ponudite ih kupcima.',
+                ctaLabel: 'Dodaj proizvod',
+                ctaIcon: Icons.add_circle_outline,
+                onCtaPressed: () => context.push('/add-product'),
+              ),
+            );
+          }
+
           return Padding(
             padding: const EdgeInsets.all(16),
             child: AppEmptyState(
