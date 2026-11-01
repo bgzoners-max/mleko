@@ -5,6 +5,7 @@ import 'package:mleko/models/seller_stats_model.dart';
 import 'package:mleko/models/user_model.dart';
 import 'package:mleko/providers/app_state.dart';
 import 'package:mleko/services/services.dart';
+import 'package:mleko/widgets/common/verified_badge.dart';
 import 'package:mleko/widgets/seller_profile/seller_farm_gallery_section.dart';
 import 'package:mleko/widgets/seller_profile/seller_profile_header.dart';
 
@@ -123,7 +124,7 @@ void main() {
 
       expect(find.text('Gazdinstvo Vuksa'), findsOneWidget);
       expect(find.text('Glogonj'), findsOneWidget);
-      expect(find.text('BPG'), findsOneWidget);
+      expect(find.byType(VerifiedBadge), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

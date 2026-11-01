@@ -165,8 +165,8 @@ class _SellerLegalRegistrationSectionState
               ),
               if (user?.isRegisteredProducer == true)
                 VerifiedBadge(
-                  compact: true,
-                  text: user!.registeredProducerBadgeLabel ?? 'Verifikovano',
+                  size: 26,
+                  tooltip: user!.registeredProducerBadgeLabel ?? 'Verifikovano gazdinstvo',
                 ),
             ],
           ),

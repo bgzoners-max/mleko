@@ -141,12 +141,10 @@ class _SellerBadgeHeader extends StatelessWidget {
                   const SizedBox(width: 4),
                   const Icon(Icons.verified, size: 14, color: Colors.blue),
                 ],
-                if (seller?.isRegisteredProducer == true) ...[
+                if (seller != null && seller.isRegisteredProducer) ...[
                   const SizedBox(width: 6),
                   VerifiedBadge(
-                    compact: true,
-                    text: seller!.registeredProducerBadgeLabel ??
-                        'Verifikovano gazdinstvo',
+                    size: 24,
                     tooltip: (seller.pib != null && seller.pib!.isNotEmpty)
                         ? 'PIB: ${seller.pib}'
                         : ((seller.bpgMasked != null &&

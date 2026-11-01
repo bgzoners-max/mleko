@@ -164,14 +164,7 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                             ),
                           if (seller.isRegisteredProducer)
                             VerifiedBadge(
-                              compact: isPhone,
-                              text: isPhone
-                                  ? (seller.pib != null &&
-                                          seller.pib!.isNotEmpty
-                                      ? 'PIB'
-                                      : 'BPG')
-                                  : (seller.registeredProducerBadgeLabel ??
-                                      'Verifikovano gazdinstvo'),
+                              size: isPhone ? 28 : 32,
                               tooltip: (seller.pib != null &&
                                       seller.pib!.isNotEmpty)
                                   ? 'PIB: ${seller.pib}'
