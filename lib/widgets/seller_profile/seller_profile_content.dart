@@ -245,7 +245,7 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
                           SellerReviewsSection(sellerId: seller.id),
                       ],
 
-                      const SizedBox(height: 160),
+                      const SizedBox(height: 100),
                     ],
                   ),
                 ),
