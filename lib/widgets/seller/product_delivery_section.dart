@@ -250,10 +250,10 @@ class ProductDeliverySection extends StatelessWidget {
         TextField(
           controller: descriptionController,
           minLines: 2,
-          maxLines: 3,
+          maxLines: 5,
           maxLength: AppConstants.maxProductDescriptionLength,
           decoration: const InputDecoration(
-            labelText: 'Opis (max 300 karaktera)',
+            labelText: 'Opis (max ${AppConstants.maxProductDescriptionLength} karaktera)',
             isDense: true,
           ),
         ),

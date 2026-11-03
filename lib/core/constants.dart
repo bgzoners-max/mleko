@@ -16,7 +16,7 @@ class AppConstants {
 
   static const List<String> pickupOptions = ['Lično', 'Kurir', 'Dogovor'];
 
-  static const int maxProductDescriptionLength = 300;
+  static const int maxProductDescriptionLength = 1000;
   static const int maxProductImages = 3;
 
   /// Proizvod dobija bedž „NOVO“ ako je kreiran u poslednjih N sati (prvih 48h)

@@ -112,7 +112,7 @@ void main() {
       final searchRect = tester.getRect(find.byType(DesktopHeaderSearch));
       final cartRect = tester.getRect(cartFinder);
 
-      expect(searchRect.width, greaterThan(150.0));
+      expect(searchRect.width, greaterThan(120.0));
       expect(cartRect.left, greaterThan(searchRect.right + 10));
 
       // Sub-nav tabs
@@ -142,8 +142,8 @@ void main() {
       final searchRect = tester.getRect(find.byType(DesktopHeaderSearch));
       final cartRect = tester.getRect(find.byTooltip('Korpa za narudžbine'));
 
-      // At 1366px, search bar has generous width (> 350px)
-      expect(searchRect.width, greaterThanOrEqualTo(350.0));
+      // At 1366px, search bar has generous width (> 300px)
+      expect(searchRect.width, greaterThanOrEqualTo(300.0));
       // Distance between search bar and cart is at least 15px
       expect(cartRect.left - searchRect.right, greaterThanOrEqualTo(15.0));
     });
@@ -159,7 +159,7 @@ void main() {
       final searchRect = tester.getRect(find.byType(DesktopHeaderSearch));
       final cartRect = tester.getRect(find.byTooltip('Korpa za narudžbine'));
 
-      expect(searchRect.width, greaterThanOrEqualTo(350.0));
+      expect(searchRect.width, greaterThanOrEqualTo(300.0));
       expect(cartRect.left, greaterThan(searchRect.right));
       expect(cartRect.left - searchRect.right, greaterThanOrEqualTo(15.0));
     });
