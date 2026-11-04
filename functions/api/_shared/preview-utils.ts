@@ -171,9 +171,12 @@ export function buildHtml({
     ? `<script type="application/ld+json">${sanitizeJsonLd(jsonLd)}</script>`
     : "";
 
-  const bodyParagraphsHtml = bodyParagraphs
-    ?.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
-    .join("\n    ");
+  const bodyParagraphsHtml =
+    Array.isArray(bodyParagraphs) && bodyParagraphs.length > 0
+      ? bodyParagraphs
+          .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+          .join("\n    ")
+      : "";
 
   return `<!DOCTYPE html>
 <html lang="sr">
@@ -207,9 +210,8 @@ export function buildHtml({
 </head>
   <body>
   <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-    ${escapedBodyHeading ? `<h2>${escapedBodyHeading}</h2>` : ""}
-    ${escapedBodyHeading ? `<p>${escapedDescription}</p>` : ""}
-    ${bodyParagraphsHtml}
+    ${escapedBodyHeading ? `<h1>${escapedBodyHeading}</h1>` : ""}
+    ${bodyParagraphsHtml ? `${bodyParagraphsHtml}\n    ` : (escapedDescription ? `<p>${escapedDescription}</p>\n    ` : "")}
     <p>${escapedRedirectNote}</p>
     <p style="font-size: 0.9em; color: #666;">Ako se ništa ne dešava,
       <a href="${escapedCanonicalUrl}" style="color: #1B5E20; font-weight: bold;">${escapedLinkLabel}</a>.</p>

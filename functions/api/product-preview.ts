@@ -191,6 +191,27 @@ export async function handleProductPreview(
         }
       : undefined;
 
+    const bodyParagraphs: string[] = [];
+    if (product) {
+      const priceText =
+        product.price_per_kg != null
+          ? `Cena: ${product.price_per_kg} RSD/${product.unit_type || "kom"}`
+          : "";
+      const locationText = product.location ? `Lokacija: ${product.location}` : "";
+      const categoryText = product.category ? `Kategorija: ${product.category}` : "";
+      const infoParts = [priceText, locationText, categoryText].filter(Boolean).join(" • ");
+      if (infoParts) bodyParagraphs.push(infoParts);
+
+      if (product.description && product.description.trim().length > 0) {
+        bodyParagraphs.push(product.description.trim());
+      }
+      bodyParagraphs.push(
+        "Domaći Market — direktna kupovina domaće hrane sa proverenih seoskih gazdinstava u Srbiji bez posrednika.",
+      );
+    } else {
+      bodyParagraphs.push(description);
+    }
+
     const html = buildHtml({
       title,
       description,
@@ -199,6 +220,8 @@ export async function handleProductPreview(
       imageUrl,
       jsonLd,
       ogType: "product",
+      bodyHeading: product ? product.name : "Proizvod nije pronađen",
+      bodyParagraphs,
       redirectNote: "Preusmeravanje na proizvod...",
       linkLabel: "klikni ovde",
     });

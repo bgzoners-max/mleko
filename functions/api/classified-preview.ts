@@ -211,6 +211,29 @@ export async function handleClassifiedPreview(
         }
       : undefined;
 
+    const bodyParagraphs: string[] = [];
+    if (ad) {
+      const categoryName = ad.classified_categories?.name;
+      const infoParts = [
+        priceFormatted,
+        ad.city ? `Lokacija: ${ad.city}` : "",
+        categoryName ? `Kategorija: ${categoryName}` : "",
+        ad.condition ? `Stanje: ${ad.condition}` : "",
+      ]
+        .filter(Boolean)
+        .join(" • ");
+      if (infoParts) bodyParagraphs.push(infoParts);
+
+      if (ad.description && ad.description.trim().length > 0) {
+        bodyParagraphs.push(ad.description.trim());
+      }
+      bodyParagraphs.push(
+        "Domaći Market — besplatni mali oglasi u Srbiji bez provizije.",
+      );
+    } else {
+      bodyParagraphs.push(description);
+    }
+
     const html = buildHtml({
       title,
       description,
@@ -220,7 +243,8 @@ export async function handleClassifiedPreview(
       jsonLd,
       ogType: "website",
       ogSiteName: "Domaći Market — Mali Oglasi",
-      bodyHeading: title,
+      bodyHeading: ad ? ad.title : "Oglas nije pronađen",
+      bodyParagraphs,
       redirectNote: "Preusmeravanje na oglas...",
       linkLabel: "kliknite ovde za pregled oglasa",
     });
