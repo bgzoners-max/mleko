@@ -10,7 +10,25 @@ export const onRequest: PagesFunction = async (context) => {
   const pathname = url.pathname;
   const userAgent = request.headers.get("user-agent");
 
-  // 0. XML sitemap za sve posetioce (botove i ljude).
+  // 0. Apex na WWW 301 Permanent Redirect (Google SEO Canonical Rule):
+  //    Sve zahteve upućene na apex domen `domacimarket.rs` preusmeravamo na `www.domacimarket.rs`
+  //    sa HTTP 301 (Permanent Redirect). Ovo garantuje da Googlebot i posetioci uvek koriste
+  //    isključivo primarni kanonski domen, konsoliduje SEO autoritet (PageRank) i eliminiše
+  //    duple stranice u Google Search Console ("Alternate page with proper canonical tag").
+  if (url.hostname === "domacimarket.rs") {
+    url.hostname = "www.domacimarket.rs";
+    if (url.pathname === "/shop" || url.pathname === "/shop/") {
+      url.pathname = "/";
+    }
+    return Response.redirect(url.toString(), 301);
+  }
+
+  // 0a. Stari ili nepostojeći /shop linkovi na www -> 301 na početnu stranu
+  if (pathname === "/shop" || pathname === "/shop/") {
+    return Response.redirect(new URL("/", url.origin).toString(), 301);
+  }
+
+  // 0b. XML sitemap za sve posetioce (botove i ljude).
   //    Moramo je servirati iz middleware-a: `_redirects` 200-proxy ne može da
   //    pozove Pages funkciju, pa se zahtev za /sitemap.xml propada na SPA
   //    catch-all i Google dobija HTML umesto XML sitemape. Functions se
