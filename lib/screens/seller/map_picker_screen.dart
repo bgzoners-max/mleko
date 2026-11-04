@@ -144,35 +144,41 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 .withValues(alpha: 0.5),
             child: SafeArea(
               top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_selectedPoint != null) ...[
-                    FilledButton.icon(
-                      onPressed: _confirm,
-                      icon: const Icon(Icons.check),
-                      label: const Text('Sačuvaj lokaciju'),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  Row(
+              child: Align(
+                alignment: Alignment.center,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(Icons.touch_app,
-                          color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _selectedPoint != null
-                              ? 'Lokacija: ${_selectedPoint!.latitude.toStringAsFixed(5)}, ${_selectedPoint!.longitude.toStringAsFixed(5)}'
-                              : 'Tapnite na mapu da označite lokaciju farme',
-                          style: TextStyle(
-                              color: Colors.grey.shade700, fontSize: 13),
+                      if (_selectedPoint != null) ...[
+                        FilledButton.icon(
+                          onPressed: _confirm,
+                          icon: const Icon(Icons.check),
+                          label: const Text('Sačuvaj lokaciju'),
                         ),
+                        const SizedBox(height: 12),
+                      ],
+                      Row(
+                        children: [
+                          Icon(Icons.touch_app,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedPoint != null
+                                  ? 'Lokacija: ${_selectedPoint!.latitude.toStringAsFixed(5)}, ${_selectedPoint!.longitude.toStringAsFixed(5)}'
+                                  : 'Tapnite na mapu da označite lokaciju farme',
+                              style: TextStyle(
+                                  color: Colors.grey.shade700, fontSize: 13),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
