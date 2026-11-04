@@ -9,6 +9,7 @@ import 'package:mleko/providers/cart_provider.dart';
 import 'package:mleko/services/catalog/products_service.dart';
 import 'package:mleko/widgets/cart/cart_guest_banner.dart';
 import 'package:mleko/widgets/cart/cart_item_tile.dart';
+import 'package:mleko/screens/cart_screen.dart';
 import 'package:mleko/widgets/cart/cart_seller_group_card.dart';
 
 /// Minimalan fake servisa — konvencija iz cart_provider_test.dart.
@@ -215,6 +216,31 @@ void main() {
       expect(refreshCalled, isTrue);
       // Druga stavka ostaje u listi.
       expect(find.text('Med bagrem'), findsOneWidget);
+    });
+  });
+
+  group('CartSummaryPanel', () {
+    testWidgets('prikazuje stavke, ukupnu vrednost i kolicinu',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: CartSummaryPanel(
+              total: 2.5,
+              itemCount: 3,
+              totalPrice: 1500,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Sažetak porudžbine'), findsOneWidget);
+      expect(find.text('Stavki u korpi'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('Ukupna vrednost'), findsOneWidget);
+      expect(find.text('1500 RSD'), findsOneWidget);
+      expect(find.text('Ukupna količina'), findsOneWidget);
+      expect(find.text('2.5 kg'), findsOneWidget);
     });
   });
 }

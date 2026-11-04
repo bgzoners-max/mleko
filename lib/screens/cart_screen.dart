@@ -109,7 +109,13 @@ class _CartScreenState extends State<CartScreen> {
         ],
       ),
       body: _loading
-          ? const OrderListSkeleton(itemCount: 3)
+          ? Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: const OrderListSkeleton(itemCount: 3),
+              ),
+            )
           : _groupedItems.isEmpty
               ? _buildEmptyState()
               : _buildCartList(),
@@ -135,45 +141,56 @@ class _CartScreenState extends State<CartScreen> {
     final showGuestBanner = cart.hasMigratedFromGuest;
 
     if (isWide) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: sellerIds.length + (showGuestBanner ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (showGuestBanner && index == 0) {
-                  return CartGuestBanner(
-                    onDismiss: () =>
-                        context.read<CartProvider>().dismissGuestCartBanner(),
-                  );
-                }
-                final sellerIndex = showGuestBanner ? index - 1 : index;
-                final sellerId = sellerIds[sellerIndex];
-                final items = _groupedItems[sellerId] ?? [];
-                final profile = _sellerProfiles[sellerId];
-                return CartSellerGroupCard(
-                  sellerId: sellerId,
-                  sellerName: profile?.farmName ??
-                      profile?.displayName ?? 'Prodavac',
-                  location: profile?.city ?? 'Nepoznata lokacija',
-                  items: items,
-                  onRefresh: _loadData,
-                );
-              },
+      return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: sellerIds.length + (showGuestBanner ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (showGuestBanner && index == 0) {
+                        return CartGuestBanner(
+                          onDismiss: () => context
+                              .read<CartProvider>()
+                              .dismissGuestCartBanner(),
+                        );
+                      }
+                      final sellerIndex = showGuestBanner ? index - 1 : index;
+                      final sellerId = sellerIds[sellerIndex];
+                      final items = _groupedItems[sellerId] ?? [];
+                      final profile = _sellerProfiles[sellerId];
+                      return CartSellerGroupCard(
+                        sellerId: sellerId,
+                        sellerName: profile?.farmName ??
+                            profile?.displayName ??
+                            'Prodavac',
+                        location: profile?.city ?? 'Nepoznata lokacija',
+                        items: items,
+                        onRefresh: _loadData,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 28),
+                SizedBox(
+                  width: 340,
+                  child: CartSummaryPanel(
+                    total: _calculateTotal(),
+                    itemCount: cart.count,
+                    totalPrice: _calculateTotalPrice(),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 24),
-          Expanded(
-            flex: 1,
-            child: CartSummaryPanel(
-              total: _calculateTotal(),
-              itemCount: cart.count,
-            ),
-          ),
-        ],
+        ),
       );
     }
 
@@ -215,17 +232,31 @@ class _CartScreenState extends State<CartScreen> {
       (sum, items) => sum + items.fold<double>(0.0, (a, b) => a + b.quantity),
     );
   }
+
+  double _calculateTotalPrice() {
+    return _groupedItems.values.fold<double>(
+      0.0,
+      (sum, items) =>
+          sum +
+          items.fold<double>(
+            0.0,
+            (a, b) => a + (b.product.pricePerKg * b.quantity),
+          ),
+    );
+  }
 }
 
 /// Desktop sažetak porudžbine — prikazuje ukupan broj stavki i ukupnu cenu.
 class CartSummaryPanel extends StatelessWidget {
   final double total;
   final int itemCount;
+  final double totalPrice;
 
   const CartSummaryPanel({
     super.key,
     required this.total,
     required this.itemCount,
+    this.totalPrice = 0.0,
   });
 
   @override
@@ -236,7 +267,7 @@ class CartSummaryPanel extends StatelessWidget {
         : AmazonColors.borderGray;
 
     return Container(
-      width: 320,
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
@@ -268,12 +299,20 @@ class CartSummaryPanel extends StatelessWidget {
             value: itemCount.toString(),
             isDark: isDark,
           ),
+          if (totalPrice > 0) ...[
+            const SizedBox(height: 12),
+            _SummaryRow(
+              label: 'Ukupna vrednost',
+              value: '${totalPrice.toStringAsFixed(0)} RSD',
+              isDark: isDark,
+              isHighlight: true,
+            ),
+          ],
           const SizedBox(height: 12),
           _SummaryRow(
             label: 'Ukupna količina',
             value: '${total.toStringAsFixed(1)} kg',
             isDark: isDark,
-            isHighlight: true,
           ),
           const Divider(height: 28),
           const SizedBox(height: 8),
