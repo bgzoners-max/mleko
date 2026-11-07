@@ -1,5 +1,4 @@
 import 'dart:math' show min;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +6,7 @@ import '../../core/design_system.dart';
 import '../../models/message_model.dart';
 import '../../models/message_reaction_model.dart';
 import '../../services/communication/chat_service.dart';
+import '../app_network_image.dart';
 import '../product/full_screen_image_viewer.dart';
 import 'chat_reaction_chip.dart';
 
@@ -208,12 +208,20 @@ class _ChatImageAttachmentState extends State<ChatImageAttachment> {
 
   void _openFullScreen(String url) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => FullScreenImageViewer(
-          productId: 'chat',
-          imageUrls: [url],
-          initialIndex: 0,
-        ),
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        barrierDismissible: true,
+        pageBuilder: (BuildContext context, _, __) {
+          return FullScreenImageViewer(
+            productId: 'chat',
+            imageUrls: [url],
+            initialIndex: 0,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
@@ -237,11 +245,11 @@ class _ChatImageAttachmentState extends State<ChatImageAttachment> {
     final url = _resolvedUrl ?? widget.imageUrl;
     return GestureDetector(
       onTap: () => _openFullScreen(url),
-      child: CachedNetworkImage(
+      child: AppNetworkImage.thumbnail(
         imageUrl: url,
         width: 200,
         fit: BoxFit.cover,
-        placeholder: (_, __) => Container(
+        placeholder: Container(
           width: 200,
           height: 150,
           decoration: BoxDecoration(
@@ -252,7 +260,7 @@ class _ChatImageAttachmentState extends State<ChatImageAttachment> {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
-        errorWidget: (context, errorUrl, error) => InkWell(
+        errorWidget: InkWell(
           onTap: () {
             setState(() {
               _loading = true;

@@ -1,7 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/responsive.dart';
+import '../app_network_image.dart';
 import '../product/full_screen_image_viewer.dart';
 
 /// Sekcija galerije gazdinstva sa horizontalnim kompaktnim foto-karticama
@@ -74,12 +74,20 @@ class _SellerFarmGallerySectionState extends State<SellerFarmGallerySection> {
 
   void _openFullScreen(int index) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => FullScreenImageViewer(
-          productId: 'farm-gallery',
-          imageUrls: widget.urls,
-          initialIndex: index,
-        ),
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        barrierDismissible: true,
+        pageBuilder: (BuildContext context, _, __) {
+          return FullScreenImageViewer(
+            productId: 'farm-gallery',
+            imageUrls: widget.urls,
+            initialIndex: index,
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
@@ -247,14 +255,12 @@ class _SellerFarmGallerySectionState extends State<SellerFarmGallerySection> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              CachedNetworkImage(
+                              AppNetworkImage.thumbnail(
                                 imageUrl: url,
                                 width: cardWidth,
                                 height: cardHeight,
-                                memCacheWidth: 600,
-                                memCacheHeight: 450,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => ColoredBox(
+                                errorWidget: ColoredBox(
                                   color: isDark
                                       ? const Color(0xFF2D3748)
                                       : Colors.grey.shade200,

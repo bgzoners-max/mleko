@@ -829,6 +829,19 @@
       }
 
       var currentBuild = '__BUILD_HASH__';
+      if (currentBuild && currentBuild.indexOf('__') === -1 && window.fetch) {
+        var origFetch = window.fetch;
+        window.fetch = function (input, init) {
+          if (typeof input === 'string' &&
+              (input.indexOf('assets/fonts/') !== -1 ||
+               input.indexOf('FontManifest.json') !== -1 ||
+               input.indexOf('AssetManifest') !== -1) &&
+              input.indexOf('?') === -1) {
+            input = input + '?v=' + currentBuild;
+          }
+          return origFetch.call(this, input, init);
+        };
+      }
       var lastBuild = safeGetItem('dm_build_hash');
       if (currentBuild && currentBuild.indexOf('__') === -1 && lastBuild && lastBuild !== currentBuild) {
         var cleanupTasks = [];

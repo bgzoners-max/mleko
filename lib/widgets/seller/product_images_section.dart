@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/constants.dart';
+import '../app_network_image.dart';
 
 /// Sekcija slika proizvoda: postojeće URL slike + nove izabrane + dodavanje.
 class ProductImagesSection extends StatelessWidget {
@@ -45,11 +45,9 @@ class ProductImagesSection extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
+                          child: AppNetworkImage.thumbnail(
                             imageUrl: e.value,
                             width: 80,
-                            memCacheWidth: 160,
-                            memCacheHeight: 160,
                             height: 80,
                             fit: BoxFit.cover,
                           ),

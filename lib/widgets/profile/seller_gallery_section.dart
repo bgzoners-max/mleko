@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/services.dart';
 import '../../core/utils/error_messages.dart';
+import '../app_network_image.dart';
 
 class SellerGallerySection extends StatefulWidget {
   final UserModel? user;
@@ -141,13 +141,11 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
+                          child: AppNetworkImage.thumbnail(
                             imageUrl: e.value,
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
-                            memCacheWidth: 200,
-                            memCacheHeight: 200,
                           ),
                         ),
                         Positioned(

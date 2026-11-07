@@ -233,7 +233,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                             ],
                           ),
                           child: Icon(
-                            Icons.chevron_left_rounded,
+                            Icons.chevron_left,
                             color: Colors.white,
                             size: isDesktop ? 38 : 30,
                           ),
@@ -277,7 +277,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
                             ],
                           ),
                           child: Icon(
-                            Icons.chevron_right_rounded,
+                            Icons.chevron_right,
                             color: Colors.white,
                             size: isDesktop ? 38 : 30,
                           ),
