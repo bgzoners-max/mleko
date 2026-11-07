@@ -133,7 +133,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       text: initial
           .toStringAsFixed(initial.truncateToDouble() == initial ? 0 : 1),
     );
-    unawaited(AnalyticsService().logBeginCheckout(1, widget.product.pricePerKg * initial));
+    unawaited(AnalyticsService().logBeginCheckout(1, widget.product.totalPriceForQuantity(initial)));
     final user = context.read<AppState>().user;
     if (user != null) {
       if (user.city != null && user.city!.isNotEmpty) {
@@ -289,7 +289,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
             productId: widget.product.id);
         unawaited(AnalyticsService().logPurchase(
           transactionId: orderId,
-          value: qty * widget.product.pricePerKg,
+          value: widget.product.totalPriceForQuantity(qty),
           itemCount: 1,
         ));
         unawaited(AppHaptics.success());

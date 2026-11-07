@@ -147,7 +147,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final product = widget.product;
     final isDesktop = widget.desktopMode;
-    final totalPrice = _quantity * product.pricePerKg;
+    final totalPrice = product.totalPriceForQuantity(_quantity);
     final cartCount = context.select<CartProvider, int>((c) => c.count);
 
     final cartButton = SizedBox(
