@@ -43,7 +43,8 @@ class ProductFormValidator {
 
     final defaultStepByUnit = switch (unitType) {
       ProductModel.unitL => 1.0,
-      ProductModel.unitG => 0.05,
+      ProductModel.unitMl => minOrderKg,
+      ProductModel.unitG => minOrderKg,
       ProductModel.unitPiece => 1.0,
       ProductModel.unitVeza => 1.0,
       ProductModel.unitPak => 1.0,
@@ -63,8 +64,18 @@ class ProductFormValidator {
       if (qty > 0) {
         return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitKg)}';
       }
+    } else if (unitType == ProductModel.unitG) {
+      final qty = ProductModel.parseQuantityG(raw);
+      if (qty > 0) {
+        return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitKg)}';
+      }
     } else if (unitType == ProductModel.unitL) {
       final qty = ProductModel.parseQuantityL(raw);
+      if (qty > 0) {
+        return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitL)}';
+      }
+    } else if (unitType == ProductModel.unitMl) {
+      final qty = ProductModel.parseQuantityMl(raw);
       if (qty > 0) {
         return 'Prikaz kupcima: ${ProductModel.formatQuantityWithUnit(qty, ProductModel.unitL)}';
       }

@@ -46,6 +46,10 @@ class ProductFormattingUtils {
       if (value < 1 && value > 0) return '${(value * 1000).round()} ml';
       return '${formatDecimal(value)} L';
     }
+    if (unitType == 'ml') {
+      final ml = (value * 1000).round();
+      return '$ml ml';
+    }
     if (unitType == 'g') {
       final grams = (value * 1000).round();
       return '$grams g';
@@ -122,10 +126,37 @@ class ProductFormattingUtils {
     return v;
   }
 
-  /// Parsira unos količine za grame (npr. "100", "250").
+  /// Parsira unos količine za grame (npr. "100", "250", "250g", ili "0.25").
   static double parseQuantityG(String text) {
-    final v = double.tryParse(text.replaceAll(',', '.').trim());
-    if (v == null) return 0;
-    return v / 1000;
+    final raw = text
+        .trim()
+        .toLowerCase()
+        .replaceAll('grama', '')
+        .replaceAll('gram', '')
+        .replaceAll('gr', '')
+        .replaceAll('g', '')
+        .replaceAll(',', '.')
+        .trim();
+    final v = double.tryParse(raw);
+    if (v == null || v <= 0) return 0;
+    if (v < 1) return v;
+    return v / 1000.0;
+  }
+
+  /// Parsira unos količine za mililitre (npr. "250", "330", "330ml", ili "0.33").
+  static double parseQuantityMl(String text) {
+    final raw = text
+        .trim()
+        .toLowerCase()
+        .replaceAll('mililitara', '')
+        .replaceAll('mililitra', '')
+        .replaceAll('mili', '')
+        .replaceAll('ml', '')
+        .replaceAll(',', '.')
+        .trim();
+    final v = double.tryParse(raw);
+    if (v == null || v <= 0) return 0;
+    if (v < 1) return v;
+    return v / 1000.0;
   }
 }

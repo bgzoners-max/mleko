@@ -441,6 +441,48 @@ void main() {
       final dbMap = pWithoutOrderStep.toDbMap();
       expect(dbMap['order_step'], 0.5); // falls back to minOrderKg
     });
+
+    test('sub-unit products (g and ml) format package price and unit suffix', () {
+      final slatko330ml = ProductModel(
+        id: 'p-330ml',
+        sellerId: 's1',
+        category: 'Slatko',
+        name: 'Slatko od šumskih jagoda',
+        pricePerKg: 500 / 0.33,
+        minOrderKg: ProductModel.parseQuantityMl('330'),
+        orderStep: ProductModel.parseQuantityMl('330'),
+        availableKg: 10,
+        unitType: ProductModel.unitL,
+        description: '',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Beograd',
+        createdAt: now,
+      );
+
+      expect(slatko330ml.minOrderKg, closeTo(0.33, 0.0001));
+      expect(slatko330ml.priceFormatted, '500 din./330 ml');
+
+      final caj30g = ProductModel(
+        id: 'p-30g',
+        sellerId: 's1',
+        category: 'Čajevi',
+        name: 'Biljni čaj',
+        pricePerKg: 300 / 0.03,
+        minOrderKg: ProductModel.parseQuantityG('30'),
+        orderStep: ProductModel.parseQuantityG('30'),
+        availableKg: 1,
+        unitType: ProductModel.unitKg,
+        description: '',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Zabrega',
+        createdAt: now,
+      );
+
+      expect(caj30g.minOrderKg, closeTo(0.03, 0.0001));
+      expect(caj30g.priceFormatted, '300 din./30 g');
+    });
   });
 }
 

@@ -14,8 +14,8 @@ export 'product_variant.dart';
 class ProductModel {
   static const String unitKg = 'kg';
   static const String unitL = 'L';
-  /// Zastarela jedinica po REPO_BIBLE.md §3. Automatski se normalizuje u [unitKg] (npr. 0.1 kg = 100 g).
   static const String unitG = 'g';
+  static const String unitMl = 'ml';
   static const String unitPiece = 'kom';
   static const String unitVeza = 'veza';
   static const String unitPak = 'pak';
@@ -259,11 +259,29 @@ class ProductModel {
   /// U podacima i u SEO strukturiranim podacima i dalje ostaje ISO kod "RSD".
   static const String priceCurrencyLabel = 'din.';
 
-  /// Brojčani deo cene, bez valute i jedinice (npr. "800" ili "199,99").
-  String get priceNumber => _formatDecimal(pricePerKg);
+  /// Da li je proizvod definisan u podjedinici (grami ili mililitri, tj. minOrderKg < 1).
+  bool get isSubUnitProduct =>
+      (unitType == unitKg || unitType == unitL) &&
+      minOrderKg > 0 &&
+      minOrderKg < 1 &&
+      selectedVariant == null;
 
-  /// Sufiks jedinice u ceni (npr. "/kg", "/L", "/kom").
+  /// Brojčani deo cene, bez valute i jedinice (npr. "800" ili "199,99").
+  /// Za proizvode u gramima ili mililitrima (minOrderKg < 1), prikazuje cenu
+  /// za minimalnu porudžbinu / pakovanje (npr. "500" za 330 ml).
+  String get priceNumber {
+    if (isSubUnitProduct) {
+      final subUnitPrice = (pricePerKg * minOrderKg * 100).round() / 100.0;
+      return _formatDecimal(subUnitPrice);
+    }
+    return _formatDecimal(pricePerKg);
+  }
+
+  /// Sufiks jedinice u ceni (npr. "/kg", "/L", "/330 ml", "/250 g", "/kom").
   String get priceUnitSuffix {
+    if (isSubUnitProduct) {
+      return '/${formatQuantity(minOrderKg)}';
+    }
     switch (unitType) {
       case unitL:
         return '/L';
@@ -359,11 +377,11 @@ class ProductModel {
     }
     final unit = json['unit_type'] as String?;
     final unitType = switch (unit) {
-      unitL => unitL,
+      unitL || unitMl => unitL,
       unitPiece => unitPiece,
       unitVeza => unitVeza,
       unitPak => unitPak,
-      // 'g' je legacy jedinica koja se po REPO_BIBLE.md §3 automatski normalizuje u 'kg'
+      // 'g' se u modelu normalizuje u 'kg' (sa minOrderKg < 1 za grame)
       _ => unitKg,
     };
     final minOrder = (json['min_order_kg'] as num?)?.toDouble() ?? 1;
@@ -424,6 +442,9 @@ class ProductModel {
 
   static double parseQuantityG(String text) =>
       ProductFormattingUtils.parseQuantityG(text);
+
+  static double parseQuantityMl(String text) =>
+      ProductFormattingUtils.parseQuantityMl(text);
 
 
   /// Mapa za perzistenciju u tabelu `products`.

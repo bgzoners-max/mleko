@@ -126,30 +126,37 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     final p =
         await context.read<ProductsService>().getProduct(widget.productId!);
     if (p != null && mounted) {
+      final isSubGram =
+          p.unitType == ProductModel.unitKg && p.minOrderKg > 0 && p.minOrderKg < 1;
+      final isSubMl =
+          p.unitType == ProductModel.unitL && p.minOrderKg > 0 && p.minOrderKg < 1;
+      final isSubUnit = isSubGram || isSubMl;
+
       _nameController.text = p.name;
-      _priceController.text = p.pricePerKg.toString();
-      _minOrderController.text = p.isVolumeUnit
-          ? (p.minOrderKg < 1
-              ? '${(p.minOrderKg * 1000).round()}'
-              : p.minOrderKg.toString())
-          : p.minOrderKg.toString();
-      if (p.orderStep != null && p.orderStep! > 0) {
-        _orderStepController.text = p.isVolumeUnit
-            ? (p.orderStep! < 1
-                ? '${(p.orderStep! * 1000).round()}'
-                : p.orderStep!.toString())
-            : p.orderStep!.toString();
+      if (isSubUnit) {
+        final subPrice = (p.pricePerKg * p.minOrderKg * 100).round() / 100.0;
+        _priceController.text = subPrice == subPrice.truncateToDouble()
+            ? subPrice.toInt().toString()
+            : subPrice.toString();
+        _minOrderController.text = '${(p.minOrderKg * 1000).round()}';
+        _orderStepController.text = (p.orderStep != null && p.orderStep! > 0)
+            ? '${(p.orderStep! * 1000).round()}'
+            : '${(p.minOrderKg * 1000).round()}';
+        _availableController.text = p.availableKg > 0
+            ? '${(p.availableKg * 1000).round()}'
+            : '0';
+        _unitType = isSubMl ? ProductModel.unitMl : ProductModel.unitG;
       } else {
-        _orderStepController.text = '';
+        _priceController.text = p.pricePerKg.toString();
+        _minOrderController.text = p.minOrderKg.toString();
+        _orderStepController.text = (p.orderStep != null && p.orderStep! > 0)
+            ? p.orderStep!.toString()
+            : '';
+        _availableController.text = p.availableKg.toString();
+        _unitType = p.unitType;
       }
-      _availableController.text = p.isVolumeUnit
-          ? (p.availableKg < 1
-              ? '${(p.availableKg * 1000).round()}'
-              : p.availableKg.toString())
-          : p.availableKg.toString();
       _descriptionController.text = p.description;
       _category = p.category;
-      _unitType = p.unitType;
       _existingLocation = p.location;
       _pickupOptions = List.from(p.pickupOptions);
       _isDomestic = p.isDomestic;
@@ -164,6 +171,25 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _variants = List<ProductVariant>.from(p.variants);
       setState(() {});
     }
+  }
+
+  void _handleUnitTypeChanged(String nextUnit) {
+    final prevIsSub =
+        _unitType == ProductModel.unitG || _unitType == ProductModel.unitMl;
+    final nextIsSub =
+        nextUnit == ProductModel.unitG || nextUnit == ProductModel.unitMl;
+    setState(() {
+      _unitType = nextUnit;
+      final currentMin = _minOrderController.text.trim();
+      if (nextIsSub && (!prevIsSub || currentMin == '1' || currentMin.isEmpty)) {
+        final def = nextUnit == ProductModel.unitMl ? '330' : '250';
+        _minOrderController.text = def;
+        _orderStepController.text = def;
+      } else if (!nextIsSub && prevIsSub) {
+        _minOrderController.text = '1';
+        _orderStepController.text = '';
+      }
+    });
   }
 
   Future<void> _loadSellerDeliveryPoints() async {
@@ -314,22 +340,21 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       return;
     }
     final price = NumberInputUtils.parseDecimal(_priceController.text);
-    final minOrder = _unitType == ProductModel.unitL
-        ? ProductModel.parseQuantityL(_minOrderController.text)
-        : (_unitType == ProductModel.unitKg
-            ? ProductModel.parseQuantityKg(_minOrderController.text)
-            : (NumberInputUtils.parseDecimal(_minOrderController.text) ?? 1.0));
-    final available = _unitType == ProductModel.unitL
-        ? ProductModel.parseQuantityL(_availableController.text)
-        : (_unitType == ProductModel.unitKg
-            ? ProductModel.parseQuantityKg(_availableController.text)
-            : (NumberInputUtils.parseDecimal(_availableController.text) ?? 0.0));
+    double parseByCurrentUnit(String text, {double fallback = 0.0}) {
+      if (text.trim().isEmpty) return fallback;
+      return switch (_unitType) {
+        ProductModel.unitL => ProductModel.parseQuantityL(text),
+        ProductModel.unitMl => ProductModel.parseQuantityMl(text),
+        ProductModel.unitKg => ProductModel.parseQuantityKg(text),
+        ProductModel.unitG => ProductModel.parseQuantityG(text),
+        _ => NumberInputUtils.parseDecimal(text) ?? fallback,
+      };
+    }
+
+    final minOrder = parseByCurrentUnit(_minOrderController.text, fallback: 1.0);
+    final available = parseByCurrentUnit(_availableController.text, fallback: 0.0);
     final parsedOrderStep = _orderStepController.text.trim().isNotEmpty
-        ? (_unitType == ProductModel.unitL
-            ? ProductModel.parseQuantityL(_orderStepController.text)
-            : (_unitType == ProductModel.unitKg
-                ? ProductModel.parseQuantityKg(_orderStepController.text)
-                : NumberInputUtils.parseDecimal(_orderStepController.text)))
+        ? parseByCurrentUnit(_orderStepController.text)
         : null;
 
     final resolvedStep = ProductFormValidator.resolveOrderStep(
@@ -405,16 +430,28 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       }
       return;
     }
+    final isSubUnit =
+        _unitType == ProductModel.unitG || _unitType == ProductModel.unitMl;
+    final effectivePricePerBaseUnit =
+        (isSubUnit && minOrder > 0 && minOrder < 1)
+            ? (price / minOrder)
+            : price;
+    final dbUnitType = switch (_unitType) {
+      ProductModel.unitMl => ProductModel.unitL,
+      ProductModel.unitG => ProductModel.unitKg,
+      _ => _unitType,
+    };
+
     final product = ProductModel(
       id: widget.productId ?? '',
       sellerId: user.id,
       category: effectiveCategory!,
       name: _nameController.text.trim(),
-      pricePerKg: price,
+      pricePerKg: effectivePricePerBaseUnit,
       minOrderKg: minOrder,
       orderStep: resolvedStep,
       availableKg: available,
-      unitType: _unitType,
+      unitType: dbUnitType,
       description: desc,
       imageUrls: imageUrls,
       pickupOptions: _pickupOptions,
@@ -534,8 +571,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       onCategoryChanged: (v) =>
                           setState(() => _category = v),
                       unitType: _unitType,
-                      onUnitTypeChanged: (v) =>
-                          setState(() => _unitType = v),
+                      onUnitTypeChanged: _handleUnitTypeChanged,
                       nameController: _nameController,
                       priceController: _priceController,
                       minOrderController: _minOrderController,
