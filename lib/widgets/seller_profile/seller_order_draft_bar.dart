@@ -76,8 +76,8 @@ class SellerOrderDraftBar extends StatelessWidget {
               const SizedBox(height: 10),
               FilledButton.icon(
                 onPressed: () => context.push('/checkout-seller/$sellerId'),
-                icon: const Icon(Icons.send),
-                label: const Text('Nastavi porudžbinu'),
+                icon: const Icon(Icons.arrow_forward),
+                label: const Text('Nastavi ka porudžbini'),
               ),
               if (canContact) const SizedBox(height: 8),
             ],

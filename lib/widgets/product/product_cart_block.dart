@@ -148,6 +148,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
     final product = widget.product;
     final isDesktop = widget.desktopMode;
     final totalPrice = _quantity * product.pricePerKg;
+    final cartCount = context.select<CartProvider, int>((c) => c.count);
 
     final cartButton = SizedBox(
       height: 46,
@@ -169,7 +170,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
             backgroundColor: AmazonColors.amberLight,
             foregroundColor: AmazonColors.darkNavy,
             elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
               side: const BorderSide(
@@ -182,37 +183,94 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
       ),
     );
 
+    final openCartButton = cartCount > 0
+        ? SizedBox(
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: () => withHaptic(() => context.push('/cart')),
+              icon: Icon(
+                Icons.shopping_cart_outlined,
+                size: 18,
+                color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
+              ),
+              label: Text(
+                'Korpa ($cartCount)',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
+                  color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                side: BorderSide(
+                  color: isDark ? AmazonColors.lightGreen : AmazonColors.green,
+                  width: 1.4,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          )
+        : null;
+
     return Column(
       crossAxisAlignment:
           isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (product.isAvailable)
-          Row(
-            mainAxisSize: isDesktop ? MainAxisSize.min : MainAxisSize.max,
-            children: [
-              _ProductQuantityStepper(
-                quantity: _quantity,
-                minQuantity: product.minOrderKg,
-                maxQuantity: product.maxOrderQuantity,
-                step: product.quantityStep,
-                formattedQuantity: product.formatQuantity(_quantity),
-                onChanged: (newQuantity) =>
-                    setState(() => _quantity = newQuantity),
-              ),
-              const SizedBox(width: 10),
-              if (isDesktop)
+          if (isDesktop)
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _ProductQuantityStepper(
+                  quantity: _quantity,
+                  minQuantity: product.minOrderKg,
+                  maxQuantity: product.maxOrderQuantity,
+                  step: product.quantityStep,
+                  formattedQuantity: product.formatQuantity(_quantity),
+                  onChanged: (newQuantity) =>
+                      setState(() => _quantity = newQuantity),
+                ),
                 ConstrainedBox(
                   constraints: const BoxConstraints(
                     minWidth: 180,
                     maxWidth: 260,
                   ),
                   child: cartButton,
-                )
-              else
-                Expanded(child: cartButton),
-            ],
-          )
+                ),
+                if (openCartButton != null) openCartButton,
+              ],
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    _ProductQuantityStepper(
+                      quantity: _quantity,
+                      minQuantity: product.minOrderKg,
+                      maxQuantity: product.maxOrderQuantity,
+                      step: product.quantityStep,
+                      formattedQuantity: product.formatQuantity(_quantity),
+                      onChanged: (newQuantity) =>
+                          setState(() => _quantity = newQuantity),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: cartButton),
+                  ],
+                ),
+                if (openCartButton != null) ...[
+                  const SizedBox(height: 8),
+                  openCartButton,
+                ],
+              ],
+            )
         else
           Container(
             height: 46,

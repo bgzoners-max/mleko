@@ -165,10 +165,41 @@ class SellerInlineCartSection extends StatelessWidget {
                         .bodyMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
-                  FilledButton.tonal(
-                    onPressed: () => context.push('/checkout-seller/$sellerId'),
-                    child: const Text('Pošalji porudžbinu prodavcu'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Možete dodati još proizvoda ovog domaćinstva u istu pošiljku (jedna poštarina).',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/seller/$sellerId'),
+                          icon: const Icon(Icons.storefront_outlined, size: 17),
+                          label: const Text(
+                            'Još iz domaćinstva',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: () =>
+                              context.push('/checkout-seller/$sellerId'),
+                          child: const Text(
+                            'Nastavi ka porudžbini →',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

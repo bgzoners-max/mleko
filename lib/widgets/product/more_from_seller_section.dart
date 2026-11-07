@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/amazon_theme.dart';
+import '../../core/haptic.dart';
 import '../../models/product_model.dart';
+import '../../providers/app_state.dart';
+import '../../providers/cart_provider.dart';
 import '../../services/services.dart';
 import '../app_network_image.dart';
 
@@ -162,16 +167,62 @@ class _SellerProductCard extends StatelessWidget {
 
   const _SellerProductCard({required this.product});
 
+  Future<void> _quickAddToCart(BuildContext context) async {
+    final user = context.read<AppState>().user;
+    if (user == null || user.isGuest) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registruj se ili se prijavi da bi dodao u korpu.'),
+        ),
+      );
+      context.go('/login');
+      return;
+    }
+
+    final effectiveProduct = product.hasVariants
+        ? product.withSelectedVariant(product.variants.first)
+        : product;
+    final qty =
+        effectiveProduct.minOrderKg > 0 ? effectiveProduct.minOrderKg : 1.0;
+
+    unawaited(AppHaptics.selection());
+    final cart = context.read<CartProvider>();
+    await cart.addForSeller(
+      sellerId: effectiveProduct.sellerId,
+      productId: effectiveProduct.cartKey,
+      quantity: qty,
+      product: effectiveProduct,
+    );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Dodato u korpu: ${effectiveProduct.name} (${effectiveProduct.formatQuantity(qty)}).',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = context.watch<AppState>().user;
+    final canBuy =
+        product.isAvailable && (user == null || user.id != product.sellerId);
+    final inCart = context.select<CartProvider, bool>(
+      (c) => c.containsInSeller(product.sellerId, product.id),
+    );
 
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+          color: inCart
+              ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
+              : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
         ),
       ),
       child: InkWell(
@@ -226,11 +277,46 @@ class _SellerProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                size: 18,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              ),
+              if (canBuy) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 34,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _quickAddToCart(context),
+                    icon: Icon(
+                      inCart ? Icons.check : Icons.add_shopping_cart,
+                      size: 15,
+                    ),
+                    label: Text(
+                      inCart ? 'U korpi +' : 'Dodaj',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: isDark
+                          ? AmazonColors.lightGreen
+                          : AmazonColors.green,
+                      side: BorderSide(
+                        color: isDark
+                            ? AmazonColors.lightGreen
+                            : AmazonColors.green,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else
+                Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
             ],
           ),
         ),
