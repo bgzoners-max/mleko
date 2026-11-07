@@ -136,21 +136,20 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _priceController.text = p.pricePerKg == p.pricePerKg.truncateToDouble()
           ? p.pricePerKg.toInt().toString()
           : p.pricePerKg.toString();
+      _availableController.text = p.availableKg == p.availableKg.truncateToDouble()
+          ? p.availableKg.toInt().toString()
+          : p.availableKg.toString();
       if (isSubUnit) {
         _minOrderController.text = '${(p.minOrderKg * 1000).round()}';
         _orderStepController.text = (p.orderStep != null && p.orderStep! > 0)
             ? '${(p.orderStep! * 1000).round()}'
             : '${(p.minOrderKg * 1000).round()}';
-        _availableController.text = p.availableKg > 0
-            ? '${(p.availableKg * 1000).round()}'
-            : '0';
         _unitType = isSubMl ? ProductModel.unitMl : ProductModel.unitG;
       } else {
         _minOrderController.text = p.minOrderKg.toString();
         _orderStepController.text = (p.orderStep != null && p.orderStep! > 0)
             ? p.orderStep!.toString()
             : '';
-        _availableController.text = p.availableKg.toString();
         _unitType = p.unitType;
       }
       _descriptionController.text = p.description;
@@ -350,7 +349,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     }
 
     final minOrder = parseByCurrentUnit(_minOrderController.text, fallback: 1.0);
-    final available = parseByCurrentUnit(_availableController.text, fallback: 0.0);
+    final available =
+        (_unitType == ProductModel.unitG || _unitType == ProductModel.unitMl)
+            ? (NumberInputUtils.parseDecimal(_availableController.text) ?? 0.0)
+            : parseByCurrentUnit(_availableController.text, fallback: 0.0);
     final parsedOrderStep = _orderStepController.text.trim().isNotEmpty
         ? parseByCurrentUnit(_orderStepController.text)
         : null;

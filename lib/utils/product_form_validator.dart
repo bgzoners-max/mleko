@@ -44,7 +44,7 @@ class ProductFormValidator {
     final defaultStepByUnit = switch (unitType) {
       ProductModel.unitL => 1.0,
       ProductModel.unitMl => minOrderKg,
-      ProductModel.unitG => minOrderKg,
+      ProductModel.unitG => 0.05,
       ProductModel.unitPiece => 1.0,
       ProductModel.unitVeza => 1.0,
       ProductModel.unitPak => 1.0,

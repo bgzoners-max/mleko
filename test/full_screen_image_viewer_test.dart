@@ -31,13 +31,13 @@ void main() {
       await tester.pump();
 
       // Check for arrows
-      expect(find.byIcon(Icons.chevron_left_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       expect(find.text('1 / 3'), findsOneWidget);
 
       // Tap next arrow
-      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+      await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 50));
@@ -46,7 +46,7 @@ void main() {
       expect(find.text('2 / 3'), findsOneWidget);
 
       // Tap previous arrow
-      await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+      await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
       await tester.pump(const Duration(milliseconds: 50));
@@ -111,8 +111,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.chevron_left_rounded), findsNothing);
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+      expect(find.byIcon(Icons.chevron_left), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
   });

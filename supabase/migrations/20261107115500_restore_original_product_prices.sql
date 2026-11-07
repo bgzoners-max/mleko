@@ -22,6 +22,10 @@ UPDATE public.products SET price_per_kg = 500 WHERE id = 'eb1f87ad-5c3c-4ce9-892
 --    Za proizvode u podjedinicama (unit_type IN ('kg', 'L') i min_order_kg < 1),
 --    price_per_kg predstavlja cenu tog pakovanja (npr. 400 RSD za 330ml = 0.33 L),
 --    pa je ukupna cena stavke (quantity / min_order_kg) * price_per_kg.
+DROP FUNCTION IF EXISTS public.create_order_with_items(
+  UUID, UUID, TEXT, JSONB, TEXT, TEXT, TEXT, TEXT, UUID, UUID, NUMERIC
+);
+
 CREATE OR REPLACE FUNCTION public.create_order_with_items(
   p_buyer_id UUID,
   p_seller_id UUID,

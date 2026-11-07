@@ -255,7 +255,7 @@ void main() {
         id: 'prod-med',
         name: 'Livadski Med',
         pricePerKg: 1000,
-        minOrderKg: 0.5,
+        minOrderKg: 1.0,
       );
       mockProductsService = _MockProductsService({
         sirProduct.id: sirProduct,
@@ -296,7 +296,8 @@ void main() {
           : AppState(
               ordersService: mockOrdersService,
               connectivityService: connectivityService,
-            )..setUserForTesting(_testBuyer);
+            )
+        ..setUserForTesting(_testBuyer);
 
       final router = GoRouter(
         initialLocation: '/checkout-multi',
@@ -314,7 +315,8 @@ void main() {
           GoRoute(
             path: '/orders',
             builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Moje porudžbine - uspešno poslat upit')),
+              body:
+                  Center(child: Text('Moje porudžbine - uspešno poslat upit')),
             ),
           ),
           GoRoute(
@@ -415,18 +417,15 @@ void main() {
       expect(convCall['productId'], equals('prod-sir'));
 
       // 8. Seller cart group fully cleared after successful order
-      expect(
-          cartProvider.containsInSeller(_testSellerId, 'prod-sir'), isFalse);
-      expect(
-          cartProvider.containsInSeller(_testSellerId, 'prod-med'), isFalse);
+      expect(cartProvider.containsInSeller(_testSellerId, 'prod-sir'), isFalse);
+      expect(cartProvider.containsInSeller(_testSellerId, 'prod-med'), isFalse);
 
       // 9. Navigated to orders screen
       expect(
           find.text('Moje porudžbine - uspešno poslat upit'), findsOneWidget);
     });
 
-    testWidgets(
-        'Validation: prevents submission if required phone is cleared',
+    testWidgets('Validation: prevents submission if required phone is cleared',
         (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
@@ -530,8 +529,8 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(
-          createTestApp(items: validItems(), online: false));
+      await tester
+          .pumpWidget(createTestApp(items: validItems(), online: false));
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));

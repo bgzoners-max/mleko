@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:mleko/models/order_item_model.dart';
 import 'package:mleko/models/product_model.dart';
 import 'package:mleko/models/seller_delivery_models.dart';
 import 'package:mleko/models/user_model.dart';
@@ -94,6 +95,37 @@ class _MockOrdersService implements OrdersService {
       productName: productName,
       quantityKg: quantityKg,
       unitType: unitType,
+      note: note,
+      buyerCity: buyerCity,
+      buyerPhone: buyerPhone,
+      buyerAddress: buyerAddress,
+      buyerPostalCode: buyerPostalCode,
+      deliveryMethod: deliveryMethod,
+    ));
+    return nextOrderId;
+  }
+
+  @override
+  Future<String> createOrderWithItems({
+    required String buyerId,
+    required String sellerId,
+    required List<OrderItemModel> items,
+    required String note,
+    required String buyerCity,
+    required String buyerPhone,
+    String? buyerAddress,
+    String? buyerPostalCode,
+    DeliveryMethod deliveryMethod = DeliveryMethod.courier,
+    DeliverySelectionModel? deliverySelection,
+  }) async {
+    final first = items.first;
+    calls.add(_CreateOrderCall(
+      buyerId: buyerId,
+      sellerId: sellerId,
+      productId: first.productId,
+      productName: first.productName,
+      quantityKg: first.quantityKg,
+      unitType: first.unitType,
       note: note,
       buyerCity: buyerCity,
       buyerPhone: buyerPhone,

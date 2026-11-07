@@ -336,7 +336,9 @@ class ProductModel {
   }
 
   String get minOrderFormatted => formatQuantity(minOrderKg);
-  String get availableFormatted => formatQuantity(availableKg);
+  String get availableFormatted => isSubUnitProduct
+      ? formatQuantityWithUnit(availableKg, unitPiece)
+      : formatQuantity(availableKg);
 
   /// Formatiran podatak o broju prodaja (Social Proof: npr. '10+ prodaja', '50+ prodaja').
   /// Vraća `null` ako ima manje od 10 prodaja kako se ne bi prikazivali niski brojevi.

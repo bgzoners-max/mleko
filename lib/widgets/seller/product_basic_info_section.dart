@@ -323,6 +323,8 @@ class ProductBasicInfoSection extends StatelessWidget {
   }
 
   Widget _buildAvailableField({bool isWide = false}) {
+    final isSubUnit =
+        unitType == ProductModel.unitG || unitType == ProductModel.unitMl;
     return TextField(
       controller: availableController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -330,8 +332,8 @@ class ProductBasicInfoSection extends StatelessWidget {
       decoration: InputDecoration(
         isDense: true,
         labelText: switch (unitType) {
-          ProductModel.unitG => 'Dostupna količina (g)',
-          ProductModel.unitMl => 'Dostupna količina (ml)',
+          ProductModel.unitG => 'Na stanju (broj komada / pakovanja)',
+          ProductModel.unitMl => 'Na stanju (broj tegli / flaša)',
           ProductModel.unitL => 'Dostupna količina (L)',
           ProductModel.unitPiece => 'Dostupna količina (kom)',
           ProductModel.unitVeza => 'Dostupna količina (veza)',
@@ -339,7 +341,7 @@ class ProductBasicInfoSection extends StatelessWidget {
           _ => 'Dostupna količina (kg)',
         },
         hintText: isWide ? 'Zaliha (opciono)' : null,
-        helperText: _hint(availableController.text),
+        helperText: isSubUnit ? null : _hint(availableController.text),
       ),
     );
   }
