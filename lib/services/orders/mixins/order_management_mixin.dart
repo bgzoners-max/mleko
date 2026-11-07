@@ -28,6 +28,8 @@ mixin OrderManagementMixin {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? variantId,
+    String? variantLabel,
   }) {
     return createOrderWithItems(
       buyerId: buyerId,
@@ -38,6 +40,8 @@ mixin OrderManagementMixin {
           productName: productName,
           quantityKg: quantityKg,
           unitType: unitType,
+          variantId: variantId,
+          variantLabel: variantLabel,
         ),
       ],
       note: note,

@@ -65,7 +65,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
       'Add to cart',
       () => cart.addForSeller(
         sellerId: widget.product.sellerId,
-        productId: widget.product.id,
+        productId: widget.product.cartKey,
         quantity: _quantity,
         product: widget.product,
       ),
@@ -76,10 +76,13 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
     if (result.isSuccess) {
       unawaited(AnalyticsService().logAddToCart(widget.product, _quantity));
       final isWideLayout = MediaQuery.of(context).size.width >= 800;
+      final selectedVariant = widget.product.selectedVariant;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Dodato u korpu (${widget.product.formatQuantity(_quantity)}).',
+            selectedVariant != null
+                ? 'Dodato u korpu: ${selectedVariant.label} (${widget.product.formatQuantity(_quantity)}).'
+                : 'Dodato u korpu (${widget.product.formatQuantity(_quantity)}).',
           ),
           action: SnackBarAction(
             label: 'Pregled',

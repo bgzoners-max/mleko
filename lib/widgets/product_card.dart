@@ -342,6 +342,18 @@ class _ProductCardState extends State<ProductCard> {
                       child: Text.rich(
                         TextSpan(
                           children: [
+                            if (widget.product.variants.length > 1 &&
+                                widget.product.selectedVariant == null)
+                              TextSpan(
+                                text: 'od ',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AmazonColors.darkTextSecondary
+                                      : AmazonColors.textSecondary,
+                                ),
+                              ),
                             TextSpan(
                               text: priceNum,
                               style: TextStyle(

@@ -32,9 +32,11 @@ class CartProvider extends ChangeNotifier {
     if (cached != null) return cached;
     final map = <String, String>{};
     for (final entry in _sellerItems.entries) {
-      for (final productId in entry.value.keys) {
+      for (final key in entry.value.keys) {
         // Zadrži prvog prodavca (isti redosled kao stari linearni sken).
-        map.putIfAbsent(productId, () => entry.key);
+        map.putIfAbsent(key, () => entry.key);
+        final baseId = ProductModel.extractProductId(key);
+        map.putIfAbsent(baseId, () => entry.key);
       }
     }
     return _productSellerIndex = map;
@@ -52,8 +54,12 @@ class CartProvider extends ChangeNotifier {
 
   double? getQuantityForSeller(String sellerId, String productId) =>
       _sellerItems[sellerId]?[productId];
-  bool containsInSeller(String sellerId, String productId) =>
-      _sellerItems[sellerId]?.containsKey(productId) ?? false;
+  bool containsInSeller(String sellerId, String productId) {
+    final map = _sellerItems[sellerId];
+    if (map == null) return false;
+    if (map.containsKey(productId)) return true;
+    return map.keys.any((k) => ProductModel.extractProductId(k) == productId);
+  }
   Map<String, double> getSellerDraft(String sellerId) =>
       Map<String, double>.from(_sellerItems[sellerId] ?? const {});
 
@@ -355,10 +361,17 @@ class CartProvider extends ChangeNotifier {
     if (quantity <= 0) return;
     await _initFuture;
 
-    final resolvedProduct = product ?? await _productsService.getProduct(productId);
+    final effectiveKey = (product?.selectedVariant != null &&
+            !productId.contains(ProductModel.cartKeySeparator))
+        ? product!.cartKey
+        : productId;
+    final baseProductId = ProductModel.extractProductId(effectiveKey);
+    final fetchedProduct =
+        product ?? await _productsService.getProduct(baseProductId);
+    final resolvedProduct = fetchedProduct?.resolveForCartKey(effectiveKey);
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
-    final currentQty = sellerDraft[productId] ?? 0.0;
+    final currentQty = sellerDraft[effectiveKey] ?? 0.0;
     var targetQty = currentQty + quantity;
 
     if (resolvedProduct != null) {
@@ -390,7 +403,7 @@ class CartProvider extends ChangeNotifier {
       );
     }
 
-    sellerDraft[productId] = targetQty;
+    sellerDraft[effectiveKey] = targetQty;
     _invalidateCache(sellerId);
     notifyListeners();
     _scheduleSave();
@@ -403,12 +416,19 @@ class CartProvider extends ChangeNotifier {
     ProductModel? product,
   }) async {
     await _initFuture;
+    final effectiveKey = (product?.selectedVariant != null &&
+            !productId.contains(ProductModel.cartKeySeparator))
+        ? product!.cartKey
+        : productId;
     if (quantity <= 0) {
-      await removeFromSeller(sellerId: sellerId, productId: productId);
+      await removeFromSeller(sellerId: sellerId, productId: effectiveKey);
       return;
     }
 
-    final resolvedProduct = product ?? await _productsService.getProduct(productId);
+    final baseProductId = ProductModel.extractProductId(effectiveKey);
+    final fetchedProduct =
+        product ?? await _productsService.getProduct(baseProductId);
+    final resolvedProduct = fetchedProduct?.resolveForCartKey(effectiveKey);
     var targetQty = quantity;
 
     if (resolvedProduct != null) {
@@ -442,7 +462,7 @@ class CartProvider extends ChangeNotifier {
 
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
-    sellerDraft[productId] = targetQty;
+    sellerDraft[effectiveKey] = targetQty;
     _invalidateCache(sellerId);
     notifyListeners();
     _scheduleSave();
@@ -483,7 +503,10 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft = <String, double>{};
     for (final item in items) {
       if (item.quantityKg > 0) {
-        sellerDraft[item.productId] = item.quantityKg;
+        final key = (item.variantId != null && item.variantId!.isNotEmpty)
+            ? '${item.productId}${ProductModel.cartKeySeparator}${item.variantId}'
+            : item.productId;
+        sellerDraft[key] = (sellerDraft[key] ?? 0) + item.quantityKg;
       }
     }
     if (sellerDraft.isNotEmpty) _sellerItems[sellerId] = sellerDraft;
@@ -562,13 +585,19 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null || sellerDraft.isEmpty) return [];
     return _bySellerCache.putIfAbsent(sellerId, () async {
-      // Batch load umesto N+1 petlje
-      final productIds = sellerDraft.keys.toList();
-      final products = await _productsService.getProductsByIds(productIds);
+      // Batch load umesto N+1 petlje (izvlači osnovne UUID-jeve proizvoda)
+      final baseProductIds = sellerDraft.keys
+          .map(ProductModel.extractProductId)
+          .toSet()
+          .toList();
+      final products = await _productsService.getProductsByIds(baseProductIds);
       final result = <({ProductModel product, double quantity})>[];
       for (final e in sellerDraft.entries) {
-        final p = products[e.key];
-        if (p != null) result.add((product: p, quantity: e.value));
+        final baseId = ProductModel.extractProductId(e.key);
+        final p = products[baseId];
+        if (p != null) {
+          result.add((product: p.resolveForCartKey(e.key), quantity: e.value));
+        }
       }
       return result;
     });

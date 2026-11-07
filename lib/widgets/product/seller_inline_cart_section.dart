@@ -113,7 +113,7 @@ class SellerInlineCartSection extends StatelessWidget {
                                     if (next < minQty) return;
                                     cart.setQuantityForSeller(
                                       sellerId: sellerId,
-                                      productId: p.id,
+                                      productId: p.cartKey,
                                       quantity: next,
                                       product: p,
                                     );
@@ -128,7 +128,7 @@ class SellerInlineCartSection extends StatelessWidget {
                               final next = e.quantity + step;
                               cart.setQuantityForSeller(
                                 sellerId: sellerId,
-                                productId: p.id,
+                                productId: p.cartKey,
                                 quantity: next,
                                 product: p,
                               );
@@ -141,7 +141,7 @@ class SellerInlineCartSection extends StatelessWidget {
                             onPressed: () {
                               cart.removeFromSeller(
                                 sellerId: sellerId,
-                                productId: p.id,
+                                productId: p.cartKey,
                               );
                             },
                           ),

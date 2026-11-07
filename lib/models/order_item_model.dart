@@ -7,6 +7,8 @@ class OrderItemModel {
   final String unitType;
   /// Cena po jedinici (kg/L) pri slanju porudžbine; za upis u order_items.unit_price
   final double unitPrice;
+  final String? variantId;
+  final String? variantLabel;
 
   const OrderItemModel({
     required this.productId,
@@ -14,6 +16,8 @@ class OrderItemModel {
     required this.quantityKg,
     this.unitType = ProductModel.unitKg,
     this.unitPrice = 0,
+    this.variantId,
+    this.variantLabel,
   });
 
   double get totalPrice => unitPrice * quantityKg;
@@ -60,6 +64,9 @@ class OrderItemModel {
         'unit_type': unitType,
         'unit_price': unitPrice,
         'total_price': totalPrice,
+        if (variantId != null && variantId!.isNotEmpty) 'variant_id': variantId,
+        if (variantLabel != null && variantLabel!.isNotEmpty)
+          'variant_label': variantLabel,
       };
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) => OrderItemModel(
@@ -68,5 +75,7 @@ class OrderItemModel {
         quantityKg: (json['quantity_kg'] as num?)?.toDouble() ?? 0,
         unitType: json['unit_type'] as String? ?? ProductModel.unitKg,
         unitPrice: (json['unit_price'] as num?)?.toDouble() ?? 0,
+        variantId: json['variant_id'] as String?,
+        variantLabel: json['variant_label'] as String?,
       );
 }

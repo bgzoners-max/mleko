@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../core/haptic.dart';
 import '../core/responsive.dart';
+import '../models/order_item_model.dart';
 import '../models/product_model.dart';
 import '../models/seller_delivery_models.dart';
 import '../models/user_model.dart';
@@ -248,13 +249,20 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         final ordersService = context.read<OrdersService>();
         final usersService = context.read<UsersService>();
         final chatService = context.read<ChatService>();
-        final orderId = await ordersService.createSingleProductOrder(
+        final orderId = await ordersService.createOrderWithItems(
           buyerId: user.id,
           sellerId: widget.product.sellerId,
-          productId: widget.product.id,
-          productName: widget.product.name,
-          quantityKg: qty,
-          unitType: widget.product.unitType,
+          items: [
+            OrderItemModel(
+              productId: widget.product.id,
+              productName: widget.product.name,
+              quantityKg: qty,
+              unitType: widget.product.unitType,
+              unitPrice: widget.product.pricePerKg,
+              variantId: widget.product.selectedVariant?.id,
+              variantLabel: widget.product.selectedVariant?.label,
+            ),
+          ],
           note: note,
           buyerCity: buyerCity,
           buyerPhone: phone,
@@ -288,7 +296,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         if (!mounted) return;
         await context.read<CartProvider>().removeFromSeller(
               sellerId: widget.product.sellerId,
-              productId: widget.product.id,
+              productId: widget.product.cartKey,
             );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -316,7 +324,7 @@ class _CheckoutFormState extends State<_CheckoutForm> {
         if (!mounted) return;
         await context.read<CartProvider>().removeFromSeller(
               sellerId: widget.product.sellerId,
-              productId: widget.product.id,
+              productId: widget.product.cartKey,
             );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

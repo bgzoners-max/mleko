@@ -243,4 +243,71 @@ void main() {
       expect(find.text('2.5 kg'), findsOneWidget);
     });
   });
+
+  group('ProductVariants u CartProvider-u', () {
+    test('podrzava dodavanje vise razlicitih pakovanja istog proizvoda u korpu',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final fakeService = FakeProductsService();
+      const v250 =
+          ProductVariant(id: '250ml', label: 'Flašica 250 ml', price: 250);
+      const v750 =
+          ProductVariant(id: '750ml', label: 'Flaša 750 ml', price: 600);
+      final sirup = ProductModel(
+        id: 'sirup-1',
+        sellerId: 's1',
+        category: 'Sirupi',
+        name: 'Sirup od Trnjina',
+        pricePerKg: 250,
+        unitType: 'kom',
+        minOrderKg: 1,
+        orderStep: 1,
+        availableKg: 10,
+        description: '',
+        imageUrls: const [],
+        pickupOptions: const [],
+        location: 'Požarevac',
+        createdAt: DateTime(2026, 1, 2),
+        variants: const [v250, v750],
+      );
+      fakeService.addMockProduct(sirup);
+
+      final cart = CartProvider(productsService: fakeService);
+      await cart.loadFuture;
+
+      final selected250 = sirup.withSelectedVariant(v250);
+      final selected750 = sirup.withSelectedVariant(v750);
+
+      await cart.addForSeller(
+        sellerId: 's1',
+        productId: selected250.cartKey,
+        quantity: 2,
+        product: selected250,
+      );
+      await cart.addForSeller(
+        sellerId: 's1',
+        productId: selected750.cartKey,
+        quantity: 1,
+        product: selected750,
+      );
+
+      final items = await cart.getProductsBySeller('s1');
+      expect(items.length, 2);
+      expect(items[0].product.name, 'Sirup od Trnjina (Flašica 250 ml)');
+      expect(items[0].product.pricePerKg, 250);
+      expect(items[0].quantity, 2);
+      expect(items[1].product.name, 'Sirup od Trnjina (Flaša 750 ml)');
+      expect(items[1].product.pricePerKg, 600);
+      expect(items[1].quantity, 1);
+
+      // Uklanjanje samo vece flase ostavlja malu flasicu u korpi
+      await cart.removeFromSeller(
+        sellerId: 's1',
+        productId: selected750.cartKey,
+      );
+      final remaining = await cart.getProductsBySeller('s1');
+      expect(remaining.length, 1);
+      expect(remaining.first.product.selectedVariant?.id, '250ml');
+    });
+  });
 }

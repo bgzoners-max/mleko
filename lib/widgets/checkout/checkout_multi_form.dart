@@ -289,14 +289,15 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
     setState(() => _items[index] = (product: p, quantity: quantity));
     context.read<CartProvider>().setQuantityForSeller(
           sellerId: widget.sellerId,
-          productId: p.id,
+          productId: p.cartKey,
           quantity: quantity,
+          product: p,
         );
   }
 
   void _remove(int index) {
     final removedItem = _items[index];
-    final productId = removedItem.product.id;
+    final productId = removedItem.product.cartKey;
 
     _listKey.currentState?.removeItem(
       index,
@@ -395,6 +396,8 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
                     quantityKg: e.quantity,
                     unitType: e.product.unitType,
                     unitPrice: e.product.pricePerKg,
+                    variantId: e.product.selectedVariant?.id,
+                    variantLabel: e.product.selectedVariant?.label,
                   ))
               .toList();
 

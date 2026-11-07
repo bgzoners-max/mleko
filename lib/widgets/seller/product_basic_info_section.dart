@@ -6,6 +6,7 @@ import '../../models/product_model.dart';
 import '../../utils/product_helpers.dart';
 import '../../widgets/cupertino_category_picker.dart';
 import '../../widgets/grouped_category_dropdown.dart';
+import 'product_variants_section.dart';
 
 /// Osnovna sekcija forme proizvoda: kategorija, jedinica, naziv, cena i količine.
 class ProductBasicInfoSection extends StatelessWidget {
@@ -21,6 +22,8 @@ class ProductBasicInfoSection extends StatelessWidget {
   final TextEditingController availableController;
   final String? Function(String text, String unitType)? quantityHintBuilder;
   final VoidCallback onChanged;
+  final List<ProductVariant> variants;
+  final ValueChanged<List<ProductVariant>>? onVariantsChanged;
 
   const ProductBasicInfoSection({
     super.key,
@@ -36,6 +39,8 @@ class ProductBasicInfoSection extends StatelessWidget {
     required this.availableController,
     required this.quantityHintBuilder,
     required this.onChanged,
+    this.variants = const [],
+    this.onVariantsChanged,
   });
 
   String? _hint(String text) => quantityHintBuilder?.call(text, unitType);
@@ -261,6 +266,14 @@ class ProductBasicInfoSection extends StatelessWidget {
               ),
             ],
           ),
+          if (onVariantsChanged != null) ...[
+            const SizedBox(height: 10),
+            ProductVariantsSection(
+              variants: variants,
+              onVariantsChanged: onVariantsChanged!,
+              basePriceController: priceController,
+            ),
+          ],
           const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,6 +305,14 @@ class ProductBasicInfoSection extends StatelessWidget {
         _buildNameField(),
         const SizedBox(height: 10),
         _buildPriceField(),
+        if (onVariantsChanged != null) ...[
+          const SizedBox(height: 10),
+          ProductVariantsSection(
+            variants: variants,
+            onVariantsChanged: onVariantsChanged!,
+            basePriceController: priceController,
+          ),
+        ],
         const SizedBox(height: 10),
         _buildMinOrderField(isWide: false),
         const SizedBox(height: 10),

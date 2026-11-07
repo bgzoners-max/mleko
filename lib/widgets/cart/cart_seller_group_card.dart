@@ -55,7 +55,7 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
     unawaited(AppHaptics.light());
     await context.read<CartProvider>().removeFromSeller(
           sellerId: sellerId,
-          productId: item.product.id,
+          productId: item.product.cartKey,
         );
 
     _listKey.currentState?.removeItem(

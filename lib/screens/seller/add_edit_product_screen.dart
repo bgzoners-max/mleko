@@ -18,6 +18,7 @@ import '../../widgets/app_back_button.dart';
 import '../../widgets/seller/product_basic_info_section.dart';
 import '../../widgets/seller/product_delivery_section.dart';
 import '../../widgets/seller/product_images_section.dart';
+import '../../widgets/seller/product_variants_section.dart';
 import '../../widgets/seller/seller_legal_registration_section.dart';
 
 class AddEditProductScreen extends StatefulWidget {
@@ -57,6 +58,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   final Set<String> _selectedDeliveryPointIds = <String>{};
   DateTime? _existingCreatedAt;
   bool _acceptedLiability = false;
+  List<ProductVariant> _variants = const [];
 
   bool get isEdit => widget.productId != null && widget.productId!.isNotEmpty;
 
@@ -159,6 +161,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _imageUrls =
           List<String>.from(p.imageUrls.take(AppConstants.maxProductImages));
       _existingCreatedAt = p.createdAt;
+      _variants = List<ProductVariant>.from(p.variants);
       setState(() {});
     }
   }
@@ -254,26 +257,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<bool> _confirmPublishWithoutImage() async {
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Objava bez fotografije?'),
-        content: const Text(
-          'Oglasi bez fotografije prikazuju se na dnu početne strane i imaju znatno manje porudžbina. Preporučujemo da dodate bar jednu fotografiju proizvoda.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop('publish'),
-            child: const Text('Objavi bez slike'),
-          ),
-          FilledButton.icon(
-            onPressed: () => Navigator.of(ctx).pop('pick'),
-            icon: const Icon(Icons.add_a_photo_outlined, size: 18),
-            label: const Text('Dodaj fotografiju'),
-          ),
-        ],
-      ),
-    );
+    final action = await showPublishWithoutImageDialog(context);
     if (action == 'pick') {
       await _pickImage();
       return false;
@@ -361,6 +345,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       _showErrorDialog(msg);
     }
 
+    final cleanedVariants = <ProductVariant>[];
+    for (final v in _variants) {
+      if (v.label.trim().isEmpty && v.price <= 0) continue;
+      if (v.label.trim().isEmpty) {
+        return fail('Unesite naziv za svako dodato pakovanje.');
+      }
+      if (v.price <= 0) {
+        return fail('Unesite validnu cenu za pakovanje „${v.label}”.');
+      }
+      cleanedVariants.add(v);
+    }
+
     if (price == null || price <= 0) return fail('Unesite validnu cenu.');
     if (minOrder <= 0) return fail('Minimalna porudžbina mora biti veća od 0.');
     if (resolvedStep > minOrder) return fail('Korak porudžbine ne može biti veći od minimalne porudžbine.');
@@ -431,6 +427,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               ? _selectedDeliveryPointIds.toList(growable: false)
               : const [],
       createdAt: _existingCreatedAt ?? DateTime.now(),
+      variants: cleanedVariants,
     );
 
     // 🚀 NOVI SISTEM: Automatsko logovanje, praćenje performansi i bezbedno hvatanje grešaka
@@ -472,65 +469,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   Future<void> _confirmDelete() async {
     if (!isEdit || widget.productId == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmDeleteProductDialog(
       context: context,
-      builder: (ctx) {
-        bool isDeleting = false;
-        return StatefulBuilder(
-          builder: (dialogCtx, setDialogState) {
-            return AlertDialog(
-              title: const Text('Trajno brisanje proizvoda'),
-              content: Text(
-                'Da li ste sigurni da želite trajno da obrišete proizvod „${_nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'ovaj proizvod'}”? Ova akcija se ne može poništiti.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isDeleting ? null : () => Navigator.pop(ctx, false),
-                  child: const Text('Odustani'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  onPressed: isDeleting
-                      ? null
-                      : () async {
-                          setDialogState(() => isDeleting = true);
-                          try {
-                            await context
-                                .read<ProductsService>()
-                                .deleteProduct(widget.productId!);
-                            if (ctx.mounted) {
-                              Navigator.pop(ctx, true);
-                            }
-                          } catch (e) {
-                            setDialogState(() => isDeleting = false);
-                            if (ctx.mounted) {
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(
-                                  content: Text('Greška pri brisanju: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  child: isDeleting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Trajno obriši'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      productName: _nameController.text.trim(),
+      onDelete: () =>
+          context.read<ProductsService>().deleteProduct(widget.productId!),
     );
 
     if (confirmed == true && mounted) {
@@ -600,6 +543,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                       availableController: _availableController,
                       quantityHintBuilder: ProductFormValidator.formatQuantityHint,
                       onChanged: () => setState(() {}),
+                      variants: _variants,
+                      onVariantsChanged: (v) => setState(() => _variants = v),
                     ),
 // BASIC-SECTION-END
                     const SizedBox(height: 12),

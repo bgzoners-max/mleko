@@ -4,10 +4,12 @@ import '../utils/quantity_engine.dart';
 import '../utils/sales_counter_formatter.dart';
 import 'product_delivery_scope.dart';
 import 'product_stats.dart';
+import 'product_variant.dart';
 
 export '../utils/product_formatting_utils.dart';
 export 'product_delivery_scope.dart';
 export 'product_stats.dart';
+export 'product_variant.dart';
 
 class ProductModel {
   static const String unitKg = 'kg';
@@ -46,6 +48,72 @@ class ProductModel {
   final double? avgRating;
   final int reviewCount;
   final int orderCount;
+  final List<ProductVariant> variants;
+  final ProductVariant? selectedVariant;
+
+  static const String cartKeySeparator = '::';
+
+  bool get hasVariants => variants.isNotEmpty;
+
+  String get baseName {
+    final current = selectedVariant;
+    if (current != null) {
+      final suffix = ' (${current.label})';
+      if (name.endsWith(suffix)) {
+        return name.substring(0, name.length - suffix.length);
+      }
+    }
+    return name;
+  }
+
+  String get cartKey => selectedVariant != null
+      ? '$id$cartKeySeparator${selectedVariant!.id}'
+      : id;
+
+  static String extractProductId(String cartKey) {
+    final idx = cartKey.indexOf(cartKeySeparator);
+    return idx >= 0 ? cartKey.substring(0, idx) : cartKey;
+  }
+
+  static String? extractVariantId(String cartKey) {
+    final idx = cartKey.indexOf(cartKeySeparator);
+    if (idx < 0) return null;
+    final variantId = cartKey.substring(idx + cartKeySeparator.length).trim();
+    return variantId.isEmpty ? null : variantId;
+  }
+
+  ProductModel withSelectedVariant(ProductVariant? variant) {
+    if (variant == null) {
+      return copyWith(
+        name: baseName,
+        selectedVariant: null,
+      );
+    }
+    return copyWith(
+      name: '$baseName (${variant.label})',
+      pricePerKg: variant.price,
+      selectedVariant: variant,
+    );
+  }
+
+  ProductModel resolveForCartKey(String cartKey) {
+    final variantId = extractVariantId(cartKey);
+    if (variantId == null) {
+      if (variants.isNotEmpty && selectedVariant == null) {
+        return withSelectedVariant(variants.first);
+      }
+      return this;
+    }
+    for (final v in variants) {
+      if (v.id == variantId) {
+        return withSelectedVariant(v);
+      }
+    }
+    if (variants.isNotEmpty) {
+      return withSelectedVariant(variants.first);
+    }
+    return this;
+  }
 
   /// Modularne pod-komponente (rešenje za fat model):
   ProductDeliveryScope get deliveryScope => ProductDeliveryScope(
@@ -83,6 +151,8 @@ class ProductModel {
     this.avgRating,
     this.reviewCount = 0,
     this.orderCount = 0,
+    this.variants = const [],
+    this.selectedVariant,
   });
 
 
@@ -115,6 +185,8 @@ class ProductModel {
     int? orderCount,
     ProductDeliveryScope? deliveryScope,
     ProductStats? stats,
+    List<ProductVariant>? variants,
+    Object? selectedVariant = _undefined,
   }) {
     final effectiveDeliveryScope = deliveryScope ??
         ((deliveryMode != null || selectedDeliveryPointIds != null)
@@ -164,6 +236,10 @@ class ProductModel {
       avgRating: effectiveStats.avgRating,
       reviewCount: effectiveStats.reviewCount,
       orderCount: effectiveStats.orderCount,
+      variants: variants ?? this.variants,
+      selectedVariant: identical(selectedVariant, _undefined)
+          ? this.selectedVariant
+          : selectedVariant as ProductVariant?,
     );
   }
 
@@ -331,6 +407,7 @@ class ProductModel {
       avgRating: (json['avg_rating'] as num?)?.toDouble(),
       reviewCount: (json['review_count'] as num?)?.toInt() ?? 0,
       orderCount: (json['order_count'] as num?)?.toInt() ?? 0,
+      variants: ProductVariant.listFromDynamic(json['variants']),
     );
 
 
@@ -360,7 +437,7 @@ class ProductModel {
       if (includeId && id.isNotEmpty) 'id': id,
       'seller_id': sellerId,
       'category': category,
-      'name': name,
+      'name': baseName,
       'price_per_kg': pricePerKg,
       'min_order_kg': minOrderKg,
       'order_step': (orderStep != null && orderStep! > 0)
@@ -375,6 +452,7 @@ class ProductModel {
       'is_domestic': isDomestic,
       'available_now': availableNow,
       'delivery_mode': deliveryMode.dbValue,
+      'variants': variants.map((v) => v.toJson()).toList(),
       if (includeCreatedAt) 'created_at': createdAt.toIso8601String(),
     };
   }
@@ -402,6 +480,7 @@ class ProductModel {
       'seller_is_verified': sellerIsVerified,
       if (avgRating != null) 'avg_rating': avgRating,
       'review_count': reviewCount,
+      'variants': variants.map((v) => v.toJson()).toList(),
     };
   }
 
@@ -426,6 +505,8 @@ class ProductModel {
           deliveryScope == other.deliveryScope &&
           stats == other.stats &&
           createdAt == other.createdAt &&
+          selectedVariant == other.selectedVariant &&
+          _listEquals(variants, other.variants) &&
           _listEquals(imageUrls, other.imageUrls) &&
           _listEquals(pickupOptions, other.pickupOptions);
 
@@ -445,10 +526,12 @@ class ProductModel {
         deliveryScope,
         stats,
         createdAt,
+        selectedVariant,
+        Object.hashAll(variants),
       );
 
 
-  static bool _listEquals(List<String> a, List<String> b) {
+  static bool _listEquals<T>(List<T> a, List<T> b) {
     if (identical(a, b)) return true;
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/amazon_theme.dart';
+import '../../core/haptic.dart';
 import '../../core/responsive.dart';
 import '../../models/product_model.dart';
 import '../../models/product_reviews_data.dart';
@@ -12,7 +13,7 @@ import '../common/verified_badge.dart';
 import 'product_cart_block.dart';
 import 'rating_summary_badge.dart';
 
-class ProductInfoSection extends StatelessWidget {
+class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
   final Future<ProductReviewsData> reviewsFuture;
   final VoidCallback onScrollToReviews;
@@ -25,9 +26,44 @@ class ProductInfoSection extends StatelessWidget {
   });
 
   @override
+  State<ProductInfoSection> createState() => _ProductInfoSectionState();
+}
+
+class _ProductInfoSectionState extends State<ProductInfoSection> {
+  ProductVariant? _selectedVariant;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncSelectedVariant();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProductInfoSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.id != widget.product.id ||
+        oldWidget.product.variants != widget.product.variants) {
+      _syncSelectedVariant();
+    }
+  }
+
+  void _syncSelectedVariant() {
+    if (widget.product.variants.isNotEmpty) {
+      _selectedVariant =
+          widget.product.selectedVariant ?? widget.product.variants.first;
+    } else {
+      _selectedVariant = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDesktop = Breakpoints.isDesktop(context);
+    final product = widget.product;
+    final effectiveProduct = _selectedVariant != null
+        ? product.withSelectedVariant(_selectedVariant)
+        : product;
 
     return Container(
       padding: EdgeInsets.all(isDesktop ? 20 : 16),
@@ -55,7 +91,7 @@ class ProductInfoSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            product.name,
+            product.baseName,
             style: TextStyle(
               fontSize: isDesktop ? 24 : 20,
               fontWeight: FontWeight.w800,
@@ -67,17 +103,31 @@ class ProductInfoSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _PriceAndAvailability(product: product, isDesktop: isDesktop),
+          _PriceAndAvailability(
+            product: effectiveProduct,
+            isDesktop: isDesktop,
+          ),
           const SizedBox(height: 10),
           RatingSummaryBadge(
-            reviewsFuture: reviewsFuture,
-            onTap: onScrollToReviews,
+            reviewsFuture: widget.reviewsFuture,
+            onTap: widget.onScrollToReviews,
           ),
           const SizedBox(height: 14),
-          _ProductSpecsCard(product: product),
+          _ProductSpecsCard(product: effectiveProduct),
+          if (product.variants.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _ProductVariantSelector(
+              variants: product.variants,
+              selectedVariant: _selectedVariant ?? product.variants.first,
+              onSelect: (variant) {
+                AppHaptics.selection();
+                setState(() => _selectedVariant = variant);
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           ProductCartBlock(
-            product: product,
+            product: effectiveProduct,
             desktopMode: isDesktop,
           ),
           if (product.description.trim().isNotEmpty) ...[
@@ -86,6 +136,136 @@ class ProductInfoSection extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ProductVariantSelector extends StatelessWidget {
+  final List<ProductVariant> variants;
+  final ProductVariant selectedVariant;
+  final ValueChanged<ProductVariant> onSelect;
+
+  const _ProductVariantSelector({
+    required this.variants,
+    required this.selectedVariant,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeBorderColor =
+        isDark ? AmazonColors.lightGreen : AmazonColors.green;
+    final activeBgColor = isDark
+        ? AmazonColors.green.withValues(alpha: 0.25)
+        : AmazonColors.green.withValues(alpha: 0.09);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 16,
+              color: isDark
+                  ? AmazonColors.darkTextSecondary
+                  : AmazonColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Izaberi pakovanje / veličinu:',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: variants.map((variant) {
+            final isSelected = variant.id == selectedVariant.id;
+            final priceText =
+                '${ProductFormattingUtils.formatDecimal(variant.price)} RSD';
+            return InkWell(
+              onTap: () => onSelect(variant),
+              borderRadius: BorderRadius.circular(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? activeBgColor
+                      : (isDark
+                          ? AmazonColors.darkCard
+                          : Colors.grey.shade50),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected
+                        ? activeBorderColor
+                        : (isDark
+                            ? AmazonColors.darkBorder
+                            : Colors.grey.shade300),
+                    width: isSelected ? 1.8 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      size: 18,
+                      color: isSelected
+                          ? activeBorderColor
+                          : (isDark
+                              ? AmazonColors.darkTextSecondary
+                              : Colors.grey.shade500),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      variant.label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isDark
+                            ? AmazonColors.darkTextPrimary
+                            : AmazonColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '— $priceText',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? (isDark
+                                ? AmazonColors.lightGreen
+                                : AmazonColors.dealRed)
+                            : (isDark
+                                ? AmazonColors.darkTextSecondary
+                                : AmazonColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
