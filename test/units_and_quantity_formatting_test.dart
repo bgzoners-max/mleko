@@ -448,7 +448,7 @@ void main() {
         sellerId: 's1',
         category: 'Slatko',
         name: 'Slatko od šumskih jagoda',
-        pricePerKg: 500 / 0.33,
+        pricePerKg: 500,
         minOrderKg: ProductModel.parseQuantityMl('330'),
         orderStep: ProductModel.parseQuantityMl('330'),
         availableKg: 10,
@@ -462,13 +462,15 @@ void main() {
 
       expect(slatko330ml.minOrderKg, closeTo(0.33, 0.0001));
       expect(slatko330ml.priceFormatted, '500 din./330 ml');
+      expect(slatko330ml.totalPriceForQuantity(0.33), 500);
+      expect(slatko330ml.totalPriceForQuantity(0.66), 1000);
 
       final caj30g = ProductModel(
         id: 'p-30g',
         sellerId: 's1',
         category: 'Čajevi',
         name: 'Biljni čaj',
-        pricePerKg: 300 / 0.03,
+        pricePerKg: 300,
         minOrderKg: ProductModel.parseQuantityG('30'),
         orderStep: ProductModel.parseQuantityG('30'),
         availableKg: 1,
@@ -482,6 +484,8 @@ void main() {
 
       expect(caj30g.minOrderKg, closeTo(0.03, 0.0001));
       expect(caj30g.priceFormatted, '300 din./30 g');
+      expect(caj30g.totalPriceForQuantity(0.03), 300);
+      expect(caj30g.totalPriceForQuantity(0.06), 600);
     });
   });
 }

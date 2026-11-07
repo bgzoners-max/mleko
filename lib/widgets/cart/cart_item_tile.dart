@@ -47,7 +47,7 @@ class CartItemTile extends StatelessWidget {
             ),
           ),
           Text(
-            '${(p.pricePerKg * item.quantity).toStringAsFixed(0)} RSD',
+            '${p.totalPriceForQuantity(item.quantity).toStringAsFixed(0)} RSD',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 8),

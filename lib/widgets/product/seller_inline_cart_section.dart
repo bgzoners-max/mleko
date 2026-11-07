@@ -39,7 +39,7 @@ class SellerInlineCartSection extends StatelessWidget {
 
             final total = items.fold<double>(
               0,
-              (sum, e) => sum + e.product.pricePerKg * e.quantity,
+              (sum, e) => sum + e.product.totalPriceForQuantity(e.quantity),
             );
 
             return Container(

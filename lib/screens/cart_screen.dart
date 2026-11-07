@@ -240,7 +240,7 @@ class _CartScreenState extends State<CartScreen> {
           sum +
           items.fold<double>(
             0.0,
-            (a, b) => a + (b.product.pricePerKg * b.quantity),
+            (a, b) => a + b.product.totalPriceForQuantity(b.quantity),
           ),
     );
   }

@@ -133,11 +133,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       final isSubUnit = isSubGram || isSubMl;
 
       _nameController.text = p.name;
+      _priceController.text = p.pricePerKg == p.pricePerKg.truncateToDouble()
+          ? p.pricePerKg.toInt().toString()
+          : p.pricePerKg.toString();
       if (isSubUnit) {
-        final subPrice = (p.pricePerKg * p.minOrderKg * 100).round() / 100.0;
-        _priceController.text = subPrice == subPrice.truncateToDouble()
-            ? subPrice.toInt().toString()
-            : subPrice.toString();
         _minOrderController.text = '${(p.minOrderKg * 1000).round()}';
         _orderStepController.text = (p.orderStep != null && p.orderStep! > 0)
             ? '${(p.orderStep! * 1000).round()}'
@@ -147,7 +146,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             : '0';
         _unitType = isSubMl ? ProductModel.unitMl : ProductModel.unitG;
       } else {
-        _priceController.text = p.pricePerKg.toString();
         _minOrderController.text = p.minOrderKg.toString();
         _orderStepController.text = (p.orderStep != null && p.orderStep! > 0)
             ? p.orderStep!.toString()
@@ -430,12 +428,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       }
       return;
     }
-    final isSubUnit =
-        _unitType == ProductModel.unitG || _unitType == ProductModel.unitMl;
-    final effectivePricePerBaseUnit =
-        (isSubUnit && minOrder > 0 && minOrder < 1)
-            ? (price / minOrder)
-            : price;
     final dbUnitType = switch (_unitType) {
       ProductModel.unitMl => ProductModel.unitL,
       ProductModel.unitG => ProductModel.unitKg,
@@ -447,7 +439,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       sellerId: user.id,
       category: effectiveCategory!,
       name: _nameController.text.trim(),
-      pricePerKg: effectivePricePerBaseUnit,
+      pricePerKg: price,
       minOrderKg: minOrder,
       orderStep: resolvedStep,
       availableKg: available,

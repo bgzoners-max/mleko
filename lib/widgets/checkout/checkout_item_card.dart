@@ -25,7 +25,7 @@ class CheckoutItemCard extends StatelessWidget {
     final p = item.product;
 
     final step = p.quantityStep;
-    final itemTotal = (p.pricePerKg * item.quantity).toStringAsFixed(0);
+    final itemTotal = p.totalPriceForQuantity(item.quantity).toStringAsFixed(0);
 
     return SizeTransition(
       sizeFactor: animation,

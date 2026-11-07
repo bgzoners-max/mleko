@@ -267,14 +267,16 @@ class ProductModel {
       selectedVariant == null;
 
   /// Brojčani deo cene, bez valute i jedinice (npr. "800" ili "199,99").
-  /// Za proizvode u gramima ili mililitrima (minOrderKg < 1), prikazuje cenu
-  /// za minimalnu porudžbinu / pakovanje (npr. "500" za 330 ml).
-  String get priceNumber {
-    if (isSubUnitProduct) {
-      final subUnitPrice = (pricePerKg * minOrderKg * 100).round() / 100.0;
-      return _formatDecimal(subUnitPrice);
+  String get priceNumber => _formatDecimal(pricePerKg);
+
+  /// Ukupna cena za zadatu količinu [quantity].
+  /// Za proizvode u gramima ili mililitrima (`isSubUnitProduct`, tj. `minOrderKg < 1`),
+  /// `pricePerKg` je cena za to pakovanje (`minOrderKg`), pa se cena množi brojem pakovanja.
+  double totalPriceForQuantity(double quantity) {
+    if (isSubUnitProduct && minOrderKg > 0) {
+      return ((quantity / minOrderKg) * pricePerKg * 100).round() / 100.0;
     }
-    return _formatDecimal(pricePerKg);
+    return (quantity * pricePerKg * 100).round() / 100.0;
   }
 
   /// Sufiks jedinice u ceni (npr. "/kg", "/L", "/330 ml", "/250 g", "/kom").

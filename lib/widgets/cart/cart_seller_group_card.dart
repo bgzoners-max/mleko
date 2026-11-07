@@ -80,7 +80,7 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
   @override
   Widget build(BuildContext context) {
     final total = widget.items.fold<double>(
-        0, (sum, item) => sum + (item.product.pricePerKg * item.quantity));
+        0, (sum, item) => sum + item.product.totalPriceForQuantity(item.quantity));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 24),

@@ -318,7 +318,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
   }
 
   double get _totalAmount =>
-      _items.fold(0.0, (sum, e) => sum + e.product.pricePerKg * e.quantity);
+      _items.fold(0.0, (sum, e) => sum + e.product.totalPriceForQuantity(e.quantity));
 
 
 
