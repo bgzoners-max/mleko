@@ -374,10 +374,10 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     for (final v in _variants) {
       if (v.label.trim().isEmpty && v.price <= 0) continue;
       if (v.label.trim().isEmpty) {
-        return fail('Unesite naziv za svako dodato pakovanje.');
+        return fail('Unesite naziv za svaku dodatu opciju.');
       }
       if (v.price <= 0) {
-        return fail('Unesite validnu cenu za pakovanje „${v.label}”.');
+        return fail('Unesite validnu cenu za opciju „${v.label}”.');
       }
       cleanedVariants.add(v);
     }

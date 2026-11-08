@@ -343,7 +343,8 @@ class _ProductCardState extends State<ProductCard> {
                         TextSpan(
                           children: [
                             if (widget.product.variants.length > 1 &&
-                                widget.product.selectedVariant == null)
+                                widget.product.selectedVariant == null &&
+                                !widget.product.hasUniformVariantPrice)
                               TextSpan(
                                 text: 'od ',
                                 style: TextStyle(

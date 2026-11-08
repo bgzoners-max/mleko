@@ -55,6 +55,59 @@ class ProductModel {
 
   bool get hasVariants => variants.isNotEmpty;
 
+  /// Vraća naslov grupe varijanti (npr. 'Ukus', 'Vrsta', 'Nadev', 'Pakovanje', 'Miris').
+  String get variantGroupTitle {
+    for (final v in variants) {
+      if (v.group != null && v.group!.trim().isNotEmpty) {
+        return v.group!.trim();
+      }
+    }
+    final labels = variants.map((v) => v.label.toLowerCase()).join(' ');
+    final hasPackageHints = labels.contains('ml') ||
+        labels.contains(' g') ||
+        labels.contains('kg') ||
+        labels.contains(' l') ||
+        labels.contains('pak') ||
+        labels.contains('teg') ||
+        labels.contains('fla');
+    if (hasPackageHints) {
+      return 'Pakovanje';
+    }
+    return 'Ukus';
+  }
+
+  /// Tekst poziva na akciju za biranje varijante (npr. 'Izaberi ukus:', 'Izaberi vrstu:', 'Izaberi nadev:').
+  String get variantSelectorPrompt {
+    final title = variantGroupTitle.trim();
+    final lower = title.toLowerCase();
+    if (lower.startsWith('izaberi')) {
+      return title.endsWith(':') ? title : '$title:';
+    }
+    if (lower == 'ukus' || lower == 'ukusi' || lower.contains('ukus')) {
+      return 'Izaberi ukus:';
+    }
+    if (lower == 'vrsta' || lower == 'sorta' || lower == 'vrste') {
+      return 'Izaberi vrstu:';
+    }
+    if (lower == 'nadev' || lower == 'sastav') {
+      return 'Izaberi nadev:';
+    }
+    if (lower == 'pakovanje' || lower == 'velicina' || lower == 'veličina') {
+      return 'Izaberi pakovanje:';
+    }
+    if (lower == 'miris') {
+      return 'Izaberi miris:';
+    }
+    return 'Izaberi $lower:';
+  }
+
+  /// Da li sve varijante ovog proizvoda imaju identičnu cenu.
+  bool get hasUniformVariantPrice {
+    if (variants.isEmpty) return false;
+    final firstPrice = variants.first.price;
+    return variants.every((v) => (v.price - firstPrice).abs() < 0.001);
+  }
+
   String get baseName {
     final current = selectedVariant;
     if (current != null) {

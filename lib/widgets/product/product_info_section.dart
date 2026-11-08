@@ -117,7 +117,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
           if (product.variants.isNotEmpty) ...[
             const SizedBox(height: 16),
             _ProductVariantSelector(
-              variants: product.variants,
+              product: product,
               selectedVariant: _selectedVariant ?? product.variants.first,
               onSelect: (variant) {
                 AppHaptics.selection();
@@ -141,15 +141,32 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
 }
 
 class _ProductVariantSelector extends StatelessWidget {
-  final List<ProductVariant> variants;
+  final ProductModel product;
   final ProductVariant selectedVariant;
   final ValueChanged<ProductVariant> onSelect;
 
   const _ProductVariantSelector({
-    required this.variants,
+    required this.product,
     required this.selectedVariant,
     required this.onSelect,
   });
+
+  IconData _resolveIcon(String groupTitle) {
+    final lower = groupTitle.toLowerCase();
+    if (lower.contains('ukus') ||
+        lower.contains('nadev') ||
+        lower.contains('aroma') ||
+        lower.contains('sastav')) {
+      return Icons.restaurant_menu_outlined;
+    }
+    if (lower.contains('vrst') || lower.contains('sort')) {
+      return Icons.eco_outlined;
+    }
+    if (lower.contains('miris')) {
+      return Icons.spa_outlined;
+    }
+    return Icons.inventory_2_outlined;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +176,7 @@ class _ProductVariantSelector extends StatelessWidget {
     final activeBgColor = isDark
         ? AmazonColors.green.withValues(alpha: 0.25)
         : AmazonColors.green.withValues(alpha: 0.09);
+    final isUniformPrice = product.hasUniformVariantPrice;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +184,7 @@ class _ProductVariantSelector extends StatelessWidget {
         Row(
           children: [
             Icon(
-              Icons.inventory_2_outlined,
+              _resolveIcon(product.variantGroupTitle),
               size: 16,
               color: isDark
                   ? AmazonColors.darkTextSecondary
@@ -174,7 +192,7 @@ class _ProductVariantSelector extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Izaberi pakovanje / veličinu:',
+              product.variantSelectorPrompt,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -189,7 +207,7 @@ class _ProductVariantSelector extends StatelessWidget {
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: variants.map((variant) {
+          children: product.variants.map((variant) {
             final isSelected = variant.id == selectedVariant.id;
             final priceText =
                 '${ProductFormattingUtils.formatDecimal(variant.price)} RSD';
@@ -244,21 +262,23 @@ class _ProductVariantSelector extends StatelessWidget {
                             : AmazonColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '— $priceText',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isSelected
-                            ? (isDark
-                                ? AmazonColors.lightGreen
-                                : AmazonColors.dealRed)
-                            : (isDark
-                                ? AmazonColors.darkTextSecondary
-                                : AmazonColors.textSecondary),
+                    if (!isUniformPrice) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '— $priceText',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? (isDark
+                                  ? AmazonColors.lightGreen
+                                  : AmazonColors.dealRed)
+                              : (isDark
+                                  ? AmazonColors.darkTextSecondary
+                                  : AmazonColors.textSecondary),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

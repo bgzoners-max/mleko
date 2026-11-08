@@ -4,11 +4,13 @@ class ProductVariant {
   final String id;
   final String label;
   final double price;
+  final String? group;
 
   const ProductVariant({
     required this.id,
     required this.label,
     required this.price,
+    this.group,
   });
 
   static String normalizeId(String raw) {
@@ -21,7 +23,7 @@ class ProductVariant {
         .replaceAll('ž', 'z')
         .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
         .replaceAll(RegExp(r'^_+|_+$'), '');
-    return slug.isNotEmpty ? slug : 'pakovanje';
+    return slug.isNotEmpty ? slug : 'varijanta';
   }
 
   factory ProductVariant.fromJson(Map<String, dynamic> json) {
@@ -29,10 +31,12 @@ class ProductVariant {
     final rawId = (json['id'] as String? ?? '').trim();
     final id = rawId.isNotEmpty ? rawId : normalizeId(label);
     final price = (json['price'] as num?)?.toDouble() ?? 0.0;
+    final group = (json['group'] as String?)?.trim();
     return ProductVariant(
       id: id,
       label: label,
       price: price,
+      group: (group != null && group.isNotEmpty) ? group : null,
     );
   }
 
@@ -40,7 +44,22 @@ class ProductVariant {
         'id': id,
         'label': label,
         'price': price,
+        if (group != null && group!.isNotEmpty) 'group': group,
       };
+
+  ProductVariant copyWith({
+    String? id,
+    String? label,
+    double? price,
+    String? group,
+  }) {
+    return ProductVariant(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      price: price ?? this.price,
+      group: group ?? this.group,
+    );
+  }
 
   static List<ProductVariant> listFromDynamic(dynamic raw) {
     if (raw == null) return const [];
@@ -75,10 +94,10 @@ class ProductVariant {
     return other is ProductVariant &&
         other.id == id &&
         other.label == label &&
-        other.price == price;
+        other.price == price &&
+        other.group == group;
   }
 
   @override
-  int get hashCode => Object.hash(id, label, price);
+  int get hashCode => Object.hash(id, label, price, group);
 }
-
