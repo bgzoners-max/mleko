@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/product_model.dart';
 import '../providers/cart_provider.dart';
@@ -74,12 +73,8 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
   }
 
   Future<String> _fetchSellerName() async {
-    final prof = await Supabase.instance.client
-        .from('public_profiles')
-        .select('farm_name, display_name')
-        .eq('id', widget.sellerId)
-        .maybeSingle();
-    return prof?['farm_name'] ?? prof?['display_name'] ?? 'Domaćinstvo';
+    final user = await context.read<UsersService>().getUser(widget.sellerId);
+    return user?.farmName ?? user?.displayName ?? 'Domaćinstvo';
   }
 
   Future<void> _load(Map<String, double> productQuantities) async {

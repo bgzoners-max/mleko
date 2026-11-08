@@ -113,9 +113,15 @@ class AppState extends ChangeNotifier {
     authSession.dispose();
     sync.dispose();
 
-    try {
-      unawaited(ChatService().cleanUp());
-    } catch (_) {}
+    unawaited(
+      ChatService().cleanUp().catchError((e, st) {
+        LoggerService.error(
+          'Failed to clean up ChatService in AppState.dispose',
+          e,
+          stackTrace: st,
+        );
+      }),
+    );
 
     super.dispose();
   }

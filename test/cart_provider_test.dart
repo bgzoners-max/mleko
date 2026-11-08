@@ -542,6 +542,45 @@ void main() {
       cart.dispose();
     });
 
+    test('invalidateProductsCache flushes both seller and grouped caches', () async {
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      final product1 = (await service.getProduct('p-1'))!;
+      final product2 = (await service.getProduct('p-2'))!;
+
+      await cart.addForSeller(
+        sellerId: product1.sellerId,
+        productId: product1.id,
+        quantity: 1.0,
+        product: product1,
+      );
+      await cart.addForSeller(
+        sellerId: product2.sellerId,
+        productId: product2.id,
+        quantity: 2.0,
+        product: product2,
+      );
+
+      final groupedInitial = await cart.getProductsGroupedBySeller();
+      expect(groupedInitial.keys, containsAll(['s-1', 's-2']));
+
+      // Invalidate global cache
+      cart.invalidateProductsCache();
+
+      // Subsequent grouped fetch executes cleanly
+      final groupedRefreshed = await cart.getProductsGroupedBySeller();
+      expect(groupedRefreshed.keys, containsAll(['s-1', 's-2']));
+
+      // Invalidate specific seller cache
+      cart.invalidateProductsCache('s-1');
+      final sellerItems = await cart.getProductsBySeller('s-1');
+      expect(sellerItems.length, 1);
+      expect(sellerItems.first.product.id, 'p-1');
+
+      cart.dispose();
+    });
+
     test('reload re-reads cart from SharedPreferences after in-memory change', () async {
       SharedPreferences.setMockInitialValues({
         CartProvider.storageKeyFor('user-reload'): jsonEncode({'s-1': {'p-1': 2.0}}),

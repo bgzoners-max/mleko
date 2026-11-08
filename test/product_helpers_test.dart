@@ -2,40 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/utils/product_helpers.dart';
 
 void main() {
-  group('inferUnitType', () {
-    test('vraća litre za tečne kategorije', () {
-      expect(inferUnitType('Kravlje mleko', 'kg'), 'L');
-      expect(inferUnitType('Prirodni sok', 'kg'), 'L');
-      expect(inferUnitType('Bazga sirup', 'kom'), 'L');
+  group('isVolumeCategory', () {
+    test('prepoznaje tečne kategorije i vraća true', () {
+      expect(isVolumeCategory('Kravlje mleko'), isTrue);
+      expect(isVolumeCategory('Prirodni sok'), isTrue);
+      expect(isVolumeCategory('Bazga sirup'), isTrue);
+      expect(isVolumeCategory('Hladno ceđeno ulje'), isTrue);
+      expect(isVolumeCategory('Jabukovo sirće'), isTrue);
+      expect(isVolumeCategory('Domaća rakija'), isTrue);
     });
 
-    test('zadržava trenutnu jedinicu za netečne kategorije', () {
-      expect(inferUnitType('Zimnica', 'kg'), 'kg');
-      expect(inferUnitType('Med', 'kg'), 'kg');
-      expect(inferUnitType('Kačkavalj', 'kg'), 'kg');
-    });
-  });
-
-  group('suggestedOrderStepKg', () {
-    test('vraća minOrderKg kao podrazumevani korak', () {
-      expect(
-        suggestedOrderStepKg(
-            category: 'Sir', name: 'Kačkavalj', minOrderKg: 1),
-        1,
-      );
-      expect(
-        suggestedOrderStepKg(
-            category: 'Sir', name: 'Kackavalj', minOrderKg: 0.05),
-        0.05,
-      );
-      expect(
-        suggestedOrderStepKg(category: 'Sir', name: 'Beli sir', minOrderKg: 1),
-        1,
-      );
-      expect(
-        suggestedOrderStepKg(category: 'Med', name: 'Bagrem', minOrderKg: 0.5),
-        0.5,
-      );
+    test('vraća false za čvrste i specifične REPO_BIBLE kategorije', () {
+      expect(isVolumeCategory('Med'), isFalse);
+      expect(isVolumeCategory('Livadski med'), isFalse);
+      expect(isVolumeCategory('Zimnica'), isFalse);
+      expect(isVolumeCategory('Kačkavalj'), isFalse);
+      expect(isVolumeCategory('Beli sir'), isFalse);
+      expect(isVolumeCategory('Puter'), isFalse);
     });
   });
 }

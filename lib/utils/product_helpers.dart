@@ -1,5 +1,3 @@
-import '../models/product_model.dart';
-
 /// Da li kategorija podrazumeva tečnost (litri) kao osnovnu jedinicu.
 bool isVolumeCategory(String categoryName) {
   final lower = categoryName.toLowerCase();
@@ -11,18 +9,4 @@ bool isVolumeCategory(String categoryName) {
       lower.contains('mleko') ||
       lower.contains('sirće') ||
       lower.contains('rakija');
-}
-
-/// Automatski postavlja unitType na litar ako kategorija to zahteva.
-String inferUnitType(String categoryName, String currentUnit) {
-  if (isVolumeCategory(categoryName)) return ProductModel.unitL;
-  return currentUnit;
-}
-
-double suggestedOrderStepKg({
-  required String category,
-  required String name,
-  required double minOrderKg,
-}) {
-  return minOrderKg;
 }
