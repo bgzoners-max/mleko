@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mleko/models/product_model.dart';
@@ -45,6 +46,13 @@ void main() {
         ChangeNotifierProvider<LocationProvider>.value(value: location),
       ],
       child: MaterialApp(
+        locale: const Locale('sr', 'RS'),
+        supportedLocales: const [Locale('sr', 'RS')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: MediaQuery(
           data: MediaQueryData(size: Size(width, height)),
           child: const Scaffold(
@@ -162,6 +170,14 @@ void main() {
       expect(searchRect.width, greaterThanOrEqualTo(300.0));
       expect(cartRect.left, greaterThan(searchRect.right));
       expect(cartRect.left - searchRect.right, greaterThanOrEqualTo(15.0));
+    });
+
+    testWidgets('renders TextField with Serbian locale without AppErrorWidget', (tester) async {
+      await tester.pumpWidget(buildHeaderTestWidget(width: 1200));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.textContaining('Greška u prikazu'), findsNothing);
     });
   });
 }
