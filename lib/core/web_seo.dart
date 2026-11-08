@@ -40,7 +40,9 @@ void setProductSeo(ProductModel product) {
       ? cleanDesc
       : '${cleanDesc.substring(0, 157).trimRight()}...';
 
-  final priceNum = product.pricePerKg;
+  final double priceNum = product.hasVariants
+      ? product.variants.map((v) => v.price).reduce((a, b) => a < b ? a : b)
+      : product.pricePerKg;
   final mainImage =
       product.imageUrls.isNotEmpty ? product.imageUrls.first : null;
 

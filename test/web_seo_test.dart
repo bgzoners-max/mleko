@@ -52,6 +52,35 @@ void main() {
       expect(() => setProductSeo(product), returnsNormally);
     });
 
+    test('setProductSeo handles products with variants and picks minimum variant price', () {
+      final productWithVariants = ProductModel(
+        id: 'prod-variants',
+        sellerId: 'seller-456',
+        category: 'Džemovi',
+        name: 'Domaći džem',
+        pricePerKg: 1000,
+        minOrderKg: 1,
+        availableKg: 20,
+        unitType: ProductModel.unitPiece,
+        description: 'Prirodni džem bez šećera.',
+        imageUrls: ['https://example.com/dzem.jpg'],
+        pickupOptions: ['lično'],
+        location: 'Valjevo',
+        isDomestic: true,
+        availableNow: true,
+        deliveryMode: ProductDeliveryMode.none,
+        selectedDeliveryPointIds: const [],
+        createdAt: DateTime.now(),
+        variants: const [
+          ProductVariant(id: 'v1', label: 'Jagoda', price: 650, group: 'Ukus'),
+          ProductVariant(id: 'v2', label: 'Malina', price: 800, group: 'Ukus'),
+          ProductVariant(id: 'v3', label: 'Borovnica', price: 950, group: 'Ukus'),
+        ],
+      );
+
+      expect(() => setProductSeo(productWithVariants), returnsNormally);
+    });
+
     test('setClassifiedAdSeo runs normally for classified ad', () {
       final now = DateTime.now();
       final ad = ClassifiedAdModel(

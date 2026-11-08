@@ -243,6 +243,7 @@ void main() async {
     );
   }
 
+  final supabaseService = SupabaseService();
   final ordersService = OrdersService();
   final productsService = ProductsService();
   final chatService = ChatService();
@@ -260,7 +261,7 @@ void main() async {
     );
   }
   final cartProvider = CartProvider(productsService: productsService);
-  final categoriesProvider = CategoriesProvider();
+  final categoriesProvider = CategoriesProvider(service: supabaseService);
   final favoritesProvider = FavoritesProvider();
   final locationProvider = LocationProvider();
   final classifiedsService = ClassifiedsService();

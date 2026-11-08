@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/product_model.dart';
+import '../../services/core/logger_service.dart';
 
 /// Interfejs repozitorijuma za čitanje i perzistenciju proizvoda.
 abstract interface class ProductsRepository {
@@ -52,8 +53,11 @@ class SupabaseProductsRepository implements ProductsRepository {
           .eq('id', id)
           .maybeSingle();
       if (res != null) return ProductModel.fromJson(res);
-    } catch (_) {
-      // Fallback na products tabelu ako view nije dostupan
+    } catch (e, st) {
+      LoggerService.warning(
+        'Failed to query products_with_ratings view for $id, falling back to products table',
+        extra: {'error': e.toString(), 'stack': st.toString()},
+      );
     }
 
     final res = await _client

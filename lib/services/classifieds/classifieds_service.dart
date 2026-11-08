@@ -679,7 +679,12 @@ class ClassifiedsService {
         return ClassifiedSellerStatsModel.fromJson(Map<String, dynamic>.from(res));
       }
       return const ClassifiedSellerStatsModel();
-    } catch (_) {
+    } catch (e, st) {
+      LoggerService.error(
+        'Failed to fetch classified seller stats for $sellerId',
+        e,
+        stackTrace: st,
+      );
       return const ClassifiedSellerStatsModel();
     }
   }
