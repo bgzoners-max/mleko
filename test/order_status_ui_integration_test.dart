@@ -61,8 +61,8 @@ void main() {
     await tester.tap(find.text('Istorija statusa'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Prihvaceno -> Poslato'), findsOneWidget);
-    expect(find.textContaining('Poslato -> Isporuceno'), findsOneWidget);
+    expect(find.textContaining('Prihvaćeno -> Poslato'), findsOneWidget);
+    expect(find.textContaining('Poslato -> Isporučeno'), findsOneWidget);
     expect(find.textContaining('Prodavac'), findsNWidgets(2));
     expect(find.textContaining('Kupac'), findsOneWidget);
   });

@@ -143,7 +143,7 @@ void main() {
       );
     });
 
-    test('kg unit without kačkavalj uses minOrderKg as step', () {
+    test('kg unit uses minOrderKg as default step', () {
       expect(
         ProductFormValidator.resolveOrderStep(
           category: 'Sir',
@@ -153,9 +153,6 @@ void main() {
         ),
         equals(0.5),
       );
-    });
-
-    test('kg unit with kačkavalj caps step at 0.1', () {
       expect(
         ProductFormValidator.resolveOrderStep(
           category: 'Sir',
@@ -163,19 +160,7 @@ void main() {
           unitType: ProductModel.unitKg,
           minOrderKg: 1.0,
         ),
-        equals(0.1),
-      );
-    });
-
-    test('kg unit with kačkavalj and small minOrder returns minOrder', () {
-      expect(
-        ProductFormValidator.resolveOrderStep(
-          category: 'Sir',
-          name: 'Kačkavalj',
-          unitType: ProductModel.unitKg,
-          minOrderKg: 0.05,
-        ),
-        equals(0.05),
+        equals(1.0),
       );
     });
 

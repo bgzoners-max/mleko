@@ -19,18 +19,10 @@ String inferUnitType(String categoryName, String currentUnit) {
   return currentUnit;
 }
 
-bool isKackavaljLike(String text) {
-  final lower = text.toLowerCase();
-  return lower.contains('kackavalj') || lower.contains('kačkavalj');
-}
-
 double suggestedOrderStepKg({
   required String category,
   required String name,
   required double minOrderKg,
 }) {
-  if (isKackavaljLike('$category $name')) {
-    return minOrderKg < 0.1 ? minOrderKg : 0.1;
-  }
   return minOrderKg;
 }

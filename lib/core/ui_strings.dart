@@ -20,10 +20,10 @@ class UiStrings {
   static const String orderRoleSeller = 'Prodavac';
   static const String orderRoleSystem = 'Sistem';
 
-  static const String orderStatusSent = 'Na cekanju';
-  static const String orderStatusAccepted = 'Prihvaceno';
+  static const String orderStatusSent = 'Na čekanju';
+  static const String orderStatusAccepted = 'Prihvaćeno';
   static const String orderStatusShipped = 'Poslato';
-  static const String orderStatusDelivered = 'Isporuceno';
+  static const String orderStatusDelivered = 'Isporučeno';
   static const String orderStatusRejected = 'Odbijeno';
   static const String orderStatusCancelledBySeller = 'Otkazano';
   static const String orderStatusArchived = 'Arhivirano';

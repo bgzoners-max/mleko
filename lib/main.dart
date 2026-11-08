@@ -267,7 +267,11 @@ void main() async {
   final classifiedsService = ClassifiedsService();
   final classifiedReportsService = ClassifiedReportsService();
   final classifiedsProvider = ClassifiedsProvider();
-  unawaited(classifiedsProvider.loadCategories());
+  unawaited(
+    classifiedsProvider.loadCategories().catchError((e, st) {
+      LoggerService.error('Failed to load classified categories at startup', e, stackTrace: st);
+    }),
+  );
   final router = createRouter(appState);
 
   // Sinhronizacija omiljenih, korpe, praćenja oglasa i korisničkog ID-a za monitoring sa statusom prijave.
@@ -310,7 +314,13 @@ void main() async {
   });
 
   // Notification handling
-  unawaited(NotificationHandlerService(router: router, appState: appState).initialize());
+  unawaited(
+    NotificationHandlerService(router: router, appState: appState)
+        .initialize()
+        .catchError((e, st) {
+      LoggerService.error('Failed to initialize NotificationHandlerService', e, stackTrace: st);
+    }),
+  );
 
   runApp(
     AppProviders(

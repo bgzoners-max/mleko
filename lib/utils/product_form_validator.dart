@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:mleko/models/category.dart';
 import 'package:mleko/models/product_model.dart';
-import '../utils/product_helpers.dart';
 
 /// Poslovna logika za kreiranje i uređivanje proizvoda — izdvojena iz
 /// `AddEditProductScreen` radi testabilnosti i čitljivosti.
@@ -24,7 +23,7 @@ class ProductFormValidator {
   ///
   /// - ako je prosleđen eksplicitni korak > 0, koristi se on;
   /// - pojedinice pojedinim po jedinicama imaju podrazumevane korake;
-  /// - za kg kategorije koristi se `suggestedOrderStepKg`;
+  /// - za kg kategorije podrazumevani korak odgovara minimalnoj porudžbini;
   /// - konačni korak ne može biti veći od `minOrderKg`.
   static double resolveOrderStep({
     required String category,
@@ -48,8 +47,7 @@ class ProductFormValidator {
       ProductModel.unitPiece => 1.0,
       ProductModel.unitVeza => 1.0,
       ProductModel.unitPak => 1.0,
-      _ => suggestedOrderStepKg(
-          category: category, name: name, minOrderKg: minOrderKg),
+      _ => minOrderKg,
     };
 
     return math.min(defaultStepByUnit, minOrderKg);

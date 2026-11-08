@@ -16,30 +16,18 @@ void main() {
     });
   });
 
-  group('isKackavaljLike', () {
-    test('prepoznaje obe varijante pisanja', () {
-      expect(isKackavaljLike('Kackavalj'), isTrue);
-      expect(isKackavaljLike('Kačkavalj'), isTrue);
-      expect(isKackavaljLike('Zlatiborski kačkavalj'), isTrue);
-      expect(isKackavaljLike('Sir'), isFalse);
-    });
-  });
-
   group('suggestedOrderStepKg', () {
-    test('za kačkavalj vraća 0.1 kg osim kad je min manji', () {
+    test('vraća minOrderKg kao podrazumevani korak', () {
       expect(
         suggestedOrderStepKg(
             category: 'Sir', name: 'Kačkavalj', minOrderKg: 1),
-        0.1,
+        1,
       );
       expect(
         suggestedOrderStepKg(
             category: 'Sir', name: 'Kackavalj', minOrderKg: 0.05),
         0.05,
       );
-    });
-
-    test('za ostale vraća minOrderKg', () {
       expect(
         suggestedOrderStepKg(category: 'Sir', name: 'Beli sir', minOrderKg: 1),
         1,

@@ -98,6 +98,22 @@ Standardne veličine:
 - `1 L`
 - `2 L`
 
+## 5.1 Varijacije proizvoda (Ukusi, Vrste, Nadevi, Pakovanja)
+
+Proizvođač može definisati više varijanti pod jednim oglasom (kolona `products.variants` u JSONB formatu):
+
+- Svaka varijanta ima: `id`, `label`, `price`, i opcioni `group` (npr. `'Ukus'`, `'Vrsta'`, `'Nadev'`, `'Pakovanje'`, `'Miris'`, ili prilagođeni tekst).
+- Tipovi varijacija:
+  - 🍓 **Ukus / aroma** (džemovi, sokovi, sirupi, čajevi, kolači)
+  - 🧀 **Vrsta / sorta** (sirevi, med, rakije, vina, testenine)
+  - 🥧 **Nadev / sastav** (pite, gibanice, domaća peciva)
+  - 📦 **Veličina / pakovanje** (teglice, flašice, gramaže)
+  - 🌿 **Miris / tip** (sapuni, melemi, kozmetika)
+  - ✏️ **Prilagođeno** (korisnički definisan naziv)
+- **Ista cena za sve opcije**: Ako sve varijante koštaju isto, cena se automatski vezuje za osnovnu cenu. U UI-ju kupac vidi samo čist naziv opcije (bez ponavljanja cene na svakom dugmetu).
+- **Različite cene**: Ako varijante imaju različite cene, svaka opcija prikazuje svoju cenu, a na kartici proizvoda se prikazuje `od X din.`.
+- **Porudžbine**: U korpi i narudžbini izabrana varijanta se jasno beleži uz naziv artikla (`Domaći džem (Malina) × 2 kom`).
+
 ## 6. Honey Rule
 
 Med se prodaje u:
