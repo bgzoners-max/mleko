@@ -351,6 +351,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _send([String? textOverride]) async {
+    if (_sending) return;
     final text = (textOverride ?? _messageController.text).trim();
     if (text.isEmpty && textOverride == null) return;
     final user = context.read<AppState>().user;

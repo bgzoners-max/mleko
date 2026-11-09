@@ -30,6 +30,7 @@ class ProductCartBlock extends StatefulWidget {
 
 class _ProductCartBlockState extends State<ProductCartBlock> {
   late double _quantity;
+  bool _isAdding = false;
 
   @override
   void initState() {
@@ -48,66 +49,75 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
   }
 
   Future<void> _addToCart() async {
-    final user = context.read<AppState>().user;
-    if (user == null || user.isGuest) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registruj se ili se prijavi da bi poslao porudžbinu.'),
+    if (_isAdding) return;
+    _isAdding = true;
+
+    try {
+      final user = context.read<AppState>().user;
+      if (user == null || user.isGuest) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registruj se ili se prijavi da bi poslao porudžbinu.'),
+          ),
+        );
+        context.go('/login');
+        return;
+      }
+
+      final cart = context.read<CartProvider>();
+      final result = await ErrorHandlerService().executeWithResult(
+        'Add to cart',
+        () => cart.addForSeller(
+          sellerId: widget.product.sellerId,
+          productId: widget.product.cartKey,
+          quantity: _quantity,
+          product: widget.product,
         ),
       );
-      context.go('/login');
-      return;
-    }
 
-    final cart = context.read<CartProvider>();
-    final result = await ErrorHandlerService().executeWithResult(
-      'Add to cart',
-      () => cart.addForSeller(
-        sellerId: widget.product.sellerId,
-        productId: widget.product.cartKey,
-        quantity: _quantity,
-        product: widget.product,
-      ),
-    );
+      if (!mounted) return;
 
-    if (!mounted) return;
-
-    if (result.isSuccess) {
-      unawaited(AnalyticsService().logAddToCart(widget.product, _quantity));
-      final isWideLayout = MediaQuery.of(context).size.width >= 800;
-      final selectedVariant = widget.product.selectedVariant;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            selectedVariant != null
-                ? 'Dodato u korpu: ${selectedVariant.label} (${widget.product.formatQuantity(_quantity)}).'
-                : 'Dodato u korpu (${widget.product.formatQuantity(_quantity)}).',
+      if (result.isSuccess) {
+        unawaited(AnalyticsService().logAddToCart(widget.product, _quantity));
+        final isWideLayout = MediaQuery.of(context).size.width >= 800;
+        final selectedVariant = widget.product.selectedVariant;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              selectedVariant != null
+                  ? 'Dodato u korpu: ${selectedVariant.label} (${widget.product.formatQuantity(_quantity)}).'
+                  : 'Dodato u korpu (${widget.product.formatQuantity(_quantity)}).',
+            ),
+            action: SnackBarAction(
+              label: 'Pregled',
+              onPressed: () =>
+                  context.push('/checkout-seller/${widget.product.sellerId}'),
+            ),
+            behavior:
+                isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
+            margin: isWideLayout
+                ? EdgeInsets.only(
+                    bottom: 16,
+                    right: 16,
+                    left: MediaQuery.of(context).size.width - 400 - 16,
+                  )
+                : null,
           ),
-          action: SnackBarAction(
-            label: 'Pregled',
-            onPressed: () =>
-                context.push('/checkout-seller/${widget.product.sellerId}'),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.error?.getUserMessage() ?? 'Greška pri dodavanju u korpu.',
+            ),
+            backgroundColor: Colors.red,
           ),
-          behavior:
-              isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
-          margin: isWideLayout
-              ? EdgeInsets.only(
-                  bottom: 16,
-                  right: 16,
-                  left: MediaQuery.of(context).size.width - 400 - 16,
-                )
-              : null,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.error?.getUserMessage() ?? 'Greška pri dodavanju u korpu.',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isAdding = false);
+      }
     }
   }
 

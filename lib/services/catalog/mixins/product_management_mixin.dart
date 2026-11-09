@@ -74,6 +74,7 @@ mixin ProductManagementMixin {
         product.selectedDeliveryPointIds,
       );
       unawaited(ProductCacheService().invalidateSearchCache());
+      unawaited(ProductCacheService().invalidateProduct(product.id, product.sellerId));
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -83,6 +84,7 @@ mixin ProductManagementMixin {
     try {
       await client.from('products').delete().eq('id', id);
       unawaited(ProductCacheService().invalidateSearchCache());
+      unawaited(ProductCacheService().invalidateProduct(id));
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -94,6 +96,7 @@ mixin ProductManagementMixin {
           .from('products')
           .update({'available_now': availableNow}).eq('id', productId);
       unawaited(ProductCacheService().invalidateSearchCache());
+      unawaited(ProductCacheService().invalidateProduct(productId));
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

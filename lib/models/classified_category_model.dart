@@ -13,6 +13,7 @@ class ClassifiedCategoryModel {
   final String? parentId;
   final int sortOrder;
   final bool isConditionApplicable;
+  final bool isObsolete;
   final List<ClassifiedCategoryModel> subcategories;
   final int adCount;
 
@@ -23,6 +24,7 @@ class ClassifiedCategoryModel {
     this.parentId,
     this.sortOrder = 0,
     this.isConditionApplicable = true,
+    this.isObsolete = false,
     this.subcategories = const [],
     this.adCount = 0,
   });
@@ -86,6 +88,7 @@ class ClassifiedCategoryModel {
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
       isConditionApplicable:
           (json['is_condition_applicable'] as bool?) ?? true,
+      isObsolete: (json['is_obsolete'] as bool?) ?? false,
       subcategories: subcategories,
       adCount: (json['ad_count'] as num?)?.toInt() ?? 0,
     );
@@ -99,12 +102,14 @@ class ClassifiedCategoryModel {
       'parent_id': parentId,
       'sort_order': sortOrder,
       'is_condition_applicable': isConditionApplicable,
+      'is_obsolete': isObsolete,
       'ad_count': adCount,
     };
   }
 
   ClassifiedCategoryModel copyWith({
     bool? isConditionApplicable,
+    bool? isObsolete,
     List<ClassifiedCategoryModel>? subcategories,
     int? adCount,
   }) {
@@ -116,6 +121,7 @@ class ClassifiedCategoryModel {
       sortOrder: sortOrder,
       isConditionApplicable:
           isConditionApplicable ?? this.isConditionApplicable,
+      isObsolete: isObsolete ?? this.isObsolete,
       subcategories: subcategories ?? this.subcategories,
       adCount: adCount ?? this.adCount,
     );

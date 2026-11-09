@@ -346,6 +346,13 @@ class CartProvider extends ChangeNotifier {
   /// Invalidira keširane proizvode (po prodavcu ili kompletno) radi osvežavanja podataka.
   void invalidateProductsCache([String? sellerId]) => _invalidateCache(sellerId);
 
+  /// Invalidira proizvod koji je ažuriran ili obrisan na serveru.
+  void invalidateProduct(String productId, [String? sellerId]) {
+    final effectiveSeller = sellerId ?? _productIndex[productId];
+    _invalidateCache(effectiveSeller);
+    notifyListeners();
+  }
+
   void _invalidateCache([String? sellerId]) {
     _groupedCache = null;
     _productSellerIndex = null;

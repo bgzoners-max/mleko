@@ -23,7 +23,7 @@ class ClassifiedCategoryTreeBuilder {
     final all = rawList
         .map((e) => ClassifiedCategoryModel.fromJson(e as Map<String, dynamic>))
         .toList()
-      ..removeWhere((c) => obsoleteCategoryIds.contains(c.id));
+      ..removeWhere((c) => c.isObsolete || obsoleteCategoryIds.contains(c.id));
 
     // Osiguraj postojanje 'zivinarstvo' i 'stocarska_oprema' pod 'poljoprivreda'
     if (!all.any((c) => c.id == 'zivinarstvo')) {

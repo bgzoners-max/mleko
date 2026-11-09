@@ -197,6 +197,29 @@ class ProductCacheService {
     }
   }
 
+  /// Invalidira određeni proizvod i pripadajući seller/home keš.
+  Future<void> invalidateProduct(String productId, [String? sellerId]) async {
+    _memoryCache.remove(productKey(productId));
+    _memoryCache.remove(homeProductsKey);
+    if (sellerId != null) {
+      _memoryCache.remove(sellerKey(sellerId));
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(productKey(productId));
+      await prefs.remove(homeProductsKey);
+      if (sellerId != null) {
+        await prefs.remove(sellerKey(sellerId));
+      }
+      LoggerService.debug('Invalidated product cache', extra: {
+        'productId': productId,
+        'sellerId': sellerId,
+      });
+    } catch (e, st) {
+      LoggerService.error('Failed to invalidate product cache', e, stackTrace: st);
+    }
+  }
+
   /// Invalidira sve keširane rezultate pretrage iz memorije i skladišta.
   Future<void> invalidateSearchCache() async {
     _memoryCache.removeWhere((key, _) => key.startsWith('${_prefix}search_'));
