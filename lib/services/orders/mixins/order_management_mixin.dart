@@ -66,12 +66,61 @@ mixin OrderManagementMixin {
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
   }) async {
+    if (buyerId.trim().isEmpty || sellerId.trim().isEmpty) {
+      throw AppError(
+        message: 'Invalid buyerId or sellerId',
+        userMessage: 'Identifikator kupca ili prodavca je neispravan.',
+        type: ErrorType.validation,
+      );
+    }
+
+    if (buyerId.trim() == sellerId.trim()) {
+      throw AppError(
+        message: 'Buyer and seller cannot be the same user',
+        userMessage: 'Ne možete poručiti od samog sebe.',
+        type: ErrorType.validation,
+      );
+    }
+
+    if (buyerCity.trim().isEmpty) {
+      throw AppError(
+        message: 'Missing buyer city',
+        userMessage: 'Grad za dostavu je obavezan.',
+        type: ErrorType.validation,
+      );
+    }
+
+    if (buyerPhone.trim().isEmpty) {
+      throw AppError(
+        message: 'Missing buyer phone',
+        userMessage: 'Broj telefona kupca je obavezan.',
+        type: ErrorType.validation,
+      );
+    }
+
     if (items.isEmpty) {
       throw AppError(
         message: 'Empty order items',
         userMessage: 'Porudžbina mora imati barem jednu stavku.',
         type: ErrorType.validation,
       );
+    }
+
+    for (final item in items) {
+      if (item.quantityKg <= 0) {
+        throw AppError(
+          message: 'Non-positive quantity for item ${item.productId}',
+          userMessage: 'Količina za svaku stavku mora biti veća od 0.',
+          type: ErrorType.validation,
+        );
+      }
+      if (item.unitPrice < 0) {
+        throw AppError(
+          message: 'Negative price for item ${item.productId}',
+          userMessage: 'Cena stavke ne može biti negativna.',
+          type: ErrorType.validation,
+        );
+      }
     }
 
     final productIds = items.map((e) => e.productId).toSet().toList();

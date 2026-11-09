@@ -84,9 +84,24 @@ class AuthService {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
+    final trimmedEmail = email.trim();
+    if (trimmedEmail.isEmpty) {
+      throw AppError(
+        message: 'Missing email',
+        userMessage: 'Email adresa je obavezna.',
+        type: ErrorType.validation,
+      );
+    }
+    if (password.isEmpty) {
+      throw AppError(
+        message: 'Missing password',
+        userMessage: 'Lozinka je obavezna.',
+        type: ErrorType.validation,
+      );
+    }
     try {
       await _client.auth
-          .signInWithPassword(email: email, password: password);
+          .signInWithPassword(email: trimmedEmail, password: password);
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
@@ -114,13 +129,28 @@ class AuthService {
     String? farmName,
     String? location,
   }) async {
+    final trimmedEmail = email.trim();
+    if (trimmedEmail.isEmpty || !trimmedEmail.contains('@') || !trimmedEmail.contains('.')) {
+      throw AppError(
+        message: 'Invalid email address',
+        userMessage: 'Unesite ispravnu email adresu.',
+        type: ErrorType.validation,
+      );
+    }
+    if (password.length < 6) {
+      throw AppError(
+        message: 'Password too short',
+        userMessage: 'Lozinka mora imati najmanje 6 karaktera.',
+        type: ErrorType.validation,
+      );
+    }
     try {
       await _client.auth.signUp(
-        email: email,
+        email: trimmedEmail,
         password: password,
         emailRedirectTo: _authRedirectTo,
         data: {
-          'email': email,
+          'email': trimmedEmail,
           'display_name': displayName,
           'phone': phone,
           'city': city,

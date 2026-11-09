@@ -237,6 +237,50 @@ void main() {
       ]);
     });
 
+    test('signInWithEmail baca validation grešku kada je email ili lozinka prazna', () async {
+      final service = createService();
+
+      expect(
+        () => service.signInWithEmail('', 'lozinka123'),
+        throwsA(isA<AppError>().having(
+          (e) => e.type,
+          'type',
+          equals(ErrorType.validation),
+        )),
+      );
+
+      expect(
+        () => service.signInWithEmail('test@example.com', ''),
+        throwsA(isA<AppError>().having(
+          (e) => e.type,
+          'type',
+          equals(ErrorType.validation),
+        )),
+      );
+    });
+
+    test('registerWithEmail baca validation grešku za neispravan email ili prekratku lozinku', () async {
+      final service = createService();
+
+      expect(
+        () => service.registerWithEmail('notanemail', 'lozinka123'),
+        throwsA(isA<AppError>().having(
+          (e) => e.type,
+          'type',
+          equals(ErrorType.validation),
+        )),
+      );
+
+      expect(
+        () => service.registerWithEmail('valid@example.com', '12345'),
+        throwsA(isA<AppError>().having(
+          (e) => e.type,
+          'type',
+          equals(ErrorType.validation),
+        )),
+      );
+    });
+
     test('signInWithEmail umotava grešku u AppError', () async {
       final auth = _FakeAuthClient()
         ..signInError = Exception('Invalid login credentials');

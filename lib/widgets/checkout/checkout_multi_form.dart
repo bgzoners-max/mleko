@@ -11,7 +11,6 @@ import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../../utils/quantity_engine.dart';
 import 'package:mleko/services/services.dart';
-import '../../services/core/analytics_service.dart';
 import 'dart:async';
 import '../offline_indicator.dart';
 import '../app_back_button.dart';

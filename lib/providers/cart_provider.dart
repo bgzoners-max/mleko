@@ -12,6 +12,7 @@ import 'package:mleko/services/services.dart';
 class CartProvider extends ChangeNotifier {
   final Map<String, Map<String, double>> _sellerItems = {};
   final ProductsService _productsService;
+  final AnalyticsService _analyticsService;
   static const _legacyDraftsStorageKey = 'mleko_seller_drafts';
   static const _legacyStorageKey = 'mleko_cart';
 
@@ -165,8 +166,11 @@ class CartProvider extends ChangeNotifier {
   late final Future<void> _initFuture;
   Future<void> get loadFuture => _initFuture;
 
-  CartProvider({required ProductsService productsService})
-      : _productsService = productsService {
+  CartProvider({
+    required ProductsService productsService,
+    AnalyticsService? analyticsService,
+  })  : _productsService = productsService,
+        _analyticsService = analyticsService ?? AnalyticsService() {
     _initFuture = _load();
   }
 
@@ -463,6 +467,14 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     sellerDraft[effectiveKey] = targetQty;
+    if (product != null) {
+      unawaited(
+        _analyticsService.logAddToCart(
+          product,
+          targetQty,
+        ),
+      );
+    }
     _invalidateCache(sellerId);
     notifyListeners();
     _scheduleSave();

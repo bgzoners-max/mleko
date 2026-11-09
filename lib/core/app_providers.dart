@@ -19,6 +19,7 @@ import '../services/auth/auth_services.dart';
 import '../providers/classifieds_provider.dart';
 import '../services/classifieds/classifieds_service.dart';
 import '../services/classifieds/classified_reports_service.dart';
+import '../services/core/analytics_service.dart';
 
 class AppProviders extends StatelessWidget {
   final Widget child;
@@ -36,6 +37,7 @@ class AppProviders extends StatelessWidget {
   final UsersService usersService;
   final ClassifiedsService classifiedsService;
   final ClassifiedReportsService classifiedReportsService;
+  final AnalyticsService? analyticsService;
 
   const AppProviders({
     super.key,
@@ -54,6 +56,7 @@ class AppProviders extends StatelessWidget {
     required this.usersService,
     required this.classifiedsService,
     required this.classifiedReportsService,
+    this.analyticsService,
   });
 
   @override
@@ -77,6 +80,7 @@ class AppProviders extends StatelessWidget {
         Provider<UsersService>.value(value: usersService),
         Provider<ClassifiedsService>.value(value: classifiedsService),
         Provider<ClassifiedReportsService>.value(value: classifiedReportsService),
+        Provider<AnalyticsService>.value(value: analyticsService ?? AnalyticsService()),
       ],
       child: child,
     );

@@ -21,7 +21,6 @@ import '../widgets/checkout/checkout_product_summary_card.dart';
 import '../widgets/checkout/checkout_single_buyer_form.dart';
 import '../widgets/checkout/checkout_validation_utils.dart';
 import '../widgets/skeleton.dart';
-import '../services/core/analytics_service.dart';
 import '../widgets/responsive_layout.dart';
 import 'dart:async';
 

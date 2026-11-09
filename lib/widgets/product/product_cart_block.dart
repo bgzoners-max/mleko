@@ -9,7 +9,6 @@ import '../../core/haptic.dart';
 import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
-import '../../services/core/analytics_service.dart';
 import '../../services/services.dart';
 import '../../utils/quantity_engine.dart';
 import '../bounce_tap_button.dart';

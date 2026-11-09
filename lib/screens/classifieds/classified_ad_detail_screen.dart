@@ -15,6 +15,7 @@ import '../../models/classified_ad_model.dart';
 import '../../providers/app_state.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../services/communication/chat_service.dart';
+import '../../services/core/analytics_service.dart';
 import '../../supabase_config.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/app_share_sheet.dart';
@@ -54,6 +55,9 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
     final ad = await future;
     if (ad != null && mounted) {
       setClassifiedAdSeo(ad);
+      unawaited(
+        context.read<AnalyticsService>().logViewClassifiedAd(ad),
+      );
       if (!_viewIncremented) {
         if (_revealedPhone == null &&
             ad.phone != null &&

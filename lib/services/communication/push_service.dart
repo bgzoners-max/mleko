@@ -175,10 +175,29 @@ class PushService {
     await PushRouter.dispose();
   }
 
+  /// VAPID ključ za Web Push notifikacije prosleđen kroz `--dart-define=FCM_VAPID_KEY=...`.
+  static const String webVapidKey = String.fromEnvironment('FCM_VAPID_KEY');
+
+  /// Da li je Web Push u potpunosti konfigurisan sa VAPID ključem.
+  static bool get isWebPushConfigured => webVapidKey.isNotEmpty;
+
+  /// Korisnička poruka o statusu podrške za push notifikacije na trenutnoj platformi.
+  static String get pushSupportStatusMessage {
+    if (kIsWeb) {
+      if (isWebPushConfigured) {
+        return 'Web push obaveštenja su podržana u vašem pretraživaču.';
+      }
+      return 'Web push obaveštenja nisu konfigurisana (nedostaje VAPID ključ); aktivna su obaveštenja u aplikaciji.';
+    }
+    return 'Push obaveštenja su aktivna.';
+  }
+
   /// Inicijalizacija push kanala i background handlera.
   static Future<void> initialize() async {
     if (kIsWeb) {
-      LoggerService.debug('Push service: initialized for Web with in-app & foreground fallback');
+      LoggerService.info(
+        'Push service: Web push initialized (in-app notifications active${isWebPushConfigured ? ', VAPID configured' : ', foreground fallback'})',
+      );
       return;
     }
     try {

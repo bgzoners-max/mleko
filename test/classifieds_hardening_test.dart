@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mleko/models/app_error.dart';
+import 'package:mleko/models/classified_ad_model.dart';
 import 'package:mleko/services/classifieds/classifieds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -300,6 +301,75 @@ void main() {
             equals('Neuspešno učitavanje statistike oglasa prodavca.'),
           ),
         ),
+      );
+    });
+
+    test('createAd and updateAd throw validation errors on invalid input', () async {
+      final service = ClassifiedsService.test();
+      final now = DateTime(2026, 1, 1);
+
+      // Empty title
+      final adNoTitle = ClassifiedAdModel(
+        id: 'ad-1',
+        userId: 'u1',
+        title: '',
+        price: 100,
+        categoryId: 'cat1',
+        city: 'Beograd',
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(
+        () => service.createAd(adNoTitle),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', equals(ErrorType.validation))),
+      );
+
+      // Empty userId
+      final adNoUser = ClassifiedAdModel(
+        id: 'ad-1',
+        userId: '',
+        title: 'Traktor',
+        price: 100,
+        categoryId: 'cat1',
+        city: 'Beograd',
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(
+        () => service.createAd(adNoUser),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', equals(ErrorType.validation))),
+      );
+
+      // Negative price
+      final adNegPrice = ClassifiedAdModel(
+        id: 'ad-1',
+        userId: 'u1',
+        title: 'Traktor',
+        price: -50,
+        categoryId: 'cat1',
+        city: 'Beograd',
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(
+        () => service.createAd(adNegPrice),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', equals(ErrorType.validation))),
+      );
+
+      // updateAd empty id
+      final adEmptyId = ClassifiedAdModel(
+        id: '',
+        userId: 'u1',
+        title: 'Traktor',
+        price: 100,
+        categoryId: 'cat1',
+        city: 'Beograd',
+        createdAt: now,
+        updatedAt: now,
+      );
+      expect(
+        () => service.updateAd(adEmptyId),
+        throwsA(isA<AppError>().having((e) => e.type, 'type', equals(ErrorType.validation))),
       );
     });
   });

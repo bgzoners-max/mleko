@@ -299,5 +299,11 @@ void main() {
       );
       expect(id1, equals(id2));
     });
+
+    test('PushService web push support message and configuration getters evaluate cleanly', () {
+      expect(PushService.webVapidKey, isA<String>());
+      expect(PushService.isWebPushConfigured, isA<bool>());
+      expect(PushService.pushSupportStatusMessage, isNotEmpty);
+    });
   });
 }

@@ -69,6 +69,116 @@ void main() {
       );
     });
 
+    test('createOrderWithItems throws validation error when buyer and seller are identical', () async {
+      final mockClient = MockHttpHandlerClient((req, body) async => http.Response('[]', 200));
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = _TestOrderManagementService(client: supabase);
+
+      expect(
+        () => service.createOrderWithItems(
+          buyerId: 'user-1',
+          sellerId: 'user-1',
+          items: [
+            const OrderItemModel(
+              productId: 'prod-1',
+              productName: 'Sir',
+              quantityKg: 1,
+              unitType: 'kg',
+            ),
+          ],
+          note: '',
+          buyerCity: 'Beograd',
+          buyerPhone: '0601234567',
+        ),
+        throwsA(isA<AppError>().having(
+          (e) => e.userMessage,
+          'userMessage',
+          contains('Ne možete poručiti od samog sebe'),
+        )),
+      );
+    });
+
+    test('createOrderWithItems throws validation error when buyerCity or buyerPhone is empty', () async {
+      final mockClient = MockHttpHandlerClient((req, body) async => http.Response('[]', 200));
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = _TestOrderManagementService(client: supabase);
+
+      expect(
+        () => service.createOrderWithItems(
+          buyerId: 'buyer-1',
+          sellerId: 'seller-1',
+          items: [
+            const OrderItemModel(
+              productId: 'prod-1',
+              productName: 'Sir',
+              quantityKg: 1,
+              unitType: 'kg',
+            ),
+          ],
+          note: '',
+          buyerCity: '',
+          buyerPhone: '0601234567',
+        ),
+        throwsA(isA<AppError>().having(
+          (e) => e.userMessage,
+          'userMessage',
+          contains('Grad za dostavu je obavezan'),
+        )),
+      );
+
+      expect(
+        () => service.createOrderWithItems(
+          buyerId: 'buyer-1',
+          sellerId: 'seller-1',
+          items: [
+            const OrderItemModel(
+              productId: 'prod-1',
+              productName: 'Sir',
+              quantityKg: 1,
+              unitType: 'kg',
+            ),
+          ],
+          note: '',
+          buyerCity: 'Novi Sad',
+          buyerPhone: '',
+        ),
+        throwsA(isA<AppError>().having(
+          (e) => e.userMessage,
+          'userMessage',
+          contains('Broj telefona kupca je obavezan'),
+        )),
+      );
+    });
+
+    test('createOrderWithItems throws validation error when item quantity is not positive', () async {
+      final mockClient = MockHttpHandlerClient((req, body) async => http.Response('[]', 200));
+      final supabase = SupabaseClient('https://fake.supabase.co', 'fake-key', httpClient: mockClient);
+      final service = _TestOrderManagementService(client: supabase);
+
+      expect(
+        () => service.createOrderWithItems(
+          buyerId: 'buyer-1',
+          sellerId: 'seller-1',
+          items: [
+            const OrderItemModel(
+              productId: 'prod-1',
+              productName: 'Sir',
+              quantityKg: 0,
+              unitType: 'kg',
+            ),
+          ],
+          note: '',
+          buyerCity: 'Beograd',
+          buyerPhone: '0601234567',
+        ),
+        throwsA(isA<AppError>().having(
+          (e) => e.userMessage,
+          'userMessage',
+          contains('Količina za svaku stavku mora biti veća od 0'),
+        )),
+      );
+    });
+
     test('createOrderWithItems throws notFound error when product does not exist in DB', () async {
       final mockClient = MockHttpHandlerClient((req, body) async {
         if (req.url.path.contains('/rest/v1/products')) {

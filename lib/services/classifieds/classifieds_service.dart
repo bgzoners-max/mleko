@@ -10,6 +10,7 @@ import '../../models/classified_seller_stats_model.dart';
 import '../../utils/search_utils.dart';
 import '../communication/push_service.dart';
 import '../core/logger_service.dart';
+import 'classified_category_tree_builder.dart';
 
 enum ClassifiedSort {
   newest,
@@ -52,92 +53,10 @@ class ClassifiedsService {
 
   @visibleForTesting
   static List<ClassifiedCategoryModel> buildCategoryTreeForTesting(List<dynamic> rawList) =>
-      _buildCategoryTree(rawList);
+      ClassifiedCategoryTreeBuilder.build(rawList);
 
-  static List<ClassifiedCategoryModel> _buildCategoryTree(List<dynamic> rawList) {
-    final all = rawList
-        .map((e) => ClassifiedCategoryModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    // Ukloni zastarele duplikate ako postoje kanonski pandani
-    const obsoleteIds = {
-      'stocarstvo_zivotinje',
-      'prodaja_kuca',
-      'industrijski_placevi',
-      'gume_felne',
-      'auto_multimedija_navigacija',
-      'stampaci_skeneri_toneri',
-      'mrezna_oprema_ruteri',
-      'memorije_hard_diskovi',
-      'mali_kuhinjski_aparati',
-      'aparati_za_kafu',
-    };
-    all.removeWhere((c) => obsoleteIds.contains(c.id));
-
-    // Osiguraj postojanje 'zivinarstvo' i 'stocarska_oprema' pod 'poljoprivreda'
-    if (!all.any((c) => c.id == 'zivinarstvo')) {
-      all.add(const ClassifiedCategoryModel(
-        id: 'zivinarstvo',
-        name: 'Živinarstvo i peradarstvo',
-        iconName: 'egg',
-        parentId: 'poljoprivreda',
-        sortOrder: 52,
-        isConditionApplicable: false,
-      ));
-    }
-    if (!all.any((c) => c.id == 'stocarska_oprema')) {
-      all.add(const ClassifiedCategoryModel(
-        id: 'stocarska_oprema',
-        name: 'Stočarska oprema i muzilice',
-        iconName: 'precision_manufacturing',
-        parentId: 'poljoprivreda',
-        sortOrder: 54,
-        isConditionApplicable: true,
-      ));
-    }
-
-    final roots = all.where((c) => c.isRoot).toList();
-    final childrenByParent = <String, List<ClassifiedCategoryModel>>{};
-
-    for (final c in all.where((c) => !c.isRoot)) {
-      if (c.parentId != null) {
-        childrenByParent.putIfAbsent(c.parentId!, () => []).add(c);
-      }
-    }
-
-    // Bezbednosna garancija: osiguraj da pod 'smartfoni' uvek postoji 'smartfoni_ostalo' (Ostale marke)
-    final smartfoniChildren = childrenByParent['smartfoni'];
-    if (smartfoniChildren != null &&
-        !smartfoniChildren.any((c) => c.id == 'smartfoni_ostalo')) {
-      smartfoniChildren.add(const ClassifiedCategoryModel(
-        id: 'smartfoni_ostalo',
-        name: 'Ostale marke',
-        iconName: 'smartphone',
-        parentId: 'smartfoni',
-        sortOrder: 999,
-      ));
-    }
-
-    ClassifiedCategoryModel buildSubtree(ClassifiedCategoryModel node) {
-      final rawChildren = childrenByParent[node.id] ?? [];
-      final nestedChildren = rawChildren.map((c) {
-        // Kanon je server (isConditionApplicable iz baze/view-a).
-        // Zaštita u stablu obezbeđuje konzistentnost u slučaju zastarelog keša
-        // (ako je roditelj neprimenljiv, podkategorija takođe ne može imati stanje).
-        final effectiveApplicable = node.isConditionApplicable && c.isConditionApplicable;
-        final updatedChild = c.isConditionApplicable != effectiveApplicable
-            ? c.copyWith(isConditionApplicable: effectiveApplicable)
-            : c;
-        return buildSubtree(updatedChild);
-      }).toList()
-        ..sort(ClassifiedCategoryModel.compareCategories);
-      return node.copyWith(subcategories: nestedChildren);
-    }
-
-    final list = roots.map(buildSubtree).toList()
-      ..sort(ClassifiedCategoryModel.compareCategories);
-    return list;
-  }
+  static List<ClassifiedCategoryModel> _buildCategoryTree(List<dynamic> rawList) =>
+      ClassifiedCategoryTreeBuilder.build(rawList);
 
   /// Učitava sve kategorije i grupiše podkategorije u roditelje.
   /// Rezultat se kešira u SharedPreferences uz verziju i TTL (24h).
@@ -496,6 +415,27 @@ class ClassifiedsService {
 
   /// Kreira novi oglas
   Future<ClassifiedAdModel> createAd(ClassifiedAdModel ad) async {
+    if (ad.title.trim().isEmpty) {
+      throw AppError(
+        message: 'Missing ad title',
+        userMessage: 'Naslov oglasa je obavezan.',
+        type: ErrorType.validation,
+      );
+    }
+    if (ad.userId.trim().isEmpty) {
+      throw AppError(
+        message: 'Missing userId',
+        userMessage: 'Identifikator prodavca je obavezan.',
+        type: ErrorType.validation,
+      );
+    }
+    if (ad.price < 0) {
+      throw AppError(
+        message: 'Negative price',
+        userMessage: 'Cena oglasa ne može biti negativna.',
+        type: ErrorType.validation,
+      );
+    }
     try {
       final data = ad.toJson(includeId: false);
       final res = await _client
@@ -513,6 +453,27 @@ class ClassifiedsService {
 
   /// Ažurira postojeći oglas
   Future<void> updateAd(ClassifiedAdModel ad) async {
+    if (ad.id.trim().isEmpty) {
+      throw AppError(
+        message: 'Missing ad id',
+        userMessage: 'Identifikator oglasa je obavezan.',
+        type: ErrorType.validation,
+      );
+    }
+    if (ad.title.trim().isEmpty) {
+      throw AppError(
+        message: 'Missing ad title',
+        userMessage: 'Naslov oglasa je obavezan.',
+        type: ErrorType.validation,
+      );
+    }
+    if (ad.price < 0) {
+      throw AppError(
+        message: 'Negative price',
+        userMessage: 'Cena oglasa ne može biti negativna.',
+        type: ErrorType.validation,
+      );
+    }
     try {
       final data = ad.toUpdateMap();
       data['updated_at'] = DateTime.now().toIso8601String();

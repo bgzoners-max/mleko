@@ -294,6 +294,10 @@ class PushTokenRegistrar {
           apnsRetries++;
         }
       }
+      const vapidKey = String.fromEnvironment('FCM_VAPID_KEY');
+      if (kIsWeb && vapidKey.isNotEmpty) {
+        return await FirebaseMessaging.instance.getToken(vapidKey: vapidKey);
+      }
       return await FirebaseMessaging.instance.getToken();
     } catch (e) {
       LoggerService.warning('PushTokenRegistrar: Failed to fetch token',

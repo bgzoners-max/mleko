@@ -80,7 +80,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _productFuture ??=
-        context.read<ProductsService>().getProduct(widget.productId);
+        context.read<ProductsService>().getProduct(widget.productId).then((product) {
+      if (product != null && mounted) {
+        unawaited(
+          context.read<AnalyticsService>().logViewProduct(product),
+        );
+      }
+      return product;
+    });
     _reviewsFuture ??= _loadReviewsFuture();
   }
 
