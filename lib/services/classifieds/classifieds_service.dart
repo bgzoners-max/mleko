@@ -685,7 +685,11 @@ class ClassifiedsService {
         e,
         stackTrace: st,
       );
-      return const ClassifiedSellerStatsModel();
+      throw AppError.from(
+        e,
+        userMessage: 'Neuspešno učitavanje statistike oglasa prodavca.',
+        stackTrace: st,
+      );
     }
   }
 }

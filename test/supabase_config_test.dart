@@ -24,6 +24,8 @@ void main() {
         expect(SupabaseConfig.isStaging, isFalse);
         expect(SupabaseConfig.url, isEmpty);
         expect(SupabaseConfig.anonKey, isEmpty);
+        expect(SupabaseConfig.publishableKey, isEmpty);
+        expect(SupabaseConfig.shareBaseUrl, equals('https://www.domacimarket.rs'));
         expect(SupabaseConfig.isConfigured, isFalse);
       });
 

@@ -1,28 +1,27 @@
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/scheduler.dart';
+import '../models/app_error.dart';
 import '../models/category.dart';
 import 'package:mleko/services/services.dart';
 
 /// Keš kategorija – učitavanje jednom pri startu, deljenje između ekrana.
 class CategoriesProvider extends ChangeNotifier {
-  final SupabaseService? _service;
+  final SupabaseService _service;
 
-  CategoriesProvider({SupabaseService? service}) : _service = service;
-
-  SupabaseService get _effectiveService => _service ?? SupabaseService();
+  CategoriesProvider({required SupabaseService service}) : _service = service;
 
   List<Category>? _categories;
   List<CategoryGroup>? _groups;
   bool _loading = false;
   bool _loaded = false;
   bool _isDisposed = false;
-  Object? _error;
+  AppError? _error;
 
   List<Category>? get categories => _categories;
   List<CategoryGroup>? get groups => _groups;
   bool get isLoading => _loading;
   bool get isLoaded => _loaded;
-  Object? get error => _error;
+  AppError? get error => _error;
 
   /// Lista imena kategorija (za chips, filtere) – fallback na praznu listu
   List<String> get categoryNames {
@@ -85,12 +84,16 @@ class CategoriesProvider extends ChangeNotifier {
       }
     });
     try {
-      final list = await _effectiveService.getAllCategories();
+      final list = await _service.getAllCategories();
       _groups = _buildGroups(list);
       _categories = list;
       _loaded = true;
     } catch (e, st) {
-      _error = e;
+      _error = AppError.from(
+        e,
+        userMessage: 'Greška pri učitavanju kategorija.',
+        stackTrace: st,
+      );
       LoggerService.error('Failed to load categories', e, stackTrace: st);
     } finally {
       _loading = false;

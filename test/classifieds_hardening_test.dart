@@ -277,5 +277,30 @@ void main() {
       expect(ClassifiedsService.failedInteractionsRpcCount, equals(2));
       expect(ClassifiedsService.totalRpcFailures, equals(2));
     });
+
+    test('getSellerStats throws AppError when RPC fails', () async {
+      final client = _FakeHttpClient((req) async {
+        return http.Response('{"message": "Internal server error"}', 500);
+      });
+
+      final supabase = SupabaseClient(
+        'https://fake-project.supabase.co',
+        'fake-anon-key',
+        httpClient: client,
+      );
+
+      final service = ClassifiedsService(client: supabase);
+
+      expect(
+        () => service.getSellerStats('seller-123'),
+        throwsA(
+          isA<AppError>().having(
+            (e) => e.userMessage,
+            'userMessage',
+            equals('Neuspešno učitavanje statistike oglasa prodavca.'),
+          ),
+        ),
+      );
+    });
   });
 }

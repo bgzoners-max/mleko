@@ -20,6 +20,7 @@ void main() {
     RegExp(r'\.(jks|keystore|p12|pfx)$', caseSensitive: false),
     RegExp(r'(^|/)\.env$'),
     RegExp(r'(^|/)service-account.*\.json$', caseSensitive: false),
+    RegExp(r'(^|/)config/(prod|local|staging)\.json$', caseSensitive: false),
   ];
 
   final offenders = trackedPaths

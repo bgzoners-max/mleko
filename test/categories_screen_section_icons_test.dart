@@ -3,8 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/category.dart';
 import 'package:mleko/providers/categories_provider.dart';
 import 'package:mleko/screens/categories_screen.dart';
+import 'package:mleko/services/services.dart';
 import 'package:mleko/widgets/category_icon.dart';
 import 'package:provider/provider.dart';
+
+class _MockSupabaseService implements SupabaseService {
+  @override
+  Future<List<Category>> getAllCategories() async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +23,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.resetPhysicalSize());
 
-    final catProvider = CategoriesProvider()
+    final catProvider = CategoriesProvider(service: _MockSupabaseService())
       ..setCategoriesForTesting([
       const Category(
         id: 'cat-1',

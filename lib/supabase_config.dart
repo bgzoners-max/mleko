@@ -1,42 +1,29 @@
-import 'package:flutter/foundation.dart';
-
 /// Supabase konfiguracija sa podrškom za višestruka okruženja (`local`, `staging`, `prod`)
 /// preko `--dart-define=APP_ENV=...` i pojedinačne varijable (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SHARE_BASE_URL`).
 ///
 /// Kanonski javni domen produkcije je `https://www.domacimarket.rs`.
 ///
 /// Bezbednost i izolacija:
-/// - U debug režimu ([kReleaseMode] == false), aplikacija NAMERNO ne pada automatski na produkcijsku bazu
-///   kako bi se sprečilo slučajno menjanje/brisanje produkcionih podataka tokom razvoja i testiranja.
+/// - Za rad sa bazom parametri se prosleđuju preko `--dart-define` ili `--dart-define-from-file=config/prod.json`.
 /// - Za lokalni razvoj koristi se `--dart-define=APP_ENV=local` ili `--dart-define-from-file=config/local.json`.
-/// - U produkcionom release buildu ([kReleaseMode] == true), ako varijable nisu prosleđene, aplikacija
-///   podrazumevano koristi produkcione parametre radi stabilnosti release distribucija.
+/// - Produkcijski parametri se ne čuvaju hardkodovani u git repozitorijumu.
 class SupabaseConfig {
   SupabaseConfig._();
 
-  // Produkcijski parametri (koriste se u kReleaseMode ili kada je APP_ENV=prod)
-  static const String _prodUrl = 'https://wvqtujpurhzraptorcvl.supabase.co';
-  static const String _prodAnonKey =
-      'sb_publishable_fctLgkfcyV3HtMIHkO6lvw_NdmiBrsX';
-  static const String _prodShareBaseUrl = 'https://www.domacimarket.rs';
+  // Podrazumevani javni domen i lokalni parametri
+  static const String _defaultShareBaseUrl = 'https://www.domacimarket.rs';
 
-  // Lokalni parametri (standardni lokalni Supabase stack)
+  // Lokalni parametri (standardni lokalni Supabase dev stack)
   static const String _localUrl = 'http://127.0.0.1:54321';
   static const String _localAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
   static const String _localShareBaseUrl = 'http://localhost:3000';
 
   /// Trenutno okruženje prosleđeno kroz `--dart-define=APP_ENV=local|staging|prod`.
-  /// U release režimu podrazumevana vrednost je 'prod', a u debug režimu je prazan string
-  /// (zahteva eksplicitno podešavanje okruženja ili parametara).
-  static const String appEnv = String.fromEnvironment(
-    'APP_ENV',
-    defaultValue: kReleaseMode ? 'prod' : '',
-  );
+  static const String appEnv = String.fromEnvironment('APP_ENV');
 
-  /// Da li je izabrana produkcija (eksplicitno ili podrazumevano u release buildu).
-  static bool get isProd =>
-      appEnv.toLowerCase() == 'prod' || (kReleaseMode && appEnv.isEmpty);
+  /// Da li je izabrana produkcija.
+  static bool get isProd => appEnv.toLowerCase() == 'prod';
 
   /// Da li je aktivno lokalno okruženje.
   static bool get isLocal => appEnv.toLowerCase() == 'local';
@@ -49,7 +36,6 @@ class SupabaseConfig {
     const fromEnv = String.fromEnvironment('SUPABASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
     if (isLocal) return _localUrl;
-    if (isProd) return _prodUrl;
     return '';
   }
 
@@ -58,7 +44,6 @@ class SupabaseConfig {
     const fromEnv = String.fromEnvironment('SUPABASE_ANON_KEY');
     if (fromEnv.isNotEmpty) return fromEnv;
     if (isLocal) return _localAnonKey;
-    if (isProd) return _prodAnonKey;
     return '';
   }
 
@@ -70,8 +55,7 @@ class SupabaseConfig {
     const fromEnv = String.fromEnvironment('SHARE_BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
     if (isLocal) return _localShareBaseUrl;
-    if (isProd) return _prodShareBaseUrl;
-    return _prodShareBaseUrl;
+    return _defaultShareBaseUrl;
   }
 
   /// Provera da li je konfiguracija prisutna i spremna za rad.
@@ -85,8 +69,8 @@ class SupabaseConfig {
         ..writeln('══════════════════════════════════════════════════════════════════')
         ..writeln('❌ Supabase konfiguracija nije podešena!')
         ..writeln('══════════════════════════════════════════════════════════════════')
-        ..writeln('U debug režimu aplikacija više ne koristi automatski produkcijsku bazu,')
-        ..writeln('kako bi se sprečilo slučajno prepisivanje ili oštećenje produkcionih podataka.')
+        ..writeln('Aplikacija zahteva definisane SUPABASE_URL i SUPABASE_ANON_KEY parametre')
+        ..writeln('kako bi se sprečilo slučajno prepisivanje ili oštećenje podataka.')
         ..writeln()
         ..writeln('Pokrenite aplikaciju sa jednim od sledećih načina:')
         ..writeln('  1. Za lokalni razvoj:')
@@ -96,8 +80,8 @@ class SupabaseConfig {
         ..writeln('     (Kopirajte config/local.json.example u config/local.json)')
         ..writeln('  3. Za staging okruženje:')
         ..writeln('     flutter run --dart-define=APP_ENV=staging --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...')
-        ..writeln('  4. Za rad sa produkcijom u debug režimu:')
-        ..writeln('     flutter run --dart-define=APP_ENV=prod')
+        ..writeln('  4. Za produkciju:')
+        ..writeln('     flutter run --dart-define-from-file=config/prod.json')
         ..writeln('══════════════════════════════════════════════════════════════════');
       throw StateError(message.toString());
     }
