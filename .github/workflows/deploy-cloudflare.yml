@@ -53,7 +53,7 @@ jobs:
         run: |
           for i in 1 2 3 4 5; do
             sleep 20
-            code=$(curl -s -o /tmp/health.json -w "%{http_code}" https://domacimarket.rs/health.json || echo 000)
+            code=$(curl -sL -o /tmp/health.json -w "%{http_code}" https://www.domacimarket.rs/health.json || echo 000)
             if [ "$code" = "200" ]; then
               cat /tmp/health.json
               if jq -e '.status == "ok"' /tmp/health.json > /dev/null; then
