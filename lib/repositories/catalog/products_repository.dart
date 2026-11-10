@@ -107,14 +107,29 @@ class SupabaseProductsRepository implements ProductsRepository {
 
   @override
   Future<List<ProductModel>> getProductsBySeller(String sellerId) async {
-    final list = await _client
-        .from('products')
-        .select()
-        .eq('seller_id', sellerId)
-        .order('created_at', ascending: false);
-    return (list as List)
-        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final list = await _client
+          .from('products_with_ratings')
+          .select()
+          .eq('seller_id', sellerId)
+          .order('created_at', ascending: false);
+      return (list as List)
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e, st) {
+      LoggerService.warning(
+        'Failed to query products_with_ratings for seller $sellerId, falling back to products table',
+        extra: {'error': e.toString(), 'stack': st.toString()},
+      );
+      final list = await _client
+          .from('products')
+          .select()
+          .eq('seller_id', sellerId)
+          .order('created_at', ascending: false);
+      return (list as List)
+          .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
   }
 
   @override

@@ -222,10 +222,10 @@ void main() {
       expect(result.hasMore, isFalse);
     });
 
-    test('getProductsBySeller filtrira po seller_id', () async {
+    test('getProductsBySeller filtrira po seller_id preko products_with_ratings', () async {
       http.BaseRequest? productsReq;
       final repo = repoFor((req, body) async {
-        if (req.url.path.endsWith('/products')) {
+        if (req.url.path.endsWith('/products_with_ratings') || req.url.path.endsWith('/products')) {
           productsReq = req;
           return _jsonResponse(
               jsonEncode([productJson('p1', sellerId: 's9')]), 200);
@@ -236,7 +236,33 @@ void main() {
       final products = await repo.getProductsBySeller('s9');
 
       expect(products.single.sellerId, 's9');
+      expect(productsReq!.url.path, contains('products_with_ratings'));
       expect(productsReq!.url.query, contains('seller_id=eq.s9'));
+    });
+
+    test('getProductsBySeller falls back na products tabelu kada products_with_ratings baci grešku', () async {
+      int ratingsAttempts = 0;
+      http.BaseRequest? fallbackReq;
+      final repo = repoFor((req, body) async {
+        if (req.url.path.endsWith('/products_with_ratings')) {
+          ratingsAttempts++;
+          return _jsonResponse('{"message": "View not found"}', 404);
+        }
+        if (req.url.path.endsWith('/products')) {
+          fallbackReq = req;
+          return _jsonResponse(
+              jsonEncode([productJson('p1', sellerId: 's9')]), 200);
+        }
+        return _jsonResponse('[]', 200);
+      });
+
+      final products = await repo.getProductsBySeller('s9');
+
+      expect(ratingsAttempts, 1);
+      expect(products.single.sellerId, 's9');
+      expect(fallbackReq, isNotNull);
+      expect(fallbackReq!.url.path, contains('products'));
+      expect(fallbackReq!.url.query, contains('seller_id=eq.s9'));
     });
   });
 

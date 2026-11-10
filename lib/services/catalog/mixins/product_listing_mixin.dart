@@ -73,13 +73,26 @@ mixin ProductListingMixin {
 
     Future<void> refetch() async {
       try {
-        final list = await client
-            .from('products')
-            .select()
-            .eq('seller_id', sellerId)
-            .order('created_at', ascending: false);
+        List<dynamic> list;
+        try {
+          list = (await client
+              .from('products_with_ratings')
+              .select()
+              .eq('seller_id', sellerId)
+              .order('created_at', ascending: false)) as List;
+        } catch (viewErr) {
+          LoggerService.warning(
+            'Failed to query products_with_ratings for seller $sellerId, falling back to products table',
+            extra: {'error': viewErr.toString()},
+          );
+          list = (await client
+              .from('products')
+              .select()
+              .eq('seller_id', sellerId)
+              .order('created_at', ascending: false)) as List;
+        }
         final products = await attachSelectedDeliveryPointIds(
-          (list as List)
+          list
               .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
               .toList(growable: false),
         );
