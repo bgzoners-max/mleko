@@ -1,15 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/responsive.dart';
 
 /// Kartica mape – kompaktno, tap otvara punu mapu sa podnožjem (footer)
 class MapCard extends StatelessWidget {
-  const MapCard({super.key});
+  final double? maxWidth;
+
+  const MapCard({
+    super.key,
+    this.maxWidth,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    final isDesktop = Breakpoints.isDesktop(context);
+    final effectiveMaxWidth = maxWidth ?? (isDesktop ? 520.0 : null);
+
+    final card = Padding(
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 0 : 16),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -124,6 +133,17 @@ class MapCard extends StatelessWidget {
         ),
       ),
     );
+
+    if (effectiveMaxWidth != null) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: effectiveMaxWidth),
+          child: card,
+        ),
+      );
+    }
+
+    return card;
   }
 }
 
