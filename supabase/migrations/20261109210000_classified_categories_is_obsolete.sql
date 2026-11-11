@@ -23,6 +23,7 @@ WHERE id IN (
 );
 
 -- Osiguraj da rekurzivni view v_classified_categories automatski izostavlja neaktuelne kategorije
+DROP VIEW IF EXISTS public.v_classified_categories;
 CREATE OR REPLACE VIEW public.v_classified_categories AS
 WITH RECURSIVE category_tree AS (
     SELECT 

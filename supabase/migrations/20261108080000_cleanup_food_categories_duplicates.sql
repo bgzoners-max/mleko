@@ -6,15 +6,15 @@
 
 DO $$
 DECLARE
-  v_honey_parent_id TEXT;
-  v_veggie_parent_id TEXT;
+  v_honey_parent_id UUID;
+  v_veggie_parent_id UUID;
 BEGIN
   -- --------------------------------------------------------------------------
   -- 1. Med i pčelinji proizvodi
   -- --------------------------------------------------------------------------
-  SELECT id::text INTO v_honey_parent_id
+  SELECT id INTO v_honey_parent_id
   FROM public.categories
-  WHERE slug = 'med-i-pcelinji-proizvodi' AND (parent_id IS NULL OR parent_id = '')
+  WHERE slug = 'med-i-pcelinji-proizvodi' AND parent_id IS NULL
   LIMIT 1;
 
   IF v_honey_parent_id IS NOT NULL THEN
@@ -73,9 +73,9 @@ BEGIN
   -- --------------------------------------------------------------------------
   -- 2. Voće i povrće
   -- --------------------------------------------------------------------------
-  SELECT id::text INTO v_veggie_parent_id
+  SELECT id INTO v_veggie_parent_id
   FROM public.categories
-  WHERE slug = 'voce-i-povrce' AND (parent_id IS NULL OR parent_id = '')
+  WHERE slug = 'voce-i-povrce' AND parent_id IS NULL
   LIMIT 1;
 
   IF v_veggie_parent_id IS NOT NULL THEN
