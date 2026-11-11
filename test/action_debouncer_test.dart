@@ -12,8 +12,10 @@ void main() {
         ..run(() => callCount++)
         ..run(() => callCount++);
 
+      expect(debouncer.isActive, isTrue);
       expect(callCount, equals(0));
       await Future.delayed(const Duration(milliseconds: 80));
+      expect(debouncer.isActive, isFalse);
       expect(callCount, equals(1));
       debouncer.dispose();
     });
@@ -44,11 +46,13 @@ void main() {
       }
 
       final f1 = debouncer.runAsync(() => slowTask(10));
+      expect(debouncer.isBusy, isTrue);
       final f2 = debouncer.runAsync(() => slowTask(20));
 
       final res1 = await f1;
       final res2 = await f2;
 
+      expect(debouncer.isBusy, isFalse);
       expect(res1, equals(10));
       expect(res2, isNull);
       debouncer.dispose();

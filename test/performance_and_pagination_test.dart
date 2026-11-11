@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/product_model.dart';
 import 'package:mleko/services/catalog/mixins/product_listing_mixin.dart';
@@ -16,6 +19,25 @@ class _FakeListingService with ProductListingMixin {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
+
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async {
+      if (call.method == 'getTemporaryDirectory' ||
+          call.method == 'getApplicationSupportDirectory' ||
+          call.method == 'getApplicationDocumentsDirectory') {
+        return Directory.systemTemp.path;
+      }
+      return null;
+    });
+  });
+
+  tearDownAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, null);
+  });
 
   group('6.1 Cursor-based Pagination API', () {
     test('NotificationsService accepts limit and beforeCreatedAt parameters', () {
@@ -55,9 +77,10 @@ void main() {
       expect(() => AppImageCache.clearMemoryCache(), returnsNormally);
     });
 
-    test('AppImageCache exposes configured custom CacheManager', () {
+    test('AppImageCache exposes configured custom CacheManager', () async {
       final manager = AppImageCache.cacheManager;
       expect(manager, isNotNull);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     });
   });
 }

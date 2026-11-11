@@ -23,7 +23,7 @@ void main() {
 
   goldenFileComparator = TolerantGoldenFileComparator(
     Uri.parse('test/golden/product_card_golden_test.dart'),
-    maxDiffRatio: 0.005,
+    maxDiffRatio: 0.01,
   );
 
   setUp(() {

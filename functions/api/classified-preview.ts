@@ -45,20 +45,24 @@ function formatPrice(
   return `${num} ${curr}`;
 }
 
+function extractCategoryName(
+  ad: ClassifiedRow | null | undefined,
+): string | undefined {
+  if (!ad?.classified_categories) return undefined;
+  const raw = Array.isArray(ad.classified_categories)
+    ? ad.classified_categories[0]?.name
+    : ad.classified_categories.name;
+  const trimmed = raw?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
 function buildDescription(ad: ClassifiedRow | null): string {
   if (ad == null) return FALLBACK_DESCRIPTION;
 
   const city = ad.city?.trim() || "";
   const priceInfo = formatPrice(ad.price, ad.currency, ad.price_type);
   const rawDesc = ad.description?.trim() || "";
-  let categoryName = "";
-  if (ad.classified_categories) {
-    if (Array.isArray(ad.classified_categories)) {
-      categoryName = ad.classified_categories[0]?.name?.trim() || "";
-    } else {
-      categoryName = ad.classified_categories.name?.trim() || "";
-    }
-  }
+  const categoryName = extractCategoryName(ad);
 
   const parts = [
     priceInfo,
@@ -173,10 +177,7 @@ export async function handleClassifiedPreview(
     const nextYear = new Date().getFullYear() + 1;
     const priceValidUntil = `${nextYear}-12-31`;
 
-    const categoryName =
-      (Array.isArray(ad?.classified_categories)
-        ? ad?.classified_categories[0]?.name
-        : ad?.classified_categories?.name) || undefined;
+    const categoryName = extractCategoryName(ad);
 
     const jsonLd = ad
       ? {
@@ -213,7 +214,6 @@ export async function handleClassifiedPreview(
 
     const bodyParagraphs: string[] = [];
     if (ad) {
-      const categoryName = ad.classified_categories?.name;
       const infoParts = [
         priceFormatted,
         ad.city ? `Lokacija: ${ad.city}` : "",

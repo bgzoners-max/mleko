@@ -46,6 +46,7 @@ void main() {
       expect(ProductModel.formatQuantityWithUnit(2.25, ProductModel.unitKg), '2,25 kg');
       expect(ProductModel.formatQuantityWithUnit(1.125, ProductModel.unitKg), '1,125 kg');
       expect(ProductModel.formatQuantityWithUnit(1.75, ProductModel.unitL), '1,75 L');
+      expect(ProductModel.formatQuantityWithUnit(0.72, ProductModel.unitMl), '720 ml');
     });
   });
 

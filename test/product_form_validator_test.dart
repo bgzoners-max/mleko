@@ -216,6 +216,28 @@ void main() {
       );
     });
 
+    test('formats grams correctly', () {
+      expect(
+        ProductFormValidator.formatQuantityHint('500', ProductModel.unitG),
+        equals('Prikaz kupcima: 500 g'),
+      );
+      expect(
+        ProductFormValidator.formatQuantityHint('1500g', ProductModel.unitG),
+        equals('Prikaz kupcima: 1,5 kg'),
+      );
+    });
+
+    test('formats milliliters correctly', () {
+      expect(
+        ProductFormValidator.formatQuantityHint('720', ProductModel.unitMl),
+        equals('Prikaz kupcima: 720 ml'),
+      );
+      expect(
+        ProductFormValidator.formatQuantityHint('1500ml', ProductModel.unitMl),
+        equals('Prikaz kupcima: 1,5 L'),
+      );
+    });
+
     test('returns null for invalid number input', () {
       expect(
         ProductFormValidator.formatQuantityHint('abc', ProductModel.unitKg),
