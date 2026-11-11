@@ -12,7 +12,7 @@ Page<T> buildPageTransition<T>({
   required GoRouterState state,
   required Widget child,
 }) {
-  applyRouteSeo(state.uri.path);
+  applyRouteSeo(state.uri.toString());
   return CustomTransitionPage<T>(
     key: state.pageKey,
     child: child,

@@ -12,9 +12,13 @@
 // emitted by `api/sitemap.ts` (including `?category=` variants).
 
 import {
+  buildHtml,
   normalizeBaseUrl,
   resolvePublicBaseUrl,
+  type HtmlBreadcrumbItem,
+  type HtmlLinkItem,
   type HtmlPayload,
+  type HtmlSection,
 } from "./preview-utils.js";
 
 type RouteSeo = {
@@ -305,6 +309,35 @@ function normalizePathname(pathname: string): string {
  * (`/classifieds?category=slug`, `/categories?category=slug`) get a unique
  * title/description/canonical that matches the sitemap `loc` exactly.
  */
+export type CategorySeoSummary = {
+  slug: string;
+  title: string;
+  heading: string;
+  description: string;
+};
+
+const SITE_NAV_PATHS: Array<{ label: string; path: string }> = [
+  { label: "Početna", path: "" },
+  { label: "Pijaca hrane", path: "/categories" },
+  { label: "Mali oglasi", path: "/classifieds" },
+  { label: "Mapa gazdinstava", path: "/sellers-map" },
+  { label: "Pretraga", path: "/search" },
+  { label: "Vodič za proizvođače", path: "/vodic-za-proizvodjace" },
+  { label: "O nama", path: "/about" },
+  { label: "Podrška", path: "/support" },
+];
+
+const SUPPORT_ROUTE_SEO = {
+  title: "Podrška i pomoć — Kontakt i najčešća pitanja | Domaći Market",
+  description:
+    "Kontaktirajte podršku Domaćeg Marketa, prijavite problem sa porudžbinom ili oglasom i pronađite odgovore na najčešća pitanja za kupce i proizvođače.",
+  heading: "Podrška i pomoć korisnicima",
+  paragraphs: [
+    "Imate pitanje u vezi sa porudžbinom domaćih proizvoda, objavom besplatnog malog oglasa ili verifikacijom poljoprivrednog gazdinstva? Naš tim za podršku stoji vam na raspolaganju.",
+    "Korisnici u aplikaciji mogu otvoriti tiket za podršku direktno iz sekcije Podešavanja i podrška, ili nam pisati putem zvanične email adrese kontakt@domacimarket.rs.",
+  ],
+};
+
 export function resolveStaticPageSeo(
   pathname: string,
   searchParams: URLSearchParams,
@@ -315,10 +348,12 @@ export function resolveStaticPageSeo(
     origin ? normalizeBaseUrl(origin) : undefined,
   );
 
-  let route = BASE_ROUTES[path];
+  let route =
+    path === "/support" ? SUPPORT_ROUTE_SEO : BASE_ROUTES[path];
   let canonicalUrl = `${baseUrl}${path === "/" ? "" : path}`;
 
   const categorySlug = searchParams.get("category")?.trim() ?? "";
+  const searchQuery = searchParams.get("q")?.trim() ?? "";
 
   if (
     route &&
@@ -352,18 +387,200 @@ export function resolveStaticPageSeo(
     return null;
   }
 
+  const matchedClassifiedCat =
+    path === BASE_URL_PATH_CLASSIFIEDS && categorySlug
+      ? CLASSIFIED_CATEGORY_SEO[categorySlug]
+      : undefined;
+  const matchedFoodCat =
+    path === BASE_URL_PATH_CATEGORIES && categorySlug
+      ? FOOD_CATEGORY_SEO[categorySlug]
+      : undefined;
+
+  const isUnknownCategoryParam =
+    Boolean(categorySlug) &&
+    ((path === BASE_URL_PATH_CLASSIFIEDS && !matchedClassifiedCat) ||
+      (path === BASE_URL_PATH_CATEGORIES && !matchedFoodCat) ||
+      path === "/search");
+
+  const hasSearchQuery =
+    Boolean(searchQuery) || (path === "/search" && Boolean(categorySlug));
+  const shouldNoIndex =
+    hasSearchQuery && (path === "/search" || path === BASE_URL_PATH_CLASSIFIEDS)
+      ? true
+      : isUnknownCategoryParam;
+
+  const robots = shouldNoIndex
+    ? "noindex,follow"
+    : "index,follow,max-image-preview:large";
+
+  let resolvedTitle = route.title;
+  let resolvedDescription = route.description;
+  let resolvedHeading = route.heading;
+  if (hasSearchQuery && searchQuery && searchQuery !== "{search_term_string}") {
+    const scopeLabel =
+      path === BASE_URL_PATH_CLASSIFIEDS ? "mali oglasi" : "domaći proizvodi";
+    resolvedTitle = `Pretraga (${scopeLabel}): ${searchQuery} | ${SITE_NAME}`;
+    resolvedHeading = `Rezultati pretrage: ${searchQuery}`;
+    resolvedDescription = `Pretraga za "${searchQuery}" na platformi Domaći Market. Pregledajte kategorije i ponudu direktno od proizvođača u Srbiji.`;
+  }
+
+  const navLinks: HtmlLinkItem[] = SITE_NAV_PATHS.map((item) => ({
+    label: item.label,
+    href: `${baseUrl}${item.path || "/"}`,
+  }));
+
+  const breadcrumbs: HtmlBreadcrumbItem[] = [
+    { label: "Početna", href: `${baseUrl}/` },
+  ];
+  if (matchedClassifiedCat) {
+    breadcrumbs.push({
+      label: "Mali oglasi",
+      href: `${baseUrl}${BASE_URL_PATH_CLASSIFIEDS}`,
+    });
+    breadcrumbs.push({ label: route.heading });
+  } else if (matchedFoodCat) {
+    breadcrumbs.push({
+      label: "Pijaca hrane",
+      href: `${baseUrl}${BASE_URL_PATH_CATEGORIES}`,
+    });
+    breadcrumbs.push({ label: route.heading });
+  } else {
+    breadcrumbs.push({ label: route.heading });
+  }
+
+  const sections: HtmlSection[] = [];
+  if (path === BASE_URL_PATH_CLASSIFIEDS) {
+    sections.push({
+      heading: "Sve kategorije malih oglasa",
+      links: Object.entries(CLASSIFIED_CATEGORY_SEO).map(([slug, meta]) => ({
+        label: meta.name,
+        href: `${baseUrl}${BASE_URL_PATH_CLASSIFIEDS}?category=${encodeURIComponent(slug)}`,
+      })),
+    });
+  } else if (
+    path === BASE_URL_PATH_CATEGORIES ||
+    path === "/search"
+  ) {
+    sections.push({
+      heading: "Kategorije domaće hrane sa sela",
+      links: Object.entries(FOOD_CATEGORY_SEO).map(([slug, meta]) => ({
+        label: meta.name,
+        href: `${baseUrl}${BASE_URL_PATH_CATEGORIES}?category=${encodeURIComponent(slug)}`,
+      })),
+    });
+  } else {
+    sections.push({
+      heading: "Istražite Domaći Market",
+      links: [
+        { label: "Pijaca domaće hrane", href: `${baseUrl}/categories` },
+        { label: "Besplatni mali oglasi", href: `${baseUrl}/classifieds` },
+        { label: "Mapa seoskih gazdinstava", href: `${baseUrl}/sellers-map` },
+        { label: "Vodič za proizvođače", href: `${baseUrl}/vodic-za-proizvodjace` },
+        { label: "Podrška i pomoć", href: `${baseUrl}/support` },
+      ],
+    });
+  }
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbs.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.label,
+      item: crumb.href ?? canonicalUrl,
+    })),
+  };
+
+  const pageJsonLd = {
+    "@context": "https://schema.org",
+    "@type":
+      path === BASE_URL_PATH_CLASSIFIEDS || path === BASE_URL_PATH_CATEGORIES
+        ? "CollectionPage"
+        : "WebPage",
+    name: resolvedHeading,
+    url: canonicalUrl,
+    description: resolvedDescription,
+    inLanguage: "sr-RS",
+    isPartOf: {
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: `${baseUrl}/`,
+    },
+  };
+
   return {
-    title: route.title,
-    description: route.description,
+    title: resolvedTitle,
+    description: resolvedDescription,
     previewUrl: canonicalUrl,
     canonicalUrl,
     imageUrl: `${baseUrl}/icons/Icon-512.png`,
+    robots,
+    jsonLd: [breadcrumbJsonLd, pageJsonLd],
     ogType: "website",
     ogSiteName: SITE_NAME,
-    bodyHeading: route.heading,
+    bodyHeading: resolvedHeading,
     bodyParagraphs: route.paragraphs,
-    redirectNote: "Učitavanje stranice...",
-    linkLabel: "otvorite stranicu u aplikaciji",
+    navLinks,
+    breadcrumbs,
+    primaryCta: {
+      label: "Otvori u Domaći Market aplikaciji",
+      href: canonicalUrl,
+    },
+    sections,
+    omitRedirectFallback: true,
   };
+}
+
+export function getClassifiedCategoryEntries(): CategorySeoSummary[] {
+  return Object.entries(CLASSIFIED_CATEGORY_SEO).map(([slug, meta]) => ({
+    slug,
+    title: `${meta.name} — Mali Oglasi | ${SITE_NAME}`,
+    heading: meta.name,
+    description: meta.description,
+  }));
+}
+
+export function getFoodCategoryEntries(): CategorySeoSummary[] {
+  return Object.entries(FOOD_CATEGORY_SEO).map(([slug, meta]) => ({
+    slug,
+    title: `${meta.name} — Domaći proizvodi | ${SITE_NAME}`,
+    heading: meta.name,
+    description: meta.description,
+  }));
+}
+
+export function buildNotFoundHtml(pathname: string, origin?: string): string {
+  const baseUrl = resolvePublicBaseUrl(
+    origin ? normalizeBaseUrl(origin) : undefined,
+  );
+  const cleanPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const requestedUrl = `${baseUrl}${cleanPath}`;
+
+  return buildHtml({
+    title: `Stranica nije pronađena (404) | ${SITE_NAME}`,
+    description:
+      "Tražena stranica ne postoji ili je uklonjena. Pogledajte domaću hranu sa sela i besplatne male oglase na Domaćem Marketu.",
+    previewUrl: requestedUrl,
+    canonicalUrl: requestedUrl,
+    imageUrl: `${baseUrl}/icons/Icon-512.png`,
+    robots: "noindex,nofollow",
+    ogType: "website",
+    ogSiteName: SITE_NAME,
+    bodyHeading: "Stranica nije pronađena (404)",
+    bodyParagraphs: [
+      `Stranica na adresi ${cleanPath} nije pronađena ili više nije aktivna.`,
+      "Posetite početnu stranicu, Pijacu domaće hrane ili besplatne male oglase.",
+    ],
+    navLinks: SITE_NAV_PATHS.map((item) => ({
+      label: item.label,
+      href: `${baseUrl}${item.path || "/"}`,
+    })),
+    primaryCta: {
+      label: "Idi na početnu stranicu",
+      href: `${baseUrl}/`,
+    },
+    omitRedirectFallback: true,
+  });
 }
 

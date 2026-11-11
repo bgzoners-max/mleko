@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../constants/amazon_theme.dart';
 import '../core/responsive.dart';
+import '../core/web_seo.dart';
 import '../providers/categories_provider.dart';
+import 'child_categories_screen.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
@@ -12,7 +14,9 @@ import '../widgets/skeleton.dart';
 import '../widgets/app_footer.dart';
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  const CategoriesScreen({super.key, this.initialCategorySlug});
+
+  final String? initialCategorySlug;
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -27,6 +31,32 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final targetSlug = widget.initialCategorySlug?.trim();
+    if (targetSlug != null && targetSlug.isNotEmpty) {
+      final catProvider = context.watch<CategoriesProvider>();
+      final matched = catProvider.findBySlugOrId(targetSlug);
+      if (matched != null) {
+        return ChildCategoriesScreen(
+          parentCategory: matched,
+          supabaseService: catProvider.service,
+        );
+      }
+      if (!catProvider.isLoaded && catProvider.error == null) {
+        return Scaffold(
+          backgroundColor: AmazonColors.getCanvas(context),
+          appBar: AppBar(
+            leading: const AppBackButton(fallbackRoute: '/categories'),
+            title: const Text('Kategorija'),
+            actions: const [AppHomeButton()],
+          ),
+          body: const CategoryGridSkeleton(),
+        );
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) applyRouteSeo('/categories');
+      });
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
@@ -167,8 +197,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             ),
                           ),
                           child: InkWell(
-                            onTap: () => context.push('/categories/${cat.id}',
-                                extra: cat),
+                            onTap: () {
+                              final slug = cat.slug?.trim();
+                              if (slug != null && slug.isNotEmpty) {
+                                context.push(
+                                  '/categories?category=${Uri.encodeQueryComponent(slug)}',
+                                );
+                              } else {
+                                context.push('/categories/${cat.id}', extra: cat);
+                              }
+                            },
                             child: Padding(
                               padding: EdgeInsets.all(cardPadding),
                               child: Column(

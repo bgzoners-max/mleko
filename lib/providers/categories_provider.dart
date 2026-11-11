@@ -17,6 +17,7 @@ class CategoriesProvider extends ChangeNotifier {
   bool _isDisposed = false;
   AppError? _error;
 
+  SupabaseService get service => _service;
   List<Category>? get categories => _categories;
   List<CategoryGroup>? get groups => _groups;
   bool get isLoading => _loading;
@@ -163,6 +164,42 @@ class CategoriesProvider extends ChangeNotifier {
     _categories = null;
     _groups = null;
     await load();
+  }
+
+  /// Pronalazi kategoriju po slug-u, ID-u ili normalizovanom nazivu (za deep-linkove).
+  Category? findBySlugOrId(String rawQuery) {
+    final trimmed = rawQuery.trim();
+    if (trimmed.isEmpty) return null;
+    final list = _categories ?? const <Category>[];
+    if (list.isEmpty) return null;
+
+    final needle = _normalizeSlug(trimmed);
+    Category? fallbackChild;
+
+    for (final cat in list) {
+      final catSlug = cat.slug?.trim().toLowerCase();
+      if (cat.id == trimmed ||
+          catSlug == trimmed.toLowerCase() ||
+          (catSlug != null && catSlug == needle) ||
+          _normalizeSlug(cat.name) == needle) {
+        if (cat.parentId == null) return cat;
+        fallbackChild ??= cat;
+      }
+    }
+    return fallbackChild;
+  }
+
+  static String _normalizeSlug(String value) {
+    final lower = value
+        .toLowerCase()
+        .replaceAll('č', 'c')
+        .replaceAll('ć', 'c')
+        .replaceAll('ž', 'z')
+        .replaceAll('š', 's')
+        .replaceAll('đ', 'dj');
+    return lower
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
   }
 
   @visibleForTesting

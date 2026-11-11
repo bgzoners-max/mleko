@@ -2,7 +2,12 @@ import { buildHtml, isBot } from "./api/_shared/preview-utils.js";
 import { handleClassifiedPreview } from "./api/classified-preview.js";
 import { handleProductPreview } from "./api/product-preview.js";
 import { handleSitemap } from "./api/sitemap.js";
-import { resolveStaticPageSeo } from "./api/_shared/static-seo-pages.js";
+import {
+  buildNotFoundHtml,
+  resolveStaticPageSeo,
+} from "./api/_shared/static-seo-pages.js";
+import { enrichDirectorySeoPayload } from "./api/_shared/directory-ssr.js";
+import { onRequestGet as onSellerPreviewRequest } from "./api/seller-preview.js";
 
 export const onRequest: PagesFunction = async (context) => {
   const { request, env } = context;
@@ -90,15 +95,118 @@ export const onRequest: PagesFunction = async (context) => {
   //    sadržaj na <canvas> i hardcoduje kanonski URL početne strane, pa botovi
   //    inače vide prazan duplikat homepage-a. Kanonski URL-ovi ovde su identični
   //    <loc> vrednostima iz sitemape. Obični korisnici i dalje dobijaju SPA.
+  const sellerMatch = pathname.match(/^\/seller\/([^/]+)\/?$/);
+  if (sellerMatch) {
+    return onSellerPreviewRequest({
+      ...context,
+      env: (context.env ?? {}) as Record<string, string | undefined>,
+      params: { ...context.params, id: sellerMatch[1] },
+    });
+  }
+
   if (isBot(userAgent)) {
     const seoPayload = resolveStaticPageSeo(pathname, url.searchParams, url.origin);
     if (seoPayload) {
-      return new Response(buildHtml(seoPayload), {
+      const enrichedPayload = await enrichDirectorySeoPayload({
+        pathname,
+        searchParams: url.searchParams,
+        origin: url.origin,
+        env: context.env as any,
+        basePayload: seoPayload,
+      });
+      const headers: Record<string, string> = {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control":
+          "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      };
+      if (enrichedPayload.robots?.startsWith("noindex")) {
+        headers["x-robots-tag"] = enrichedPayload.robots;
+      }
+      return new Response(buildHtml(enrichedPayload), {
         status: 200,
+        headers,
+      });
+    }
+
+    const normalizedBotPath =
+      pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
+    const hasFileExtension = /\.[a-zA-Z0-9]{1,8}$/.test(normalizedBotPath);
+    const isAssetOrSystemPath =
+      normalizedBotPath.startsWith("/assets/") ||
+      normalizedBotPath.startsWith("/icons/") ||
+      normalizedBotPath.startsWith("/.well-known/") ||
+      normalizedBotPath.startsWith("/api/");
+
+    const isKnownStaticOrHtmlRoute =
+      normalizedBotPath === "/" ||
+      normalizedBotPath === "/uslovi-koriscenja" ||
+      normalizedBotPath === "/politika-privatnosti" ||
+      normalizedBotPath === "/terms";
+
+    const isPrivateOrDynamicSpaRoute =
+      normalizedBotPath === "/login" ||
+      normalizedBotPath === "/register" ||
+      normalizedBotPath === "/splash" ||
+      normalizedBotPath === "/onboarding" ||
+      normalizedBotPath === "/verify-email" ||
+      normalizedBotPath.startsWith("/auth/") ||
+      normalizedBotPath === "/cart" ||
+      normalizedBotPath === "/favorites" ||
+      normalizedBotPath === "/favorite-sellers" ||
+      normalizedBotPath === "/notifications" ||
+      normalizedBotPath === "/settings" ||
+      normalizedBotPath.startsWith("/profile") ||
+      normalizedBotPath === "/orders" ||
+      normalizedBotPath === "/conversations" ||
+      normalizedBotPath.startsWith("/chat/") ||
+      normalizedBotPath.startsWith("/checkout") ||
+      normalizedBotPath === "/add-product" ||
+      normalizedBotPath.startsWith("/product/edit/") ||
+      normalizedBotPath === "/becoming-seller" ||
+      normalizedBotPath === "/seller-dashboard" ||
+      normalizedBotPath === "/seller-settings" ||
+      normalizedBotPath === "/map-picker" ||
+      normalizedBotPath === "/classifieds/new" ||
+      normalizedBotPath.startsWith("/classifieds/edit/") ||
+      normalizedBotPath === "/classifieds/my" ||
+      normalizedBotPath === "/classifieds/saved-searches" ||
+      normalizedBotPath.startsWith("/admin/") ||
+      normalizedBotPath.startsWith("/support/ticket/") ||
+      normalizedBotPath.startsWith("/buyer/") ||
+      normalizedBotPath.startsWith("/seller/") ||
+      normalizedBotPath.startsWith("/categories/");
+
+    if (isPrivateOrDynamicSpaRoute) {
+      const noindexUrl = `${url.origin}${normalizedBotPath}`;
+      return new Response(
+        buildHtml({
+          title: "Domaći Market",
+          description: "Pristup stranici na platformi Domaći Market.",
+          previewUrl: noindexUrl,
+          canonicalUrl: noindexUrl,
+          imageUrl: `${url.origin}/icons/Icon-512.png`,
+          robots: "noindex,nofollow",
+          ogType: "website",
+          omitRedirectFallback: true,
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "x-robots-tag": "noindex, nofollow",
+            "cache-control": "no-store",
+          },
+        },
+      );
+    }
+
+    if (!hasFileExtension && !isAssetOrSystemPath && !isKnownStaticOrHtmlRoute) {
+      return new Response(buildNotFoundHtml(pathname, url.origin), {
+        status: 404,
         headers: {
           "content-type": "text/html; charset=utf-8",
-          "cache-control":
-            "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+          "x-robots-tag": "noindex, nofollow",
+          "cache-control": "public, max-age=0, s-maxage=300",
         },
       });
     }

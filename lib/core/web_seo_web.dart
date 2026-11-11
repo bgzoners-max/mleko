@@ -77,9 +77,10 @@ void setPageMetadata({
   _upsertMetaByProperty('og:image:secure_url', resolvedImageUrl);
   _upsertMetaByName('twitter:image', resolvedImageUrl);
 
-  // 7. Canonical URL i OG URL
+  // 7. Canonical URL, hreflang i OG URL
   final canonicalUrl = _normalizeUrl(path ?? '/', origin);
   _upsertCanonical(canonicalUrl);
+  _syncHreflangLinks(canonicalUrl);
   _upsertMetaByProperty('og:url', canonicalUrl);
   _upsertMetaByName('twitter:url', canonicalUrl);
 
@@ -141,6 +142,29 @@ void _upsertCanonical(String href) {
     ..rel = 'canonical'
     ..href = href;
   html.document.head?.append(link);
+}
+
+void _syncHreflangLinks(String href) {
+  final head = html.document.head;
+  if (head == null) return;
+
+  final legacySr = head.querySelector('link[rel="alternate"][hreflang="sr"]');
+  legacySr?.remove();
+
+  for (final hreflang in const ['sr-RS', 'x-default']) {
+    final existing =
+        head.querySelector('link[rel="alternate"][hreflang="$hreflang"]')
+            as html.LinkElement?;
+    if (existing != null) {
+      existing.href = href;
+      continue;
+    }
+    final link = html.LinkElement()
+      ..rel = 'alternate'
+      ..hreflang = hreflang
+      ..href = href;
+    head.append(link);
+  }
 }
 
 void _upsertJsonLd(Map<String, dynamic> jsonMap) {

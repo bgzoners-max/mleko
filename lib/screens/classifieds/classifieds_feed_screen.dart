@@ -109,11 +109,18 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
 
     if (!widget.isEmbedded) {
       final currentCatId = classifieds.selectedCategoryId;
+      final currentQuery = classifieds.searchQuery?.trim() ?? '';
       if (currentCatId != _lastSeoCategoryId) {
         _lastSeoCategoryId = currentCatId;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
-          if (currentCatId != null) {
+          if (currentQuery.isNotEmpty) {
+            final qParam = Uri.encodeQueryComponent(currentQuery);
+            final catParam = currentCatId != null
+                ? 'category=${Uri.encodeQueryComponent(currentCatId)}&'
+                : '';
+            applyRouteSeo('/classifieds?${catParam}q=$qParam');
+          } else if (currentCatId != null) {
             final cat = classifieds.findCategory(currentCatId);
             if (cat != null) {
               setClassifiedCategorySeo(cat);

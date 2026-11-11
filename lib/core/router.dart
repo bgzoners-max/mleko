@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/categories_provider.dart';
+import '../widgets/not_found_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -55,7 +56,6 @@ import '../screens/classifieds/saved_searches_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
 import '../widgets/navigation/main_shell.dart';
-import '../widgets/app_back_button.dart';
 import 'router_guard.dart';
 import 'router_transitions.dart';
 
@@ -89,35 +89,8 @@ GoRouter createRouter(AppState appState) {
     refreshListenable: appState.authSession,
     initialLocation: _resolveWebInitialLocation(),
     redirect: (context, state) => routerRedirect(context, state, appState),
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(
-        title: const Text('Stranica nije pronađena'),
-        leading: const AppBackButton(fallbackRoute: '/'),
-        actions: const [AppHomeButton()],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.explore_off_outlined, size: 64, color: Colors.grey),
-              const SizedBox(height: 16),
-              const Text(
-                'Tražena stranica ne postoji ili je premeštena.',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                onPressed: () => context.go('/'),
-                icon: const Icon(Icons.home_outlined),
-                label: const Text('Početna stranica'),
-              ),
-            ],
-          ),
-        ),
-      ),
+    errorBuilder: (context, state) => NotFoundScreen(
+      requestedPath: state.uri.path,
     ),
     routes: [
       GoRoute(
@@ -462,7 +435,9 @@ GoRouter createRouter(AppState appState) {
         path: '/categories',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
-          child: const CategoriesScreen(),
+          child: CategoriesScreen(
+            initialCategorySlug: state.uri.queryParameters['category'],
+          ),
         ),
       ),
       GoRoute(
@@ -476,13 +451,12 @@ GoRouter createRouter(AppState appState) {
                   ? Category.fromJson(extra)
                   : null;
           if (parent == null && parentId != null) {
-            final categories = context.read<CategoriesProvider>().categories;
-            parent = categories?.where((c) => c.id == parentId).firstOrNull;
+            parent = context.read<CategoriesProvider>().findBySlugOrId(parentId);
           }
           if (parent == null) {
             return buildPageTransition(
               state: state,
-              child: const CategoriesScreen(),
+              child: CategoriesScreen(initialCategorySlug: parentId),
             );
           }
           return buildPageTransition(

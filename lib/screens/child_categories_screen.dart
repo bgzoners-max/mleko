@@ -20,18 +20,21 @@ class ChildCategoriesScreen extends StatefulWidget {
   const ChildCategoriesScreen({
     super.key,
     required this.parentCategory,
+    this.supabaseService,
   });
 
   final Category parentCategory;
+  final SupabaseService? supabaseService;
 
   @override
   State<ChildCategoriesScreen> createState() => _ChildCategoriesScreenState();
 }
 
 class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
-  final _supabaseService = SupabaseService();
+  SupabaseService? _supabaseService;
   ProductsService? _productsService;
   final _scrollController = ScrollController();
+  bool _initialLoaded = false;
 
   List<Category> _categories = [];
   bool _loadingCategories = true;
@@ -56,20 +59,43 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _supabaseService ??= widget.supabaseService ?? SupabaseService();
     _productsService ??= context.read<ProductsService>();
+    if (!_initialLoaded) {
+      _initialLoaded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadCategories();
+      });
+    }
+  }
+
+  void _applyCategorySeo() {
+    final slug = widget.parentCategory.slug?.trim();
+    final seoPath = (slug != null && slug.isNotEmpty)
+        ? '/categories?category=${Uri.encodeQueryComponent(slug)}'
+        : '/categories/${widget.parentCategory.id}';
+    setCategorySeo(
+      name: widget.parentCategory.name,
+      path: seoPath,
+      description:
+          'Pregledajte ponudu domaćih proizvoda u kategoriji ${widget.parentCategory.name}. Prirodno, domaće i sveže od proizvođača iz Srbije.',
+    );
   }
 
   @override
   void initState() {
     super.initState();
-    setCategorySeo(
-      name: widget.parentCategory.name,
-      path: '/categories/${widget.parentCategory.id}',
-      description:
-          'Pregledajte ponudu domaćih proizvoda u kategoriji ${widget.parentCategory.name}. Prirodno, domaće i sveže od proizvođača iz Srbije.',
-    );
+    _applyCategorySeo();
     _scrollController.addListener(_onScroll);
-    _loadCategories();
+  }
+
+  @override
+  void didUpdateWidget(ChildCategoriesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parentCategory.id != widget.parentCategory.id) {
+      _applyCategorySeo();
+      _loadCategories();
+    }
   }
 
   @override
@@ -92,8 +118,9 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
       _error = null;
     });
     try {
-      final list =
-          await _supabaseService.getChildCategories(widget.parentCategory.id);
+      final list = await (_supabaseService ??=
+              widget.supabaseService ?? SupabaseService())
+          .getChildCategories(widget.parentCategory.id);
       if (mounted) {
         setState(() {
           _categories = list;

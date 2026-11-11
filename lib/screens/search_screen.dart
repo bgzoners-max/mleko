@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/responsive.dart';
+import '../core/web_seo.dart';
 import '../models/product_model.dart';
 import 'package:mleko/services/services.dart';
 import '../providers/app_state.dart';
@@ -119,6 +120,15 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadFirstPage() async {
     final querySeq = ++_querySeq;
     final currentQuery = _debouncedQuery.trim().toLowerCase();
+
+    final rawTerm = _debouncedQuery.trim().isNotEmpty
+        ? _debouncedQuery.trim()
+        : (_category?.trim() ?? '');
+    if (rawTerm.isNotEmpty) {
+      applyRouteSeo('/search?q=${Uri.encodeQueryComponent(rawTerm)}');
+    } else {
+      applyRouteSeo('/search');
+    }
 
     setState(() {
       if (_products.isEmpty) {

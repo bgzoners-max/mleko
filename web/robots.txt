@@ -15,6 +15,8 @@ Allow: /seller/*
 Allow: /search
 Allow: /sellers-map
 Allow: /about
+Allow: /vodic-za-proizvodjace
+Allow: /support
 Allow: /uslovi-koriscenja
 Allow: /politika-privatnosti
 
@@ -55,6 +57,7 @@ Disallow: /splash
 Disallow: /login
 Disallow: /register
 Disallow: /favorites
+Disallow: /favorite-sellers
 Disallow: /notifications
 Disallow: /seller-dashboard
 Disallow: /map-picker

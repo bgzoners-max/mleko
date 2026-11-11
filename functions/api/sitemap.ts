@@ -98,6 +98,7 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
     { loc: `${baseUrl}/sellers-map`, lastmod: today, changefreq: "weekly", priority: "0.80" },
     { loc: `${baseUrl}/vodic-za-proizvodjace`, lastmod: today, changefreq: "monthly", priority: "0.70" },
     { loc: `${baseUrl}/about`, lastmod: today, changefreq: "monthly", priority: "0.60" },
+    { loc: `${baseUrl}/support`, lastmod: today, changefreq: "monthly", priority: "0.50" },
     { loc: `${baseUrl}/uslovi-koriscenja`, lastmod: today, changefreq: "yearly", priority: "0.40" },
     { loc: `${baseUrl}/politika-privatnosti`, lastmod: today, changefreq: "yearly", priority: "0.40" },
 
@@ -142,7 +143,7 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const [adsRes, productsRes] = await Promise.all([
+    const [adsRes, productsRes, sellersRes] = await Promise.all([
       supabase
         .from("classified_ads")
         .select("id, updated_at, created_at")
@@ -155,6 +156,12 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
         .eq("available_now", true)
         .order("created_at", { ascending: false })
         .limit(3000),
+      supabase
+        .from("public_profiles")
+        .select("id, created_at")
+        .eq("role", "seller")
+        .order("created_at", { ascending: false })
+        .limit(1000),
     ]);
 
     if (adsRes.error) {
@@ -162,6 +169,9 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
     }
     if (productsRes.error) {
       console.error("Sitemap products query error:", productsRes.error);
+    }
+    if (sellersRes.error) {
+      console.error("Sitemap sellers query error:", sellersRes.error);
     }
 
     const dynamicEntries: SitemapEntry[] = [];
@@ -188,6 +198,19 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
           lastmod: modDate,
           changefreq: "weekly",
           priority: "0.80",
+        });
+      }
+    }
+
+    if (sellersRes.data && Array.isArray(sellersRes.data)) {
+      for (const seller of sellersRes.data) {
+        if (!seller.id) continue;
+        const modDate = formatDate(seller.created_at);
+        dynamicEntries.push({
+          loc: `${baseUrl}/seller/${encodeURIComponent(seller.id)}`,
+          lastmod: modDate,
+          changefreq: "weekly",
+          priority: "0.75",
         });
       }
     }

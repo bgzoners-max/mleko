@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mleko/core/route_seo_resolver.dart';
 import 'package:mleko/core/web_seo.dart';
 import 'package:mleko/models/classified_ad_model.dart';
 import 'package:mleko/models/product_model.dart';
@@ -129,6 +130,61 @@ void main() {
         ),
         returnsNormally,
       );
+    });
+
+    test('resolveQueryRouteSeo handles query search noindex and category canonicals', () {
+      final classifiedSearch = resolveQueryRouteSeo('/classifieds?q=traktor');
+      expect(classifiedSearch, isNotNull);
+      expect(classifiedSearch!.robots, equals(noIndexFollowRobots));
+      expect(classifiedSearch.path, equals('/classifieds'));
+
+      final templateSearch =
+          resolveQueryRouteSeo('/classifieds?q={search_term_string}');
+      expect(templateSearch, isNotNull);
+      expect(templateSearch!.robots, equals(noIndexFollowRobots));
+      expect(templateSearch.path, equals('/classifieds'));
+
+      final classifiedCatWithQuery =
+          resolveQueryRouteSeo('/classifieds?category=poljoprivreda&q=imt');
+      expect(classifiedCatWithQuery, isNotNull);
+      expect(classifiedCatWithQuery!.robots, equals(noIndexFollowRobots));
+      expect(
+        classifiedCatWithQuery.path,
+        equals('/classifieds?category=poljoprivreda'),
+      );
+
+      final foodCat = resolveQueryRouteSeo('/categories?category=mlecni-proizvodi');
+      expect(foodCat, isNotNull);
+      expect(foodCat!.robots, equals(defaultIndexRobots));
+      expect(foodCat.path, equals('/categories?category=mlecni-proizvodi'));
+
+      final unknownFoodCat = resolveQueryRouteSeo('/categories?category=nepoznata');
+      expect(unknownFoodCat, isNotNull);
+      expect(unknownFoodCat!.robots, equals(noIndexFollowRobots));
+      expect(unknownFoodCat.path, equals('/categories'));
+
+      final searchQ = resolveQueryRouteSeo('/search?q=med');
+      expect(searchQ, isNotNull);
+      expect(searchQ!.robots, equals(noIndexFollowRobots));
+      expect(searchQ.path, equals('/search'));
+
+      final searchCategory = resolveQueryRouteSeo('/search?category=Mleko');
+      expect(searchCategory, isNotNull);
+      expect(searchCategory!.robots, equals(noIndexFollowRobots));
+      expect(searchCategory.path, equals('/search'));
+
+      final termsAlias = resolveQueryRouteSeo('/terms');
+      expect(termsAlias, isNotNull);
+      expect(termsAlias!.path, equals('/uslovi-koriscenja'));
+
+      expect(resolveQueryRouteSeo('/search'), isNull);
+    });
+
+    test('applyRouteSeo with query params and setNotFoundSeo run normally', () {
+      expect(() => applyRouteSeo('/classifieds?q=traktor'), returnsNormally);
+      expect(() => applyRouteSeo('/categories?category=mlecni-proizvodi'),
+          returnsNormally);
+      expect(() => setNotFoundSeo(path: '/nepostojeca'), returnsNormally);
     });
   });
 }

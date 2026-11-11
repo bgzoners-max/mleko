@@ -3,6 +3,8 @@ import '../models/classified_category_model.dart';
 import '../models/product_model.dart';
 import 'web_seo_stub.dart' if (dart.library.html) 'web_seo_web.dart' as impl;
 
+import 'route_seo_resolver.dart';
+
 void setPageMetadata({
   required String title,
   String? description,
@@ -241,7 +243,30 @@ void setCategorySeo({
 }
 
 /// Centralizovano mapiranje SEO metapodataka po statičkim rutama (GoRouter)
-void applyRouteSeo(String path) {
+void setNotFoundSeo({String? path}) => applyNotFoundSeoMetadata(path: path);
+
+void applyRouteSeo(String location) {
+  final queryOverride = resolveQueryRouteSeo(location);
+  if (queryOverride != null) {
+    setPageMetadata(
+      title: queryOverride.title,
+      description: queryOverride.description,
+      path: queryOverride.path,
+      robots: queryOverride.robots,
+    );
+    return;
+  }
+
+  final parsed = Uri.tryParse(location);
+  final rawPath = parsed != null && parsed.path.isNotEmpty ? parsed.path : location;
+  final normalizedPath =
+      rawPath.length > 1 && rawPath.endsWith('/')
+          ? rawPath.substring(0, rawPath.length - 1)
+          : rawPath;
+  _applyPathRouteSeo(normalizedPath);
+}
+
+void _applyPathRouteSeo(String path) {
   // 1. Privatne rute (Googlebot ne sme indeksirati)
   if (path == '/cart' ||
       path.startsWith('/checkout') ||
