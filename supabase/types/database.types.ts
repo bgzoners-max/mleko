@@ -139,13 +139,13 @@ isOneToOne: false
                   ]
                 },"classified_categories": {
                   Row: {
-                    "created_at": string,"icon_name": string,"id": string,"is_condition_applicable": boolean,"name": string,"parent_id": string | null,"sort_order": number
+                    "created_at": string,"icon_name": string,"id": string,"is_condition_applicable": boolean,"is_obsolete": boolean,"name": string,"parent_id": string | null,"sort_order": number
                   }
                   Insert: {
-                    "created_at"?: string,"icon_name": string,"id": string,"is_condition_applicable"?: boolean,"name": string,"parent_id"?: string | null,"sort_order"?: number
+                    "created_at"?: string,"icon_name": string,"id": string,"is_condition_applicable"?: boolean,"is_obsolete"?: boolean,"name": string,"parent_id"?: string | null,"sort_order"?: number
                   }
                   Update: {
-                    "created_at"?: string,"icon_name"?: string,"id"?: string,"is_condition_applicable"?: boolean,"name"?: string,"parent_id"?: string | null,"sort_order"?: number
+                    "created_at"?: string,"icon_name"?: string,"id"?: string,"is_condition_applicable"?: boolean,"is_obsolete"?: boolean,"name"?: string,"parent_id"?: string | null,"sort_order"?: number
                   }
                   Relationships: [
                     {
@@ -481,6 +481,19 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"postal_codes": {
+                  Row: {
+                    "city": string,"created_at": string,"is_primary": boolean,"normalized_city": string,"postal_code": string,"settlement": string
+                  }
+                  Insert: {
+                    "city": string,"created_at"?: string,"is_primary"?: boolean,"normalized_city": string,"postal_code": string,"settlement"?: string
+                  }
+                  Update: {
+                    "city"?: string,"created_at"?: string,"is_primary"?: boolean,"normalized_city"?: string,"postal_code"?: string,"settlement"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"product_delivery_points": {
                   Row: {
                     "created_at": string,"delivery_point_id": string,"product_id": string
@@ -582,26 +595,26 @@ isOneToOne: true
                   ]
                 },"products": {
                   Row: {
-                    "available_kg": number | null,"available_now": boolean | null,"category": string,"created_at": string | null,"delivery_mode": string,"description": string | null,"id": string,"image_urls": (string)[] | null,"is_domestic": boolean | null,"location": string,"min_order_kg": number | null,"name": string,"order_step": number,"origin": string,"pickup_options": (string)[] | null,"price_per_kg": number,"search_vector": unknown,"seller_id": string,"shelf_life_days": number,"unit_type": string
+                    "available_kg": number | null,"available_now": boolean | null,"category": string,"created_at": string | null,"delivery_mode": string,"description": string | null,"id": string,"image_urls": (string)[] | null,"is_domestic": boolean | null,"location": string,"min_order_kg": number | null,"name": string,"order_step": number,"origin": string,"pickup_options": (string)[] | null,"price_per_kg": number,"search_vector": unknown,"seller_id": string,"shelf_life_days": number,"unit_type": string,"variants": NonNullable<Json>
                   }
                   Insert: {
-                    "available_kg"?: number | null,"available_now"?: boolean | null,"category": string,"created_at"?: string | null,"delivery_mode"?: string,"description"?: string | null,"id"?: string,"image_urls"?: (string)[] | null,"is_domestic"?: boolean | null,"location": string,"min_order_kg"?: number | null,"name": string,"order_step"?: number,"origin"?: string,"pickup_options"?: (string)[] | null,"price_per_kg": number,"search_vector"?: unknown,"seller_id": string,"shelf_life_days"?: number,"unit_type"?: string
+                    "available_kg"?: number | null,"available_now"?: boolean | null,"category": string,"created_at"?: string | null,"delivery_mode"?: string,"description"?: string | null,"id"?: string,"image_urls"?: (string)[] | null,"is_domestic"?: boolean | null,"location": string,"min_order_kg"?: number | null,"name": string,"order_step"?: number,"origin"?: string,"pickup_options"?: (string)[] | null,"price_per_kg": number,"search_vector"?: unknown,"seller_id": string,"shelf_life_days"?: number,"unit_type"?: string,"variants"?: NonNullable<Json>
                   }
                   Update: {
-                    "available_kg"?: number | null,"available_now"?: boolean | null,"category"?: string,"created_at"?: string | null,"delivery_mode"?: string,"description"?: string | null,"id"?: string,"image_urls"?: (string)[] | null,"is_domestic"?: boolean | null,"location"?: string,"min_order_kg"?: number | null,"name"?: string,"order_step"?: number,"origin"?: string,"pickup_options"?: (string)[] | null,"price_per_kg"?: number,"search_vector"?: unknown,"seller_id"?: string,"shelf_life_days"?: number,"unit_type"?: string
+                    "available_kg"?: number | null,"available_now"?: boolean | null,"category"?: string,"created_at"?: string | null,"delivery_mode"?: string,"description"?: string | null,"id"?: string,"image_urls"?: (string)[] | null,"is_domestic"?: boolean | null,"location"?: string,"min_order_kg"?: number | null,"name"?: string,"order_step"?: number,"origin"?: string,"pickup_options"?: (string)[] | null,"price_per_kg"?: number,"search_vector"?: unknown,"seller_id"?: string,"shelf_life_days"?: number,"unit_type"?: string,"variants"?: NonNullable<Json>
                   }
                   Relationships: [
                     
                   ]
                 },"profiles": {
                   Row: {
-                    "address": string | null,"city": string | null,"created_at": string | null,"display_name": string | null,"email": string | null,"farm_gallery_urls": (string)[] | null,"farm_name": string | null,"id": string,"is_admin": boolean,"is_guest": boolean | null,"is_verified": boolean | null,"lat": number | null,"lng": number | null,"location": string | null,"phone": string | null,"phone_public": boolean,"postal_code": string | null,"profile_image_url": string | null,"role": string | null,"seller_quick_replies": (string)[] | null,"seller_story": string | null,"seller_tags": (string)[] | null,"updated_at": string | null
+                    "address": string | null,"bpg": string | null,"city": string | null,"created_at": string | null,"display_name": string | null,"email": string | null,"farm_gallery_urls": (string)[] | null,"farm_name": string | null,"id": string,"is_admin": boolean,"is_guest": boolean | null,"is_verified": boolean | null,"lat": number | null,"legal_liability_accepted_at": string | null,"legal_type": string | null,"lng": number | null,"location": string | null,"phone": string | null,"phone_public": boolean,"pib": string | null,"postal_code": string | null,"profile_image_url": string | null,"role": string | null,"seller_quick_replies": (string)[] | null,"seller_story": string | null,"seller_tags": (string)[] | null,"updated_at": string | null
                   }
                   Insert: {
-                    "address"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: string | null,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id": string,"is_admin"?: boolean,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"lng"?: number | null,"location"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null,"updated_at"?: string | null
+                    "address"?: string | null,"bpg"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: string | null,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id": string,"is_admin"?: boolean,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"legal_liability_accepted_at"?: string | null,"legal_type"?: string | null,"lng"?: number | null,"location"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"pib"?: string | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null,"updated_at"?: string | null
                   }
                   Update: {
-                    "address"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: string | null,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id"?: string,"is_admin"?: boolean,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"lng"?: number | null,"location"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null,"updated_at"?: string | null
+                    "address"?: string | null,"bpg"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: string | null,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id"?: string,"is_admin"?: boolean,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"legal_liability_accepted_at"?: string | null,"legal_type"?: string | null,"lng"?: number | null,"location"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"pib"?: string | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null,"updated_at"?: string | null
                   }
                   Relationships: [
                     
@@ -765,7 +778,7 @@ isOneToOne: false
                   ]
                 },"products_with_ratings": {
                   Row: {
-                    "available_kg": number | null,"available_now": boolean | null,"avg_rating": number | null,"category": string | null,"created_at": string | null,"delivery_mode": string | null,"description": string | null,"id": string | null,"image_urls": (string)[] | null,"is_domestic": boolean | null,"location": string | null,"min_order_kg": number | null,"name": string | null,"order_count": number | null,"order_step": number | null,"pickup_options": (string)[] | null,"price_per_kg": number | null,"review_count": number | null,"seller_id": string | null,"seller_is_verified": boolean | null,"unit_type": string | null
+                    "available_kg": number | null,"available_now": boolean | null,"avg_rating": number | null,"category": string | null,"created_at": string | null,"delivery_mode": string | null,"description": string | null,"id": string | null,"image_urls": (string)[] | null,"is_domestic": boolean | null,"location": string | null,"min_order_kg": number | null,"name": string | null,"order_count": number | null,"order_step": number | null,"pickup_options": (string)[] | null,"price_per_kg": number | null,"review_count": number | null,"seller_id": string | null,"seller_is_verified": boolean | null,"unit_type": string | null,"variants": Json | null
                   }
                   Relationships: [
                     
@@ -803,13 +816,13 @@ isOneToOne: false
                   ]
                 },"public_profiles": {
                   Row: {
-                    "address": string | null,"city": string | null,"created_at": string | null,"display_name": string | null,"email": string | null,"farm_gallery_urls": (string)[] | null,"farm_name": string | null,"id": string | null,"is_admin": boolean | null,"is_guest": boolean | null,"is_verified": boolean | null,"lat": number | null,"lng": number | null,"location": string | null,"phone": string | null,"phone_public": boolean | null,"postal_code": string | null,"profile_image_url": string | null,"role": string | null,"seller_quick_replies": (string)[] | null,"seller_story": string | null,"seller_tags": (string)[] | null
+                    "address": string | null,"bpg": string | null,"bpg_masked": string | null,"city": string | null,"created_at": string | null,"display_name": string | null,"email": string | null,"farm_gallery_urls": (string)[] | null,"farm_name": string | null,"has_registered_entity": boolean | null,"id": string | null,"is_admin": boolean | null,"is_guest": boolean | null,"is_verified": boolean | null,"lat": number | null,"legal_liability_accepted_at": string | null,"legal_type": string | null,"lng": number | null,"location": string | null,"phone": string | null,"phone_public": boolean | null,"pib": string | null,"postal_code": string | null,"profile_image_url": string | null,"role": string | null,"seller_quick_replies": (string)[] | null,"seller_story": string | null,"seller_tags": (string)[] | null
                   }
                   Insert: {
-                           "address"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: never,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id"?: string | null,"is_admin"?: boolean | null,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"lng"?: number | null,"location"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null
+                           "address"?: never,"bpg"?: never,"bpg_masked"?: never,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: never,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"has_registered_entity"?: never,"id"?: string | null,"is_admin"?: boolean | null,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"legal_liability_accepted_at"?: string | null,"legal_type"?: string | null,"lng"?: number | null,"location"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"pib"?: string | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null
                          }
                         Update: {
-                           "address"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: never,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id"?: string | null,"is_admin"?: boolean | null,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"lng"?: number | null,"location"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null
+                           "address"?: never,"bpg"?: never,"bpg_masked"?: never,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: never,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"has_registered_entity"?: never,"id"?: string | null,"is_admin"?: boolean | null,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"legal_liability_accepted_at"?: string | null,"legal_type"?: string | null,"lng"?: number | null,"location"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"pib"?: string | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null
                          }
                         Relationships: [
                     
@@ -830,7 +843,7 @@ isOneToOne: false
                   ]
                 },"v_classified_categories": {
                   Row: {
-                    "created_at": string | null,"icon_name": string | null,"id": string | null,"is_condition_applicable": boolean | null,"name": string | null,"parent_id": string | null,"sort_order": number | null
+                    "created_at": string | null,"icon_name": string | null,"id": string | null,"is_condition_applicable": boolean | null,"is_obsolete": boolean | null,"name": string | null,"parent_id": string | null,"sort_order": number | null
                   }
                   Relationships: [
                     
@@ -962,21 +975,27 @@ isOneToOne: false
 "get_favorite_sellers_with_profiles":
 { Args: { "p_user_id": string }; Returns: {
               "address": string | null,
+"bpg": string | null,
+"bpg_masked": string | null,
 "city": string | null,
 "created_at": string | null,
 "display_name": string | null,
 "email": string | null,
 "farm_gallery_urls": (string)[] | null,
 "farm_name": string | null,
+"has_registered_entity": boolean | null,
 "id": string | null,
 "is_admin": boolean | null,
 "is_guest": boolean | null,
 "is_verified": boolean | null,
 "lat": number | null,
+"legal_liability_accepted_at": string | null,
+"legal_type": string | null,
 "lng": number | null,
 "location": string | null,
 "phone": string | null,
 "phone_public": boolean | null,
+"pib": string | null,
 "postal_code": string | null,
 "profile_image_url": string | null,
 "role": string | null,
@@ -992,7 +1011,7 @@ isOneToOne: false
       } },
 "get_home_products":
 { Args: { "p_category"?: string,"p_limit"?: number,"p_region"?: string }; Returns: {
-              "available_kg": number,"available_now": boolean,"avg_rating": number,"category": string,"created_at": string,"description": string,"id": string,"image_urls": (string)[],"is_domestic": boolean,"location": string,"min_order_kg": number,"name": string,"order_count": number,"pickup_options": (string)[],"price_per_kg": number,"review_count": number,"seller_id": string
+              "available_kg": number,"available_now": boolean,"avg_rating": number,"category": string,"created_at": string,"delivery_mode": string,"description": string,"id": string,"image_urls": (string)[],"is_domestic": boolean,"location": string,"min_order_kg": number,"name": string,"order_count": number,"order_step": number,"pickup_options": (string)[],"price_per_kg": number,"review_count": number,"seller_id": string,"seller_is_verified": boolean,"unit_type": string,"variants": Json
             }[]
                            },
 "get_my_product_listing_autoflag_summary":
@@ -1004,6 +1023,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "category": string,"cross_category_duplicates": number,"has_issues": boolean,"issues": (string)[],"missing_image": boolean,"missing_origin": boolean,"missing_pickup": boolean,"missing_shelf_life": boolean,"name": string,"normalized_category": string,"normalized_name": string,"product_id": string,"same_category_duplicates": number,"seller_id": string
             }[]
+                           },
+"get_or_create_conversation":
+{ Args: { "p_ad_id"?: string,"p_buyer_id": string,"p_order_id"?: string,"p_product_id"?: string,"p_seller_id": string,"p_update_order_id"?: boolean }; Returns: string
                            },
 "get_product_order_count":
 { Args: { "p_product_id": string }; Returns: number
@@ -1043,7 +1065,8 @@ isOneToOne: false
 "review_count": number | null,
 "seller_id": string | null,
 "seller_is_verified": boolean | null,
-"unit_type": string | null
+"unit_type": string | null,
+"variants": Json | null
             }[]
                           SetofOptions: {
         from: "*"
@@ -1051,6 +1074,9 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"get_public_profile":
+{ Args: { "p_user_id": string }; Returns: Json
+                           },
 "get_related_seller_products":
 { Args: { "p_exclude_product_id": string,"p_limit"?: number,"p_seller_id": string }; Returns: {
               "available_kg": number | null,
@@ -1073,7 +1099,8 @@ isOneToOne: false
 "review_count": number | null,
 "seller_id": string | null,
 "seller_is_verified": boolean | null,
-"unit_type": string | null
+"unit_type": string | null,
+"variants": Json | null
             }[]
                           SetofOptions: {
         from: "*"
@@ -1130,6 +1157,9 @@ isOneToOne: false
 "is_seller_verified":
 { Args: { "p_seller_id": string }; Returns: boolean
                            },
+"is_valid_serbian_pib":
+{ Args: { "p_pib": string }; Returns: boolean
+                           },
 "mark_conversation_read":
 { Args: { "p_conversation_id": string,"p_limit"?: number }; Returns: number
                            },
@@ -1177,7 +1207,8 @@ isOneToOne: false
 "review_count": number | null,
 "seller_id": string | null,
 "seller_is_verified": boolean | null,
-"unit_type": string | null
+"unit_type": string | null,
+"variants": Json | null
             }[]
                           SetofOptions: {
         from: "*"
