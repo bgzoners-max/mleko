@@ -3,20 +3,37 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/app_state.dart';
 
+String? _sanitizeReturnTo(String? rawReturnTo) {
+  if (rawReturnTo == null || rawReturnTo.isEmpty) return null;
+  final String decoded;
+  try {
+    decoded = Uri.decodeComponent(rawReturnTo);
+  } on ArgumentError {
+    return null;
+  }
+  final trimmed = decoded.trim();
+  if (!trimmed.startsWith('/') ||
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('/\\')) {
+    return null;
+  }
+  final parsed = Uri.tryParse(trimmed);
+  if (parsed == null ||
+      parsed.hasScheme ||
+      parsed.hasAuthority ||
+      parsed.host.isNotEmpty ||
+      parsed.path == '/splash') {
+    return null;
+  }
+  return trimmed;
+}
+
 /// Centralna zaštita i preusmeravanje ruta (Guest flow, Auth guards, Admin, Email potvrda).
 String? routerRedirect(BuildContext context, GoRouterState state, AppState appState) {
   final loc = state.uri.path;
   if (loc == '/splash') {
     if (!appState.authChecked || appState.isLoading) return null;
-    final rawReturnTo = state.uri.queryParameters['returnTo'];
-    if (rawReturnTo != null && rawReturnTo.isNotEmpty) {
-      final decoded = Uri.decodeComponent(rawReturnTo);
-      final decodedUri = Uri.tryParse(decoded);
-      if (decodedUri != null && decodedUri.path != '/splash') {
-        return decoded;
-      }
-    }
-    return null;
+    return _sanitizeReturnTo(state.uri.queryParameters['returnTo']);
   }
   if (loc.startsWith('/onboarding')) return null;
   if (loc == '/verify-email') return null;

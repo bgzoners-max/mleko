@@ -221,5 +221,45 @@ void main() {
       );
       expect(otherRes, '/buyer/buyer-other');
     });
+
+    test('blocks open redirects and malformed percent-encoding on /splash returnTo', () {
+      appState
+        ..authChecked = true
+        ..isLoading = false;
+
+      final dangerousTargets = [
+        'https://evil.example/phish',
+        'http://evil.example',
+        '//evil.example/path',
+        '/\\evil.example/path',
+        'javascript:alert(1)',
+        'profile',
+        '%ZZ',
+        '%2F%2Fevil.example',
+        '/splash',
+      ];
+
+      for (final raw in dangerousTargets) {
+        final uri = '/splash?returnTo=${Uri.encodeQueryComponent(raw)}';
+        final res = routerRedirect(context, _FakeGoRouterState(uri), appState);
+        expect(res, isNull, reason: 'returnTo="$raw" must be rejected');
+      }
+
+      // Raw invalid percent sequence directly in URI without extra encoding
+      final rawMalformed = routerRedirect(
+        context,
+        _FakeGoRouterState('/splash?returnTo=%ZZ'),
+        appState,
+      );
+      expect(rawMalformed, isNull);
+
+      // Valid internal path with query parameters still works
+      final safe = routerRedirect(
+        context,
+        _FakeGoRouterState('/splash?returnTo=${Uri.encodeComponent('/search?q=sir&city=Nis')}'),
+        appState,
+      );
+      expect(safe, '/search?q=sir&city=Nis');
+    });
   });
 }
