@@ -57,7 +57,7 @@ jobs:
             code=$(curl -sL -o /tmp/health.json -w "%{http_code}" https://www.domacimarket.rs/health.json || echo 000)
             if [ "$code" = "200" ]; then
               cat /tmp/health.json
-              if jq -e --arg sha "${{ github.sha }}" '.status == "ok" and (.commit != "unknown") and ($sha | startswith(.commit))' /tmp/health.json > /dev/null; then
+              if jq -e --arg sha "${{ github.sha }}" '.commit as $c | .status == "ok" and ($c | type == "string") and ($c != "unknown") and (($c | length) >= 7) and ($sha | startswith($c))' /tmp/health.json > /dev/null; then
                 echo "Health OK — deployment (${GITHUB_SHA::7}) je live."
                 exit 0
               fi
