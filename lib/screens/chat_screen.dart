@@ -11,7 +11,6 @@ import '../models/message_reaction_model.dart';
 import '../models/order_model.dart';
 import '../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
-import '../utils/image_precache_utils.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/chat/chat_date_separator.dart';
@@ -126,7 +125,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _refreshController.close();
-    AppImageCache.clearMemoryCache();
     super.dispose();
   }
 

@@ -69,6 +69,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
       _searchController.text = widget.initialQuery!;
       _lastSearchText = widget.initialQuery!;
+      _debouncedQuery = widget.initialQuery!.trim().toLowerCase();
     }
     _historyFuture = _searchHistoryService.getHistory();
     _scrollController.addListener(_onScroll);
@@ -78,8 +79,19 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void didUpdateWidget(SearchScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialCategory != widget.initialCategory) {
+    final categoryChanged = oldWidget.initialCategory != widget.initialCategory;
+    final queryChanged = oldWidget.initialQuery != widget.initialQuery;
+    if (categoryChanged) {
       _category = widget.initialCategory;
+    }
+    if (queryChanged) {
+      final nextQuery = widget.initialQuery ?? '';
+      _debounceTimer?.cancel();
+      _searchController.text = nextQuery;
+      _lastSearchText = nextQuery;
+      _debouncedQuery = nextQuery.trim().toLowerCase();
+    }
+    if (categoryChanged || queryChanged) {
       _loadFirstPage();
     }
   }

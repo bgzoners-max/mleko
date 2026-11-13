@@ -15,6 +15,8 @@ class CategoriesProvider extends ChangeNotifier {
   bool _loading = false;
   bool _loaded = false;
   bool _isDisposed = false;
+  int _loadGeneration = 0;
+  Future<void>? _inFlightLoad;
   AppError? _error;
 
   SupabaseService get service => _service;
@@ -74,34 +76,47 @@ class CategoriesProvider extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    if (_loading || _loaded) return;
+    if (_isDisposed || _loaded) return;
+    if (_inFlightLoad != null) {
+      return _inFlightLoad;
+    }
+    final generation = _loadGeneration;
     _loading = true;
     _error = null;
     // Defer to avoid calling notifyListeners during a build phase
     // (e.g. when load() is triggered from didChangeDependencies).
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (!_isDisposed) {
+      if (!_isDisposed && generation == _loadGeneration) {
         notifyListeners();
       }
     });
-    try {
-      final list = await _service.getAllCategories();
-      _groups = _buildGroups(list);
-      _categories = list;
-      _loaded = true;
-    } catch (e, st) {
-      _error = AppError.from(
-        e,
-        userMessage: 'Greška pri učitavanju kategorija.',
-        stackTrace: st,
-      );
-      LoggerService.error('Failed to load categories', e, stackTrace: st);
-    } finally {
-      _loading = false;
-      if (!_isDisposed) {
-        notifyListeners();
+    final future = () async {
+      try {
+        final list = await _service.getAllCategories();
+        if (_isDisposed || generation != _loadGeneration) return;
+        _groups = _buildGroups(list);
+        _categories = list;
+        _loaded = true;
+      } catch (e, st) {
+        if (_isDisposed || generation != _loadGeneration) return;
+        _error = AppError.from(
+          e,
+          userMessage: 'Greška pri učitavanju kategorija.',
+          stackTrace: st,
+        );
+        LoggerService.error('Failed to load categories', e, stackTrace: st);
+      } finally {
+        if (generation == _loadGeneration) {
+          _loading = false;
+          _inFlightLoad = null;
+          if (!_isDisposed) {
+            notifyListeners();
+          }
+        }
       }
-    }
+    }();
+    _inFlightLoad = future;
+    return future;
   }
 
   @override
@@ -160,6 +175,10 @@ class CategoriesProvider extends ChangeNotifier {
 
   /// Force refresh – korisno posle dodavanja nove kategorije (admin)
   Future<void> refresh() async {
+    if (_isDisposed) return;
+    _loadGeneration++;
+    _inFlightLoad = null;
+    _loading = false;
     _loaded = false;
     _categories = null;
     _groups = null;

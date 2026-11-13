@@ -1,4 +1,10 @@
-import { buildHtml, isBot } from "./api/_shared/preview-utils.js";
+import {
+  buildHtml,
+  isBot,
+  matchMiddlewarePreviewRoute,
+  resolveApexCanonicalRedirectUrl,
+  resolveLegacyRouteRedirect,
+} from "./api/_shared/preview-utils.js";
 import { handleClassifiedPreview } from "./api/classified-preview.js";
 import { handleProductPreview } from "./api/product-preview.js";
 import { handleSitemap } from "./api/sitemap.js";
@@ -15,22 +21,17 @@ export const onRequest: PagesFunction = async (context) => {
   const pathname = url.pathname;
   const userAgent = request.headers.get("user-agent");
 
-  // 0. Apex na WWW 301 Permanent Redirect (Google SEO Canonical Rule):
-  //    Sve zahteve upućene na apex domen `domacimarket.rs` preusmeravamo na `www.domacimarket.rs`
-  //    sa HTTP 301 (Permanent Redirect). Ovo garantuje da Googlebot i posetioci uvek koriste
-  //    isključivo primarni kanonski domen, konsoliduje SEO autoritet (PageRank) i eliminiše
-  //    duple stranice u Google Search Console ("Alternate page with proper canonical tag").
-  if (url.hostname === "domacimarket.rs") {
-    url.hostname = "www.domacimarket.rs";
-    if (url.pathname === "/shop" || url.pathname === "/shop/") {
-      url.pathname = "/";
-    }
-    return Response.redirect(url.toString(), 301);
+  // 0. Apex na WWW 301 Permanent Redirect (Google SEO Canonical Rule, uz izuzetak
+  //    za /.well-known/assetlinks.json kako bi Android autoVerify radio na oba hosta).
+  const apexRedirectTarget = resolveApexCanonicalRedirectUrl(url);
+  if (apexRedirectTarget) {
+    return Response.redirect(apexRedirectTarget, 301);
   }
 
-  // 0a. Stari ili nepostojeći /shop linkovi na www -> 301 na početnu stranu
-  if (pathname === "/shop" || pathname === "/shop/") {
-    return Response.redirect(new URL("/", url.origin).toString(), 301);
+  // 0a. Zastarele / alternativne rute (/shop, /terms) -> 301 ka kanonskim rutama
+  const legacyRedirectTarget = resolveLegacyRouteRedirect(url);
+  if (legacyRedirectTarget) {
+    return Response.redirect(legacyRedirectTarget, 301);
   }
 
   // 0b. XML sitemap za sve posetioce (botove i ljude).
@@ -54,40 +55,21 @@ export const onRequest: PagesFunction = async (context) => {
     });
   }
 
-  // 1. Kratki linkovi: /ad/:id
-  const adShortMatch = pathname.match(/^\/ad\/([^/]+)$/);
-  if (adShortMatch) {
-    const id = decodeURIComponent(adShortMatch[1]);
-    const previewUrl = new URL(`/api/classified-preview?id=${encodeURIComponent(id)}`, url.origin);
+  // 1-4. Kratki linkovi (/ad/:id, /p/:id) i bot preview za /classifieds/ad/:id, /product/:id
+  const previewMatch = matchMiddlewarePreviewRoute(pathname, isBot(userAgent));
+  if (previewMatch) {
+    const endpoint =
+      previewMatch.kind === "classified"
+        ? "/api/classified-preview"
+        : "/api/product-preview";
+    const previewUrl = new URL(
+      `${endpoint}?id=${encodeURIComponent(previewMatch.id)}`,
+      url.origin,
+    );
     const subReq = new Request(previewUrl.toString(), request);
-    return handleClassifiedPreview(subReq, env);
-  }
-
-  // 2. Kratki linkovi: /p/:id
-  const prodShortMatch = pathname.match(/^\/p\/([^/]+)$/);
-  if (prodShortMatch) {
-    const id = decodeURIComponent(prodShortMatch[1]);
-    const previewUrl = new URL(`/api/product-preview?id=${encodeURIComponent(id)}`, url.origin);
-    const subReq = new Request(previewUrl.toString(), request);
-    return handleProductPreview(subReq, env);
-  }
-
-  // 3. Bot detekcija za puni link oglasa: /classifieds/ad/:id
-  const classifiedMatch = pathname.match(/^\/classifieds\/ad\/([^/]+)$/);
-  if (classifiedMatch && isBot(userAgent)) {
-    const id = decodeURIComponent(classifiedMatch[1]);
-    const previewUrl = new URL(`/api/classified-preview?id=${encodeURIComponent(id)}`, url.origin);
-    const subReq = new Request(previewUrl.toString(), request);
-    return handleClassifiedPreview(subReq, env);
-  }
-
-  // 4. Bot detekcija za puni link proizvoda: /product/:id
-  const productMatch = pathname.match(/^\/product\/([^/]+)$/);
-  if (productMatch && isBot(userAgent)) {
-    const id = decodeURIComponent(productMatch[1]);
-    const previewUrl = new URL(`/api/product-preview?id=${encodeURIComponent(id)}`, url.origin);
-    const subReq = new Request(previewUrl.toString(), request);
-    return handleProductPreview(subReq, env);
+    return previewMatch.kind === "classified"
+      ? handleClassifiedPreview(subReq, env)
+      : handleProductPreview(subReq, env);
   }
 
   // 5. Server-rendered SEO HTML za ključne javne rute (/classifieds, /categories

@@ -57,6 +57,7 @@ mixin ProductManagementMixin {
         product.selectedDeliveryPointIds,
       );
       unawaited(ProductCacheService().invalidateSearchCache());
+      unawaited(ProductCacheService().invalidateProduct(productId, product.sellerId));
       return productId;
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
@@ -80,23 +81,27 @@ mixin ProductManagementMixin {
     }
   }
 
-  Future<void> deleteProduct(String id) async {
+  Future<void> deleteProduct(String id, {String? sellerId}) async {
     try {
       await client.from('products').delete().eq('id', id);
       unawaited(ProductCacheService().invalidateSearchCache());
-      unawaited(ProductCacheService().invalidateProduct(id));
+      unawaited(ProductCacheService().invalidateProduct(id, sellerId));
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }
   }
 
-  Future<void> updateAvailableNow(String productId, bool availableNow) async {
+  Future<void> updateAvailableNow(
+    String productId,
+    bool availableNow, {
+    String? sellerId,
+  }) async {
     try {
       await client
           .from('products')
           .update({'available_now': availableNow}).eq('id', productId);
       unawaited(ProductCacheService().invalidateSearchCache());
-      unawaited(ProductCacheService().invalidateProduct(productId));
+      unawaited(ProductCacheService().invalidateProduct(productId, sellerId));
     } catch (e, st) {
       throw AppError.from(e, stackTrace: st);
     }

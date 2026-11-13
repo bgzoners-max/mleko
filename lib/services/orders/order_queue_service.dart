@@ -14,6 +14,8 @@ class PendingOrder {
   final String sellerId;
   final String productId;
   final String productName;
+  final String? variantId;
+  final String? variantLabel;
   final double quantityKg;
   final String unitType;
   final String? note;
@@ -46,6 +48,8 @@ class PendingOrder {
     required this.sellerId,
     required this.productId,
     required this.productName,
+    this.variantId,
+    this.variantLabel,
     required this.quantityKg,
     required this.unitType,
     this.note,
@@ -101,6 +105,8 @@ class PendingOrder {
       sellerId: sellerId,
       productId: productId,
       productName: productName,
+      variantId: variantId,
+      variantLabel: variantLabel,
       quantityKg: quantityKg,
       unitType: unitType,
       note: note,
@@ -135,6 +141,8 @@ class PendingOrder {
         'seller_id': sellerId,
         'product_id': productId,
         'product_name': productName,
+        if (variantId != null) 'variant_id': variantId,
+        if (variantLabel != null) 'variant_label': variantLabel,
         'quantity_kg': quantityKg,
         'unit_type': unitType,
         'note': note,
@@ -168,6 +176,8 @@ class PendingOrder {
         sellerId: json['seller_id'] as String,
         productId: json['product_id'] as String,
         productName: json['product_name'] as String,
+        variantId: json['variant_id'] as String?,
+        variantLabel: json['variant_label'] as String?,
         quantityKg: (json['quantity_kg'] as num).toDouble(),
         unitType: json['unit_type'] as String,
         note: json['note'] as String?,
@@ -239,20 +249,21 @@ class OrderQueueService {
     return result;
   }
 
-  /// Preuzmi sve pending porudžbine (read-only, nema race condition)
-  Future<List<PendingOrder>> getPendingOrders(
-      {bool onlyUnsynced = false}) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final orders = await _loadOrders(prefs);
-      if (onlyUnsynced) {
-        return orders.where((o) => o.isPending).toList();
+  /// Preuzmi sve pending porudžbine (serijalizovano sa upisima)
+  Future<List<PendingOrder>> getPendingOrders({bool onlyUnsynced = false}) {
+    return _serialized(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final orders = await _loadOrders(prefs, reloadLegacyPrefs: !kIsWeb);
+        if (onlyUnsynced) {
+          return orders.where((o) => o.isPending).toList();
+        }
+        return orders;
+      } catch (e, st) {
+        LoggerService.error('Failed to load pending orders', e, stackTrace: st);
+        return [];
       }
-      return orders;
-    } catch (e, st) {
-      LoggerService.error('Failed to load pending orders', e, stackTrace: st);
-      return [];
-    }
+    });
   }
 
   /// Preuzmi broj pending porudžbina
@@ -402,13 +413,31 @@ class OrderQueueService {
     });
   }
 
-  Future<List<PendingOrder>> _loadOrders(SharedPreferences prefs) async {
-    final json = await _readStoredJson(prefs);
+  Future<List<PendingOrder>> _loadOrders(
+    SharedPreferences prefs, {
+    bool reloadLegacyPrefs = false,
+  }) async {
+    final json =
+        await _readStoredJson(prefs, reloadLegacyPrefs: reloadLegacyPrefs);
     if (json == null || json.isEmpty) return [];
-    final list = jsonDecode(json) as List;
-    return list
-        .map((e) => PendingOrder.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final decoded = jsonDecode(json);
+    if (decoded is! List) return [];
+    final result = <PendingOrder>[];
+    for (final entry in decoded) {
+      if (entry is! Map) {
+        LoggerService.warning('Skipping corrupt non-map entry in pending orders queue');
+        continue;
+      }
+      try {
+        result.add(PendingOrder.fromJson(Map<String, dynamic>.from(entry)));
+      } catch (e, st) {
+        LoggerService.warning(
+          'Skipping corrupt entry in pending orders queue: $e',
+          extra: {'stackTrace': st.toString()},
+        );
+      }
+    }
+    return result;
   }
 
   Future<void> _saveOrders(
@@ -417,7 +446,10 @@ class OrderQueueService {
     await _writeStoredJson(prefs, json);
   }
 
-  Future<String?> _readStoredJson(SharedPreferences prefs) async {
+  Future<String?> _readStoredJson(
+    SharedPreferences prefs, {
+    bool reloadLegacyPrefs = false,
+  }) async {
     if (kIsWeb) {
       return prefs.getString(_storageKey);
     }
@@ -434,6 +466,9 @@ class OrderQueueService {
       );
     }
 
+    if (reloadLegacyPrefs) {
+      await prefs.reload();
+    }
     final legacyValue = prefs.getString(_storageKey);
     if (legacyValue == null || legacyValue.isEmpty) {
       return legacyValue;

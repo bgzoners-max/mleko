@@ -1,5 +1,6 @@
 import { createClient, type EmailOtpType } from "@supabase/supabase-js";
 import { resolvePublicBaseUrl } from "./_shared/preview-utils.js";
+import { buildAuthConfirmRedirectUrl } from "./_shared/auth-confirm-utils.js";
 
 declare const process: any;
 
@@ -68,18 +69,12 @@ export async function handleAuthConfirm(request: Request, env?: any): Promise<Re
       });
     }
 
-    const cleanNext = next.startsWith("/") ? next : `/${next}`;
-    let targetUrl = `${publicBaseUrl}/#${cleanNext}`;
-    if (data?.session) {
-      const params = new URLSearchParams({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_in: String(data.session.expires_in),
-        token_type: "bearer",
-        type: type,
-      });
-      targetUrl = `${publicBaseUrl}/#${cleanNext}#${params.toString()}`;
-    }
+    const targetUrl = buildAuthConfirmRedirectUrl(
+      publicBaseUrl,
+      next,
+      data?.session ?? null,
+      type
+    );
 
     return new Response(null, {
       status: 302,

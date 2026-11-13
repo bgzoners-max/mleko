@@ -100,6 +100,7 @@ void main() {
       'Done: $reviewCount file(s) flagged — see docs/SECURITY_DEFINER_RPC.md '
       'and update tool/scan_security_definer_migrations.dart allowlist if intentional.',
     );
+    exitCode = 1;
   }
 }
 

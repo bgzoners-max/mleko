@@ -340,6 +340,12 @@ class CartProvider extends ChangeNotifier {
   @override
   void dispose() {
     _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = null;
+    final completer = _saveCompleter;
+    _saveCompleter = null;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
     super.dispose();
   }
 
@@ -581,16 +587,56 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> remove(String productId) async {
-    final p = await _productsService.getProduct(productId);
-    if (p == null) return;
-    await removeFromSeller(sellerId: p.sellerId, productId: p.id);
+    await _initFuture;
+    final baseProductId = ProductModel.extractProductId(productId);
+    final p = await _productsService.getProduct(baseProductId);
+    final sellerId =
+        p?.sellerId ?? _productIndex[productId] ?? _productIndex[baseProductId];
+    if (sellerId == null) return;
+
+    final sellerDraft = _sellerItems[sellerId];
+    if (sellerDraft == null) return;
+
+    if (productId.contains(ProductModel.cartKeySeparator) ||
+        sellerDraft.containsKey(productId)) {
+      await removeFromSeller(sellerId: sellerId, productId: productId);
+      return;
+    }
+
+    // Ukloni sve varijante datog proizvoda ako je prosleđen osnovni productId
+    final keysToRemove = sellerDraft.keys
+        .where((k) => ProductModel.extractProductId(k) == baseProductId)
+        .toList(growable: false);
+    if (keysToRemove.isEmpty) return;
+    for (final k in keysToRemove) {
+      sellerDraft.remove(k);
+    }
+    if (sellerDraft.isEmpty) _sellerItems.remove(sellerId);
+    _invalidateCache(sellerId);
+    notifyListeners();
+    _scheduleSave();
   }
 
   bool contains(String productId) => _productIndex.containsKey(productId);
 
   double? getQuantity(String productId) {
     final sellerId = _productIndex[productId];
-    return sellerId == null ? null : _sellerItems[sellerId]?[productId];
+    if (sellerId == null) return null;
+    final sellerDraft = _sellerItems[sellerId];
+    if (sellerDraft == null) return null;
+    final direct = sellerDraft[productId];
+    if (direct != null) return direct;
+    if (productId.contains(ProductModel.cartKeySeparator)) return null;
+
+    double total = 0;
+    var found = false;
+    for (final entry in sellerDraft.entries) {
+      if (ProductModel.extractProductId(entry.key) == productId) {
+        total += entry.value;
+        found = true;
+      }
+    }
+    return found ? total : null;
   }
 
   Future<List<({ProductModel product, double quantity})>> getProductsBySeller(
@@ -604,21 +650,26 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null || sellerDraft.isEmpty) return [];
     return _bySellerCache.putIfAbsent(sellerId, () async {
-      // Batch load umesto N+1 petlje (izvlači osnovne UUID-jeve proizvoda)
-      final baseProductIds = sellerDraft.keys
-          .map(ProductModel.extractProductId)
-          .toSet()
-          .toList();
-      final products = await _productsService.getProductsByIds(baseProductIds);
-      final result = <({ProductModel product, double quantity})>[];
-      for (final e in sellerDraft.entries) {
-        final baseId = ProductModel.extractProductId(e.key);
-        final p = products[baseId];
-        if (p != null) {
-          result.add((product: p.resolveForCartKey(e.key), quantity: e.value));
+      try {
+        // Batch load umesto N+1 petlje (izvlači osnovne UUID-jeve proizvoda)
+        final baseProductIds = sellerDraft.keys
+            .map(ProductModel.extractProductId)
+            .toSet()
+            .toList();
+        final products = await _productsService.getProductsByIds(baseProductIds);
+        final result = <({ProductModel product, double quantity})>[];
+        for (final e in sellerDraft.entries) {
+          final baseId = ProductModel.extractProductId(e.key);
+          final p = products[baseId];
+          if (p != null) {
+            result.add((product: p.resolveForCartKey(e.key), quantity: e.value));
+          }
         }
+        return result;
+      } catch (_) {
+        unawaited(_bySellerCache.remove(sellerId));
+        rethrow;
       }
-      return result;
     });
   }
 
@@ -626,13 +677,19 @@ class CartProvider extends ChangeNotifier {
       getProductsGroupedBySeller() async {
     await _initFuture;
     return _groupedCache ??= () async {
-      final grouped =
-          <String, List<({ProductModel product, double quantity})>>{};
-      for (final sellerId in _sellerItems.keys) {
-        final sellerProducts = await getProductsBySeller(sellerId);
-        if (sellerProducts.isNotEmpty) grouped[sellerId] = sellerProducts;
+      try {
+        final grouped =
+            <String, List<({ProductModel product, double quantity})>>{};
+        final sellerIds = _sellerItems.keys.toList(growable: false);
+        for (final sellerId in sellerIds) {
+          final sellerProducts = await getProductsBySeller(sellerId);
+          if (sellerProducts.isNotEmpty) grouped[sellerId] = sellerProducts;
+        }
+        return grouped;
+      } catch (_) {
+        _groupedCache = null;
+        rethrow;
       }
-      return grouped;
     }();
   }
 }

@@ -50,13 +50,21 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   bool _isLoaded = false;
+  bool _isDisposed = false;
+  int _loadGeneration = 0;
   Future<void>? _loadFuture;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   bool get isLoaded => _isLoaded;
 
   AppSettingsProvider({bool autoload = true}) {
     if (autoload) {
-      _loadFuture = _load();
+      _loadFuture = _load(_loadGeneration);
     }
   }
 
@@ -65,16 +73,26 @@ class AppSettingsProvider extends ChangeNotifier {
   /// Ako prethodni `_load()` neuspe, dozvoljava ponovni pokušaj pri sledećem
   /// pozivu (ne vraća keširani neuspešan future).
   Future<void> ensureLoaded() async {
-    _loadFuture ??= _load();
+    if (_isDisposed) return;
+    _loadFuture ??= _load(_loadGeneration);
     return _loadFuture;
   }
 
   /// Ponovo pokreće učitavanje postavki (npr. nakon greške ili promene okruženja).
   /// Resetuje interno stanje i pokušava učitati iz SharedPreferences ponovo.
   Future<void> reload() async {
+    if (_isDisposed) return;
+    _loadGeneration++;
     _isLoaded = false;
     _loadFuture = null;
     await ensureLoaded();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _loadGeneration++;
+    super.dispose();
   }
 
   /// Ključevi koji ukazuju da je aplikacija već korišćena pre ovog bootstrap-a
@@ -109,12 +127,14 @@ class AppSettingsProvider extends ChangeNotifier {
     await prefs.setInt(_keyMarketMode, _marketModeToInt(_marketMode));
   }
 
-  Future<void> _load() async {
+  Future<void> _load(int generation) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (_isDisposed || generation != _loadGeneration) return;
       if (prefs.containsKey('mleko_market_mode')) {
         await prefs.remove('mleko_market_mode');
       }
+      if (_isDisposed || generation != _loadGeneration) return;
       final bootstrapDone =
           prefs.getBool(_keyInstallDefaultsBootstrap) ?? false;
 
@@ -135,13 +155,16 @@ class AppSettingsProvider extends ChangeNotifier {
         _readFromPrefs(prefs, defaultTheme: 1, defaultFont: 1.0, defaultCompact: true);
       }
 
+      if (_isDisposed || generation != _loadGeneration) return;
       // Finalna sinhronizacija internog stanja sa dozvoljenim granicama
       _fontScale = fontScale;
     } catch (_) {
       // keep field defaults
     } finally {
-      _isLoaded = true;
-      notifyListeners();
+      if (!_isDisposed && generation == _loadGeneration) {
+        _isLoaded = true;
+        _safeNotifyListeners();
+      }
     }
   }
 
@@ -178,9 +201,9 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setThemeMode(ThemeMode value) async {
-    if (_themeMode == value) return;
+    if (_isDisposed || _themeMode == value) return;
     _themeMode = value;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyThemeMode, _themeModeToInt(value));
@@ -198,9 +221,9 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setAnimationsEnabled(bool value) async {
-    if (_animationsEnabled == value) return;
+    if (_isDisposed || _animationsEnabled == value) return;
     _animationsEnabled = value;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyAnimationsEnabled, value);
@@ -212,9 +235,9 @@ class AppSettingsProvider extends ChangeNotifier {
 
   Future<void> setFontScale(double value) async {
     final clamped = value.clamp(fontScaleMin, fontScaleMax);
-    if (_fontScale == clamped) return;
+    if (_isDisposed || _fontScale == clamped) return;
     _fontScale = clamped;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_keyFontScale, clamped);
@@ -225,9 +248,9 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setCompactMode(bool value) async {
-    if (_compactMode == value) return;
+    if (_isDisposed || _compactMode == value) return;
     _compactMode = value;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyCompactMode, value);
@@ -238,9 +261,9 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setMarketMode(MarketMode value) async {
-    if (_marketMode == value) return;
+    if (_isDisposed || _marketMode == value) return;
     _marketMode = value;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_keyMarketMode, _marketModeToInt(value));
@@ -257,9 +280,9 @@ class AppSettingsProvider extends ChangeNotifier {
       m == MarketMode.classifieds ? 1 : 0;
 
   Future<void> dismissBetaNotice() async {
-    if (_betaNoticeDismissed) return;
+    if (_isDisposed || _betaNoticeDismissed) return;
     _betaNoticeDismissed = true;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_keyBetaNoticeDismissed, true);
@@ -270,9 +293,9 @@ class AppSettingsProvider extends ChangeNotifier {
   }
 
   Future<void> resetBetaNotice() async {
-    if (!_betaNoticeDismissed) return;
+    if (_isDisposed || !_betaNoticeDismissed) return;
     _betaNoticeDismissed = false;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keyBetaNoticeDismissed);

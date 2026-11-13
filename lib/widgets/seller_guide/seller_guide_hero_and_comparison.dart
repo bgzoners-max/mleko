@@ -145,7 +145,6 @@ class SellerGuideHeroAndComparisonSection extends StatelessWidget {
                   final wide = constraints.maxWidth > 560;
                   final cards = [
                     _TwoSidesCard(
-                      context: context,
                       cardBg: cardBg,
                       accentColor: const Color(0xFF245938),
                       badgeIcon: Icons.storefront_rounded,
@@ -162,7 +161,6 @@ class SellerGuideHeroAndComparisonSection extends StatelessWidget {
                       ctaRoute: '/categories',
                     ),
                     _TwoSidesCard(
-                      context: context,
                       cardBg: cardBg,
                       accentColor: const Color(0xFFD97724),
                       badgeIcon: Icons.campaign_rounded,
@@ -271,7 +269,6 @@ class _GoldenRuleCallout extends StatelessWidget {
 
 /// Kartica „Pijaca" ili „Mali oglasi" u sekciji poređenja.
 class _TwoSidesCard extends StatelessWidget {
-  final BuildContext context;
   final Color cardBg;
   final Color accentColor;
   final IconData badgeIcon;
@@ -282,7 +279,6 @@ class _TwoSidesCard extends StatelessWidget {
   final String ctaRoute;
 
   const _TwoSidesCard({
-    required this.context,
     required this.cardBg,
     required this.accentColor,
     required this.badgeIcon,
@@ -294,7 +290,7 @@ class _TwoSidesCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext buildContext) {
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(

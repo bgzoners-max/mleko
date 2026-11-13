@@ -61,7 +61,7 @@ class StorageService {
         bytes[8] == 0x57 &&
         bytes[9] == 0x45 &&
         bytes[10] == 0x42 &&
-        bytes[11] == 0x40) {
+        bytes[11] == 0x50) {
       return (ext: 'webp', mimeType: 'image/webp');
     }
     return (ext: 'jpg', mimeType: 'image/jpeg');

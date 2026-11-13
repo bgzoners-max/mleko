@@ -170,9 +170,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     context.read<AppSettingsProvider>().setMarketMode(m),
               ),
             Expanded(
-              child: context.select<AppSettingsProvider, MarketMode>(
-                          (s) => s.marketMode) ==
-                      MarketMode.classifieds
+              child: !isDesktopWeb &&
+                      context.select<AppSettingsProvider, MarketMode>(
+                              (s) => s.marketMode) ==
+                          MarketMode.classifieds
                   ? const ClassifiedsFeedScreen(isEmbedded: true)
                   : ColoredBox(
                       color: AmazonColors.getCanvas(context),
@@ -201,7 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                         8,
                                       ),
                                       child: DesktopHeroBanner(
-                                        onExploreFood: () {},
+                                        onExploreFood: () =>
+                                            context.push('/search'),
                                         onExploreClassifieds: () {
                                           context
                                               .read<AppSettingsProvider>()

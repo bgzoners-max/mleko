@@ -60,7 +60,11 @@ class SellerProductCard extends StatelessWidget {
                       value: product.availableNow,
                       onChanged: (v) async {
                         try {
-                          await productsService.updateAvailableNow(product.id, v);
+                          await productsService.updateAvailableNow(
+                            product.id,
+                            v,
+                            sellerId: product.sellerId,
+                          );
                           onRefresh();
                         } catch (e) {
                           if (context.mounted) {
@@ -123,7 +127,10 @@ class SellerProductCard extends StatelessWidget {
                       : () async {
                           setDialogState(() => isDeleting = true);
                           try {
-                            await productsService.deleteProduct(product.id);
+                            await productsService.deleteProduct(
+                              product.id,
+                              sellerId: product.sellerId,
+                            );
                             if (ctx.mounted) {
                               Navigator.pop(ctx, true);
                             }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/app_error.dart';
 import 'package:mleko/models/category.dart';
@@ -95,6 +96,55 @@ void main() {
       expect(provider.isLoaded, isTrue);
       expect(provider.categories?.length, equals(1));
     });
+
+    test('refresh while load is in-flight supersedes stale result', () async {
+      final slowCompleter = Completer<List<Category>>();
+      var calls = 0;
+      final svc = _ControllableSupabaseService(() {
+        calls++;
+        if (calls == 1) return slowCompleter.future;
+        return Future.value([
+          const Category(
+            id: 'cat-new',
+            name: 'Novi sir',
+            slug: 'novi-sir',
+            section: 'hrana',
+            icon: 'restaurant',
+            order: 1,
+          ),
+        ]);
+      });
+
+      final provider = CategoriesProvider(service: svc);
+      final firstLoad = provider.load();
+      await provider.refresh();
+
+      slowCompleter.complete([
+        const Category(
+          id: 'cat-old',
+          name: 'Stari sir',
+          slug: 'stari-sir',
+          section: 'hrana',
+          icon: 'restaurant',
+          order: 1,
+        ),
+      ]);
+      await firstLoad;
+
+      expect(calls, equals(2));
+      expect(provider.categories?.single.id, equals('cat-new'));
+    });
   });
+}
+
+class _ControllableSupabaseService implements SupabaseService {
+  final Future<List<Category>> Function() handler;
+  _ControllableSupabaseService(this.handler);
+
+  @override
+  Future<List<Category>> getAllCategories() => handler();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

@@ -233,6 +233,9 @@ void main() {
 
       // Debounce od 300ms -> novi upit sa pretrazivanim pojmom
       await tester.pump(const Duration(milliseconds: 300));
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
       for (var i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
@@ -257,6 +260,27 @@ void main() {
 
       expect(find.text('Ništa nismo pronašli'), findsOneWidget);
       expect(find.text('Pogledaj sve proizvode'), findsOneWidget);
+    });
+
+    testWidgets('initialQuery is forwarded immediately to the products service',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(createTestApp(
+        screen: const SearchScreen(initialQuery: '  bagremov med  '),
+      ));
+      await tester.pump();
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(mockProductsService.calls, isNotEmpty);
+      expect(mockProductsService.calls.first.searchQuery, equals('bagremov med'));
     });
 
   });

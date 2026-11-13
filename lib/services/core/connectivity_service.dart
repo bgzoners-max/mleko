@@ -14,6 +14,13 @@ class ConnectivityService extends ChangeNotifier {
 
   bool _isOnline;
   bool _isCheckingReachability = false;
+  bool _isDisposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   bool get isOnline => _isOnline;
   bool get isOffline => !_isOnline;
@@ -31,7 +38,9 @@ class ConnectivityService extends ChangeNotifier {
   Future<void> _initConnectivity() async {
     try {
       final result = await _connectivity.checkConnectivity();
+      if (_isDisposed) return;
       await _updateConnectivity(result);
+      if (_isDisposed) return;
 
       // Listen to connectivity changes
       _subscription = _connectivity.onConnectivityChanged.listen(
@@ -108,13 +117,14 @@ class ConnectivityService extends ChangeNotifier {
   }
 
   void _setOnlineState(bool newState, {String? reason}) {
+    if (_isDisposed) return;
     if (_isOnline != newState) {
       _isOnline = newState;
       LoggerService.info(
         'Connectivity changed: ${_isOnline ? "ONLINE" : "OFFLINE"}'
         '${reason != null ? " ($reason)" : ""}',
       );
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
@@ -134,7 +144,9 @@ class ConnectivityService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _subscription?.cancel();
+    _subscription = null;
     super.dispose();
   }
 }

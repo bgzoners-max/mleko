@@ -153,6 +153,10 @@ $$;
 -- ----------------------------------------------------------------------------
 -- 2. create_order_with_items: serversko računanje naknade za dostavu
 -- ----------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.create_order_with_items(
+  UUID, UUID, TEXT, JSONB, TEXT, TEXT, TEXT, TEXT, UUID, UUID, NUMERIC
+);
+
 CREATE OR REPLACE FUNCTION public.create_order_with_items(
   p_buyer_id UUID,
   p_seller_id UUID,

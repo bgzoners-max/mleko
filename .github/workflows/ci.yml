@@ -17,6 +17,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.2'
           cache: true
 
       - name: Flutter pub get
@@ -106,6 +107,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.2'
           cache: true
 
       - name: Flutter pub get
@@ -123,7 +125,7 @@ jobs:
           flutter test integration_test/checkout_flow_test.dart -d flutter-tester
 
   db-integration-checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -155,10 +157,13 @@ jobs:
       - name: Unit test Supabase edge function helpers (Deno)
         run: deno test supabase/functions/send-push/push_helpers.test.ts
 
+      - name: Unit test Cloudflare Pages functions & middleware (Deno)
+        run: deno test --allow-env test/
+
       - name: Install PostgreSQL client
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google*.list || true
-          sudo apt-get update -o Acquire::Retries=3 || true
+          sudo apt-get update -o Acquire::Retries=3
           sudo apt-get install -y --no-install-recommends postgresql-client
 
       - name: Start local Supabase stack (ECR rate-limit retry)

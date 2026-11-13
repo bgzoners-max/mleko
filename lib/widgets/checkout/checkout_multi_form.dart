@@ -349,6 +349,11 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
             '${item.product.name}: minimalno ${item.product.minOrderFormatted}');
         return;
       }
+      if (item.product.hasStockInfo && item.quantity > item.product.availableKg) {
+        setState(() => _error =
+            '${item.product.name}: maksimalno dostupno ${item.product.availableFormatted}.');
+        return;
+      }
       if (!QuantityEngine.isProductQuantityValid(
         quantity: item.quantity,
         minOrderKg: item.product.minOrderKg,
@@ -448,11 +453,13 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
         } else {
           for (final item in _items) {
             final pendingOrder = PendingOrder(
-              id: 'pending_${DateTime.now().millisecondsSinceEpoch}_${item.product.id}',
+              id: 'pending_${DateTime.now().millisecondsSinceEpoch}_${item.product.cartKey.replaceAll(ProductModel.cartKeySeparator, '_')}',
               buyerId: user.id,
               sellerId: widget.sellerId,
               productId: item.product.id,
               productName: item.product.name,
+              variantId: item.product.selectedVariant?.id,
+              variantLabel: item.product.selectedVariant?.label,
               quantityKg: item.quantity,
               unitType: item.product.unitType,
               note: note,

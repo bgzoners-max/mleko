@@ -56,12 +56,21 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
         return;
       }
       if (!mounted) return;
+      await _sub?.cancel();
+      if (!mounted) return;
       setState(() => _ticket = ticket);
-      _sub = _service.watchTicketMessages(widget.ticketId).listen((msgs) {
-        if (!mounted) return;
-        setState(() => _messages = msgs);
-        _scrollToBottom();
-      });
+      _sub = _service.watchTicketMessages(widget.ticketId).listen(
+        (msgs) {
+          if (!mounted) return;
+          setState(() => _messages = msgs);
+          _scrollToBottom();
+        },
+        onError: (Object e) {
+          if (mounted) {
+            setState(() => _error = friendlyError(e));
+          }
+        },
+      );
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     } finally {
@@ -164,7 +173,23 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
       body: _loading
           ? const ChatMessagesSkeleton(itemCount: 8)
           : _error != null
-              ? Center(child: Text('Greška: $_error'))
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Greška: $_error', textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: _load,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Pokušaj ponovo'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               : _buildBody(),
     );
   }
@@ -293,6 +318,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                         ),
                         maxLines: 4,
                         minLines: 1,
+                        textInputAction: TextInputAction.send,
                         textCapitalization: TextCapitalization.sentences,
                         onSubmitted: (_) => _send(),
                       ),

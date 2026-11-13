@@ -131,14 +131,21 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (user == null || user.isGuest) return;
     _loadedNotifications = [];
     _hasMore = true;
-    final notifs = await _service.getNotifications(user.id, limit: _pageSize);
-    if (!mounted) return;
-    setState(() {
-      _loadedNotifications = notifs;
-      _hasMore = notifs.length >= _pageSize;
-    });
-    if (!_notificationsController.isClosed) {
-      _notificationsController.add(_loadedNotifications);
+    try {
+      final notifs = await _service.getNotifications(user.id, limit: _pageSize);
+      if (!mounted) return;
+      setState(() {
+        _loadedNotifications = notifs;
+        _hasMore = notifs.length >= _pageSize;
+      });
+      if (!_notificationsController.isClosed) {
+        _notificationsController.add(_loadedNotifications);
+      }
+    } catch (e, st) {
+      if (!mounted) return;
+      if (!_notificationsController.isClosed) {
+        _notificationsController.addError(e, st);
+      }
     }
   }
 
@@ -173,9 +180,13 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Future<void> _markAllAsRead() async {
     final user = context.read<AppState>().user;
     if (user == null || user.isGuest) return;
-    await _service.markAllAsRead(user.id);
-    if (mounted) {
-      context.read<AppState>().resetUnreadCount();
+    try {
+      await _service.markAllAsRead(user.id);
+      if (mounted) {
+        context.read<AppState>().resetUnreadCount();
+      }
+    } catch (_) {
+      // Označavanje pročitanim je best-effort pri učitavanju liste
     }
   }
 

@@ -192,7 +192,7 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
 
   void _goToCheckOut(BuildContext context) {
     final quantities = {
-      for (var item in widget.items) item.product.id: item.quantity
+      for (var item in widget.items) item.product.cartKey: item.quantity
     };
     context.push(
       '/checkout-seller/${widget.sellerId}',

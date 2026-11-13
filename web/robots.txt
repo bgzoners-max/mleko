@@ -64,7 +64,9 @@ Disallow: /map-picker
 Disallow: /profile/edit
 
 # Interni JSON API endpoint-i (botovi ne treba da troše crawl budget na njih;
-# javni kratki linkovi su /ad/* i /p/*, a kanonski /classifieds/ad/* i /product/*)
+# javni kratki linkovi su /ad/* i /p/*, a kanonski /classifieds/ad/* i /product/*).
+# Izuzetak je /api/sitemap na koji pokazuje fallback sitemap.xml indeks.
+Allow: /api/sitemap
 Disallow: /api/
 
 # Mapa sajta (XML Sitemap — dinamički generisana za Google i pretraživače)

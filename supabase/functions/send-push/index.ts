@@ -4,11 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
 import type { Database, Json } from "../../types/database.types.ts"
 import {
+  buildCorsHeaders,
   getLockscreenBody,
   isLogLevelEnabled,
   redactText,
   resolveLogLevel,
   shortId,
+  shouldDeletePushToken,
   type LogLevel,
 } from "./push_helpers.ts"
 
@@ -29,14 +31,7 @@ const ALLOWED_ORIGINS = isDev
 
 
 function getCorsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get("origin") || ""
-  const isAllowed = ALLOWED_ORIGINS.includes(origin)
-  
-  return {
-    "Access-Control-Allow-Origin": isAllowed ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  }
+  return buildCorsHeaders(req.headers.get("origin"), ALLOWED_ORIGINS)
 }
 
 // Cache za FCM access token – izbegava skupu JWT generisanje
@@ -220,7 +215,7 @@ Deno.serve(async (req) => {
     }) => {
       try {
         const failedCount = Math.max((params.tokenCount ?? 0) - (params.sentCount ?? 0), 0)
-        await supabase.from("push_delivery_logs").insert({
+        const { error: insertErr } = await supabase.from("push_delivery_logs").insert({
           request_id: requestId,
           user_id: params.userId ?? null,
           title: params.title ?? null,
@@ -232,6 +227,9 @@ Deno.serve(async (req) => {
           errors: (params.errors ?? []) as NonNullable<Json>,
           payload: (params.payload ?? {}) as NonNullable<Json>,
         })
+        if (insertErr) {
+          log("error", "FCM: upis push_delivery_logs vratio grešku", insertErr.message)
+        }
       } catch (logErr) {
         log("error", "FCM: upis push_delivery_logs nije uspeo", String(logErr))
       }
@@ -380,20 +378,38 @@ Deno.serve(async (req) => {
       error: error?.message,
     })
 
-    if (error || !tokens?.length) {
+    if (error) {
+      log("error", `FCM: Greška pri čitanju tokena za korisnika ${shortId(user_id)}:`, error.message)
+      await writeDeliveryLog({
+        userId: user_id,
+        title,
+        type: fcmData.type,
+        tokenCount: 0,
+        sentCount: 0,
+        status: "error",
+        errors: [error.message],
+        payload: { body_len: bodyText.length },
+      })
+      return new Response(
+        JSON.stringify({ error: "Failed to query push tokens", request_id: requestId }),
+        { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+      )
+    }
+
+    if (!tokens?.length) {
       log("warn", `FCM: Nema tokena za korisnika ${shortId(user_id)}`)
       await writeDeliveryLog({
         userId: user_id,
         title,
         type: fcmData.type,
-        tokenCount: tokens?.length ?? 0,
+        tokenCount: 0,
         sentCount: 0,
         status: "no_tokens",
-        errors: error ? [error.message] : [],
+        errors: [],
         payload: { body_len: bodyText.length },
       })
       return new Response(
-        JSON.stringify({ message: "No push tokens", sent: 0, token_count: tokens?.length || 0 }),
+        JSON.stringify({ message: "No push tokens", sent: 0, token_count: 0 }),
         { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
@@ -425,7 +441,18 @@ Deno.serve(async (req) => {
 
     const sa = JSON.parse(serviceAccountJson)
     const projectId = sa.project_id
-    const accessToken = await getAccessToken(sa)
+    let currentAccessToken = await getAccessToken(sa)
+    let refreshInFlight: Promise<string> | null = null
+
+    const refreshAccessToken = (): Promise<string> => {
+      if (!refreshInFlight) {
+        tokenCache.delete(projectId)
+        refreshInFlight = getAccessToken(sa).finally(() => {
+          refreshInFlight = null
+        })
+      }
+      return refreshInFlight
+    }
 
     const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`
 
@@ -484,14 +511,25 @@ Deno.serve(async (req) => {
       }
 
       try {
-        const res = await fetch(fcmUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ message: baseMessage }),
-        })
+        const postFcm = (token: string) =>
+          fetch(fcmUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({ message: baseMessage }),
+          })
+
+        let res = await postFcm(currentAccessToken)
+
+        // Ako je 401, osveži OAuth token jednom (uz spajanje paralelnih osvežavanja) i ponovi zahtev
+        if (res.status === 401) {
+          log("warn", "FCM: Unauthorized (401) - osvežavam cache token i ponavljam slanje")
+          await res.body?.cancel().catch(() => {})
+          currentAccessToken = await refreshAccessToken()
+          res = await postFcm(currentAccessToken)
+        }
 
         if (res.ok) {
           return { success: true, token: row.token }
@@ -500,19 +538,12 @@ Deno.serve(async (req) => {
           // Ne loguj pun token — samo kratki, ne-reverzibilni prefiks.
           const errMsg = `token[${row.token.slice(0, 8)}…] ${res.status}: ${errBody.slice(0, 200)}`
 
-          // Označi invalid token za brisanje
-          let errorCode: string | undefined
-          try {
-            errorCode = JSON.parse(errBody)?.error?.details?.[0]?.errorCode
-          } catch { /* nije JSON */ }
-          if (res.status === 404 || errorCode === "UNREGISTERED" || errorCode === "INVALID_ARGUMENT") {
+          if (shouldDeletePushToken(res.status, errBody)) {
             invalidTokens.push(row.token)
           }
 
-          // Ako je 401, invalidiraj access token cache
-          // Sledeći zahtjev će generiusti novi token
           if (res.status === 401) {
-            log("warn", "FCM: Unauthorized (401) - cache token je istekao, briši cache")
+            log("warn", "FCM: Unauthorized (401) i nakon osvežavanja tokena, brišem cache")
             tokenCache.delete(projectId)
           }
 
@@ -551,7 +582,13 @@ Deno.serve(async (req) => {
       for (let i = 0; i < invalidTokens.length; i += DELETE_CHUNK_SIZE) {
         const chunk = invalidTokens.slice(i, i + DELETE_CHUNK_SIZE)
         try {
-          await supabase.from("user_push_tokens").delete().in("token", chunk)
+          const { error: delErr } = await supabase
+            .from("user_push_tokens")
+            .delete()
+            .in("token", chunk)
+          if (delErr) {
+            log("error", "FCM: Brisanje chunk-a tokena vratilo grešku:", delErr.message)
+          }
         } catch (delErr) {
           log("error", "FCM: Greška pri brisanju chunk-a tokena:", String(delErr))
         }

@@ -24,6 +24,13 @@ class AuthSessionProvider extends ChangeNotifier {
   bool _loading = false;
   bool _pendingEmailVerification = false;
   bool _justConfirmedEmail = false;
+  bool _isDisposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   UserModel? get user => _user;
   bool get authChecked => _authChecked;
@@ -66,6 +73,11 @@ class AuthSessionProvider extends ChangeNotifier {
   }
 
   void _initAuth() {
+    if (_isDisposed) return;
+    final initVersion = ++_authEventVersion;
+    unawaited(_authSubscription?.cancel());
+    _authSubscription = null;
+
     final initialSupabaseUser = _auth.currentSupabaseUser;
     if (initialSupabaseUser != null && !initialSupabaseUser.isAnonymous) {
       _user = UserModel(
@@ -80,18 +92,24 @@ class AuthSessionProvider extends ChangeNotifier {
       // Ako nema sinhronog korisnika (web IndexedDB ili guest), proveravamo sesiju asinhrono
       // kako _authChecked ne bi ostao false ako authStateChanges ne emituje event.
       Future.microtask(() async {
-        if (_authChecked) return;
+        if (_isDisposed || _authChecked || initVersion != _authEventVersion) {
+          return;
+        }
         try {
           final currentUser = await _auth.getCurrentUser();
-          if (_authChecked) return;
+          if (_isDisposed || _authChecked || initVersion != _authEventVersion) {
+            return;
+          }
           _user = currentUser;
         } catch (_) {
-          if (_authChecked) return;
+          if (_isDisposed || _authChecked || initVersion != _authEventVersion) {
+            return;
+          }
           _user = null;
         } finally {
-          if (!_authChecked) {
+          if (!_isDisposed && !_authChecked && initVersion == _authEventVersion) {
             _authChecked = true;
-            notifyListeners();
+            _safeNotifyListeners();
           }
         }
       });
@@ -99,18 +117,23 @@ class AuthSessionProvider extends ChangeNotifier {
 
     _authSubscription =
         _auth.authStateChanges.listen((AuthState authState) async {
+      if (_isDisposed) return;
       final authVersion = ++_authEventVersion;
       final sessionUserId = authState.session?.user.id;
 
       if (authState.session == null || authState.session?.user.isAnonymous == true) {
         await _auth.ensureCleanSession();
         await PushService.clearRegistrationState();
-        if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
+        if (_isDisposed || !_isCurrentAuthEvent(authVersion, expectedUserId: null)) {
+          return;
+        }
         _user = null;
         _unreadNotifications?.unbind();
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
-        if (!_isCurrentAuthEvent(authVersion, expectedUserId: null)) return;
+        if (_isDisposed || !_isCurrentAuthEvent(authVersion, expectedUserId: null)) {
+          return;
+        }
       } else {
         final isWebSignupCallback = kIsWeb &&
             (Uri.base.fragment.contains('type=signup') ||
@@ -149,7 +172,8 @@ class AuthSessionProvider extends ChangeNotifier {
           }
         }
 
-        if (!_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
+        if (_isDisposed ||
+            !_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
           return;
         }
 
@@ -158,14 +182,14 @@ class AuthSessionProvider extends ChangeNotifier {
           _unreadNotifications?.bindUser(_user!.id);
           await PushService().registerToken(_user!.id);
 
-          if (!_isCurrentAuthEvent(authVersion,
-              expectedUserId: sessionUserId)) {
+          if (_isDisposed ||
+              !_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
             return;
           }
         } else {
           await PushService.clearRegistrationState();
-          if (!_isCurrentAuthEvent(authVersion,
-              expectedUserId: sessionUserId)) {
+          if (_isDisposed ||
+              !_isCurrentAuthEvent(authVersion, expectedUserId: sessionUserId)) {
             return;
           }
           _unreadNotifications?.unbind();
@@ -175,40 +199,46 @@ class AuthSessionProvider extends ChangeNotifier {
         }
       }
       _authChecked = true;
-      notifyListeners();
+      _safeNotifyListeners();
     });
   }
 
   bool _isCurrentAuthEvent(int authVersion, {required String? expectedUserId}) {
-    if (authVersion != _authEventVersion) return false;
+    if (_isDisposed || authVersion != _authEventVersion) return false;
     final currentUserId = _auth.currentSupabaseUser?.id;
     return currentUserId == expectedUserId;
   }
 
   void setLoading(bool v) {
     _loading = v;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   Future<void> refreshUser() async {
-    _user = await _auth.getCurrentUser();
-    notifyListeners();
+    final user = await _auth.getCurrentUser();
+    if (_isDisposed) return;
+    _user = user;
+    _safeNotifyListeners();
   }
 
   /// Ponovo inicijalizuje autentifikacioni prikaz stanja — korisno nakon greške
   /// ili kada se želi prisilno ponovo učitati korisnički profil iz sesije.
   /// Resetuje `_authChecked` i `_user`, a zatim ponovo proverava Supabase sesiju.
   Future<void> reload() async {
+    if (_isDisposed) return;
     _authChecked = false;
     _user = null;
     _loading = false;
-    notifyListeners();
+    _safeNotifyListeners();
     _initAuth();
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _authEventVersion++;
     _authSubscription?.cancel();
+    _authSubscription = null;
     unawaited(PushService.dispose());
     try {
       unawaited(ChatService().cleanUp());

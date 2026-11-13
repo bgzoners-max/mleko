@@ -151,19 +151,23 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
   Widget build(BuildContext context) => widget.child;
 }
 
+Future<void> _preloadLucideFont() async {
+  try {
+    final fontLoader = FontLoader('Lucide')
+      ..addFont(rootBundle.load('assets/fonts/lucide.ttf'));
+    await fontLoader.load();
+  } catch (e) {
+    LoggerService.warning('Lucide font preload skipped or failed: $e');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppImageCache.configureMemoryLimits();
 
-  // Preload Lucide font za garantovano renderovanje mikro ikonica na webu / CanvasKit-u pre crtanja UI-ja
+  // Preload Lucide font neblokirajuće na web-u kako ne bi odlagao runApp() za ~917 KB TTF.
   if (kIsWeb) {
-    try {
-      final fontLoader = FontLoader('Lucide')
-        ..addFont(rootBundle.load('assets/fonts/lucide.ttf'));
-      await fontLoader.load();
-    } catch (e) {
-      LoggerService.warning('Lucide font preload skipped or failed: $e');
-    }
+    unawaited(_preloadLucideFont());
   }
 
   // U release režimu za mobilne platforme isključujemo runtime fetching sa mreže radi offline rada.
@@ -218,6 +222,7 @@ void main() async {
 
   await initializeDateFormatting('sr', null);
 
+  Object? supabaseInitError;
   try {
     SupabaseConfig.validateConfig();
 
@@ -231,7 +236,13 @@ void main() async {
       ),
     );
   } catch (e, st) {
+    supabaseInitError = e;
     LoggerService.error('Supabase initialization failed', e, stackTrace: st);
+  }
+
+  if (supabaseInitError != null) {
+    runApp(_BootstrapErrorApp(error: supabaseInitError));
+    return;
   }
 
   try {
@@ -385,4 +396,54 @@ void main() async {
       ),
     ),
   );
+}
+
+class _BootstrapErrorApp extends StatelessWidget {
+  final Object error;
+
+  const _BootstrapErrorApp({required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Domaći market',
+      theme: buildAppTheme(),
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_rounded,
+                    size: 56,
+                    color: Colors.redAccent,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Aplikacija trenutno ne može da se poveže sa serverom.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Proverite internet konekciju ili konfiguraciju i pokušajte ponovo.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

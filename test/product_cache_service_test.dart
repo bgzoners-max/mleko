@@ -86,5 +86,32 @@ void main() {
       final cachedSync = service.getCachedProductsSync('key-expired');
       expect(cachedSync, isNull);
     });
+
+    test('invalidateProduct clears regional home cache keys as well as default home key', () async {
+      final service = ProductCacheService();
+      final p1 = createDummyProduct('p-reg');
+
+      await service.cacheProducts(ProductCacheService.homeProductsKey, [p1]);
+      await service.cacheProducts(
+        '${ProductCacheService.homeProductsKey}_Beograd',
+        [p1],
+      );
+      await service.cacheProducts(ProductCacheService.sellerKey('s-1'), [p1]);
+      await service.cacheProduct(p1);
+
+      await service.invalidateProduct('p-reg', 's-1');
+
+      expect(service.getCachedProductsSync(ProductCacheService.homeProductsKey), isNull);
+      expect(
+        service.getCachedProductsSync('${ProductCacheService.homeProductsKey}_Beograd'),
+        isNull,
+      );
+      expect(
+        await service.getCachedProducts('${ProductCacheService.homeProductsKey}_Beograd'),
+        isNull,
+      );
+      expect(await service.getCachedProducts(ProductCacheService.sellerKey('s-1')), isNull);
+      expect(await service.getCachedProduct('p-reg'), isNull);
+    });
   });
 }

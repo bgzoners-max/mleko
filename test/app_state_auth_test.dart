@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mleko/models/user_model.dart';
 import 'package:mleko/providers/app_state.dart';
+import 'package:mleko/providers/auth_session_provider.dart';
 import 'package:mleko/providers/unread_notifications_provider.dart';
 import 'package:mleko/services/auth/auth_service.dart';
 import 'package:mleko/services/orders/orders_service.dart';
@@ -139,5 +141,46 @@ void main() {
       expect(notified, equals(1));
       expect(appState.justConfirmedEmail, isFalse);
     });
+
+    test('AuthSessionProvider.reload cancels previous auth stream subscription and dispose stops notifications', () async {
+      var activeListeners = 0;
+      late final StreamController<AuthState> controller;
+      controller = StreamController<AuthState>.broadcast(
+        onListen: () => activeListeners++,
+        onCancel: () => activeListeners--,
+      );
+
+      final trackingAuth = _TrackingAuthService(controller.stream);
+      final provider = AuthSessionProvider(authService: trackingAuth);
+      await Future<void>.delayed(Duration.zero);
+      expect(activeListeners, equals(1));
+
+      await provider.reload();
+      await Future<void>.delayed(Duration.zero);
+      expect(activeListeners, equals(1));
+
+      provider.dispose();
+      await Future<void>.delayed(Duration.zero);
+      expect(activeListeners, equals(0));
+      expect(() => provider.setLoading(true), returnsNormally);
+      await controller.close();
+    });
   });
+}
+
+class _TrackingAuthService extends Fake implements AuthService {
+  final Stream<AuthState> _stream;
+  _TrackingAuthService(this._stream);
+
+  @override
+  Stream<AuthState> get authStateChanges => _stream;
+
+  @override
+  User? get currentSupabaseUser => null;
+
+  @override
+  Future<UserModel?> getCurrentUser() async => null;
+
+  @override
+  Future<void> ensureCleanSession() async {}
 }

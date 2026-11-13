@@ -389,12 +389,12 @@ void main() {
       await tester.pump();
 
       await tester.tap(submitButtonFinder);
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 300));
-      });
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
+      for (var i = 0; i < 6; i++) {
+        await tester.runAsync(() async {
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
       // 6. Exactly one order RPC call containing BOTH items
       expect(mockOrdersService.calls.length, equals(1));
@@ -539,18 +539,20 @@ void main() {
           find.widgetWithText(FilledButton, 'Pošalji porudžbinu');
       await tester.ensureVisible(submitButtonFinder);
       await tester.tap(submitButtonFinder);
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 300));
-      });
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
+      for (var i = 0; i < 6; i++) {
+        await tester.runAsync(() async {
+          await Future.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
       // No online order call was made
       expect(mockOrdersService.calls.isEmpty, isTrue);
 
       // One pending order per item was queued locally
       final pending = await appState.orderQueue.getPendingOrders();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(pending.length, equals(2));
       expect(
         pending.map((e) => e.productId).toSet(),
@@ -558,13 +560,13 @@ void main() {
       );
       expect(pending.first.sellerId, equals(_testSellerId));
 
-      // Offline confirmation snackbar is visible
-      expect(find.textContaining('sačuvana offline'), findsOneWidget);
-
       // Cart cleared and navigation happened
       expect(cartProvider.count, 0);
       expect(
           find.text('Moje porudžbine - uspešno poslat upit'), findsOneWidget);
+
+      // Offline confirmation snackbar is visible
+      expect(find.textContaining('sačuvana offline'), findsOneWidget);
     });
   });
 }

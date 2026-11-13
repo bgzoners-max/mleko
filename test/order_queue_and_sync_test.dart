@@ -389,6 +389,61 @@ void main() {
       expect(result, equals(0));
     });
   });
+
+  group('OrderQueueService corrupt entries & variant fields', () {
+    test('preserves variantId and variantLabel in PendingOrder serialization', () {
+      final order = PendingOrder(
+        id: 'ord-var-1',
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        productId: 'prod-1',
+        variantId: 'var-500g',
+        variantLabel: 'Tegla 500g',
+        productName: 'Livadski med',
+        quantityKg: 2.0,
+        unitType: 'kom',
+        buyerCity: 'Niš',
+        buyerPhone: '0641234567',
+        preferCall: false,
+        pickupOptions: const ['pickup'],
+        createdAt: DateTime.now(),
+      );
+
+      final decoded = PendingOrder.fromJson(order.toJson());
+      expect(decoded.variantId, equals('var-500g'));
+      expect(decoded.variantLabel, equals('Tegla 500g'));
+      final updated = decoded.copyWith(retryCount: 1);
+      expect(updated.retryCount, equals(1));
+      expect(updated.variantId, equals('var-500g'));
+      expect(updated.variantLabel, equals('Tegla 500g'));
+    });
+
+    test('skips corrupted queue items instead of dropping valid orders', () async {
+      final validOrder = PendingOrder(
+        id: 'ord-valid-1',
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        productId: 'prod-1',
+        productName: 'Sveže mleko',
+        quantityKg: 3.0,
+        unitType: 'l',
+        buyerCity: 'Kraljevo',
+        buyerPhone: '0600000001',
+        preferCall: false,
+        pickupOptions: const ['pickup'],
+        createdAt: DateTime.now(),
+      );
+      SharedPreferences.setMockInitialValues({
+        'mleko_pending_orders':
+            '[{"id":"broken-missing-createdAt"},{"id":"ord-valid-1","buyer_id":"buyer-1","seller_id":"seller-1","product_id":"prod-1","product_name":"Sveže mleko","quantity_kg":3.0,"unit_type":"l","buyer_city":"Kraljevo","buyer_phone":"0600000001","prefer_call":false,"pickup_options":["pickup"],"created_at":"${validOrder.createdAt.toIso8601String()}"}]',
+      });
+
+      final queueService = OrderQueueService();
+      final pending = await queueService.getPendingOrders();
+      expect(pending.length, equals(1));
+      expect(pending.first.id, equals('ord-valid-1'));
+    });
+  });
 }
 
 class _TestSyncManager extends ChangeNotifier implements SyncManager {

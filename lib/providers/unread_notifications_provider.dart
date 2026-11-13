@@ -30,6 +30,13 @@ class UnreadNotificationsProvider extends ChangeNotifier {
 
   int _unreadCount = 0;
   String? _boundUserId;
+  bool _isDisposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   int get unreadCount => _unreadCount;
   String? get boundUserId => _boundUserId;
@@ -78,32 +85,34 @@ class UnreadNotificationsProvider extends ChangeNotifier {
     _channel = null;
     if (_unreadCount != 0) {
       _unreadCount = 0;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
   void resetCount() {
     if (_unreadCount == 0) return;
     _unreadCount = 0;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void incrementCount() {
     _unreadCount++;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void decrementCount() {
     if (_unreadCount == 0) return;
     _unreadCount--;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   Future<void> _reload() async {
     final userId = _boundUserId;
-    if (userId == null || userId.isEmpty) return;
-    _unreadCount = await _notificationsService.getUnreadCount(userId);
-    notifyListeners();
+    if (_isDisposed || userId == null || userId.isEmpty) return;
+    final count = await _notificationsService.getUnreadCount(userId);
+    if (_isDisposed || _boundUserId != userId) return;
+    _unreadCount = count;
+    _safeNotifyListeners();
   }
 
   void _scheduleReload([
@@ -178,6 +187,8 @@ class UnreadNotificationsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _boundUserId = null;
     _debounceTimer?.cancel();
     _debounceTimer = null;
     _eventsController.close();
@@ -185,6 +196,7 @@ class UnreadNotificationsProvider extends ChangeNotifier {
       try {
         Supabase.instance.client.removeChannel(_channel!);
       } catch (_) {}
+      _channel = null;
     }
     super.dispose();
   }

@@ -335,3 +335,74 @@ export function buildHtml({
 </body>
 </html>`;
 }
+
+/**
+ * Odlučuje da li apex `domacimarket.rs` zahtev treba preusmeriti 301 na `www.domacimarket.rs`.
+ * Izuzetak: `/.well-known/assetlinks.json` mora vratiti direktan HTTP 200 na oba hosta
+ * (Android App Links autoVerify odbija 3xx preusmerenja).
+ */
+export function resolveApexCanonicalRedirectUrl(requestUrl: URL): string | null {
+  if (
+    requestUrl.hostname !== "domacimarket.rs" ||
+    requestUrl.pathname === "/.well-known/assetlinks.json"
+  ) {
+    return null;
+  }
+  const target = new URL(requestUrl.toString());
+  target.hostname = "www.domacimarket.rs";
+  if (target.pathname === "/shop" || target.pathname === "/shop/") {
+    target.pathname = "/";
+  } else if (target.pathname === "/terms" || target.pathname === "/terms/") {
+    target.pathname = "/uslovi-koriscenja";
+  }
+  return target.toString();
+}
+
+/**
+ * 301 preusmerenja zastarelih ili alternativnih putanja ka kanonskim rutama.
+ */
+export function resolveLegacyRouteRedirect(requestUrl: URL): string | null {
+  if (requestUrl.pathname === "/shop" || requestUrl.pathname === "/shop/") {
+    return new URL("/", requestUrl.origin).toString();
+  }
+  if (requestUrl.pathname === "/terms" || requestUrl.pathname === "/terms/") {
+    return new URL("/uslovi-koriscenja", requestUrl.origin).toString();
+  }
+  return null;
+}
+
+export type MiddlewarePreviewMatch =
+  | { kind: "classified" | "product"; id: string };
+
+/**
+ * Mapira kratke linkove i bot zahteve na odgovarajući preview endpoint,
+ * uz podršku za opcioni trailing slash (`/.../`).
+ */
+export function matchMiddlewarePreviewRoute(
+  pathname: string,
+  botRequest: boolean,
+): MiddlewarePreviewMatch | null {
+  const adShortMatch = pathname.match(/^\/ad\/([^/]+)\/?$/);
+  if (adShortMatch) {
+    return { kind: "classified", id: decodeURIComponent(adShortMatch[1]) };
+  }
+
+  const prodShortMatch = pathname.match(/^\/p\/([^/]+)\/?$/);
+  if (prodShortMatch) {
+    return { kind: "product", id: decodeURIComponent(prodShortMatch[1]) };
+  }
+
+  if (botRequest) {
+    const classifiedMatch = pathname.match(/^\/classifieds\/ad\/([^/]+)\/?$/);
+    if (classifiedMatch) {
+      return { kind: "classified", id: decodeURIComponent(classifiedMatch[1]) };
+    }
+
+    const productMatch = pathname.match(/^\/product\/([^/]+)\/?$/);
+    if (productMatch) {
+      return { kind: "product", id: decodeURIComponent(productMatch[1]) };
+    }
+  }
+
+  return null;
+}

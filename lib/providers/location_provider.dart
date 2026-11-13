@@ -34,11 +34,19 @@ class LocationProvider extends ChangeNotifier {
   ValueNotifier<String?> get regionNotifier => _regionNotifier;
 
   bool _gpsTried = false;
+  bool _isDisposed = false;
   bool get gpsTried => _gpsTried;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   Future<void> _loadSaved() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (_isDisposed) return;
       final saved = prefs.getString(_keyRegion);
       _latitude = prefs.getDouble(_keyLatitude);
       _longitude = prefs.getDouble(_keyLongitude);
@@ -46,7 +54,7 @@ class LocationProvider extends ChangeNotifier {
       if (saved != null && AppConstants.regions.contains(saved)) {
         _selectedRegion = saved;
         _regionNotifier.value = saved;
-        notifyListeners();
+        _safeNotifyListeners();
       }
     } catch (e) {
       LoggerService.error('LocationProvider: failed to load saved region', e);
@@ -55,6 +63,7 @@ class LocationProvider extends ChangeNotifier {
 
   Future<bool> tryDetectFromGps({bool force = false}) async {
     await _loadFuture;
+    if (_isDisposed) return false;
     if (force) {
       _gpsTried = false;
     } else if (_gpsTried) {
@@ -64,16 +73,18 @@ class LocationProvider extends ChangeNotifier {
 
     try {
       final permission = await Geolocator.checkPermission();
+      if (_isDisposed) return false;
       if (permission == LocationPermission.denied) {
         final requested = await Geolocator.requestPermission();
+        if (_isDisposed) return false;
         if (requested == LocationPermission.denied ||
             requested == LocationPermission.deniedForever) {
-          notifyListeners();
+          _safeNotifyListeners();
           return false;
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        notifyListeners();
+        _safeNotifyListeners();
         return false;
       }
 
@@ -83,6 +94,7 @@ class LocationProvider extends ChangeNotifier {
           timeLimit: Duration(seconds: 10),
         ),
       );
+      if (_isDisposed) return false;
       _latitude = position.latitude;
       _longitude = position.longitude;
 
@@ -97,13 +109,13 @@ class LocationProvider extends ChangeNotifier {
           longitude: position.longitude,
           city: _city,
         );
-        return true;
+        return !_isDisposed;
       }
     } catch (e) {
       LoggerService.debug('GPS location failed, fallback to manual',
           extra: {'error': e.toString()});
     }
-    notifyListeners();
+    _safeNotifyListeners();
     return false;
   }
 
@@ -114,13 +126,13 @@ class LocationProvider extends ChangeNotifier {
     String? city,
   }) async {
     await _loadFuture;
-    if (!AppConstants.regions.contains(region)) return;
+    if (_isDisposed || !AppConstants.regions.contains(region)) return;
     _selectedRegion = region;
     _latitude = latitude;
     _longitude = longitude;
     _city = city;
     _regionNotifier.value = region;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyRegion, region);
@@ -153,12 +165,13 @@ class LocationProvider extends ChangeNotifier {
 
   Future<void> clearRegion() async {
     await _loadFuture;
+    if (_isDisposed) return;
     _selectedRegion = null;
     _latitude = null;
     _longitude = null;
     _city = null;
     _regionNotifier.value = null;
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_keyRegion);
@@ -172,6 +185,7 @@ class LocationProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _regionNotifier.dispose();
     super.dispose();
   }

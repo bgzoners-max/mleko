@@ -51,25 +51,39 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
   }
 
   Future<void> _loadFromCart() async {
-    final cart = context.read<CartProvider>();
-    final list = await cart.getProductsBySeller(widget.sellerId);
-    if (!mounted) return;
-    if (list.isEmpty) {
+    if (mounted) {
       setState(() {
-        _items = [];
-        _sellerName = null;
-        _loading = false;
-        _error = 'Nema stavki. Dodaj proizvode kod prodavca.';
+        _loading = true;
+        _error = null;
       });
-      return;
     }
-    final sellerName = await _fetchSellerName();
-    if (!mounted) return;
-    setState(() {
-      _items = list;
-      _sellerName = sellerName;
-      _loading = false;
-    });
+    try {
+      final cart = context.read<CartProvider>();
+      final list = await cart.getProductsBySeller(widget.sellerId);
+      if (!mounted) return;
+      if (list.isEmpty) {
+        setState(() {
+          _items = [];
+          _sellerName = null;
+          _loading = false;
+          _error = 'Nema stavki. Dodaj proizvode kod prodavca.';
+        });
+        return;
+      }
+      final sellerName = await _fetchSellerName();
+      if (!mounted) return;
+      setState(() {
+        _items = list;
+        _sellerName = sellerName;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Greška pri učitavanju korpe. Proverite vezu i pokušajte ponovo.';
+      });
+    }
   }
 
   Future<String> _fetchSellerName() async {
@@ -78,31 +92,46 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
   }
 
   Future<void> _load(Map<String, double> productQuantities) async {
-    final productsService = context.read<ProductsService>();
-    // Batch load umesto N+1 petlje
-    final baseIds = productQuantities.keys
-        .map(ProductModel.extractProductId)
-        .toSet()
-        .toList();
-    final products = await productsService.getProductsByIds(baseIds);
-    final items = <({ProductModel product, double quantity})>[];
-    for (final e in productQuantities.entries) {
-      final baseId = ProductModel.extractProductId(e.key);
-      final p = products[baseId];
-      if (p != null && p.sellerId == widget.sellerId) {
-        items.add((product: p.resolveForCartKey(e.key), quantity: e.value));
-      }
-    }
-    final sellerName = items.isNotEmpty ? await _fetchSellerName() : null;
     if (mounted) {
       setState(() {
-        _items = items;
-        _sellerName = sellerName;
-        _loading = false;
-        if (items.isEmpty) {
-          _error = 'Nema stavki. Dodaj proizvode kod prodavca.';
-        }
+        _loading = true;
+        _error = null;
       });
+    }
+    try {
+      final productsService = context.read<ProductsService>();
+      // Batch load umesto N+1 petlje
+      final baseIds = productQuantities.keys
+          .map(ProductModel.extractProductId)
+          .toSet()
+          .toList();
+      final products = await productsService.getProductsByIds(baseIds);
+      final items = <({ProductModel product, double quantity})>[];
+      for (final e in productQuantities.entries) {
+        final baseId = ProductModel.extractProductId(e.key);
+        final p = products[baseId];
+        if (p != null && p.sellerId == widget.sellerId) {
+          items.add((product: p.resolveForCartKey(e.key), quantity: e.value));
+        }
+      }
+      final sellerName = items.isNotEmpty ? await _fetchSellerName() : null;
+      if (mounted) {
+        setState(() {
+          _items = items;
+          _sellerName = sellerName;
+          _loading = false;
+          if (items.isEmpty) {
+            _error = 'Nema stavki. Dodaj proizvode kod prodavca.';
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Greška pri učitavanju porudžbine. Pokušajte ponovo.';
+        });
+      }
     }
   }
 
@@ -140,10 +169,28 @@ class _CheckoutMultiScreenState extends State<CheckoutMultiScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/seller/${widget.sellerId}'),
-                  icon: const Icon(Icons.store),
-                  label: const Text('Nazad kod prodavca'),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        if (widget.productQuantities.isNotEmpty) {
+                          _load(widget.productQuantities);
+                        } else {
+                          _loadFromCart();
+                        }
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Pokušaj ponovo'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () => context.go('/seller/${widget.sellerId}'),
+                      icon: const Icon(Icons.store),
+                      label: const Text('Nazad kod prodavca'),
+                    ),
+                  ],
                 ),
               ],
             ),

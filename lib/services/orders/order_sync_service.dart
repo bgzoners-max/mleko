@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../models/order_item_model.dart';
 import '../../models/seller_delivery_models.dart';
 import '../../models/app_error.dart';
 import '../core/connectivity_service.dart';
@@ -120,13 +121,19 @@ class OrderSyncService {
           final deliverySelection =
               await _buildDeliverySelectionForSync(pending);
 
-          await _ordersService.createSingleProductOrder(
+          await _ordersService.createOrderWithItems(
             buyerId: pending.buyerId,
             sellerId: pending.sellerId,
-            productId: pending.productId,
-            productName: pending.productName,
-            quantityKg: pending.quantityKg,
-            unitType: pending.unitType,
+            items: [
+              OrderItemModel(
+                productId: pending.productId,
+                productName: pending.productName,
+                quantityKg: pending.quantityKg,
+                unitType: pending.unitType,
+                variantId: pending.variantId,
+                variantLabel: pending.variantLabel,
+              ),
+            ],
             note: pending.note ?? '',
             buyerCity: pending.buyerCity,
             buyerPhone: pending.buyerPhone,
@@ -310,8 +317,8 @@ class OrderSyncService {
         pending.deliveryCity,
         pending.deliveryPointLabel,
         pending.deliveryAddress,
-        pending.deliveryTimeFrom,
-        pending.deliveryTimeTo,
+        normalizeDeliveryTimeString(pending.deliveryTimeFrom),
+        normalizeDeliveryTimeString(pending.deliveryTimeTo),
       ]);
       final expectedDeliveryWeekday = pending.deliveryWeekday;
       final expectedDeliveryFee = pending.deliveryFeeRsd ?? 0;
@@ -331,8 +338,8 @@ class OrderSyncService {
           row['delivery_city'] as String?,
           row['delivery_point_label'] as String?,
           row['delivery_address'] as String?,
-          row['delivery_time_from'] as String?,
-          row['delivery_time_to'] as String?,
+          normalizeDeliveryTimeString(row['delivery_time_from'] as String?),
+          normalizeDeliveryTimeString(row['delivery_time_to'] as String?),
         ]);
         final deliveryWeekday = (row['delivery_weekday'] as num?)?.toInt();
         final deliveryFee = (row['delivery_fee_rsd'] as num?)?.toDouble() ?? 0;

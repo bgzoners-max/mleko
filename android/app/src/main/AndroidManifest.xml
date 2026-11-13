@@ -32,7 +32,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Android App Links: domacimarket.rs deep linking with auto-verification -->
+            <!-- Android App Links: domacimarket.rs + www.domacimarket.rs deep linking -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -40,6 +40,9 @@
                 <data
                     android:scheme="https"
                     android:host="domacimarket.rs"/>
+                <data
+                    android:scheme="https"
+                    android:host="www.domacimarket.rs"/>
             </intent-filter>
             <!-- OAuth callback for Supabase Auth / Google Login -->
             <intent-filter>
@@ -64,7 +67,7 @@
             android:value="orders_high_v2" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_notification" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -32,6 +32,21 @@ class ClassifiedsProvider extends ChangeNotifier {
   bool _hasMore = true;
   String? _error;
   int _loadGeneration = 0;
+  bool _isDisposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _loadGeneration++;
+    _subscriptionsSession++;
+    super.dispose();
+  }
 
   String? _selectedCategoryId;
   String? _selectedCity;
@@ -79,6 +94,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   }
 
   Future<void> loadCategories({bool forceRefresh = false}) async {
+    if (_isDisposed) return;
     // Kategorije se učitavaju jednom po sesiji; osvežavaju se preko refresh().
     if (_categoriesLoaded && !forceRefresh) return;
 
@@ -86,10 +102,11 @@ class ClassifiedsProvider extends ChangeNotifier {
     if (!forceRefresh) {
       try {
         final cached = await _service.getCachedCategories();
+        if (_isDisposed) return;
         if (cached.isNotEmpty) {
           _categories = cached;
           _categoriesLoaded = true;
-          notifyListeners();
+          _safeNotifyListeners();
         }
       } catch (e, st) {
         LoggerService.debug('getCachedCategories error',
@@ -100,25 +117,29 @@ class ClassifiedsProvider extends ChangeNotifier {
     // 2. Učitavanje i sinhronizacija sa bazom (forceRefresh invalidira TTL keš)
     try {
       final items = await _service.getCategories(forceRefresh: forceRefresh);
+      if (_isDisposed) return;
       if (items.isNotEmpty) {
         items.sort(ClassifiedCategoryModel.compareCategories);
         _categories = items;
         _categoriesLoaded = true;
-        notifyListeners();
+        _safeNotifyListeners();
       }
     } catch (e, st) {
+      if (_isDisposed) return;
       LoggerService.error('loadCategories error', e, stackTrace: st);
       if (_categories.isEmpty) {
         final fallback = List<ClassifiedCategoryModel>.from(
             ClassifiedCategoryModel.fallbackCategories)
           ..sort(ClassifiedCategoryModel.compareCategories);
         _categories = fallback;
-        notifyListeners();
+        _safeNotifyListeners();
       }
     }
 
     // 3. Učitavanje brojača oglasa u pozadini (asinhrono bez blokiranja prikaza)
-    unawaited(loadCategoryAdCounts());
+    if (!_isDisposed) {
+      unawaited(loadCategoryAdCounts());
+    }
   }
 
   /// Rekurzivno izračunava i dodeljuje adCount kroz celo stablo kategorija.
@@ -144,9 +165,10 @@ class ClassifiedsProvider extends ChangeNotifier {
   Future<void> loadCategoryAdCounts() async {
     try {
       final counts = await _service.getCategoryAdCounts();
+      if (_isDisposed) return;
       if (counts.isNotEmpty && _categories.isNotEmpty) {
         _categories = applyAdCountsToTree(_categories, counts);
-        notifyListeners();
+        _safeNotifyListeners();
       }
     } catch (e) {
       LoggerService.warning('loadCategoryAdCounts error', extra: {'error': e.toString()});
@@ -257,7 +279,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     }
     _error = null;
     _hasMore = true;
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       final catIds = _resolveCategoryIds();
@@ -295,19 +317,19 @@ class ClassifiedsProvider extends ChangeNotifier {
       LoggerService.error('loadInitialAds error', e, stackTrace: st);
       _error = 'Greška pri učitavanju oglasa.';
     } finally {
-      if (generation == _loadGeneration) {
+      if (!_isDisposed && generation == _loadGeneration) {
         _loading = false;
         _refreshing = false;
-        notifyListeners();
+        _safeNotifyListeners();
       }
     }
   }
 
   Future<void> loadMore() async {
-    if (_loading || _loadingMore || !_hasMore) return;
+    if (_isDisposed || _loading || _loadingMore || !_hasMore) return;
     final generation = _loadGeneration; // čitamo tekući; loadInitialAds povećava brojač
     _loadingMore = true;
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       final catIds = _resolveCategoryIds();
@@ -350,8 +372,8 @@ class ClassifiedsProvider extends ChangeNotifier {
           extra: {'error': e.toString(), 'stackTrace': st.toString()});
     } finally {
       _loadingMore = false;
-      if (generation == _loadGeneration) {
-        notifyListeners();
+      if (!_isDisposed && generation == _loadGeneration) {
+        _safeNotifyListeners();
       }
     }
   }
@@ -427,16 +449,17 @@ class ClassifiedsProvider extends ChangeNotifier {
         isFeatured: isFeatured,
         featuredUntil: until,
       );
-      notifyListeners();
+      _safeNotifyListeners();
     }
     try {
       await _service.updateAdFeatured(adId, isFeatured, until: until);
     } catch (e) {
+      if (_isDisposed) rethrow;
       if (previousAd != null) {
         final currentIdx = _ads.indexWhere((a) => a.id == adId);
         if (currentIdx != -1) {
           _ads[currentIdx] = previousAd;
-          notifyListeners();
+          _safeNotifyListeners();
         }
       }
       rethrow;
@@ -448,16 +471,17 @@ class ClassifiedsProvider extends ChangeNotifier {
     final previousAd = idx >= 0 ? _ads[idx] : null;
     if (idx >= 0) {
       _ads[idx] = _ads[idx].copyWith(isUrgent: isUrgent);
-      notifyListeners();
+      _safeNotifyListeners();
     }
     try {
       await _service.updateAdUrgent(adId, isUrgent);
     } catch (e) {
+      if (_isDisposed) rethrow;
       if (previousAd != null) {
         final currentIdx = _ads.indexWhere((a) => a.id == adId);
         if (currentIdx != -1) {
           _ads[currentIdx] = previousAd;
-          notifyListeners();
+          _safeNotifyListeners();
         }
       }
       rethrow;
@@ -526,15 +550,16 @@ class ClassifiedsProvider extends ChangeNotifier {
   int _subscriptionsSession = 0;
 
   Future<void> loadSubscriptions() async {
+    if (_isDisposed) return;
     final session = ++_subscriptionsSession;
     try {
       final list = await _subService.getSubscriptions();
-      if (session != _subscriptionsSession) return;
+      if (_isDisposed || session != _subscriptionsSession) return;
       _subscriptions = list;
       _subscriptionsLoaded = true;
-      notifyListeners();
+      _safeNotifyListeners();
     } catch (e) {
-      if (session != _subscriptionsSession) return;
+      if (_isDisposed || session != _subscriptionsSession) return;
       LoggerService.warning('loadSubscriptions error',
           extra: {'error': e.toString()});
     }
@@ -551,13 +576,15 @@ class ClassifiedsProvider extends ChangeNotifier {
     if (existingIndex >= 0) {
       final sub = _subscriptions[existingIndex];
       _subscriptions = List.from(_subscriptions)..removeAt(existingIndex);
-      notifyListeners();
+      _safeNotifyListeners();
       try {
         await _subService.unsubscribe(sub.id);
         return false; // unsubscribed
       } catch (e) {
-        _subscriptions = List.from(_subscriptions)..insert(existingIndex, sub);
-        notifyListeners();
+        if (!_isDisposed) {
+          _subscriptions = List.from(_subscriptions)..insert(existingIndex, sub);
+          _safeNotifyListeners();
+        }
         rethrow;
       }
     } else {
@@ -568,8 +595,10 @@ class ClassifiedsProvider extends ChangeNotifier {
           maxPrice: maxPrice,
           currency: currency,
         );
-        _subscriptions = [newSub, ..._subscriptions];
-        notifyListeners();
+        if (!_isDisposed) {
+          _subscriptions = [newSub, ..._subscriptions];
+          _safeNotifyListeners();
+        }
         return true; // subscribed
       } catch (e) {
         rethrow;
@@ -583,12 +612,14 @@ class ClassifiedsProvider extends ChangeNotifier {
     if (existingIndex < 0) return;
     final sub = _subscriptions[existingIndex];
     _subscriptions = List.from(_subscriptions)..removeAt(existingIndex);
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       await _subService.unsubscribe(subscriptionId);
     } catch (e) {
-      _subscriptions = List.from(_subscriptions)..insert(existingIndex, sub);
-      notifyListeners();
+      if (!_isDisposed) {
+        _subscriptions = List.from(_subscriptions)..insert(existingIndex, sub);
+        _safeNotifyListeners();
+      }
       rethrow;
     }
   }
@@ -597,7 +628,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     _subscriptionsSession++;
     _subscriptions = [];
     _subscriptionsLoaded = false;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   Future<void> refresh() async {

@@ -18,6 +18,7 @@ class SellerGallerySection extends StatefulWidget {
 
 class _SellerGallerySectionState extends State<SellerGallerySection> {
   bool _loading = false;
+  bool _hasLocalChanges = false;
   late List<String> _galleryUrls;
 
   @override
@@ -25,6 +26,12 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
     super.initState();
     final initialUser = widget.user ?? context.read<AppState>().user;
     _galleryUrls = List.from(initialUser?.farmGalleryUrls ?? const []);
+  }
+
+  List<String> _effectiveUrls(AppState appState) {
+    if (_hasLocalChanges) return _galleryUrls;
+    final user = appState.user ?? widget.user;
+    return List.from(user?.farmGalleryUrls ?? _galleryUrls);
   }
 
   Future<void> _addPhoto() async {
@@ -46,13 +53,23 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
         );
         return;
       }
+      final currentUrls = _effectiveUrls(appState);
       final url = await StorageService()
-          .uploadFarmGalleryImage(user.id, bytes, _galleryUrls.length);
-      final newUrls = [..._galleryUrls, url];
-      if (mounted) setState(() => _galleryUrls = newUrls);
+          .uploadFarmGalleryImage(user.id, bytes, currentUrls.length);
+      final newUrls = [...currentUrls, url];
+      if (mounted) {
+        setState(() {
+          _hasLocalChanges = true;
+          _galleryUrls = newUrls;
+        });
+      }
       await usersService.updateFarmGallery(user.id, newUrls);
       await appState.refreshUser();
       if (mounted) {
+        setState(() {
+          _galleryUrls = List.from(appState.user?.farmGalleryUrls ?? newUrls);
+          _hasLocalChanges = false;
+        });
         messenger.showSnackBar(const SnackBar(content: Text('Slika dodata.')));
       }
     } catch (e) {
@@ -70,9 +87,12 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
     final usersService = context.read<UsersService>();
     final user = appState.user;
     if (user == null) return;
-    final removed = _galleryUrls[index];
-    final updated = List<String>.from(_galleryUrls)..removeAt(index);
+    final currentUrls = _effectiveUrls(appState);
+    if (index < 0 || index >= currentUrls.length) return;
+    final removed = currentUrls[index];
+    final updated = List<String>.from(currentUrls)..removeAt(index);
     setState(() {
+      _hasLocalChanges = true;
       _galleryUrls = updated;
       _loading = true;
     });
@@ -80,6 +100,10 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
       await usersService.updateFarmGallery(user.id, updated);
       await appState.refreshUser();
       if (mounted) {
+        setState(() {
+          _galleryUrls = List.from(appState.user?.farmGalleryUrls ?? updated);
+          _hasLocalChanges = false;
+        });
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Slika uklonjena.')));
       }
@@ -97,7 +121,7 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
   Widget build(BuildContext context) {
     final currentUser = context.watch<AppState>().user ?? widget.user;
     final urls = currentUser?.farmGalleryUrls ?? const <String>[];
-    final displayUrls = _galleryUrls.isNotEmpty ? _galleryUrls : urls;
+    final displayUrls = _hasLocalChanges ? _galleryUrls : urls;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(8),

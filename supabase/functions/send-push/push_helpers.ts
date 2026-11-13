@@ -66,3 +66,59 @@ export function getLockscreenBody(input: string, maxLen = 88): string {
   const safe = lastSpace > 24 ? cut.slice(0, lastSpace) : cut
   return safe.trimEnd() + "..."
 }
+
+/**
+ * Gradi CORS zaglavlja za send-push Edge funkciju.
+ * Za nedozvoljene ili prazne Origin vrednosti ne emituje Access-Control-Allow-Origin
+ * umesto fallback-a na prvi dozvoljeni domen.
+ */
+export function buildCorsHeaders(
+  origin: string | null | undefined,
+  allowedOrigins: readonly string[],
+): Record<string, string> {
+  const trimmedOrigin = (origin ?? "").trim()
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  }
+  if (trimmedOrigin && allowedOrigins.includes(trimmedOrigin)) {
+    headers["Access-Control-Allow-Origin"] = trimmedOrigin
+  }
+  return headers
+}
+
+/**
+ * Odlučuje da li FCM greška znači da je sam push token trajno nevažeći.
+ * Za HTTP 400 (`INVALID_ARGUMENT`) briše token isključivo ako poruka eksplicitno
+ * ukazuje na problem sa registration token-om — payload greške ne smeju da obrišu
+ * važeće korisničke tokene.
+ */
+export function shouldDeletePushToken(status: number, errorBody: string): boolean {
+  if (status === 404) return true
+  let parsed: {
+    error?: {
+      status?: unknown
+      message?: unknown
+      details?: Array<{ errorCode?: unknown }>
+    }
+  } | null = null
+  try {
+    parsed = JSON.parse(errorBody)
+  } catch {
+    return false
+  }
+  const errorStatus = parsed?.error?.status
+  const errorCode = parsed?.error?.details?.[0]?.errorCode
+  const errorMessage = typeof parsed?.error?.message === "string"
+    ? parsed.error.message.toLowerCase()
+    : ""
+
+  if (errorStatus === "NOT_FOUND" || errorCode === "UNREGISTERED") {
+    return true
+  }
+  if (errorCode === "INVALID_ARGUMENT" || status === 400) {
+    return errorMessage.includes("registration token")
+  }
+  return false
+}

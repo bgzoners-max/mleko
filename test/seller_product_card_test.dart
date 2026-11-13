@@ -6,16 +6,24 @@ import 'package:mleko/widgets/seller_product_card.dart';
 
 class _FakeProductsService extends Fake implements ProductsService {
   String? deletedProductId;
+  String? deletedSellerId;
   bool updateAvailableNowCalled = false;
+  String? updatedSellerId;
 
   @override
-  Future<void> deleteProduct(String id) async {
+  Future<void> deleteProduct(String id, {String? sellerId}) async {
     deletedProductId = id;
+    deletedSellerId = sellerId;
   }
 
   @override
-  Future<void> updateAvailableNow(String productId, bool availableNow) async {
+  Future<void> updateAvailableNow(
+    String productId,
+    bool availableNow, {
+    String? sellerId,
+  }) async {
     updateAvailableNowCalled = true;
+    updatedSellerId = sellerId;
   }
 }
 

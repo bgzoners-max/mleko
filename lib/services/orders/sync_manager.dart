@@ -13,9 +13,16 @@ class SyncManager extends ChangeNotifier {
   final OrderQueueService _queueService;
 
   bool _isSyncing = false;
+  bool _isDisposed = false;
   String? _syncError;
   int _syncedCount = 0;
   List<PendingOrder> _pendingOrders = [];
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
 
   /// Future lanac (mutex) koji garantuje da se sinhronizacije izvršavaju striktno serijski
   Future<void> _syncChain = Future.value();
@@ -55,10 +62,13 @@ class SyncManager extends ChangeNotifier {
 
   /// Osvežava lokalnu listu pending porudžbina
   Future<void> refreshPendingOrders() async {
+    if (_isDisposed) return;
     try {
-      _pendingOrders =
+      final orders =
           await _queueService.getPendingOrders(onlyUnsynced: true);
-      notifyListeners();
+      if (_isDisposed) return;
+      _pendingOrders = orders;
+      _safeNotifyListeners();
     } catch (e) {
       LoggerService.warning('Failed to refresh pending orders list: $e');
     }
@@ -66,7 +76,7 @@ class SyncManager extends ChangeNotifier {
 
   /// Sinhronizuj sve pending porudžbine sa serverom koristeći Future mutex lanac
   Future<void> syncPendingOrders() {
-    if (_connectivity.isOffline) {
+    if (_isDisposed || _connectivity.isOffline) {
       LoggerService.debug(
           'Sync skipped: connectivity is offline');
       return Future.value();
@@ -78,7 +88,7 @@ class SyncManager extends ChangeNotifier {
   }
 
   Future<void> _executeSync() async {
-    if (_connectivity.isOffline) {
+    if (_isDisposed || _connectivity.isOffline) {
       LoggerService.debug('Sync skipped in queue: connectivity is offline');
       return;
     }
@@ -86,30 +96,35 @@ class SyncManager extends ChangeNotifier {
     _isSyncing = true;
     _syncError = null;
     _syncedCount = 0;
-    notifyListeners();
+    _safeNotifyListeners();
 
     try {
       _syncedCount = await _orderSyncService.syncPendingOrders(
         connectivity: _connectivity,
       );
+      if (_isDisposed) return;
       if (_syncedCount > 0) {
         _connectivity.reportNetworkSuccess();
       }
       LoggerService.info('Foreground sync completed',
           extra: {'syncedCount': _syncedCount});
     } catch (e, st) {
+      if (_isDisposed) return;
       _syncError = e.toString();
       _connectivity.reportNetworkFailure(e);
       LoggerService.error('Sync failed', e, stackTrace: st);
     } finally {
-      await refreshPendingOrders();
+      if (!_isDisposed) {
+        await refreshPendingOrders();
+      }
       _isSyncing = false;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _connectivity.removeListener(_onConnectivityChanged);
     OrderQueueService.removeListener(_onQueueChanged);
     super.dispose();

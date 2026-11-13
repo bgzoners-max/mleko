@@ -2,11 +2,13 @@
 // Pokretanje: `deno test supabase/functions/send-push/push_helpers.test.ts`
 // (bez permisija — modul ne pristupa env-u niti mreži).
 import {
+  buildCorsHeaders,
   getLockscreenBody,
   isLogLevelEnabled,
   redactText,
   resolveLogLevel,
   shortId,
+  shouldDeletePushToken,
 } from "./push_helpers.ts"
 import { assert, assertEquals } from "jsr:@std/assert"
 
@@ -101,4 +103,50 @@ Deno.test("isLogLevelEnabled: redosled po ozbiljnosti", () => {
   // prag error → samo error
   assert(!isLogLevelEnabled("warn", "error"))
   assert(isLogLevelEnabled("error", "error"))
+})
+
+Deno.test("buildCorsHeaders: ne vraća Access-Control-Allow-Origin za nedozvoljen ili prazan origin", () => {
+  const allowed = ["https://domacimarket.rs", "https://www.domacimarket.rs"]
+  const okHeaders = buildCorsHeaders("https://www.domacimarket.rs", allowed)
+  assertEquals(okHeaders["Access-Control-Allow-Origin"], "https://www.domacimarket.rs")
+  assertEquals(okHeaders["Vary"], "Origin")
+
+  const badHeaders = buildCorsHeaders("https://evil.example", allowed)
+  assertEquals(badHeaders["Access-Control-Allow-Origin"], undefined)
+  assertEquals(badHeaders["Vary"], "Origin")
+
+  const emptyHeaders = buildCorsHeaders(null, allowed)
+  assertEquals(emptyHeaders["Access-Control-Allow-Origin"], undefined)
+})
+
+Deno.test("shouldDeletePushToken: razlikuje mrtav token od greške payload-a", () => {
+  assert(shouldDeletePushToken(404, "{}"))
+  assert(
+    shouldDeletePushToken(
+      404,
+      JSON.stringify({ error: { status: "NOT_FOUND", details: [{ errorCode: "UNREGISTERED" }] } }),
+    ),
+  )
+  assert(
+    shouldDeletePushToken(
+      400,
+      JSON.stringify({
+        error: {
+          message: "The registration token is not a valid FCM registration token",
+          details: [{ errorCode: "INVALID_ARGUMENT" }],
+        },
+      }),
+    ),
+  )
+  assert(
+    !shouldDeletePushToken(
+      400,
+      JSON.stringify({
+        error: {
+          message: "Invalid TTL value in android config",
+          details: [{ errorCode: "INVALID_ARGUMENT" }],
+        },
+      }),
+    ),
+  )
 })

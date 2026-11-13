@@ -214,8 +214,8 @@ class _GuideCtaButtons extends StatelessWidget {
         ),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF245938),
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1A4329),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

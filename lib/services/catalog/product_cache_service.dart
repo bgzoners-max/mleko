@@ -197,23 +197,30 @@ class ProductCacheService {
     }
   }
 
-  /// Invalidira određeni proizvod i pripadajući seller/home keš.
+  static bool _isHomeCacheKey(String key) =>
+      key == homeProductsKey || key.startsWith('${homeProductsKey}_');
+
+  /// Invalidira određeni proizvod i sve pripadajuće seller/home/regionalne keševe.
   Future<void> invalidateProduct(String productId, [String? sellerId]) async {
     _memoryCache.remove(productKey(productId));
-    _memoryCache.remove(homeProductsKey);
-    if (sellerId != null) {
+    _memoryCache.removeWhere((key, _) => _isHomeCacheKey(key));
+    if (sellerId != null && sellerId.isNotEmpty) {
       _memoryCache.remove(sellerKey(sellerId));
     }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(productKey(productId));
-      await prefs.remove(homeProductsKey);
-      if (sellerId != null) {
+      final homeKeys = prefs.getKeys().where(_isHomeCacheKey).toList();
+      for (final key in homeKeys) {
+        await prefs.remove(key);
+      }
+      if (sellerId != null && sellerId.isNotEmpty) {
         await prefs.remove(sellerKey(sellerId));
       }
       LoggerService.debug('Invalidated product cache', extra: {
         'productId': productId,
         'sellerId': sellerId,
+        'clearedHomeKeys': homeKeys.length,
       });
     } catch (e, st) {
       LoggerService.error('Failed to invalidate product cache', e, stackTrace: st);

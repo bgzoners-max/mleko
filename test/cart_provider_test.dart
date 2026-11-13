@@ -8,6 +8,7 @@ import 'package:mleko/services/catalog/products_service.dart';
 
 class FakeProductsService implements ProductsService {
   final Map<String, ProductModel> _mockProducts = {};
+  bool failNextByIds = false;
 
   void addMockProduct(ProductModel p) {
     _mockProducts[p.id] = p;
@@ -18,6 +19,10 @@ class FakeProductsService implements ProductsService {
 
   @override
   Future<Map<String, ProductModel>> getProductsByIds(List<String> ids) async {
+    if (failNextByIds) {
+      failNextByIds = false;
+      throw Exception('Simulated network error');
+    }
     final result = <String, ProductModel>{};
     for (final id in ids) {
       if (_mockProducts.containsKey(id)) {
@@ -631,6 +636,60 @@ void main() {
       expect(prefs.getString('mleko_cart_user_id'), isNull);
 
       cart.dispose();
+    });
+
+    test('getProductsBySeller evicts failed cache future so subsequent retry succeeds', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService()
+        ..addMockProduct(_createProduct(id: 'p-1', sellerId: 's-1', name: 'Sir'));
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-1', quantity: 2.0);
+      service.failNextByIds = true;
+
+      await expectLater(cart.getProductsBySeller('s-1'), throwsException);
+      final retryItems = await cart.getProductsBySeller('s-1');
+      expect(retryItems.length, 1);
+      expect(retryItems.first.product.id, 'p-1');
+
+      cart.dispose();
+    });
+
+    test('remove(productId) and getQuantity(productId) handle variant cart keys', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService();
+      final base = _createProduct(id: 'p-med', sellerId: 's-1', name: 'Med');
+      service.addMockProduct(base);
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-med::v1', quantity: 1.0);
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-med::v2', quantity: 2.0);
+
+      expect(cart.getQuantity('p-med::v1'), 1.0);
+      expect(cart.getQuantity('p-med'), 3.0);
+
+      await cart.remove('p-med::v1');
+      expect(cart.getQuantity('p-med::v1'), isNull);
+      expect(cart.getQuantity('p-med'), 2.0);
+
+      await cart.remove('p-med');
+      expect(cart.isEmpty, isTrue);
+
+      cart.dispose();
+    });
+
+    test('dispose completes pending saveWaiter cleanly while flush is awaiting', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = FakeProductsService();
+      final cart = CartProvider(productsService: service);
+      await cart.loadFuture;
+
+      await cart.addForSeller(sellerId: 's-1', productId: 'p-1', quantity: 1.0);
+      final flushFuture = cart.flush();
+      cart.dispose();
+      await expectLater(flushFuture, completes);
     });
   });
 }

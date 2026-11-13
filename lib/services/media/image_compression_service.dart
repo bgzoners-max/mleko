@@ -41,6 +41,9 @@ class ImageCompressionService {
     // Na Web-u i native platformama: compute ili direktno izvršavanje
     // Za Web kIsWeb compute koristi web worker ili async task; jednostavna obrada je brza
     if (kIsWeb) {
+      // Prepuštanje UI niti na Web-u pre sinhronog dekodiranja sprečava potpuno zamrzavanje
+      // animacija i napretka kada se više slika kompresuje jedna za drugom.
+      await Future<void>.delayed(Duration.zero);
       return _processImageBytes(inputBytes, maxWidth, maxHeight, quality);
     } else {
       return compute(
