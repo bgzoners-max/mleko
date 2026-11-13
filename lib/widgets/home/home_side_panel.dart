@@ -95,46 +95,83 @@ class _HomeSidePanelState extends State<HomeSidePanel>
               initialData: widget.initialData),
           FavoriteFarmsList(tabController: _tabController),
         ];
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-              width: 1.0,
-            ),
-            boxShadow: AmazonColors.getCardShadow(context),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                padding: EdgeInsets.zero,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 10),
-                onTap: (_) => HapticFeedback.selectionClick(),
-                labelColor: isDark
-                    ? AmazonColors.darkTextPrimary
-                    : AmazonColors.textPrimary,
-                unselectedLabelColor: isDark
-                    ? AmazonColors.darkTextSecondary
-                    : AmazonColors.textSecondary,
-                indicatorColor: AmazonColors.amberDark,
-                tabs: [
-                  Tab(text: featuredTitle),
-                  const Tab(text: 'Omiljena gazdinstva'),
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Na tablet / manjim desktop prozorima prikazujemo dve jednake kartice
+            // jednu pored druge umesto tabova, čime nestaje prazan prostor sa desne strane.
+            if (Breakpoints.isTablet(context) && constraints.maxWidth >= 600) {
+              final tabletCardHeight = (196.0 * textScale).roundToDouble();
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: SidePanelCard(
+                      title: featuredTitle,
+                      icon: featuredIcon,
+                      height: tabletCardHeight,
+                      child: TopProductsList(
+                        homeProductsStream: widget.homeProductsStream,
+                        initialData: widget.initialData,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SidePanelCard(
+                      title: 'Omiljena gazdinstva',
+                      icon: Icons.favorite_border,
+                      height: tabletCardHeight,
+                      child: const FavoriteFarmsList(),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                  width: 1.0,
+                ),
+                boxShadow: AmazonColors.getCardShadow(context),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    padding: EdgeInsets.zero,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    onTap: (_) => HapticFeedback.selectionClick(),
+                    labelColor: isDark
+                        ? AmazonColors.darkTextPrimary
+                        : AmazonColors.textPrimary,
+                    unselectedLabelColor: isDark
+                        ? AmazonColors.darkTextSecondary
+                        : AmazonColors.textSecondary,
+                    indicatorColor: AmazonColors.amberDark,
+                    tabs: [
+                      Tab(text: featuredTitle),
+                      const Tab(text: 'Omiljena gazdinstva'),
+                    ],
+                  ),
+                  SizedBox(
+                      height: cardHeight,
+                      child: IndexedStack(
+                          index: _tabController.index,
+                          sizing: StackFit.expand,
+                          children: children)),
                 ],
               ),
-              SizedBox(
-                  height: cardHeight,
-                  child: IndexedStack(
-                      index: _tabController.index,
-                      sizing: StackFit.expand,
-                      children: children)),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -180,12 +217,16 @@ class SidePanelCard extends StatelessWidget {
                 Icon(icon,
                     size: 17, color: isDark ? AmazonColors.lightGreen : AmazonColors.link),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                    ),
                   ),
                 ),
               ],

@@ -25,9 +25,9 @@ class CategoryGrid extends StatelessWidget {
         final int crossAxisCount;
         if (width >= 1150) {
           crossAxisCount = 6;
-        } else if (width >= 900) {
+        } else if (width >= 820) {
           crossAxisCount = 4;
-        } else if (width >= 600) {
+        } else if (width >= 540) {
           crossAxisCount = 3;
         } else {
           crossAxisCount = 2;

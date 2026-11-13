@@ -73,7 +73,9 @@ class _HomePaginatedProductsShelfState
           columns = 6;
         } else if (width >= 960) {
           columns = 5;
-        } else if (width >= 620) {
+        } else if (width >= 760) {
+          columns = 4;
+        } else if (width >= 560) {
           columns = 3;
         } else {
           columns = 2;

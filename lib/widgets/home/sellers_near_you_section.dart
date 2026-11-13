@@ -8,13 +8,18 @@ import '../skeleton.dart';
 /// Sekcija „Prodavci u tvom okruženju“ – prikazuje prodavce u izabranom regionu.
 class SellersNearYouSection extends StatelessWidget {
   final String region;
+  final EdgeInsetsGeometry padding;
 
-  const SellersNearYouSection({super.key, required this.region});
+  const SellersNearYouSection({
+    super.key,
+    required this.region,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

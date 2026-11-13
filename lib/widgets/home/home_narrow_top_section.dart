@@ -54,33 +54,32 @@ class HomeNarrowTopSection extends StatelessWidget {
         ),
         SizedBox(height: sectionSpacing),
         if (isTabletLayout) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: isLargeTablet ? 6 : 5,
-                child: RepaintBoundary(
-                  child: HomeSidePanel(
-                    homeProductsStream: stream,
-                    initialData: latestHomeData,
-                    isSeller: isSeller,
-                  ),
-                ),
+          const FadeInSlide(
+            delay: Duration(milliseconds: 140),
+            child: RepaintBoundary(
+              child: MapCard(
+                fullWidth: true,
+                padding: EdgeInsets.zero,
               ),
-              SizedBox(width: sectionSpacing),
-              Expanded(
-                flex: isLargeTablet ? 4 : 5,
-                child: const RepaintBoundary(
-                  child: MapCard(),
-                ),
+            ),
+          ),
+          SizedBox(height: sectionSpacing),
+          FadeInSlide(
+            delay: const Duration(milliseconds: 200),
+            child: RepaintBoundary(
+              child: HomeSidePanel(
+                homeProductsStream: stream,
+                initialData: latestHomeData,
+                isSeller: isSeller,
               ),
-            ],
+            ),
           ),
           if (selectedRegion != null) ...[
             SizedBox(height: sectionSpacing),
             RepaintBoundary(
               child: SellersNearYouSection(
                 region: selectedRegion!,
+                padding: EdgeInsets.zero,
               ),
             ),
           ],

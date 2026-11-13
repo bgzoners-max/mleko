@@ -267,4 +267,129 @@ void main() {
 
     await controller.close();
   });
+
+  testWidgets(
+      'HomeSidePanel displays both panels side-by-side on standard tablet width',
+      (tester) async {
+    final now = DateTime.now();
+    final p1 = ProductModel(
+      id: 'p1',
+      sellerId: 's1',
+      category: 'sir',
+      name: 'Kajmak domaći',
+      pricePerKg: 1200,
+      minOrderKg: 0.5,
+      availableKg: 20,
+      description: '',
+      imageUrls: const [],
+      pickupOptions: const [],
+      location: 'Čačak',
+      createdAt: now,
+    );
+
+    final data = (
+      products: [p1],
+      salesCounts: {'p1': 2},
+      ratings: <String, ({double avg, int count})>{},
+    );
+
+    final controller = StreamController<HomeProductsData>.broadcast();
+
+    tester.view.physicalSize = const Size(900, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+              create: (_) => AppState(ordersService: OrdersService())),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: HomeSidePanel(
+              homeProductsStream: controller.stream,
+              initialData: data,
+              isSeller: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TabBar), findsNothing);
+    expect(find.byType(SidePanelCard), findsNWidgets(2));
+    expect(find.text('Izdvajamo za vas'), findsOneWidget);
+    expect(find.text('Omiljena gazdinstva'), findsOneWidget);
+
+    await controller.close();
+  });
+
+  testWidgets(
+      'HomeSidePanel falls back to TabBar on compact portrait tablet (< 600px inner)',
+      (tester) async {
+    final now = DateTime.now();
+    final p1 = ProductModel(
+      id: 'p1',
+      sellerId: 's1',
+      category: 'sir',
+      name: 'Kajmak domaći',
+      pricePerKg: 1200,
+      minOrderKg: 0.5,
+      availableKg: 20,
+      description: '',
+      imageUrls: const [],
+      pickupOptions: const [],
+      location: 'Čačak',
+      createdAt: now,
+    );
+
+    final data = (
+      products: [p1],
+      salesCounts: {'p1': 2},
+      ratings: <String, ({double avg, int count})>{},
+    );
+
+    final controller = StreamController<HomeProductsData>.broadcast();
+
+    tester.view.physicalSize = const Size(640, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(
+              create: (_) => AppState(ordersService: OrdersService())),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 540,
+              child: HomeSidePanel(
+                homeProductsStream: controller.stream,
+                initialData: data,
+                isSeller: false,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TabBar), findsOneWidget);
+    expect(find.byType(SidePanelCard), findsNothing);
+
+    await controller.close();
+  });
 }

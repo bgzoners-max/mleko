@@ -106,5 +106,28 @@ void main() {
     expect(navigated, isTrue);
     expect(find.text('Sellers Map Screen'), findsOneWidget);
   });
+
+  testWidgets('MapCard spans full width with CTA pill on wide tablet banner',
+      (tester) async {
+    tester.view.physicalSize = const Size(900, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: MapCard(
+            fullWidth: true,
+            padding: EdgeInsets.zero,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('LOKALNA GAZDINSTVA'), findsOneWidget);
+    expect(find.text('Otvori mapu'), findsOneWidget);
+    expect(tester.getSize(find.byType(MapCard)).width, equals(900.0));
+  });
 }
 

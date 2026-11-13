@@ -125,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final outerHorizontalPadding =
         isWide ? 16.0 : (isLargeTablet ? 12.0 : (isSmallTablet ? 10.0 : 8.0));
-    final sectionSpacing = isWide ? 16.0 : 8.0;
+    final sectionSpacing = isWide ? 16.0 : (isTabletLayout ? 12.0 : 8.0);
     const compactSpacing = 6.0;
     final sidePanelSpacing = isWide ? 14.0 : 10.0;
     final productGridExtent = isWide
