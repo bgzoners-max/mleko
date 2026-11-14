@@ -126,6 +126,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildDesktopLayout(ProductModel product) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final linkColor = isDark ? AmazonColors.lightGreen : AmazonColors.link;
+    final mutedColor =
+        isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final galleryWidth =
@@ -135,6 +140,105 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/');
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_back_rounded,
+                            size: 14,
+                            color: linkColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Nazad',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: linkColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '|',
+                    style: TextStyle(fontSize: 12, color: mutedColor),
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => context.go('/'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        'Početna',
+                        style: TextStyle(fontSize: 12, color: mutedColor),
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 14, color: mutedColor),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => context.push('/search'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        'Pijaca hrane',
+                        style: TextStyle(fontSize: 12, color: mutedColor),
+                      ),
+                    ),
+                  ),
+                  if (product.category.trim().isNotEmpty) ...[
+                    Icon(Icons.chevron_right, size: 14, color: mutedColor),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () => context.push(
+                        '/search?category=${Uri.encodeComponent(product.category)}',
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          product.category,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: linkColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

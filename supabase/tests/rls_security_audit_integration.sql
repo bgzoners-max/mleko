@@ -90,7 +90,7 @@ DECLARE
     'profiles', 'products', 'orders', 'order_items', 'reviews',
     'buyer_reviews', 'favorites', 'favorite_sellers', 'user_push_tokens',
     'conversations', 'messages', 'support_tickets', 'support_ticket_messages',
-    'classified_ads', 'classified_ad_reports', 'edge_config'
+    'classified_ads', 'classified_ad_reports', 'edge_config', 'waitlist'
   ];
 BEGIN
   FOREACH v_table IN ARRAY v_expected_tables LOOP
@@ -104,6 +104,48 @@ BEGIN
 
   IF array_length(v_missing, 1) > 0 THEN
     RAISE EXCEPTION 'Sledece tabele nemaju ukljucen RLS: %', array_to_string(v_missing, ', ');
+  END IF;
+END $$;
+
+-- 6. Provera Paket B: get_seller_popular_products i get_seller_response_time_stats su SECURITY DEFINER
+DO $$
+DECLARE
+  v_fn TEXT;
+  v_prosecdef BOOLEAN;
+  v_proconfig TEXT[];
+BEGIN
+  FOREACH v_fn IN ARRAY ARRAY['get_seller_popular_products', 'get_seller_response_time_stats'] LOOP
+    SELECT p.prosecdef, p.proconfig INTO v_prosecdef, v_proconfig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = v_fn;
+
+    IF v_prosecdef IS NULL THEN
+      RAISE EXCEPTION 'Funkcija public.% ne postoji!', v_fn;
+    END IF;
+
+    IF NOT v_prosecdef THEN
+      RAISE EXCEPTION 'public.% mora biti SECURITY DEFINER!', v_fn;
+    END IF;
+
+    IF NOT ('search_path=public' = ANY(v_proconfig)) THEN
+      RAISE EXCEPTION 'public.% mora imati postavljen SET search_path = public!', v_fn;
+    END IF;
+  END LOOP;
+END $$;
+
+-- 7. Provera Paket B: public.public_classified_ads ne sme izlagati phone preko phone_public za posetioce
+DO $$
+DECLARE
+  v_view_def TEXT;
+BEGIN
+  SELECT pg_get_viewdef('public.public_classified_ads'::regclass, true) INTO v_view_def;
+  IF v_view_def IS NULL THEN
+    RAISE EXCEPTION 'View public.public_classified_ads ne postoji!';
+  END IF;
+
+  IF v_view_def NOT LIKE '%seller_type%' OR v_view_def NOT LIKE '%attributes%' THEN
+    RAISE EXCEPTION 'View public.public_classified_ads mora ukljucivati seller_type i attributes!';
   END IF;
 END $$;
 

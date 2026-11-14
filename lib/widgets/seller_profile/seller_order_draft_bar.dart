@@ -12,14 +12,47 @@ import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 
-class SellerOrderDraftBar extends StatelessWidget {
+class SellerOrderDraftBar extends StatefulWidget {
   final String sellerId;
   final UserModel seller;
 
   const SellerOrderDraftBar({super.key, required this.sellerId, required this.seller});
 
   @override
+  State<SellerOrderDraftBar> createState() => _SellerOrderDraftBarState();
+}
+
+class _SellerOrderDraftBarState extends State<SellerOrderDraftBar> {
+  String? _lastSellerId;
+  String? _lastDraftKey;
+  Future<List<({ProductModel product, double quantity})>>? _productsFuture;
+
+  static String _buildDraftKey(Map<String, double> draft) {
+    if (draft.isEmpty) return '';
+    final entries = draft.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return entries.map((e) => '${e.key}:${e.value}').join('|');
+  }
+
+  Future<List<({ProductModel product, double quantity})>> _resolveFuture(
+    BuildContext context,
+    String draftKey,
+  ) {
+    if (_productsFuture == null ||
+        _lastSellerId != widget.sellerId ||
+        _lastDraftKey != draftKey) {
+      _lastSellerId = widget.sellerId;
+      _lastDraftKey = draftKey;
+      _productsFuture =
+          context.read<CartProvider>().getProductsBySeller(widget.sellerId);
+    }
+    return _productsFuture!;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final sellerId = widget.sellerId;
+    final seller = widget.seller;
     final user = context.select<AppState, UserModel?>((s) => s.user);
     final canContact = user != null && !user.isGuest && user.id != sellerId;
 
@@ -27,6 +60,7 @@ class SellerOrderDraftBar extends StatelessWidget {
       (cart) => cart.getSellerDraft(sellerId),
     );
     final hasDraft = draft.isNotEmpty;
+    final draftKey = _buildDraftKey(draft);
 
     if (!canContact && !hasDraft) return const SizedBox.shrink();
 
@@ -56,8 +90,7 @@ class SellerOrderDraftBar extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               FutureBuilder<List<({ProductModel product, double quantity})>>(
-                future:
-                    context.read<CartProvider>().getProductsBySeller(sellerId),
+                future: _resolveFuture(context, draftKey),
                 builder: (_, snap) {
                   final items = snap.data ?? [];
                   if (items.isEmpty) return const SizedBox.shrink();

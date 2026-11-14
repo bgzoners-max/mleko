@@ -53,8 +53,21 @@ class CartProvider extends ChangeNotifier {
   bool get isEmpty => count == 0;
   int get sellerCount => _sellerItems.length;
 
-  double? getQuantityForSeller(String sellerId, String productId) =>
-      _sellerItems[sellerId]?[productId];
+  double? getQuantityForSeller(String sellerId, String productId) {
+    final map = _sellerItems[sellerId];
+    if (map == null) return null;
+    final direct = map[productId];
+    if (direct != null) return direct;
+    double total = 0;
+    var found = false;
+    for (final entry in map.entries) {
+      if (ProductModel.extractProductId(entry.key) == productId) {
+        total += entry.value;
+        found = true;
+      }
+    }
+    return found ? total : null;
+  }
   bool containsInSeller(String sellerId, String productId) {
     final map = _sellerItems[sellerId];
     if (map == null) return false;
@@ -369,6 +382,27 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
+  double _normalizeAndValidateQty(
+      double targetQty, ProductModel? resolvedProduct) {
+    if (resolvedProduct == null) {
+      return QuantityEngine.normalizeQuantity(
+          quantity: targetQty, minQuantity: targetQty, step: 1.0);
+    }
+    final step = resolvedProduct.quantityStep;
+    final minQty = resolvedProduct.minOrderKg;
+    if (!QuantityEngine.isValidQuantity(
+        quantity: targetQty, minQuantity: minQty, step: step)) {
+      throw AppError(
+        message: 'Invalid quantity for ${resolvedProduct.name}',
+        userMessage:
+            '${resolvedProduct.name}: količina mora biti od minimuma (${resolvedProduct.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, resolvedProduct.unitType)}.',
+        type: ErrorType.validation,
+      );
+    }
+    return QuantityEngine.normalizeQuantity(
+        quantity: targetQty, minQuantity: minQty, step: step);
+  }
+
   Future<void> addForSeller({
     required String sellerId,
     required String productId,
@@ -389,36 +423,8 @@ class CartProvider extends ChangeNotifier {
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     final currentQty = sellerDraft[effectiveKey] ?? 0.0;
-    var targetQty = currentQty + quantity;
-
-    if (resolvedProduct != null) {
-      final step = resolvedProduct.quantityStep;
-      final minQty = resolvedProduct.minOrderKg;
-
-      if (!QuantityEngine.isValidQuantity(
-        quantity: targetQty,
-        minQuantity: minQty,
-        step: step,
-      )) {
-        throw AppError(
-          message: 'Invalid quantity for ${resolvedProduct.name}',
-          userMessage:
-              '${resolvedProduct.name}: količina mora biti od minimuma (${resolvedProduct.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, resolvedProduct.unitType)}.',
-          type: ErrorType.validation,
-        );
-      }
-      targetQty = QuantityEngine.normalizeQuantity(
-        quantity: targetQty,
-        minQuantity: minQty,
-        step: step,
-      );
-    } else {
-      targetQty = QuantityEngine.normalizeQuantity(
-        quantity: targetQty,
-        minQuantity: targetQty,
-        step: 1.0,
-      );
-    }
+    final targetQty =
+        _normalizeAndValidateQty(currentQty + quantity, resolvedProduct);
 
     sellerDraft[effectiveKey] = targetQty;
     _invalidateCache(sellerId);
@@ -446,47 +452,13 @@ class CartProvider extends ChangeNotifier {
     final fetchedProduct =
         product ?? await _productsService.getProduct(baseProductId);
     final resolvedProduct = fetchedProduct?.resolveForCartKey(effectiveKey);
-    var targetQty = quantity;
-
-    if (resolvedProduct != null) {
-      final step = resolvedProduct.quantityStep;
-      final minQty = resolvedProduct.minOrderKg;
-
-      if (!QuantityEngine.isValidQuantity(
-        quantity: targetQty,
-        minQuantity: minQty,
-        step: step,
-      )) {
-        throw AppError(
-          message: 'Invalid quantity for ${resolvedProduct.name}',
-          userMessage:
-              '${resolvedProduct.name}: količina mora biti od minimuma (${resolvedProduct.minOrderFormatted}) i u koracima od ${ProductModel.formatQuantityWithUnit(step, resolvedProduct.unitType)}.',
-          type: ErrorType.validation,
-        );
-      }
-      targetQty = QuantityEngine.normalizeQuantity(
-        quantity: targetQty,
-        minQuantity: minQty,
-        step: step,
-      );
-    } else {
-      targetQty = QuantityEngine.normalizeQuantity(
-        quantity: targetQty,
-        minQuantity: targetQty,
-        step: 1.0,
-      );
-    }
+    final targetQty = _normalizeAndValidateQty(quantity, resolvedProduct);
 
     final sellerDraft =
         _sellerItems.putIfAbsent(sellerId, () => <String, double>{});
     sellerDraft[effectiveKey] = targetQty;
     if (product != null) {
-      unawaited(
-        _analyticsService.logAddToCart(
-          product,
-          targetQty,
-        ),
-      );
+      unawaited(_analyticsService.logAddToCart(product, targetQty));
     }
     _invalidateCache(sellerId);
     notifyListeners();
@@ -500,7 +472,13 @@ class CartProvider extends ChangeNotifier {
     await _initFuture;
     final sellerDraft = _sellerItems[sellerId];
     if (sellerDraft == null) return;
-    sellerDraft.remove(productId);
+    if (sellerDraft.containsKey(productId)) {
+      sellerDraft.remove(productId);
+    } else {
+      sellerDraft.removeWhere(
+        (key, _) => ProductModel.extractProductId(key) == productId,
+      );
+    }
     if (sellerDraft.isEmpty) _sellerItems.remove(sellerId);
     _invalidateCache(sellerId);
     notifyListeners();

@@ -632,10 +632,11 @@ class ClassifiedsProvider extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    // Force-reload categories in case they changed (reset guard first).
+    // Force-reload categories first so subcategory hierarchy resolution in
+    // loadInitialAds() always sees the refreshed category map.
     _categoriesLoaded = false;
+    await loadCategories(forceRefresh: true);
     await Future.wait([
-      loadCategories(forceRefresh: true),
       loadInitialAds(),
       loadSubscriptions(),
     ]);

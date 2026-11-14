@@ -33,11 +33,16 @@ function formatPrice(
   const rounded = Math.round(pricePerKg);
   switch (unitType) {
     case "L":
+    case "l":
       return `${rounded} RSD/L`;
     case "kom":
       return `${rounded} RSD/kom`;
     case "kg":
       return `${rounded} RSD/kg`;
+    case "veza":
+      return `${rounded} RSD/veza`;
+    case "pak":
+      return `${rounded} RSD/pak`;
     default:
       return `${rounded} RSD`;
   }
@@ -79,15 +84,22 @@ export async function handleProductPreview(
 
     const encodedProductId = encodeURIComponent(productId);
     const canonicalUrl = `${publicBaseUrl}/product/${encodedProductId}`;
-    const previewUrl = `${publicBaseUrl}/p/${encodedProductId}`;
+    const previewUrl = canonicalUrl;
 
     const userAgent = request.headers.get("user-agent");
     if (!isBot(userAgent)) {
+      const redirectTarget = new URL(canonicalUrl);
+      for (const [k, v] of requestUrl.searchParams.entries()) {
+        if (k !== "id" && k !== "v") {
+          redirectTarget.searchParams.set(k, v);
+        }
+      }
       return new Response(null, {
         status: 302,
         headers: {
-          Location: canonicalUrl,
+          Location: redirectTarget.toString(),
           "Cache-Control": "public, max-age=0, s-maxage=60",
+          Vary: "User-Agent",
         },
       });
     }
@@ -121,6 +133,7 @@ export async function handleProductPreview(
           "content-type": "text/html; charset=utf-8",
           "cache-control":
             "public, max-age=0, s-maxage=60, stale-while-revalidate=3600",
+          vary: "User-Agent",
         },
       });
     }
@@ -218,6 +231,7 @@ export async function handleProductPreview(
       previewUrl,
       canonicalUrl,
       imageUrl,
+      robots: product ? "index,follow,max-image-preview:large" : "noindex,nofollow",
       jsonLd,
       ogType: "product",
       bodyHeading: product ? product.name : "Proizvod nije pronađen",
@@ -226,14 +240,20 @@ export async function handleProductPreview(
       linkLabel: "klikni ovde",
     });
 
+    const responseHeaders: Record<string, string> = {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": product
+        ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+        : "no-cache, no-store, must-revalidate",
+      vary: "User-Agent",
+    };
+    if (!product) {
+      responseHeaders["x-robots-tag"] = "noindex, nofollow";
+    }
+
     return new Response(html, {
       status: product ? 200 : 404,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": product
-          ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
-          : "no-cache, no-store, must-revalidate",
-      },
+      headers: responseHeaders,
     });
   } catch (err) {
     console.error("Edge Function Error:", err);

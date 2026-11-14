@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mleko/models/classified_ad_model.dart';
 import 'package:mleko/models/product_model.dart';
 import 'package:mleko/models/user_model.dart';
 import 'package:mleko/widgets/app_share_sheet.dart';
+import 'package:mleko/widgets/classifieds/detail/classified_breadcrumbs.dart';
+import 'package:mleko/widgets/classifieds/detail/classified_main_info_card.dart';
 
 void main() {
   testWidgets('showAppShareSheet renders share options on mobile', (tester) async {
@@ -136,5 +139,75 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Podeli profil'), findsOneWidget);
     expect(find.text('https://www.domacimarket.rs/seller/sel-7'), findsOneWidget);
+  });
+
+  testWidgets('ClassifiedMainInfoCard renders Podeli button and ClassifiedBreadcrumbs renders desktop links',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final ad = ClassifiedAdModel(
+      id: 'ad-101',
+      userId: 'user-1',
+      categoryId: 'traktori',
+      categoryName: 'Traktori',
+      title: 'IMT 539 DeLuxe',
+      description: 'Odlicno stanje',
+      price: 4500,
+      currency: 'EUR',
+      priceType: 'fixed',
+      condition: 'used',
+      city: 'Šabac',
+      images: const [],
+      status: 'active',
+      viewsCount: 12,
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+    );
+
+    var shareTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClassifiedBreadcrumbs(
+                    ad: ad,
+                    colorScheme: theme.colorScheme,
+                  ),
+                  ClassifiedMainInfoCard(
+                    ad: ad,
+                    theme: theme,
+                    colorScheme: theme.colorScheme,
+                    isDark: false,
+                    isOwner: false,
+                    hasPhone: true,
+                    isWide: true,
+                    onShare: () => shareTapped = true,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Nazad'), findsOneWidget);
+    expect(find.text('Početna'), findsOneWidget);
+    expect(find.text('Mali oglasi'), findsOneWidget);
+    expect(find.text('Traktori'), findsOneWidget);
+    expect(find.text('Podeli'), findsOneWidget);
+
+    await tester.tap(find.text('Podeli'));
+    await tester.pump();
+    expect(shareTapped, isTrue);
   });
 }

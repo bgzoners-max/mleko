@@ -165,40 +165,78 @@ class _FavoriteFarmsDrawerContent extends StatelessWidget {
               color: isDark ? AmazonColors.darkBorder : AmazonColors.borderSubtle,
             ),
 
-            // Donja sekcija: prečica ka mapi gazdinstava
+            // Donja sekcija: prečice ka omiljenim proizvodima i mapi gazdinstava
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.push('/sellers-map');
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  side: BorderSide(
-                    color: isDark
-                        ? AmazonColors.darkBorder
-                        : AmazonColors.borderGray,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.push('/favorites');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      side: BorderSide(
+                        color: isDark
+                            ? AmazonColors.darkBorder
+                            : AmazonColors.borderGray,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.favorite_border_rounded,
+                      size: 18,
+                      color: AmazonColors.dealRed,
+                    ),
+                    label: Text(
+                      'Omiljeni proizvodi',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AmazonColors.darkTextPrimary
+                            : AmazonColors.textPrimary,
+                      ),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.push('/sellers-map');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      side: BorderSide(
+                        color: isDark
+                            ? AmazonColors.darkBorder
+                            : AmazonColors.borderGray,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.map_outlined,
+                      size: 18,
+                      color: AmazonColors.green,
+                    ),
+                    label: Text(
+                      'Zavirite u komšiluk na mapi',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AmazonColors.darkTextPrimary
+                            : AmazonColors.textPrimary,
+                      ),
+                    ),
                   ),
-                ),
-                icon: const Icon(
-                  Icons.map_outlined,
-                  size: 18,
-                  color: AmazonColors.green,
-                ),
-                label: Text(
-                  'Zavirite u komšiluk na mapi',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? AmazonColors.darkTextPrimary
-                        : AmazonColors.textPrimary,
-                  ),
-                ),
+                ],
               ),
             ),
           ],

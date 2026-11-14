@@ -19,7 +19,8 @@ class SellerProductGrid extends StatefulWidget {
   final String sellerId;
   final int? forceColumns;
 
-  const SellerProductGrid({super.key, required this.sellerId, this.forceColumns});
+  const SellerProductGrid(
+      {super.key, required this.sellerId, this.forceColumns});
 
   @override
   State<SellerProductGrid> createState() => _SellerProductGridState();
@@ -28,18 +29,100 @@ class SellerProductGrid extends StatefulWidget {
 class _SellerProductGridState extends State<SellerProductGrid> {
   Stream<List<ProductModel>>? _productsStream;
   String? _lastSellerId;
-  Future<Map<String, ({double avg, int count})>>? _ratingsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String? _selectedCategory;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _ratingsFuture ??= context.read<ProductsService>().getProductRatings();
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _ensureStream(String sellerId) {
     if (_lastSellerId == sellerId) return;
     _lastSellerId = sellerId;
-    _productsStream = context.read<ProductsService>().getProductsBySeller(sellerId);
+    _searchQuery = '';
+    _selectedCategory = null;
+    _searchController.clear();
+    _productsStream =
+        context.read<ProductsService>().getProductsBySeller(sellerId);
+  }
+
+  Widget _buildFilterBar(
+    BuildContext context,
+    List<ProductModel> allProducts,
+    List<String> categories,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (v) => setState(() => _searchQuery = v.trim()),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Pretraži proizvode ovog domaćinstva...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      tooltip: 'Obriši pretragu',
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+            ),
+          ),
+          if (categories.length > 1) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text('Sve (${allProducts.length})'),
+                      selected: _selectedCategory == null,
+                      onSelected: (_) =>
+                          setState(() => _selectedCategory = null),
+                    ),
+                  ),
+                  ...categories.map((cat) {
+                    final count =
+                        allProducts.where((p) => p.category == cat).length;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        visualDensity: VisualDensity.compact,
+                        label: Text('$cat ($count)'),
+                        selected: _selectedCategory == cat,
+                        onSelected: (selected) => setState(
+                          () => _selectedCategory = selected ? cat : null,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -84,94 +167,146 @@ class _SellerProductGridState extends State<SellerProductGrid> {
             ),
           );
         }
-        return FutureBuilder<Map<String, ({double avg, int count})>>(
-          future: _ratingsFuture,
-          builder: (context, ratingsSnap) {
-            final ratings = ratingsSnap.data ?? {};
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final isLargeTablet = Breakpoints.isLargeTablet(context);
-                final isSmallTablet = Breakpoints.isSmallTablet(context);
-                final crossAxisCount = widget.forceColumns ??
-                    Breakpoints.productGridColumns(context);
-                const gridSpacing = 6.0;
-                final tileWidth = (constraints.maxWidth -
-                        (crossAxisCount - 1) * gridSpacing) /
-                    crossAxisCount;
-                final imageHeight = (tileWidth * 0.78).clamp(
-                  isLargeTablet ? 132.0 : 120.0,
-                  isLargeTablet ? 200.0 : (isSmallTablet ? 194.0 : 190.0),
-                );
-                final tileHeight = imageHeight +
-                    (isLargeTablet ? 178.0 : (isSmallTablet ? 184.0 : 190.0));
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisExtent: tileHeight,
-                    crossAxisSpacing: gridSpacing,
-                    mainAxisSpacing: gridSpacing,
-                  ),
-                  itemCount: list.length,
-                  itemBuilder: (ctx, i) {
-                    final p = list[i];
-                    final canAddToOrder = () {
-                      final u = ctx.read<AppState>().user;
-                      return u != null &&
-                          !u.isGuest &&
-                          u.id != widget.sellerId &&
-                          p.isAvailable;
-                    }();
-                    final ratingStats = ratings[p.id];
-                    return Selector<FavoritesProvider, bool>(
-                      selector: (_, fav) => fav.isFavorite(p.id),
-                      builder: (_, isFavorite, __) {
-                        final user = ctx.read<AppState>().user;
-                        final canFavorite = user != null && !user.isGuest;
-                        final favorites = ctx.read<FavoritesProvider>();
-                        return ProductGridTile(
-                          product: p,
-                          isFavorite: canFavorite ? isFavorite : null,
-                          onFavoriteToggle: canFavorite
-                              ? () => favorites.toggle(user.id, p.id)
-                              : null,
-                          onAddToOrder: canAddToOrder
-                              ? () {
-                                  showModalBottomSheet<void>(
-                                    context: ctx,
-                                    builder: (sheetContext) => SellerAddToOrderSheet(
-                                      product: p,
-                                      sellerId: widget.sellerId,
-                                      cart: ctx.read<CartProvider>(),
-                                      onAdded: () {
-                                        if (!ctx.mounted) return;
-                                        ScaffoldMessenger.of(ctx).showSnackBar(
-                                          SnackBar(
-                                            content: const Text(
-                                                'Proizvod je dodat u porudžbinu.'),
-                                            action: SnackBarAction(
-                                              label: 'Pregled',
-                                              onPressed: () => ctx.push(
-                                                  '/checkout-seller/${widget.sellerId}'),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                }
-                              : null,
-                          avgRating: ratingStats?.avg,
-                          reviewCount: ratingStats?.count,
-                        );
+        final showFilters = list.length > 6;
+        final categories = list
+            .map((p) => p.category.trim())
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+        final qLower = _searchQuery.toLowerCase();
+        final filteredList = list.where((p) {
+          if (_selectedCategory != null && p.category != _selectedCategory) {
+            return false;
+          }
+          if (qLower.isNotEmpty) {
+            final matchName = p.name.toLowerCase().contains(qLower);
+            final matchCat = p.category.toLowerCase().contains(qLower);
+            final matchDesc = p.description.toLowerCase().contains(qLower);
+            return matchName || matchCat || matchDesc;
+          }
+          return true;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showFilters) _buildFilterBar(context, list, categories),
+            if (filteredList.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Column(
+                  children: [
+                    const Icon(Icons.search_off_outlined,
+                        size: 36, color: Colors.grey),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Nema proizvoda koji odgovaraju pretrazi.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = null;
+                        });
                       },
-                    );
-                  },
-                );
-              },
-            );
-          },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Poništi filtere'),
+                    ),
+                  ],
+                ),
+              )
+            else
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isLargeTablet = Breakpoints.isLargeTablet(context);
+                  final isSmallTablet = Breakpoints.isSmallTablet(context);
+                  final crossAxisCount = widget.forceColumns ??
+                      Breakpoints.productGridColumns(context);
+                  const gridSpacing = 6.0;
+                  final tileWidth = (constraints.maxWidth -
+                          (crossAxisCount - 1) * gridSpacing) /
+                      crossAxisCount;
+                  final imageHeight = (tileWidth * 0.78).clamp(
+                    isLargeTablet ? 132.0 : 120.0,
+                    isLargeTablet ? 200.0 : (isSmallTablet ? 194.0 : 190.0),
+                  );
+                  final tileHeight = imageHeight +
+                      (isLargeTablet
+                          ? 178.0
+                          : (isSmallTablet ? 184.0 : 190.0));
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisExtent: tileHeight,
+                      crossAxisSpacing: gridSpacing,
+                      mainAxisSpacing: gridSpacing,
+                    ),
+                    itemCount: filteredList.length,
+                    itemBuilder: (ctx, i) {
+                      final p = filteredList[i];
+                      final canAddToOrder = () {
+                        final u = ctx.read<AppState>().user;
+                        return u != null &&
+                            !u.isGuest &&
+                            u.id != widget.sellerId &&
+                            p.isAvailable;
+                      }();
+                      return Selector<FavoritesProvider, bool>(
+                        selector: (_, fav) => fav.isFavorite(p.id),
+                        builder: (_, isFavorite, __) {
+                          final user = ctx.read<AppState>().user;
+                          final canFavorite = user != null && !user.isGuest;
+                          final favorites = ctx.read<FavoritesProvider>();
+                          return ProductGridTile(
+                            product: p,
+                            isFavorite: canFavorite ? isFavorite : null,
+                            onFavoriteToggle: canFavorite
+                                ? () => favorites.toggle(user.id, p.id)
+                                : null,
+                            onAddToOrder: canAddToOrder
+                                ? () {
+                                    showModalBottomSheet<void>(
+                                      context: ctx,
+                                      builder: (sheetContext) =>
+                                          SellerAddToOrderSheet(
+                                        product: p,
+                                        sellerId: widget.sellerId,
+                                        cart: ctx.read<CartProvider>(),
+                                        onAdded: () {
+                                          if (!ctx.mounted) return;
+                                          ScaffoldMessenger.of(ctx)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: const Text(
+                                                  'Proizvod je dodat u porudžbinu.'),
+                                              action: SnackBarAction(
+                                                label: 'Pregled',
+                                                onPressed: () => ctx.push(
+                                                    '/checkout-seller/${widget.sellerId}'),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            avgRating: p.avgRating,
+                            reviewCount: p.reviewCount,
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+          ],
         );
       },
     );
@@ -259,8 +394,8 @@ class _SellerAddToOrderSheetState extends State<SellerAddToOrderSheet> {
               IconButton.filled(
                 onPressed: _quantity >= max
                     ? null
-                    : () => setState(() => _quantity =
-                        QuantityEngine.normalizeQuantity(
+                    : () => setState(() =>
+                        _quantity = QuantityEngine.normalizeQuantity(
                           quantity: (_quantity + step).clamp(p.minOrderKg, max),
                           minQuantity: p.minOrderKg,
                           step: step,

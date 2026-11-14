@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/responsive.dart';
 import '../../models/category.dart';
 import '../../models/product_model.dart';
+import '../../utils/number_input_utils.dart';
 import '../../utils/product_helpers.dart';
 import '../../widgets/cupertino_category_picker.dart';
 import '../../widgets/grouped_category_dropdown.dart';
@@ -346,11 +347,95 @@ class ProductBasicInfoSection extends StatelessWidget {
     );
   }
 
+  Widget? _buildBuyerPricePreviewBanner(BuildContext context) {
+    final price = NumberInputUtils.parseDecimal(priceController.text);
+    if (price == null || price <= 0) return null;
+
+    final rawMin = minOrderController.text.trim();
+    final minQty = switch (unitType) {
+      ProductModel.unitL =>
+        rawMin.isEmpty ? 1.0 : ProductModel.parseQuantityL(rawMin),
+      ProductModel.unitMl =>
+        rawMin.isEmpty ? 0.33 : ProductModel.parseQuantityMl(rawMin),
+      ProductModel.unitKg =>
+        rawMin.isEmpty ? 1.0 : ProductModel.parseQuantityKg(rawMin),
+      ProductModel.unitG =>
+        rawMin.isEmpty ? 0.25 : ProductModel.parseQuantityG(rawMin),
+      _ => NumberInputUtils.parseDecimal(rawMin) ?? 1.0,
+    };
+    if (minQty <= 0) return null;
+
+    final dbUnitType = switch (unitType) {
+      ProductModel.unitMl => ProductModel.unitL,
+      ProductModel.unitG => ProductModel.unitKg,
+      _ => unitType,
+    };
+
+    final previewProduct = ProductModel(
+      id: '_preview',
+      sellerId: '_preview',
+      category: category ?? '',
+      name: nameController.text.trim(),
+      pricePerKg: price,
+      minOrderKg: minQty,
+      availableKg: 1,
+      unitType: dbUnitType,
+      description: '',
+      imageUrls: const [],
+      pickupOptions: const [],
+      location: '',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+
+    final formattedBadge = previewProduct.priceFormatted;
+    final minFormatted = previewProduct.formatQuantity(minQty);
+    final minTotal = previewProduct.totalPriceForQuantity(minQty).round();
+
+    String? perBaseUnitInfo;
+    if ((unitType == ProductModel.unitG || unitType == ProductModel.unitMl) &&
+        minQty > 0 &&
+        minQty < 1) {
+      final perKgOrL = (price / minQty).round();
+      final baseLabel = unitType == ProductModel.unitMl ? 'L' : 'kg';
+      perBaseUnitInfo = '($perKgOrL RSD/$baseLabel)';
+    }
+
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.visibility_outlined, size: 18, color: cs.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Prikaz kupcu: $formattedBadge'
+              '${perBaseUnitInfo != null ? ' $perBaseUnitInfo' : ''}'
+              ' • Min. porudžbina: $minFormatted ($minTotal RSD)',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasGroupedCategories = groups != null && groups!.isNotEmpty;
     final isWide = Breakpoints.isTabletOrLarger(context);
     final quickChips = _buildSubUnitQuickChips(context);
+    final pricePreview = _buildBuyerPricePreviewBanner(context);
 
     if (isWide) {
       return Column(
@@ -385,6 +470,7 @@ class ProductBasicInfoSection extends StatelessWidget {
               ),
             ],
           ),
+          if (pricePreview != null) pricePreview,
           if (onVariantsChanged != null) ...[
             const SizedBox(height: 10),
             ProductVariantsSection(
@@ -425,6 +511,7 @@ class ProductBasicInfoSection extends StatelessWidget {
         _buildNameField(),
         const SizedBox(height: 10),
         _buildPriceField(),
+        if (pricePreview != null) pricePreview,
         if (onVariantsChanged != null) ...[
           const SizedBox(height: 10),
           ProductVariantsSection(

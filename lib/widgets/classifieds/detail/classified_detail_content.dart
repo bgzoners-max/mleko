@@ -216,6 +216,7 @@ class ClassifiedDetailContent extends StatelessWidget {
     required this.onPhoneReveal,
     required this.onPhoneTap,
     required this.onChatTap,
+    this.onShare,
   });
 
   final ClassifiedAdModel ad;
@@ -231,6 +232,7 @@ class ClassifiedDetailContent extends StatelessWidget {
   final VoidCallback onPhoneReveal;
   final VoidCallback onPhoneTap;
   final VoidCallback onChatTap;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +305,7 @@ class ClassifiedDetailContent extends StatelessWidget {
                                   isOwner: isOwner,
                                   hasPhone: hasPhone,
                                   isWide: true,
+                                  onShare: onShare,
                                   actionButtons: ClassifiedActionButtons(
                                     ad: ad,
                                     isOwner: isOwner,
@@ -364,6 +367,7 @@ class ClassifiedDetailContent extends StatelessWidget {
                             isOwner: isOwner,
                             hasPhone: hasPhone,
                             isWide: false,
+                            onShare: onShare,
                           ),
                           const SizedBox(height: 16),
                           ClassifiedSpecificationsTable(

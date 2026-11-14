@@ -18,12 +18,14 @@ class ClassifiedsFeedScreen extends StatefulWidget {
   final Widget? headerWidget;
   final bool isEmbedded;
   final String? initialCategoryId;
+  final String? initialSearchQuery;
 
   const ClassifiedsFeedScreen({
     super.key,
     this.headerWidget,
     this.isEmbedded = false,
     this.initialCategoryId,
+    this.initialSearchQuery,
   });
 
   @override
@@ -40,14 +42,25 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
   @override
   void initState() {
     super.initState();
+    final initialQuery = widget.initialSearchQuery?.trim();
+    if (initialQuery != null && initialQuery.isNotEmpty) {
+      _searchController.text = initialQuery;
+    }
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       final p = context.read<ClassifiedsProvider>();
-      if (widget.initialCategoryId != null &&
-          widget.initialCategoryId!.isNotEmpty) {
+      final hasInitialCategory =
+          widget.initialCategoryId != null && widget.initialCategoryId!.isNotEmpty;
+      final hasInitialQuery = initialQuery != null && initialQuery.isNotEmpty;
+
+      if (hasInitialCategory) {
         await p.loadCategories();
         if (!mounted) return;
         p.selectCategory(widget.initialCategoryId);
+        if (hasInitialQuery) {
+          p.search(initialQuery);
+        }
         final cat = p.findCategory(widget.initialCategoryId!);
         if (cat != null) {
           setClassifiedCategorySeo(cat);
@@ -57,9 +70,52 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
         if (!widget.isEmbedded) {
           applyRouteSeo('/classifieds');
         }
-        // Pokrećemo kategorije i oglase paralelno u istoj milisekundi
         unawaited(p.loadCategories());
-        unawaited(p.loadInitialAds());
+        if (hasInitialQuery) {
+          p.search(initialQuery);
+        } else {
+          unawaited(p.loadInitialAds());
+        }
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ClassifiedsFeedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final categoryChanged = widget.initialCategoryId != oldWidget.initialCategoryId;
+    final queryChanged = widget.initialSearchQuery != oldWidget.initialSearchQuery;
+    if (!categoryChanged && !queryChanged) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final p = context.read<ClassifiedsProvider>();
+      if (queryChanged) {
+        final nextQuery = widget.initialSearchQuery?.trim();
+        final normalized = (nextQuery != null && nextQuery.isNotEmpty) ? nextQuery : null;
+        if (_searchController.text != (normalized ?? '')) {
+          _searchController.text = normalized ?? '';
+        }
+        p.search(normalized);
+      }
+      if (categoryChanged) {
+        final nextCatId = widget.initialCategoryId;
+        if (nextCatId != null && nextCatId.isNotEmpty) {
+          await p.loadCategories();
+          if (!mounted) return;
+          p.selectCategory(nextCatId);
+          final cat = p.findCategory(nextCatId);
+          if (cat != null) {
+            setClassifiedCategorySeo(cat);
+            _lastSeoCategoryId = cat.id;
+          }
+        } else {
+          p.selectCategory(null);
+          if (!widget.isEmbedded) {
+            applyRouteSeo('/classifieds');
+            _lastSeoCategoryId = null;
+          }
+        }
       }
     });
   }

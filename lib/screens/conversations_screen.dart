@@ -302,15 +302,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final panelGap = Breakpoints.panelGap(context);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Poruke'),
-        actions: const [
-          AppHomeButton(),
-        ],
-        bottom: isTwoPaneLayout
-            ? null
-            : TabBar(
+      appBar: isTwoPaneLayout
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Poruke'),
+              actions: const [
+                AppHomeButton(),
+              ],
+              bottom: TabBar(
                 controller: _tabController,
                 tabs: const [
                   Tab(text: 'Svi'),
@@ -326,7 +326,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ),
                 ],
               ),
-      ),
+            ),
       body: StreamBuilder<List<ConversationModel>>(
         stream: _conversationsStream,
         builder: (context, snap) {

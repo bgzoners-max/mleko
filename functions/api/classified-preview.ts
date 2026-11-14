@@ -94,15 +94,22 @@ export async function handleClassifiedPreview(
 
     const encodedAdId = encodeURIComponent(adId);
     const canonicalUrl = `${publicBaseUrl}/classifieds/ad/${encodedAdId}`;
-    const previewUrl = `${publicBaseUrl}/ad/${encodedAdId}`;
+    const previewUrl = canonicalUrl;
 
     const userAgent = request.headers.get("user-agent");
     if (!isBot(userAgent)) {
+      const redirectTarget = new URL(canonicalUrl);
+      for (const [k, v] of requestUrl.searchParams.entries()) {
+        if (k !== "id" && k !== "v") {
+          redirectTarget.searchParams.set(k, v);
+        }
+      }
       return new Response(null, {
         status: 302,
         headers: {
-          Location: canonicalUrl,
+          Location: redirectTarget.toString(),
           "Cache-Control": "public, max-age=0, s-maxage=60",
+          Vary: "User-Agent",
         },
       });
     }
@@ -138,6 +145,7 @@ export async function handleClassifiedPreview(
           "content-type": "text/html; charset=utf-8",
           "cache-control":
             "public, max-age=0, s-maxage=60, stale-while-revalidate=3600",
+          vary: "User-Agent",
         },
       });
     }
@@ -154,7 +162,11 @@ export async function handleClassifiedPreview(
       .eq("id", adId)
       .maybeSingle();
 
-    const ad = error ? null : (data as unknown as ClassifiedRow | null);
+    const rawAd = error ? null : (data as unknown as ClassifiedRow | null);
+    const ad =
+      rawAd && (!rawAd.status || rawAd.status === "active" || rawAd.status === "sold")
+        ? rawAd
+        : null;
     const priceFormatted = ad
       ? formatPrice(ad.price, ad.currency, ad.price_type)
       : "";
@@ -240,6 +252,7 @@ export async function handleClassifiedPreview(
       previewUrl,
       canonicalUrl,
       imageUrl,
+      robots: ad ? "index,follow,max-image-preview:large" : "noindex,nofollow",
       jsonLd,
       ogType: "website",
       ogSiteName: "Domaći Market — Mali Oglasi",
@@ -249,14 +262,20 @@ export async function handleClassifiedPreview(
       linkLabel: "kliknite ovde za pregled oglasa",
     });
 
+    const responseHeaders: Record<string, string> = {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": ad
+        ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+        : "no-cache, no-store, must-revalidate",
+      vary: "User-Agent",
+    };
+    if (!ad) {
+      responseHeaders["x-robots-tag"] = "noindex, nofollow";
+    }
+
     return new Response(html, {
       status: ad ? 200 : 404,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": ad
-          ? "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
-          : "no-cache, no-store, must-revalidate",
-      },
+      headers: responseHeaders,
     });
   } catch (err) {
     console.error("Classified Preview Edge Function Error:", err);

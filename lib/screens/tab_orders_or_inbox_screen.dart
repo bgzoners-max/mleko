@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../core/design_system.dart';
+import '../core/responsive.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../providers/app_state.dart';
 import '../widgets/app_back_button.dart';
@@ -48,51 +49,66 @@ class _SellerOrdersInboxTabsState extends State<_SellerOrdersInboxTabs>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = Breakpoints.isDesktop(context);
     final animationsEnabled = context.watch<AppSettingsProvider>().animationsEnabled;
     const children = [
       SellerOrdersScreen(showAppBar: false),
       SellerInboxScreen(showOnlyConversations: true, showAppBar: false),
     ];
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Porudžbine'),
-        actions: const [AppHomeButton()],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(kToolbarHeight),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const maxContent = 800.0;
-              final avail = constraints.maxWidth;
-              final leftPad = ((avail - maxContent) / 2).clamp(0.0, double.infinity);
-              return Padding(
-                padding: EdgeInsets.only(left: leftPad),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  onTap: (_) => HapticFeedback.selectionClick(),
-                  labelColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-                  unselectedLabelColor: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
-                  indicatorColor: AmazonColors.getGreen(context),
-                  tabs: const [
-                    Tab(text: 'Porudžbine', icon: Icon(Icons.receipt_long)),
-                    Tab(text: 'Razgovori', icon: Icon(Icons.chat)),
-                  ],
-                ),
-              );
-            },
+    final tabBar = LayoutBuilder(
+      builder: (context, constraints) {
+        const maxContent = 800.0;
+        final avail = constraints.maxWidth;
+        final leftPad = ((avail - maxContent) / 2).clamp(0.0, double.infinity);
+        return Padding(
+          padding: EdgeInsets.only(left: leftPad),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            onTap: (_) => HapticFeedback.selectionClick(),
+            labelColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+            unselectedLabelColor: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+            indicatorColor: AmazonColors.getGreen(context),
+            tabs: const [
+              Tab(text: 'Porudžbine', icon: Icon(Icons.receipt_long)),
+              Tab(text: 'Razgovori', icon: Icon(Icons.chat)),
+            ],
           ),
-        ),
-      ),
-      body: AnimatedSwitcher(
-        duration: Duration(milliseconds: animationsEnabled ? 250 : 0),
-        switchInCurve: Curves.easeIn,
-        switchOutCurve: Curves.easeOut,
-        child: KeyedSubtree(
-          key: ValueKey<int>(_tabController.index),
-          child: children[_tabController.index],
-        ),
+        );
+      },
+    );
+    return Scaffold(
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Porudžbine'),
+              actions: const [AppHomeButton()],
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(kToolbarHeight),
+                child: tabBar,
+              ),
+            ),
+      body: Column(
+        children: [
+          if (isDesktop)
+            Material(
+              color: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              child: tabBar,
+            ),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: animationsEnabled ? 250 : 0),
+              switchInCurve: Curves.easeIn,
+              switchOutCurve: Curves.easeOut,
+              child: KeyedSubtree(
+                key: ValueKey<int>(_tabController.index),
+                child: children[_tabController.index],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -95,13 +95,7 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
             ),
             behavior:
                 isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
-            margin: isWideLayout
-                ? EdgeInsets.only(
-                    bottom: 16,
-                    right: 16,
-                    left: MediaQuery.of(context).size.width - 400 - 16,
-                  )
-                : null,
+            width: isWideLayout ? 420 : null,
           ),
         );
       } else {

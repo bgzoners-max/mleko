@@ -9,7 +9,7 @@ class SupabaseService {
   Future<List<Category>> getTopCategories() async {
     final res = await _client
         .from('categories')
-        .select('id,name,slug,icon,order,parent_id')
+        .select('id,name,slug,icon,order,parent_id,section')
         .filter('parent_id', 'is', null)
         .order('order', ascending: true);
 
@@ -22,7 +22,7 @@ class SupabaseService {
   Future<List<Category>> getAllCategories() async {
     final res = await _client
         .from('categories')
-        .select('id,name,slug,icon,order,parent_id')
+        .select('id,name,slug,icon,order,parent_id,section')
         // Order by: parent_id (nulls first), then order within each group
         .order('parent_id', ascending: true, nullsFirst: true)
         .order('order', ascending: true);
@@ -60,7 +60,7 @@ class SupabaseService {
   Future<List<Category>> getChildCategories(String parentId) async {
     final res = await _client
         .from('categories')
-        .select('id,name,slug,icon,order,parent_id')
+        .select('id,name,slug,icon,order,parent_id,section')
         .eq('parent_id', parentId)
         .order('order', ascending: true);
 

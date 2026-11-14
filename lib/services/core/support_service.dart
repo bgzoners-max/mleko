@@ -249,9 +249,12 @@ class SupportService {
 
   /// Korisnik: lista vlastitih tiketa
   Future<List<SupportTicketModel>> fetchMyTickets() async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return const [];
     final data = await _client
         .from('support_tickets')
         .select()
+        .eq('user_id', uid)
         .order('created_at', ascending: false);
     return (data as List).map((e) => SupportTicketModel.fromJson(e)).toList();
   }

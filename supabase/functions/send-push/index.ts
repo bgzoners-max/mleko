@@ -18,6 +18,7 @@ import {
 const PROD_ALLOWED_ORIGINS = [
   "https://domacimarket.rs",
   "https://www.domacimarket.rs",
+  "https://staging.domacimarket.rs",
 ]
 
 // Dozvoli lokalne adrese samo u development okruženju
@@ -616,7 +617,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     log("error", "FCM: Neuhvaćena greška", String(err))
     return new Response(
-      JSON.stringify({ error: String(err) }),
+      JSON.stringify({ error: "Interna greška na serveru." }),
       { status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }

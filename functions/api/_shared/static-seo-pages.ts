@@ -343,16 +343,32 @@ export function resolveStaticPageSeo(
   searchParams: URLSearchParams,
   origin?: string,
 ): HtmlPayload | null {
-  const path = normalizePathname(pathname);
+  let path = normalizePathname(pathname);
   const baseUrl = resolvePublicBaseUrl(
     origin ? normalizeBaseUrl(origin) : undefined,
   );
+
+  let categorySlug = searchParams.get("category")?.trim() ?? "";
+  if (path.startsWith(`${BASE_URL_PATH_CATEGORIES}/`)) {
+    try {
+      const subSlug = decodeURIComponent(
+        path.slice(BASE_URL_PATH_CATEGORIES.length + 1),
+      ).trim();
+      if (subSlug && !subSlug.includes("/")) {
+        path = BASE_URL_PATH_CATEGORIES;
+        if (!categorySlug) {
+          categorySlug = subSlug;
+        }
+      }
+    } catch {
+      // Malformed URI encoding falls through to null (404)
+    }
+  }
 
   let route =
     path === "/support" ? SUPPORT_ROUTE_SEO : BASE_ROUTES[path];
   let canonicalUrl = `${baseUrl}${path === "/" ? "" : path}`;
 
-  const categorySlug = searchParams.get("category")?.trim() ?? "";
   const searchQuery = searchParams.get("q")?.trim() ?? "";
 
   if (

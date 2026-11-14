@@ -71,6 +71,8 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
     final seller = widget.seller;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPhone = Breakpoints.isPhone(context);
+    final isOwnProfile =
+        context.select<AppState?, bool>((app) => app?.user?.id == seller.id);
 
     final avatarSize = isPhone ? 64.0 : 74.0;
     final displayName = resolveProfileDisplayName(
@@ -323,13 +325,25 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                   ),
                 ),
 
-                // 3. Akcije desno na tablet/desktop ekranima: Zaprati + Podeli profil
+                // 3. Akcije desno na tablet/desktop ekranima: Zaprati / Uredi + Podeli profil
                 if (!isPhone) ...[
                   const SizedBox(width: 12),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (_checked) ...[
+                      if (isOwnProfile) ...[
+                        OutlinedButton.icon(
+                          onPressed: () => context.push('/profile/edit'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          icon: const Icon(Icons.edit_outlined, size: 16),
+                          label: const Text('Uredi profil'),
+                        ),
+                        const SizedBox(width: 8),
+                      ] else if (_checked) ...[
                         FilledButton.tonalIcon(
                           onPressed: _loading ? null : _toggleFollow,
                           style: FilledButton.styleFrom(
@@ -371,12 +385,24 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
               ],
             ),
 
-            // Ako je telefon: dugme za praćenje + deljenje profila idu ispod
+            // Ako je telefon: dugme za praćenje / izmenu + deljenje profila idu ispod
             if (isPhone) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
-                  if (_checked) ...[
+                  if (isOwnProfile) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/profile/edit'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Uredi profil'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ] else if (_checked) ...[
                     Expanded(
                       child: FilledButton.tonalIcon(
                         onPressed: _loading ? null : _toggleFollow,
@@ -403,7 +429,7 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                     const SizedBox(width: 8),
                   ],
                   Expanded(
-                    flex: _checked ? 0 : 1,
+                    flex: (_checked || isOwnProfile) ? 0 : 1,
                     child: OutlinedButton.icon(
                       onPressed: () =>
                           withHaptic(() => shareSellerProfile(context, seller)),
@@ -411,7 +437,9 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                         visualDensity: VisualDensity.compact,
                       ),
                       icon: Icon(Icons.adaptive.share, size: 16),
-                      label: Text(_checked ? 'Podeli' : 'Podeli profil'),
+                      label: Text((_checked || isOwnProfile)
+                          ? 'Podeli'
+                          : 'Podeli profil'),
                     ),
                   ),
                 ],

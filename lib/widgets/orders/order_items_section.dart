@@ -5,15 +5,37 @@ import '../../models/order_item_model.dart';
 import '../../models/product_model.dart';
 import 'package:mleko/services/services.dart';
 
-class OrderItemsSection extends StatelessWidget {
+class OrderItemsSection extends StatefulWidget {
   final String orderId;
 
   const OrderItemsSection({super.key, required this.orderId});
 
   @override
+  State<OrderItemsSection> createState() => _OrderItemsSectionState();
+}
+
+class _OrderItemsSectionState extends State<OrderItemsSection> {
+  late Future<List<OrderItemModel>> _itemsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _itemsFuture = context.read<OrdersService>().getOrderItems(widget.orderId);
+  }
+
+  @override
+  void didUpdateWidget(covariant OrderItemsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.orderId != widget.orderId) {
+      _itemsFuture =
+          context.read<OrdersService>().getOrderItems(widget.orderId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<OrderItemModel>>(
-      future: context.read<OrdersService>().getOrderItems(orderId),
+      future: _itemsFuture,
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
         final items = snap.data!;

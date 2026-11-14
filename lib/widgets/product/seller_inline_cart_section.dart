@@ -6,13 +6,38 @@ import '../../models/product_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 
-class SellerInlineCartSection extends StatelessWidget {
+class SellerInlineCartSection extends StatefulWidget {
   final String sellerId;
 
   const SellerInlineCartSection({super.key, required this.sellerId});
 
   @override
+  State<SellerInlineCartSection> createState() =>
+      _SellerInlineCartSectionState();
+}
+
+class _SellerInlineCartSectionState extends State<SellerInlineCartSection> {
+  String? _lastSellerId;
+  String? _lastDraftKey;
+  Future<List<({ProductModel product, double quantity})>>? _productsFuture;
+
+  Future<List<({ProductModel product, double quantity})>> _resolveFuture(
+    CartProvider cart,
+    String draftKey,
+  ) {
+    if (_productsFuture == null ||
+        _lastSellerId != widget.sellerId ||
+        _lastDraftKey != draftKey) {
+      _lastSellerId = widget.sellerId;
+      _lastDraftKey = draftKey;
+      _productsFuture = cart.getProductsBySeller(widget.sellerId);
+    }
+    return _productsFuture!;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final sellerId = widget.sellerId;
     final user = context.watch<AppState>().user;
     if (user == null || user.isGuest || user.id == sellerId) {
       return const SizedBox.shrink();
@@ -32,7 +57,7 @@ class SellerInlineCartSection extends StatelessWidget {
         if (draftKey.isEmpty) return const SizedBox.shrink();
 
         return FutureBuilder<List<({ProductModel product, double quantity})>>(
-          future: cart.getProductsBySeller(sellerId),
+          future: _resolveFuture(cart, draftKey),
           builder: (context, snap) {
             final items = snap.data ?? [];
             if (items.isEmpty) return const SizedBox.shrink();

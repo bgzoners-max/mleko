@@ -26,8 +26,8 @@ mixin ProductStatsMixin {
 
     final futures = categoryNames.map((categoryName) async {
       var query = client
-          .from('products_with_ratings')
-          .select()
+          .from('products')
+          .select('id')
           .eq('category', categoryName);
 
       if (excludeSellerId != null && excludeSellerId.isNotEmpty) {

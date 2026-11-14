@@ -43,9 +43,7 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
   @override
   void didUpdateWidget(CartSellerGroupCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.items.length != _currentItems.length) {
-      _currentItems = List.from(widget.items);
-    }
+    _currentItems = List.from(widget.items);
   }
 
   Future<void> _removeItem(int index) async {
@@ -98,27 +96,37 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                 .withValues(alpha: 0.3),
             child: Row(
               children: [
-                const Icon(Icons.storefront, size: 20),
-                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.sellerName,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        widget.location,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.copyWith(color: Colors.grey.shade600),
-                      ),
-                    ],
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => context.push('/seller/${widget.sellerId}'),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.storefront, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.sellerName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                widget.location,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 IconButton(
@@ -174,10 +182,10 @@ class _CartSellerGroupCardState extends State<CartSellerGroupCard> {
                 FilledButton.icon(
                   onPressed: () => _goToCheckOut(context),
                   icon: const Icon(Icons.shopping_cart_checkout),
-                  label: const Text('Naruči'),
+                  label: const Text('Poruči od ovog domaćinstva'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
+                        horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),

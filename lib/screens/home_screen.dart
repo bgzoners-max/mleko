@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                   ),
-                                if (selectedRegion != null && !isDesktopWeb)
+                                if (selectedRegion != null)
                                   SliverToBoxAdapter(
                                     child: Padding(
                                       padding: EdgeInsets.fromLTRB(

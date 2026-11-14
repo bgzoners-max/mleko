@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../app_back_button.dart';
 import '../app_share_sheet.dart';
+import '../navigation/desktop_header.dart';
 
 import 'seller_classifieds_grid.dart';
 import 'seller_farm_gallery_section.dart';
@@ -49,59 +50,173 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/'),
-        title: Text(sellerName),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.adaptive.share),
-            tooltip: 'Podeli profil',
-            onPressed: () =>
-                withHaptic(() => shareSellerProfile(context, seller)),
-          ),
-          if (isOwnProfile)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Uredi profil',
-              onPressed: () => context.push('/profile/edit'),
-            ),
-          if (draftCount > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Center(
-                child: TextButton(
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: Text(sellerName),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.adaptive.share),
+                  tooltip: 'Podeli profil',
                   onPressed: () =>
-                      context.push('/checkout-seller/${seller.id}'),
-                  child: Text('Porudžbina ($draftCount)'),
+                      withHaptic(() => shareSellerProfile(context, seller)),
                 ),
-              ),
+                if (isOwnProfile)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Uredi profil',
+                    onPressed: () => context.push('/profile/edit'),
+                  ),
+                if (draftCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Center(
+                      child: TextButton(
+                        onPressed: () =>
+                            context.push('/checkout-seller/${seller.id}'),
+                        child: Text('Porudžbina ($draftCount)'),
+                      ),
+                    ),
+                  ),
+                const AppHomeButton(),
+              ],
             ),
-          const AppHomeButton(),
-        ],
-      ),
       bottomNavigationBar:
           SellerOrderDraftBar(sellerId: seller.id, seller: seller),
-      body: Material(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final minHeight = constraints.maxHeight;
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isWide
-                        ? (isDesktop ? 1120.0 : 980.0)
-                        : Breakpoints.maxContentWidth(context),
-                    minHeight: minHeight > 0 ? minHeight : 400,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // HEADER / PROFIL
-                      SellerProfileHeader(seller: seller),
+      body: Column(
+        children: [
+          if (isDesktop) const DesktopHeader(isStandalone: true),
+          Expanded(
+            child: Material(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final minHeight = constraints.maxHeight;
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isWide
+                              ? (isDesktop ? 1120.0 : 980.0)
+                              : Breakpoints.maxContentWidth(context),
+                          minHeight: minHeight > 0 ? minHeight : 400,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (isDesktop)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                                child: Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 6,
+                                  children: [
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(4),
+                                      onTap: () {
+                                        if (context.canPop()) {
+                                          context.pop();
+                                        } else {
+                                          context.go('/');
+                                        }
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 2,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.arrow_back_rounded,
+                                              size: 14,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Nazad',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '|',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(4),
+                                      onTap: () => context.go('/'),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                          vertical: 2,
+                                        ),
+                                        child: Text(
+                                          'Početna',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 14,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    InkWell(
+                                      borderRadius: BorderRadius.circular(4),
+                                      onTap: () => context.go('/sellers-map'),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                          vertical: 2,
+                                        ),
+                                        child: Text(
+                                          'Seoska gazdinstva',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 14,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    Text(
+                                      sellerName,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            // HEADER / PROFIL
+                            SellerProfileHeader(seller: seller),
                       if (seller.sellerTags.isNotEmpty) ...[
                         SizedBox(height: isSmallTablet ? 10 : 8),
                         SellerTagsRow(tags: seller.sellerTags),
@@ -261,6 +376,9 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
             );
           },
         ),
+      ),
+          ),
+        ],
       ),
     );
   }

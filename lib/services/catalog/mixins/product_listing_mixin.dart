@@ -288,10 +288,20 @@ mixin ProductListingMixin {
 
     if (missingIds.isNotEmpty) {
       try {
-        final res =
-            await client.from('products').select().inFilter('id', missingIds);
+        List<dynamic> res;
+        try {
+          res = (await client
+              .from('products_with_ratings')
+              .select()
+              .inFilter('id', missingIds)) as List;
+        } catch (_) {
+          res = (await client
+              .from('products')
+              .select()
+              .inFilter('id', missingIds)) as List;
+        }
         final products = await attachSelectedDeliveryPointIds(
-          (res as List)
+          res
               .map((row) => ProductModel.fromJson(row as Map<String, dynamic>))
               .toList(growable: false),
         );

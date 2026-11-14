@@ -283,13 +283,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
 
     _initStream(user.id);
+    final isDesktop = Breakpoints.isDesktop(context);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/'),
-        title: const Text('Moje porudžbine'),
-        actions: const [AppHomeButton()],
-      ),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: const Text('Moje porudžbine'),
+              actions: const [AppHomeButton()],
+            ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isTwoPaneLayout = constraints.maxWidth >= 960;

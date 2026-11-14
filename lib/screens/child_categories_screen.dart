@@ -13,6 +13,7 @@ import '../utils/image_precache_utils.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/product_card.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/navigation/desktop_header.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_footer.dart';
 
@@ -207,36 +208,53 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = Breakpoints.isDesktop(context);
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/categories'),
-        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        surfaceTintColor: Colors.transparent,
-        shape: Border(
-          bottom: BorderSide(
-            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-            width: 1.0,
-          ),
-        ),
-        title: Text(
-          widget.parentCategory.name,
-          style: TextStyle(
-            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        iconTheme: IconThemeData(
-          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-        ),
-        actions: const [
-          AppHomeButton(),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/categories'),
+              backgroundColor:
+                  isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              foregroundColor: isDark
+                  ? AmazonColors.darkTextPrimary
+                  : AmazonColors.textPrimary,
+              elevation: 0,
+              scrolledUnderElevation: 1,
+              surfaceTintColor: Colors.transparent,
+              shape: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? AmazonColors.darkBorder
+                      : AmazonColors.borderGray,
+                  width: 1.0,
+                ),
+              ),
+              title: Text(
+                widget.parentCategory.name,
+                style: TextStyle(
+                  color: isDark
+                      ? AmazonColors.darkTextPrimary
+                      : AmazonColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              iconTheme: IconThemeData(
+                color: isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary,
+              ),
+              actions: const [
+                AppHomeButton(),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (isDesktop) const DesktopHeader(isStandalone: true),
+          Expanded(child: _buildBody()),
         ],
       ),
-      body: _buildBody(),
     );
   }
 
@@ -288,6 +306,73 @@ class _ChildCategoriesScreenState extends State<ChildCategoriesScreen> {
           child: CustomScrollView(
             controller: _scrollController,
             slivers: [
+              if (Breakpoints.isDesktop(context))
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      Breakpoints.horizontalPadding(context),
+                      16,
+                      Breakpoints.horizontalPadding(context),
+                      0,
+                    ),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      children: [
+                        InkWell(
+                          borderRadius: BorderRadius.circular(4),
+                          onTap: () => context.go('/categories'),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.arrow_back_rounded,
+                                  size: 15,
+                                  color: isDark
+                                      ? AmazonColors.lightGreen
+                                      : AmazonColors.link,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Sve kategorije',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark
+                                        ? AmazonColors.lightGreen
+                                        : AmazonColors.link,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 16,
+                          color: isDark
+                              ? AmazonColors.darkTextSecondary
+                              : AmazonColors.textSecondary,
+                        ),
+                        Text(
+                          widget.parentCategory.name,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? AmazonColors.darkTextPrimary
+                                : AmazonColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               // Subcategories grid
               if (_categories.isNotEmpty)
                 SliverPadding(

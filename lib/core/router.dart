@@ -56,6 +56,7 @@ import '../screens/classifieds/saved_searches_screen.dart';
 import '../models/category.dart';
 import '../providers/app_state.dart';
 import '../widgets/navigation/main_shell.dart';
+import 'responsive.dart';
 import 'router_guard.dart';
 import 'router_transitions.dart';
 
@@ -506,8 +507,8 @@ GoRouter createRouter(AppState appState) {
           final width = mq?.width ??
               (view != null && view.devicePixelRatio > 0
                   ? view.physicalSize.width / view.devicePixelRatio
-                  : 1200);
-          if (width >= 960) {
+                  : kDesktopBreakpoint);
+          if (width >= kDesktopBreakpoint) {
             return '/profile?section=new-classified';
           }
           return null;
@@ -527,8 +528,8 @@ GoRouter createRouter(AppState appState) {
           final width = mq?.width ??
               (view != null && view.devicePixelRatio > 0
                   ? view.physicalSize.width / view.devicePixelRatio
-                  : 1200);
-          if (width >= 960 && id != null) {
+                  : kDesktopBreakpoint);
+          if (width >= kDesktopBreakpoint && id != null) {
             return '/profile?section=edit-classified&id=$id';
           }
           return null;
@@ -547,8 +548,8 @@ GoRouter createRouter(AppState appState) {
           final width = mq?.width ??
               (view != null && view.devicePixelRatio > 0
                   ? view.physicalSize.width / view.devicePixelRatio
-                  : 1200);
-          if (width >= 960) {
+                  : kDesktopBreakpoint);
+          if (width >= kDesktopBreakpoint) {
             return '/profile?section=my-classifieds';
           }
           return null;
@@ -590,10 +591,13 @@ GoRouter createRouter(AppState appState) {
                 path: '/classifieds',
                 pageBuilder: (context, state) {
                   final categoryId = state.uri.queryParameters['category'];
+                  final searchQuery = state.uri.queryParameters['q'];
                   return buildPageTransition(
                     state: state,
                     child: ClassifiedsFeedScreen(
-                        initialCategoryId: categoryId),
+                      initialCategoryId: categoryId,
+                      initialSearchQuery: searchQuery,
+                    ),
                   );
                 },
               ),

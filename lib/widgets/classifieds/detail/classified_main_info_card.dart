@@ -12,6 +12,7 @@ class ClassifiedMainInfoCard extends StatelessWidget {
   final bool hasPhone;
   final bool isWide;
   final Widget? actionButtons;
+  final VoidCallback? onShare;
 
   const ClassifiedMainInfoCard({
     super.key,
@@ -23,6 +24,7 @@ class ClassifiedMainInfoCard extends StatelessWidget {
     required this.hasPhone,
     required this.isWide,
     this.actionButtons,
+    this.onShare,
   });
 
   @override
@@ -46,12 +48,16 @@ class ClassifiedMainInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bedževi stanja, statusa, isticanja i hitnosti
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Bedževi stanja, statusa, isticanja i hitnosti + dugme Podeli
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
               if (ad.isCurrentlyFeatured) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -214,6 +220,36 @@ class ClassifiedMainInfoCard extends StatelessWidget {
                   color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
                 ),
               ),
+                  ],
+                ),
+              ),
+              if (onShare != null) ...[
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: 'Podeli oglas',
+                  child: OutlinedButton.icon(
+                    onPressed: onShare,
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: Icon(Icons.adaptive.share, size: 15),
+                    label: const Text(
+                      'Podeli',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 12),

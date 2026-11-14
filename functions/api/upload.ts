@@ -551,10 +551,9 @@ export async function handleUploadRequest(
       cors.headers,
     );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Nepoznata greška';
     console.error('Greška pri obradi zahteva za medije:', error);
     return jsonResponse(
-      { error: 'Greška pri obradi fajla na serveru.', details: message },
+      { error: 'Greška pri obradi fajla na serveru.' },
       500,
       cors.headers,
     );

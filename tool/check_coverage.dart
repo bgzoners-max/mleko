@@ -78,7 +78,12 @@ void main(List<String> args) {
 
   for (final line in lines) {
     if (line.startsWith('SF:')) {
-      currentFile = line.substring(3).trim().replaceAll('\\', '/');
+      var normalizedSf = line.substring(3).trim().replaceAll('\\', '/');
+      final libIdx = normalizedSf.indexOf('/lib/');
+      if (libIdx >= 0) {
+        normalizedSf = normalizedSf.substring(libIdx + 1);
+      }
+      currentFile = normalizedSf;
       currentFound = 0;
       currentHit = 0;
     } else if (line.startsWith('LF:')) {

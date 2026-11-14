@@ -32,10 +32,10 @@ class DesktopHeader extends StatelessWidget {
 
   void _onNavigateTo(BuildContext context, int branchIndex, {required String route, MarketMode? mode}) {
     if (mode != null) {
-      context.read<AppSettingsProvider>().setMarketMode(mode);
+      context.read<AppSettingsProvider?>()?.setMarketMode(mode);
     }
     if (mode == MarketMode.foodMarket) {
-      context.read<ClassifiedsProvider>().clearFilters();
+      context.read<ClassifiedsProvider?>()?.clearFilters();
     }
     if (navigationShell != null) {
       navigationShell!.goBranch(branchIndex, initialLocation: true);
@@ -49,10 +49,11 @@ class DesktopHeader extends StatelessWidget {
 
   void _handleSearchSubmit(BuildContext context, String query) {
     final trimmed = query.trim();
-    final marketMode = context.read<AppSettingsProvider>().marketMode;
+    final marketMode =
+        context.read<AppSettingsProvider?>()?.marketMode ?? MarketMode.foodMarket;
 
     if (marketMode == MarketMode.classifieds || (navigationShell?.currentIndex == 1)) {
-      context.read<ClassifiedsProvider>().search(trimmed.isEmpty ? null : trimmed);
+      context.read<ClassifiedsProvider?>()?.search(trimmed.isEmpty ? null : trimmed);
       if (navigationShell?.currentIndex != 1) {
         _onNavigateTo(context, 1, route: '/classifieds', mode: MarketMode.classifieds);
       }
@@ -69,12 +70,14 @@ class DesktopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final appSettings = context.watch<AppSettingsProvider>();
-    final cartCount = context.watch<CartProvider>().count;
-    final user = context.watch<AppState>().user;
+    final appSettings = context.watch<AppSettingsProvider?>();
+    final marketMode = appSettings?.marketMode ?? MarketMode.foodMarket;
+    final cartCount = context.watch<CartProvider?>()?.count ?? 0;
+    final appState = context.watch<AppState?>();
+    final user = appState?.user;
     final isGuest = user == null || user.isGuest;
-    final unreadCount = context.select<AppState, int>((s) => s.unreadNotificationCount);
-    final selectedRegion = context.select<LocationProvider, String?>((p) => p.selectedRegion);
+    final unreadCount = appState?.unreadNotificationCount ?? 0;
+    final selectedRegion = context.watch<LocationProvider?>()?.selectedRegion;
 
     String currentPath = '';
     try {
@@ -90,8 +93,8 @@ class DesktopHeader extends StatelessWidget {
     final isSellersMap = currentPath == '/sellers-map';
     final isAbout = currentPath == '/about';
     final currentIndex = navigationShell?.currentIndex ?? 0;
-    final isFoodMarket = (currentIndex == 0 && appSettings.marketMode == MarketMode.foodMarket && !isSellersMap && !isAbout);
-    final isClassifieds = ((currentIndex == 1 || appSettings.marketMode == MarketMode.classifieds) && !isSellersMap && !isAbout);
+    final isFoodMarket = (currentIndex == 0 && marketMode == MarketMode.foodMarket && !isSellersMap && !isAbout);
+    final isClassifieds = ((currentIndex == 1 || marketMode == MarketMode.classifieds) && !isSellersMap && !isAbout);
 
     final bgMain = isDark ? AmazonColors.darkCard : Colors.white;
     final borderMain = isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;

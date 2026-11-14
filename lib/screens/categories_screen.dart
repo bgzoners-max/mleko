@@ -10,6 +10,7 @@ import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/category_icon.dart';
+import '../widgets/navigation/desktop_header.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_footer.dart';
 
@@ -58,36 +59,53 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = Breakpoints.isDesktop(context);
     return Scaffold(
       backgroundColor: AmazonColors.getCanvas(context),
-      appBar: AppBar(
-        leading: const AppBackButton(fallbackRoute: '/'),
-        backgroundColor: isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
-        foregroundColor: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        surfaceTintColor: Colors.transparent,
-        shape: Border(
-          bottom: BorderSide(
-            color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
-            width: 1.0,
-          ),
-        ),
-        title: Text(
-          'Kategorije',
-          style: TextStyle(
-            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        iconTheme: IconThemeData(
-          color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-        ),
-        actions: const [
-          AppHomeButton(),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              leading: const AppBackButton(fallbackRoute: '/'),
+              backgroundColor:
+                  isDark ? AmazonColors.darkCard : AmazonColors.cardWhite,
+              foregroundColor: isDark
+                  ? AmazonColors.darkTextPrimary
+                  : AmazonColors.textPrimary,
+              elevation: 0,
+              scrolledUnderElevation: 1,
+              surfaceTintColor: Colors.transparent,
+              shape: Border(
+                bottom: BorderSide(
+                  color: isDark
+                      ? AmazonColors.darkBorder
+                      : AmazonColors.borderGray,
+                  width: 1.0,
+                ),
+              ),
+              title: Text(
+                'Kategorije',
+                style: TextStyle(
+                  color: isDark
+                      ? AmazonColors.darkTextPrimary
+                      : AmazonColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              iconTheme: IconThemeData(
+                color: isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary,
+              ),
+              actions: const [
+                AppHomeButton(),
+              ],
+            ),
+      body: Column(
+        children: [
+          if (isDesktop) const DesktopHeader(isStandalone: true),
+          Expanded(child: _buildBody()),
         ],
       ),
-      body: _buildBody(),
     );
   }
 

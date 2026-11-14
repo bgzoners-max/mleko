@@ -100,6 +100,7 @@ export const onRequestGet: PagesFunction<PublicSupabaseEnv> = async (context) =>
       headers: {
         "content-type": "text/html; charset=utf-8",
         "x-robots-tag": "noindex, nofollow",
+        vary: "User-Agent",
       },
     });
   }
@@ -124,6 +125,7 @@ export const onRequestGet: PagesFunction<PublicSupabaseEnv> = async (context) =>
       headers: {
         "content-type": "text/html; charset=utf-8",
         "x-robots-tag": "noindex, nofollow",
+        vary: "User-Agent",
       },
     });
   }
@@ -290,6 +292,7 @@ export const onRequestGet: PagesFunction<PublicSupabaseEnv> = async (context) =>
       "content-type": "text/html; charset=utf-8",
       "cache-control":
         "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      vary: "User-Agent",
     },
   });
 };

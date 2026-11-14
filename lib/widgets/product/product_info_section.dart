@@ -8,6 +8,8 @@ import '../../core/responsive.dart';
 import '../../models/product_model.dart';
 import '../../models/product_reviews_data.dart';
 import '../../models/user_model.dart';
+import '../../providers/app_state.dart';
+import '../../providers/favorites_provider.dart';
 import '../../services/services.dart';
 import '../app_share_sheet.dart';
 import '../common/verified_badge.dart';
@@ -96,26 +98,51 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                 ),
               ),
               const SizedBox(width: 8),
+              Builder(builder: (ctx) {
+                final user = ctx.watch<AppState?>()?.user;
+                final favorites = ctx.watch<FavoritesProvider?>();
+                if (user == null || user.isGuest || favorites == null) {
+                  return const SizedBox.shrink();
+                }
+                final isFavorite = favorites.isFavorite(product.id);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Tooltip(
+                    message: isFavorite ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene',
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          withHaptic(() => favorites.toggle(user.id, product.id)),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        minimumSize: const Size(34, 32),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        size: 16,
+                        color: isFavorite ? Colors.red : null,
+                      ),
+                    ),
+                  ),
+                );
+              }),
               Tooltip(
                 message: 'Podeli proizvod',
                 child: OutlinedButton.icon(
-                  onPressed: () =>
-                      withHaptic(() => shareProduct(context, product)),
+                  onPressed: () => withHaptic(() => shareProduct(context, product)),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: Icon(Icons.adaptive.share, size: 15),
-                  label: const Text(
-                    'Podeli',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                  ),
+                  label: const Text('Podeli',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
@@ -414,15 +441,12 @@ class _PriceAndAvailability extends StatelessWidget {
     final badgeBackground = product.isAvailable
         ? (isDark ? const Color(0xFF1E3A2F) : const Color(0xFFE8F5E9))
         : (isDark ? const Color(0xFF3A2424) : const Color(0xFFFFEBEE));
-
     final badgeBorderColor = product.isAvailable
         ? (isDark ? const Color(0xFF2E7D32) : const Color(0xFF245938))
         : (isDark ? const Color(0xFFC62828) : const Color(0xFFEF9A9A));
-
     final badgeTextColor = product.isAvailable
         ? (isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32))
         : (isDark ? const Color(0xFFE57373) : const Color(0xFFC62828));
-
     final availabilityLabel = product.isAvailable
         ? (product.hasStockInfo
             ? 'Na stanju (${product.availableFormatted})'
@@ -464,10 +488,9 @@ class _PriceAndAvailability extends StatelessWidget {
               Text(
                 availabilityLabel,
                 style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: badgeTextColor,
-                ),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: badgeTextColor),
               ),
             ],
           ),
@@ -485,11 +508,8 @@ class _PriceAndAvailability extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 13,
-                  color: Color(0xFFE67E22),
-                ),
+                const Icon(Icons.local_fire_department_rounded,
+                    size: 13, color: Color(0xFFE67E22)),
                 const SizedBox(width: 4),
                 Text(
                   product.salesBadgeText!,
@@ -511,13 +531,11 @@ class _PriceAndAvailability extends StatelessWidget {
 
 class _ProductSpecsCard extends StatelessWidget {
   final ProductModel product;
-
   const _ProductSpecsCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final resolvedLocation =
         product.location.isNotEmpty ? product.location : 'Srbija';
     final resolvedPickup = product.pickupOptions.isNotEmpty
@@ -558,8 +576,7 @@ class _ProductSpecsCard extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: (isDark ? Colors.white : Colors.black)
-                .withValues(alpha: 0.05),
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
           ),
           const SizedBox(height: 8),
           Row(
@@ -591,33 +608,24 @@ class _SpecTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-
-  const _SpecTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _SpecTile({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: (isDark ? Colors.white : Colors.black)
-                .withValues(alpha: 0.05),
+            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
             icon,
             size: 15,
-            color: isDark
-                ? AmazonColors.darkTextPrimary
-                : AmazonColors.textSecondary,
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textSecondary,
           ),
         ),
         const SizedBox(width: 8),
@@ -640,9 +648,7 @@ class _SpecTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? AmazonColors.darkTextPrimary
-                      : AmazonColors.textPrimary,
+                  color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -657,21 +663,18 @@ class _SpecTile extends StatelessWidget {
 
 class _ProductDescription extends StatelessWidget {
   final String description;
-
   const _ProductDescription({required this.description});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Divider(
           height: 1,
           thickness: 1,
-          color: (isDark ? Colors.white : Colors.black)
-              .withValues(alpha: 0.07),
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
         ),
         const SizedBox(height: 12),
         Text(
@@ -679,9 +682,7 @@ class _ProductDescription extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: isDark
-                ? AmazonColors.darkTextPrimary
-                : AmazonColors.textPrimary,
+            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),

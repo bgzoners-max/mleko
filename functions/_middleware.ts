@@ -66,6 +66,11 @@ export const onRequest: PagesFunction = async (context) => {
       `${endpoint}?id=${encodeURIComponent(previewMatch.id)}`,
       url.origin,
     );
+    for (const [k, v] of url.searchParams.entries()) {
+      if (k !== "id") {
+        previewUrl.searchParams.set(k, v);
+      }
+    }
     const subReq = new Request(previewUrl.toString(), request);
     return previewMatch.kind === "classified"
       ? handleClassifiedPreview(subReq, env)
@@ -100,6 +105,7 @@ export const onRequest: PagesFunction = async (context) => {
         "content-type": "text/html; charset=utf-8",
         "cache-control":
           "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+        "vary": "User-Agent",
       };
       if (enrichedPayload.robots?.startsWith("noindex")) {
         headers["x-robots-tag"] = enrichedPayload.robots;
@@ -155,8 +161,7 @@ export const onRequest: PagesFunction = async (context) => {
       normalizedBotPath.startsWith("/admin/") ||
       normalizedBotPath.startsWith("/support/ticket/") ||
       normalizedBotPath.startsWith("/buyer/") ||
-      normalizedBotPath.startsWith("/seller/") ||
-      normalizedBotPath.startsWith("/categories/");
+      normalizedBotPath.startsWith("/seller/");
 
     if (isPrivateOrDynamicSpaRoute) {
       const noindexUrl = `${url.origin}${normalizedBotPath}`;
@@ -177,6 +182,7 @@ export const onRequest: PagesFunction = async (context) => {
             "content-type": "text/html; charset=utf-8",
             "x-robots-tag": "noindex, nofollow",
             "cache-control": "no-store",
+            "vary": "User-Agent",
           },
         },
       );
@@ -189,6 +195,7 @@ export const onRequest: PagesFunction = async (context) => {
           "content-type": "text/html; charset=utf-8",
           "x-robots-tag": "noindex, nofollow",
           "cache-control": "public, max-age=0, s-maxage=300",
+          "vary": "User-Agent",
         },
       });
     }

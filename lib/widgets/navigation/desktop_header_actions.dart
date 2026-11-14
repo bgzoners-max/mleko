@@ -210,6 +210,16 @@ class DesktopHeaderActions extends StatelessWidget {
                   ],
                 ),
               ),
+              const PopupMenuItem(
+                value: 6,
+                child: Row(
+                  children: [
+                    Icon(Icons.favorite_border_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Omiljeni proizvodi'),
+                  ],
+                ),
+              ),
               if (user?.isSeller == true)
                 PopupMenuItem(
                   value: 4,
@@ -236,6 +246,7 @@ class DesktopHeaderActions extends StatelessWidget {
               if (val == 1) onNavigateTo(4, route: '/profile');
               if (val == 2) onNavigateTo(2, route: '/orders');
               if (val == 3) onNavigateTo(3, route: '/conversations');
+              if (val == 6) context.push('/favorites');
               if (val == 4) context.push('/seller-dashboard');
               if (val == 5) {
                 unawaited(context.read<AppState>().authService.signOut());

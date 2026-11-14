@@ -200,6 +200,9 @@ jobs:
       - name: Run create order RPC parity & security integration SQL
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/create_order_rpc_integration.sql
 
+      - name: Run RLS & RPC security audit integration SQL
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/tests/rls_security_audit_integration.sql
+
       - name: Regenerate local Supabase types
         run: npm run supabase:types:local
 

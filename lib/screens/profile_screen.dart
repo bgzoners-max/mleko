@@ -56,11 +56,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void didUpdateWidget(ProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialSection != null &&
-        widget.initialSection != oldWidget.initialSection) {
+        (widget.initialSection != oldWidget.initialSection ||
+            widget.targetId != oldWidget.targetId)) {
       final initialWidget =
           _getInitialWidget(widget.initialSection, widget.targetId);
       if (initialWidget != null) {
         _showInPanel(widget.initialSection!, initialWidget);
+      } else {
+        setState(() => _activeSection = widget.initialSection);
       }
     }
   }
@@ -132,30 +135,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isWide = Breakpoints.useTwoPaneLayout(context);
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: isWide ? 44 : 46,
-        centerTitle: !isWide,
-        backgroundColor:
-            isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
-        foregroundColor: isDark ? Colors.white : theme.colorScheme.onSurface,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        shape: isDark
-            ? null
-            : const Border(
-                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+      appBar: isWide
+          ? null
+          : AppBar(
+              toolbarHeight: 46,
+              centerTitle: true,
+              backgroundColor:
+                  isDark ? const Color(0xFF1E3424) : theme.colorScheme.surface,
+              foregroundColor:
+                  isDark ? Colors.white : theme.colorScheme.onSurface,
+              elevation: 0,
+              scrolledUnderElevation: 1,
+              shape: isDark
+                  ? null
+                  : const Border(
+                      bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                    ),
+              leading: const AppBackButton(fallbackRoute: '/'),
+              title: Text(
+                'Profil',
+                style: GoogleFonts.roboto(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF1B201C),
+                ),
               ),
-        leading: const AppBackButton(fallbackRoute: '/'),
-        title: Text(
-          'Profil',
-          style: GoogleFonts.roboto(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : const Color(0xFF1B201C),
-          ),
-        ),
-        actions: const [AppHomeButton()],
-      ),
+              actions: const [AppHomeButton()],
+            ),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

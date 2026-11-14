@@ -13,10 +13,12 @@ class ThemeToggleSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<AppSettingsProvider>();
-    final isDark = settings.themeMode == ThemeMode.dark ||
-        (settings.themeMode == ThemeMode.system &&
-            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    final settings = context.watch<AppSettingsProvider?>();
+    final isDark = settings != null
+        ? (settings.themeMode == ThemeMode.dark ||
+            (settings.themeMode == ThemeMode.system &&
+                MediaQuery.platformBrightnessOf(context) == Brightness.dark))
+        : Theme.of(context).brightness == Brightness.dark;
 
     final tooltipText =
         isDark ? 'Prebaci na svetlu temu' : 'Prebaci na tamnu temu';
@@ -39,7 +41,7 @@ class ThemeToggleSwitch extends StatelessWidget {
         tooltip: tooltipText,
         onPressed: () {
           AppHaptics.light();
-          settings.toggleTheme(context);
+          settings?.toggleTheme(context);
         },
       );
     }
@@ -55,7 +57,7 @@ class ThemeToggleSwitch extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () {
             AppHaptics.light();
-            settings.toggleTheme(context);
+            settings?.toggleTheme(context);
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),

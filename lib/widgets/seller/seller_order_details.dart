@@ -74,15 +74,38 @@ class SellerOrderDetailRow extends StatelessWidget {
 }
 
 /// Stavke porudžbine (lazy load po orderId).
-class SellerOrderItemsSection extends StatelessWidget {
+class SellerOrderItemsSection extends StatefulWidget {
   final String orderId;
 
   const SellerOrderItemsSection({super.key, required this.orderId});
 
   @override
+  State<SellerOrderItemsSection> createState() =>
+      _SellerOrderItemsSectionState();
+}
+
+class _SellerOrderItemsSectionState extends State<SellerOrderItemsSection> {
+  late Future<List<OrderItemModel>> _itemsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _itemsFuture = context.read<OrdersService>().getOrderItems(widget.orderId);
+  }
+
+  @override
+  void didUpdateWidget(covariant SellerOrderItemsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.orderId != widget.orderId) {
+      _itemsFuture =
+          context.read<OrdersService>().getOrderItems(widget.orderId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<OrderItemModel>>(
-      future: context.read<OrdersService>().getOrderItems(orderId),
+      future: _itemsFuture,
       builder: (context, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
         final items = snap.data!;

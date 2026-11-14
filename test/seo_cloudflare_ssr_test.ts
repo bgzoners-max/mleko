@@ -86,6 +86,29 @@ Deno.test("unknown category param on /categories falls back to noindex,follow", 
   assertEquals(payload.canonicalUrl, `${ORIGIN}/categories`);
 });
 
+Deno.test("/categories/:slug resolves known food categories and noindexes unknown slugs", () => {
+  const knownPayload = resolveStaticPageSeo(
+    "/categories/mlecni-proizvodi",
+    new URLSearchParams(),
+    ORIGIN,
+  );
+  assert(knownPayload !== null);
+  assertEquals(knownPayload.robots, "index,follow,max-image-preview:large");
+  assertEquals(
+    knownPayload.canonicalUrl,
+    `${ORIGIN}/categories?category=mlecni-proizvodi`,
+  );
+
+  const unknownPayload = resolveStaticPageSeo(
+    "/categories/nepoznat-slug-123",
+    new URLSearchParams(),
+    ORIGIN,
+  );
+  assert(unknownPayload !== null);
+  assertEquals(unknownPayload.robots, "noindex,follow");
+  assertEquals(unknownPayload.canonicalUrl, `${ORIGIN}/categories`);
+});
+
 Deno.test("buildNotFoundHtml sets noindex,nofollow and self url", () => {
   const html = buildNotFoundHtml("/nepostojeca-stranica", ORIGIN);
   assertStringIncludes(html, '<meta name="robots" content="noindex,nofollow">');

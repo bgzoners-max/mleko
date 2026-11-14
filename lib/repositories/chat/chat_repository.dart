@@ -267,7 +267,10 @@ class SupabaseChatRepository implements ChatRepository {
             !Set.of(lastConvIds).containsAll(convIds);
         if (idsChanged && channel != null) {
           lastConvIds = convIds;
-          unawaited(_client.removeChannel(channel!));
+          final oldChannel = channel!;
+          channel = null;
+          await _client.removeChannel(oldChannel);
+          if (controller.isClosed) return;
           channel = _subscribeConversations(userId, convIds, () {
             debounceTimer?.cancel();
             debounceTimer = Timer(const Duration(milliseconds: 300), refetch);
@@ -290,7 +293,7 @@ class SupabaseChatRepository implements ChatRepository {
     controller = StreamController<List<ConversationModel>>.broadcast(
       onListen: () {
         refetch().then((_) {
-          if (controller.isClosed) return;
+          if (controller.isClosed || channel != null) return;
           channel = _subscribeConversations(userId, lastConvIds, onEvent);
           channel!.subscribe();
         });

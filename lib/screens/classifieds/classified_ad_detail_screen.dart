@@ -332,6 +332,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
             isLoadingPhone: _isLoadingPhone,
             currentPhone: currentPhone,
             onImageTap: _openImageLightbox,
+            onShare: () => _shareAd(ad),
             onEdit: () => context.push('/classifieds/edit/${ad.id}'),
             onMarkAsSold: () => _markAsSold(ad),
             onPhoneReveal: () => _revealPhone(ad),

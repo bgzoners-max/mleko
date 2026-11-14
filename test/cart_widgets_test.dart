@@ -165,7 +165,7 @@ void main() {
       expect(find.text('Med bagrem'), findsOneWidget);
       // 1200 x 2 + 1200 x 1 = 3600 RSD.
       expect(find.text('3600 RSD'), findsOneWidget);
-      expect(find.text('Naruči'), findsOneWidget);
+      expect(find.text('Poruči od ovog domaćinstva'), findsOneWidget);
     });
 
     testWidgets('Naruci dugme vodi na checkout stranicu prodavca',
@@ -183,7 +183,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Naruči'));
+      await tester.tap(find.text('Poruči od ovog domaćinstva'));
       await tester.pumpAndSettle();
 
       expect(find.text('CHECKOUT-REACHED'), findsOneWidget);
@@ -299,6 +299,7 @@ void main() {
       expect(items[1].product.name, 'Sirup od Trnjina (Flaša 750 ml)');
       expect(items[1].product.pricePerKg, 600);
       expect(items[1].quantity, 1);
+      expect(cart.getQuantityForSeller('s1', 'sirup-1'), 3);
 
       // Uklanjanje samo vece flase ostavlja malu flasicu u korpi
       await cart.removeFromSeller(
@@ -308,6 +309,7 @@ void main() {
       final remaining = await cart.getProductsBySeller('s1');
       expect(remaining.length, 1);
       expect(remaining.first.product.selectedVariant?.id, '250ml');
+      expect(cart.getQuantityForSeller('s1', 'sirup-1'), 2);
     });
   });
 }
