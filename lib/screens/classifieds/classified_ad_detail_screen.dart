@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +15,6 @@ import '../../providers/app_state.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../services/communication/chat_service.dart';
 import '../../services/core/analytics_service.dart';
-import '../../supabase_config.dart';
 import '../../widgets/app_error_retry.dart';
 import '../../widgets/app_share_sheet.dart';
 import '../../widgets/classifieds/detail/classified_action_buttons.dart';
@@ -74,14 +72,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   }
 
   Future<void> _shareAd(ClassifiedAdModel ad) async {
-    final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
-        ? SupabaseConfig.shareBaseUrl
-        : (kIsWeb
-            ? (Uri.base.origin == 'https://domacimarket.rs'
-                ? 'https://www.domacimarket.rs'
-                : Uri.base.origin)
-            : 'https://www.domacimarket.rs');
-    final base = rawBase.replaceAll(RegExp(r'/+$'), '');
+    final base = resolvePublicShareBaseUrl();
     final url = '$base/ad/${ad.id}';
     final text = '${ad.title} — ${ad.priceFormatted}';
     unawaited(_service.recordInteraction(ad.id, 'share'));

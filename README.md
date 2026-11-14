@@ -1,7 +1,7 @@
 # Naše Selo (mleko) — Marketplace & Oglasnik Domaćih Proizvoda
 
 [![CI](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bgzoners-max/mleko/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/Coverage-42.41%25-yellowgreen)](STATUS.md)
+[![Coverage](https://img.shields.io/badge/Coverage-42.57%25-yellowgreen)](STATUS.md)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth%20%7C%20Storage-3ECF8E?logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-Proprietary-blue.svg)]()

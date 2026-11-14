@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -7,16 +8,76 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/design_system.dart';
 import '../core/haptic.dart';
+import '../core/profile_display_names.dart';
 import '../core/responsive.dart';
+import '../models/product_model.dart';
+import '../models/user_model.dart';
+import '../supabase_config.dart';
 
-/// Prikazuje elegantan prozor ili bottom sheet za deljenje oglasa ili proizvoda
-/// sa brzim opcijama za Viber, WhatsApp, kopiranje linka i sistemsko deljenje.
+/// Vraća javni bazni URL za deljenje linkova (bez završne kose crte).
+String resolvePublicShareBaseUrl() {
+  final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
+      ? SupabaseConfig.shareBaseUrl
+      : (kIsWeb
+          ? (Uri.base.origin == 'https://domacimarket.rs'
+              ? 'https://www.domacimarket.rs'
+              : Uri.base.origin)
+          : 'https://www.domacimarket.rs');
+  return rawBase.replaceAll(RegExp(r'/+$'), '');
+}
+
+/// Otvara dijalog/sheet za deljenje konkretnog proizvoda (`/p/:id`).
+Future<void> shareProduct(BuildContext context, ProductModel product) async {
+  final base = resolvePublicShareBaseUrl();
+  final url = '$base/p/${product.id}';
+  final text =
+      'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:';
+
+  await showAppShareSheet(
+    context,
+    title: product.name,
+    url: url,
+    shareText: text,
+    subject: product.name,
+    sheetTitle: 'Podeli proizvod',
+  );
+}
+
+/// Otvara dijalog/sheet za deljenje profila prodavca / gazdinstva (`/seller/:id`).
+Future<void> shareSellerProfile(BuildContext context, UserModel seller) async {
+  final base = resolvePublicShareBaseUrl();
+  final url = '$base/seller/${seller.id}';
+  final displayName = resolveProfileDisplayName(
+    seller.farmName,
+    seller.displayName,
+  );
+  final place = seller.city?.trim().isNotEmpty == true
+      ? seller.city!.trim()
+      : (seller.location?.trim() ?? '');
+  final locationSuffix = place.isNotEmpty ? ' ($place)' : '';
+  final text =
+      'Pogledaj gazdinstvo $displayName$locationSuffix na Domaćem marketu:';
+
+  await showAppShareSheet(
+    context,
+    title: displayName,
+    url: url,
+    shareText: text,
+    subject: '$displayName – Domaći Market',
+    sheetTitle: 'Podeli profil',
+  );
+}
+
+/// Prikazuje elegantan prozor ili bottom sheet za deljenje oglasa, proizvoda
+/// ili profila gazdinstva sa brzim opcijama za Viber, WhatsApp, kopiranje linka
+/// i sistemsko deljenje.
 Future<void> showAppShareSheet(
   BuildContext context, {
   required String title,
   required String url,
   required String shareText,
   String? subject,
+  String sheetTitle = 'Podeli ponudu',
 }) {
   final isDesktop = Breakpoints.isDesktop(context);
 
@@ -28,6 +89,7 @@ Future<void> showAppShareSheet(
         url: url,
         shareText: shareText,
         subject: subject,
+        sheetTitle: sheetTitle,
       ),
     );
   }
@@ -44,6 +106,7 @@ Future<void> showAppShareSheet(
       url: url,
       shareText: shareText,
       subject: subject,
+      sheetTitle: sheetTitle,
     ),
   );
 }
@@ -53,12 +116,14 @@ class _ShareDialog extends StatelessWidget {
   final String url;
   final String shareText;
   final String? subject;
+  final String sheetTitle;
 
   const _ShareDialog({
     required this.title,
     required this.url,
     required this.shareText,
     this.subject,
+    required this.sheetTitle,
   });
 
   @override
@@ -85,7 +150,7 @@ class _ShareDialog extends StatelessWidget {
                   const SizedBox(width: AppDesign.spaceM),
                   Expanded(
                     child: Text(
-                      'Podeli ponudu',
+                      sheetTitle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -106,6 +171,8 @@ class _ShareDialog extends StatelessWidget {
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: AppDesign.spaceS),
+              _ShareUrlPill(url: url, isDark: isDark),
               const SizedBox(height: AppDesign.spaceL),
               _ShareOptionsGrid(
                 url: url,
@@ -126,12 +193,14 @@ class _ShareSheet extends StatelessWidget {
   final String url;
   final String shareText;
   final String? subject;
+  final String sheetTitle;
 
   const _ShareSheet({
     required this.title,
     required this.url,
     required this.shareText,
     this.subject,
+    required this.sheetTitle,
   });
 
   @override
@@ -153,7 +222,7 @@ class _ShareSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Podeli ponudu',
+              sheetTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -169,6 +238,8 @@ class _ShareSheet extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: AppDesign.spaceS),
+            _ShareUrlPill(url: url, isDark: isDark),
             const SizedBox(height: AppDesign.spaceL),
             _ShareOptionsGrid(
               url: url,
@@ -177,6 +248,37 @@ class _ShareSheet extends StatelessWidget {
               isDark: isDark,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShareUrlPill extends StatelessWidget {
+  final String url;
+  final bool isDark;
+
+  const _ShareUrlPill({required this.url, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2620) : const Color(0xFFF3F6F4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? AmazonColors.darkBorder : AmazonColors.borderSubtle,
+        ),
+      ),
+      child: SelectableText(
+        url,
+        maxLines: 1,
+        style: TextStyle(
+          fontSize: 12,
+          color: isDark
+              ? AmazonColors.darkTextSecondary
+              : AmazonColors.textSecondary,
         ),
       ),
     );
@@ -261,31 +363,41 @@ class _ShareOptionsGrid extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ShareButton(
-              icon: Icons.link_rounded,
-              label: 'Kopiraj link',
-              color: AmazonColors.link,
-              onTap: () => _copyLink(context),
+            Expanded(
+              child: _ShareButton(
+                icon: Icons.link_rounded,
+                label: 'Kopiraj link',
+                color: AmazonColors.link,
+                onTap: () => _copyLink(context),
+              ),
             ),
-            _ShareButton(
-              icon: Icons.phone_in_talk_rounded,
-              label: 'Viber',
-              color: const Color(0xFF7360F2),
-              onTap: () => _shareViber(context),
+            Expanded(
+              child: _ShareButton(
+                icon: Icons.phone_in_talk_rounded,
+                label: 'Viber',
+                color: const Color(0xFF7360F2),
+                onTap: () => _shareViber(context),
+              ),
             ),
-            _ShareButton(
-              icon: Icons.chat_rounded,
-              label: 'WhatsApp',
-              color: const Color(0xFF25D366),
-              onTap: () => _shareWhatsApp(context),
+            Expanded(
+              child: _ShareButton(
+                icon: Icons.chat_rounded,
+                label: 'WhatsApp',
+                color: const Color(0xFF25D366),
+                onTap: () => _shareWhatsApp(context),
+              ),
             ),
-            _ShareButton(
-              icon: Icons.more_horiz_rounded,
-              label: 'Više opcija',
-              color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-              onTap: () => _shareSystem(context),
+            Expanded(
+              child: _ShareButton(
+                icon: Icons.more_horiz_rounded,
+                label: 'Više opcija',
+                color: isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary,
+                onTap: () => _shareSystem(context),
+              ),
             ),
           ],
         ),
@@ -313,7 +425,7 @@ class _ShareButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -333,6 +445,9 @@ class _ShareButton extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,

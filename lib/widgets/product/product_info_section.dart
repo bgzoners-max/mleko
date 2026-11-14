@@ -9,6 +9,7 @@ import '../../models/product_model.dart';
 import '../../models/product_reviews_data.dart';
 import '../../models/user_model.dart';
 import '../../services/services.dart';
+import '../app_share_sheet.dart';
 import '../common/verified_badge.dart';
 import 'product_cart_block.dart';
 import 'rating_summary_badge.dart';
@@ -85,9 +86,39 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SellerBadgeHeader(
-            sellerId: product.sellerId,
-            isVerified: product.sellerIsVerified,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: _SellerBadgeHeader(
+                  sellerId: product.sellerId,
+                  isVerified: product.sellerIsVerified,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Podeli proizvod',
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      withHaptic(() => shareProduct(context, product)),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: Icon(Icons.adaptive.share, size: 15),
+                  label: const Text(
+                    'Podeli',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(

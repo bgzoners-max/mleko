@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/haptic.dart';
 import '../../core/responsive.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/cart_provider.dart';
 import '../app_back_button.dart';
+import '../app_share_sheet.dart';
 
 import 'seller_classifieds_grid.dart';
 import 'seller_farm_gallery_section.dart';
@@ -51,6 +53,12 @@ class _SellerProfileContentState extends State<SellerProfileContent> {
         leading: const AppBackButton(fallbackRoute: '/'),
         title: Text(sellerName),
         actions: [
+          IconButton(
+            icon: Icon(Icons.adaptive.share),
+            tooltip: 'Podeli profil',
+            onPressed: () =>
+                withHaptic(() => shareSellerProfile(context, seller)),
+          ),
           if (isOwnProfile)
             IconButton(
               icon: const Icon(Icons.edit_outlined),

@@ -88,6 +88,7 @@ const BOT_USER_AGENTS = [
   "facebookexternalhit",
   "facebot",
   "meta-externalagent",
+  "instagram",
   "twitterbot",
   "rogerbot",
   "linkedinbot",

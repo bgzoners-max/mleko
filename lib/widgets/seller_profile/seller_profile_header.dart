@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/haptic.dart';
 import '../../core/profile_display_names.dart';
 import '../../core/responsive.dart';
 import '../../models/seller_stats_model.dart';
@@ -10,6 +11,7 @@ import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 import '../../widgets/app_network_image.dart';
+import '../app_share_sheet.dart';
 import '../common/verified_badge.dart';
 
 class SellerProfileHeader extends StatefulWidget {
@@ -321,58 +323,98 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                   ),
                 ),
 
-                // 3. Dugme za praćenje (desno na tablet/desktop ekranima)
-                if (!isPhone && _checked) ...[
+                // 3. Akcije desno na tablet/desktop ekranima: Zaprati + Podeli profil
+                if (!isPhone) ...[
                   const SizedBox(width: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: _loading ? null : _toggleFollow,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    icon: _loading
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Icon(
-                            _isFollowing
-                                ? Icons.check_rounded
-                                : Icons.person_add_outlined,
-                            size: 16,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_checked) ...[
+                        FilledButton.tonalIcon(
+                          onPressed: _loading ? null : _toggleFollow,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            visualDensity: VisualDensity.compact,
                           ),
-                    label: Text(_isFollowing ? 'Pratim' : 'Zaprati'),
+                          icon: _loading
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Icon(
+                                  _isFollowing
+                                      ? Icons.check_rounded
+                                      : Icons.person_add_outlined,
+                                  size: 16,
+                                ),
+                          label: Text(_isFollowing ? 'Pratim' : 'Zaprati'),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      OutlinedButton.icon(
+                        onPressed: () => withHaptic(
+                            () => shareSellerProfile(context, seller)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: Icon(Icons.adaptive.share, size: 16),
+                        label: const Text('Podeli profil'),
+                      ),
+                    ],
                   ),
                 ],
               ],
             ),
 
-            // Ako je telefon: dugme za praćenje ide ispod
-            if (isPhone && _checked) ...[
+            // Ako je telefon: dugme za praćenje + deljenje profila idu ispod
+            if (isPhone) ...[
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonalIcon(
-                  onPressed: _loading ? null : _toggleFollow,
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          _isFollowing
-                              ? Icons.check_rounded
-                              : Icons.person_add_outlined,
-                          size: 16,
+              Row(
+                children: [
+                  if (_checked) ...[
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _loading ? null : _toggleFollow,
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
                         ),
-                  label: Text(_isFollowing ? 'Pratim gazdinstvo' : 'Zaprati gazdinstvo'),
-                ),
+                        icon: _loading
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(
+                                _isFollowing
+                                    ? Icons.check_rounded
+                                    : Icons.person_add_outlined,
+                                size: 16,
+                              ),
+                        label: Text(
+                            _isFollowing ? 'Pratim' : 'Zaprati gazdinstvo'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    flex: _checked ? 0 : 1,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          withHaptic(() => shareSellerProfile(context, seller)),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: Icon(Icons.adaptive.share, size: 16),
+                      label: Text(_checked ? 'Podeli' : 'Podeli profil'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

@@ -84,6 +84,9 @@ String _resolveWebInitialLocation() {
 }
 
 GoRouter createRouter(AppState appState) {
+  // Osvežava URL u adresnoj traci pregledača i pri context.push navigaciji,
+  // kako bi korisnici uvek videli i mogli da kopiraju tačan link proizvoda/profila.
+  GoRouter.optionURLReflectsImperativeAPIs = true;
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     refreshListenable: appState.authSession,

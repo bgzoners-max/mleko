@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +14,6 @@ import '../providers/app_state.dart';
 import '../providers/cart_provider.dart';
 import '../providers/favorites_provider.dart';
 import '../services/services.dart';
-import '../supabase_config.dart';
 
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
@@ -29,28 +27,6 @@ import '../widgets/product/product_info_section.dart';
 import '../widgets/product/more_from_seller_section.dart';
 import '../widgets/app_footer.dart';
 import '../widgets/product/product_reviews_section.dart';
-
-Future<void> _shareProduct(BuildContext context, ProductModel product) async {
-  final rawBase = SupabaseConfig.shareBaseUrl.isNotEmpty
-      ? SupabaseConfig.shareBaseUrl
-      : (kIsWeb
-          ? (Uri.base.origin == 'https://domacimarket.rs'
-              ? 'https://www.domacimarket.rs'
-              : Uri.base.origin)
-          : 'https://www.domacimarket.rs');
-  final base = rawBase.replaceAll(RegExp(r'/+$'), '');
-  final url = '$base/p/${product.id}';
-  final text =
-      'Pogledaj ${product.name} – ${product.priceFormatted} na Domaćem marketu:';
-
-  await showAppShareSheet(
-    context,
-    title: product.name,
-    url: url,
-    shareText: text,
-    subject: product.name,
-  );
-}
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -288,7 +264,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 tooltip: 'Podeli proizvod',
                 onPressed: snapshot.hasData
                     ? () =>
-                        withHaptic(() => _shareProduct(context, snapshot.data!))
+                        withHaptic(() => shareProduct(context, snapshot.data!))
                     : null,
               );
             },

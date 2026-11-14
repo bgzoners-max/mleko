@@ -4,6 +4,7 @@ import {
   sanitizeNextPath,
 } from "../functions/api/_shared/auth-confirm-utils.ts";
 import {
+  isBot,
   matchMiddlewarePreviewRoute,
   resolveApexCanonicalRedirectUrl,
   resolveLegacyRouteRedirect,
@@ -102,4 +103,10 @@ Deno.test("matchMiddlewarePreviewRoute podržava opcioni trailing slash za kratk
     id: "ogl-1",
   });
   assertEquals(matchMiddlewarePreviewRoute("/product/pro-2/", false), null);
+});
+
+Deno.test("isBot prepoznaje Instagram i društvene/pretraživačke botove", () => {
+  assertEquals(isBot("Instagram 300.0.0.0 Android"), true);
+  assertEquals(isBot("facebookexternalhit/1.1"), true);
+  assertEquals(isBot("Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36"), false);
 });
