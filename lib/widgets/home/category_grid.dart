@@ -23,8 +23,8 @@ class CategoryGrid extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final int crossAxisCount;
-        if (width >= 1150) {
-          crossAxisCount = 6;
+        if (width >= 1100) {
+          crossAxisCount = 5;
         } else if (width >= 820) {
           crossAxisCount = 4;
         } else if (width >= 540) {

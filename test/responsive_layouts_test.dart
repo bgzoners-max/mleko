@@ -451,6 +451,38 @@ void main() {
       expect(find.text('Suvomesnati proizvodi'), findsOneWidget);
     });
 
+    testWidgets('CategoryGrid uses 5 columns on desktop (>=1100px) so 20 categories form an even 5x4 grid',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final categories = List.generate(
+        20,
+        (i) => Category(id: '$i', name: 'Kategorija $i', icon: 'milk'),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: CategoryGrid(
+                topCategories: categories,
+                isWide: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final grid = tester.widget<GridView>(find.byType(GridView));
+      final delegate =
+          grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+      expect(delegate.crossAxisCount, 5);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('MarketModeSwitcher adapts without overflow under 1.5x font scale',
         (tester) async {
       tester.view.physicalSize = const Size(360, 640);
