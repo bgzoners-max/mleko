@@ -1,8 +1,8 @@
 # Projekat: Mleko
-Poslednji put generisano: 2026-11-14T18:44:33.658278
+Poslednji put generisano: 2026-11-15T22:34:46.662334
 
 ## Status
-- **Test fajlovi**: 160
+- **Test fajlovi**: 162
 - **Pokrivenost koda (Coverage)**: 42.41%
 - **Broj SQL migracija**: 247
 

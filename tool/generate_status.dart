@@ -64,6 +64,7 @@ void main(List<String> args) {
   }
 
   final coverageStr = coverage.toStringAsFixed(2);
+  _syncReadmeCoverageBadge(coverageStr);
 
   // Ako STATUS.md već postoji i nije prosleđen --force, proveravamo da li su se metrike promenile.
   // Ako su metrike identične, ne menjamo timestamp kako CI `git diff --quiet -- STATUS.md` ne bi lažno padao.
@@ -108,4 +109,22 @@ void main(List<String> args) {
   stdout.writeln(
     'STATUS.md uspešno generisan ($testCount test fajlova, $coverageStr% coverage, $migrationCount migracija).',
   );
+}
+
+void _syncReadmeCoverageBadge(String coverageStr) {
+  final readmeFile = File('README.md');
+  if (!readmeFile.existsSync()) return;
+  final content = readmeFile.readAsStringSync();
+  final badgePattern = RegExp(
+    r'https://img\.shields\.io/badge/Coverage-[\d\.]+%25-([a-zA-Z0-9_-]+)',
+  );
+  final match = badgePattern.firstMatch(content);
+  if (match == null) return;
+  final color = match.group(1)!;
+  final nextUrl =
+      'https://img.shields.io/badge/Coverage-$coverageStr%25-$color';
+  if (match.group(0) == nextUrl) return;
+  final updated = content.replaceFirst(badgePattern, nextUrl);
+  readmeFile.writeAsStringSync(updated);
+  stdout.writeln('README.md coverage badge ažuriran na $coverageStr%.');
 }

@@ -20,6 +20,7 @@ export interface UploadEnv {
   MEDIA_BUCKET?: MediaBucket;
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
+  R2_PUBLIC_BASE_URL?: string;
 }
 
 export interface UploadContext {
@@ -539,7 +540,11 @@ export async function handleUploadRequest(
       },
     });
 
-    const publicUrl = `${R2_PUBLIC_BASE_URL}/${cleanPath}`;
+    const baseUrl = (env.R2_PUBLIC_BASE_URL?.trim() || R2_PUBLIC_BASE_URL).replace(
+      /\/+$/,
+      '',
+    );
+    const publicUrl = `${baseUrl}/${cleanPath}`;
 
     return jsonResponse(
       {

@@ -5,26 +5,87 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../core/logger_service.dart';
 import 'image_compression_service.dart';
 
 /// Storage za slike – podržava Cloudflare R2 (primarni sa 0$ egress troškovima)
 /// sa automatskim fallback-om na Supabase Storage.
 class StorageService {
-  static final StorageService _instance = StorageService._();
-  factory StorageService() => _instance;
-  StorageService._();
+  static final StorageService _instance = StorageService._internal();
+
+  /// Podržava standardni singleton poziv `StorageService()` kao i opciono
+  /// injektovanje zavisnosti u unit testovima.
+  factory StorageService({
+    http.Client? httpClient,
+    SupabaseClient? supabaseClient,
+    String? Function()? accessTokenProvider,
+    String? apiBaseUrl,
+  }) {
+    if (httpClient != null ||
+        supabaseClient != null ||
+        accessTokenProvider != null ||
+        apiBaseUrl != null) {
+      return StorageService._(
+        httpClient: httpClient,
+        supabaseClient: supabaseClient,
+        accessTokenProvider: accessTokenProvider,
+        apiBaseUrl: apiBaseUrl,
+      );
+    }
+    return _instance;
+  }
+
+  StorageService._internal()
+      : _httpClient = null,
+        _supabaseClient = null,
+        _accessTokenProvider = null,
+        _apiBaseUrlOverride = null;
+
+  StorageService._({
+    http.Client? httpClient,
+    SupabaseClient? supabaseClient,
+    String? Function()? accessTokenProvider,
+    String? apiBaseUrl,
+  })  : _httpClient = httpClient,
+        _supabaseClient = supabaseClient,
+        _accessTokenProvider = accessTokenProvider,
+        _apiBaseUrlOverride = apiBaseUrl;
+
+  final http.Client? _httpClient;
+  final SupabaseClient? _supabaseClient;
+  final String? Function()? _accessTokenProvider;
+  final String? _apiBaseUrlOverride;
 
   static const _uuid = Uuid();
   static const _bucketProducts = 'product-images';
   static const _bucketProfiles = 'profiles';
   static const _bucketFarmGallery = 'farm-gallery';
 
+  /// Timeout za R2 upload (prilagođen ruralnim mobilnim vezama i fajlovima do 10 MB)
+  static const Duration r2UploadTimeout = Duration(seconds: 60);
+
+  /// Timeout za R2 brisanje fajla
+  static const Duration r2DeleteTimeout = Duration(seconds: 15);
+
   /// Javni R2 domen za serviranje medija sa Cloudflare Anycast CDN-a
   static const r2PublicBaseUrl =
       'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev';
 
+  /// Pripremljen custom R2 CDN domen za budući prelazak sa `r2.dev`
+  static const r2CustomBaseUrl = 'https://cdn.domacimarket.rs';
+
+  /// Proverava da li javni URL pripada Cloudflare R2 skladištu.
+  static bool isR2PublicUrl(String url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase();
+    if (host == null || host.isEmpty) return false;
+    return host == 'cdn.domacimarket.rs' ||
+        host.endsWith('.r2.dev') ||
+        host.endsWith('.r2.cloudflarestorage.com');
+  }
+
   /// Autoritativni bazni URL za pozivanje Cloudflare Pages funkcija
-  static String get _apiBaseUrl {
+  String get _apiBaseUrl {
+    if (_apiBaseUrlOverride != null) return _apiBaseUrlOverride;
     if (kIsWeb) {
       final origin = Uri.base.origin;
       if (!origin.contains('localhost') && !origin.contains('127.0.0.1')) {
@@ -32,6 +93,16 @@ class StorageService {
       }
     }
     return 'https://domacimarket.pages.dev';
+  }
+
+  SupabaseClient get _effectiveSupabaseClient =>
+      _supabaseClient ?? Supabase.instance.client;
+
+  String? _resolveAccessToken() {
+    if (_accessTokenProvider != null) {
+      return _accessTokenProvider();
+    }
+    return _effectiveSupabaseClient.auth.currentSession?.accessToken;
   }
 
   /// Detektuje ekstenziju i MIME tip na osnovu „magic bytes“ u zaglavlju fajla.
@@ -82,17 +153,18 @@ class StorageService {
       final uri = Uri.parse(
         '$_apiBaseUrl/api/upload?path=${Uri.encodeComponent(fullPath)}',
       );
-      final session = Supabase.instance.client.auth.currentSession;
+      final accessToken = _resolveAccessToken();
       final headers = <String, String>{
         'Content-Type': mimeInfo.mimeType,
       };
-      if (session?.accessToken != null) {
-        headers['Authorization'] = 'Bearer ${session!.accessToken}';
+      if (accessToken != null) {
+        headers['Authorization'] = 'Bearer $accessToken';
       }
 
-      final response = await http
-          .post(uri, headers: headers, body: data)
-          .timeout(const Duration(seconds: 15));
+      final postFuture = _httpClient != null
+          ? _httpClient.post(uri, headers: headers, body: data)
+          : http.post(uri, headers: headers, body: data);
+      final response = await postFuture.timeout(r2UploadTimeout);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -103,12 +175,25 @@ class StorageService {
         }
         return url;
       }
-    } catch (_) {
-      // Ignoriši i pređi na fallback Supabase Storage
+      LoggerService.warning(
+        'R2 upload vratio neočekivan HTTP status, prelazak na Supabase fallback',
+        extra: {
+          'statusCode': response.statusCode,
+          'path': fullPath,
+        },
+      );
+    } catch (e) {
+      LoggerService.warning(
+        'R2 upload nije uspeo, prelazak na Supabase fallback',
+        extra: {
+          'path': fullPath,
+          'error': e.toString(),
+        },
+      );
     }
 
     // 2. Sigurnosni fallback na Supabase Storage
-    final client = Supabase.instance.client;
+    final client = _effectiveSupabaseClient;
     await client.storage.from(bucket).uploadBinary(
       subPath,
       data,
@@ -200,39 +285,79 @@ class StorageService {
   }
 
   /// Briše fajl iz zadatog bucketa na osnovu public URL-a.
-  /// Podržava i Cloudflare R2 i legacy Supabase Storage URL-ove.
-  Future<void> deleteFileByBucket(String bucket, String url) async {
+  /// Podržava i Cloudflare R2 (uključujući custom domen) i legacy Supabase Storage URL-ove.
+  /// Vraća `true` ako je fajl uspešno obrisan, `false` ako brisanje nije uspelo ili putanja nije validna.
+  Future<bool> deleteFileByBucket(String bucket, String url) async {
     final path = extractPathFromPublicUrl(bucket, url);
-    if (path == null) return;
+    if (path == null) {
+      if (url.trim().isNotEmpty) {
+        LoggerService.warning(
+          'Preskočeno brisanje fajla: URL ne pripada očekivanom bucketu',
+          extra: {'bucket': bucket, 'url': url},
+        );
+      }
+      return false;
+    }
 
-    if (url.contains('r2.dev') || url.contains('r2.cloudflarestorage.com')) {
+    if (isR2PublicUrl(url)) {
       try {
         final fullPath = '$bucket/$path';
         final uri = Uri.parse(
           '$_apiBaseUrl/api/upload?path=${Uri.encodeComponent(fullPath)}',
         );
-        final session = Supabase.instance.client.auth.currentSession;
+        final accessToken = _resolveAccessToken();
         final headers = <String, String>{};
-        if (session?.accessToken != null) {
-          headers['Authorization'] = 'Bearer ${session!.accessToken}';
+        if (accessToken != null) {
+          headers['Authorization'] = 'Bearer $accessToken';
         }
-        await http
-            .delete(uri, headers: headers)
-            .timeout(const Duration(seconds: 10));
-        return;
-      } catch (_) {
-        // Ignoriši grešku pri rollbacku
+        final deleteFuture = _httpClient != null
+            ? _httpClient.delete(uri, headers: headers)
+            : http.delete(uri, headers: headers);
+        final response = await deleteFuture.timeout(r2DeleteTimeout);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return true;
+        }
+        LoggerService.warning(
+          'R2 brisanje fajla nije uspelo (HTTP status)',
+          extra: {
+            'bucket': bucket,
+            'path': path,
+            'statusCode': response.statusCode,
+          },
+        );
+        return false;
+      } catch (e) {
+        LoggerService.warning(
+          'R2 brisanje fajla nije uspelo',
+          extra: {
+            'bucket': bucket,
+            'path': path,
+            'error': e.toString(),
+          },
+        );
+        return false;
       }
     }
 
-    // Supabase rollback za starije slike
+    // Supabase brisanje za starije slike ili fallback URL-ove
     try {
-      final client = Supabase.instance.client;
+      final client = _effectiveSupabaseClient;
       await client.storage.from(bucket).remove([path]);
-    } catch (_) {}
+      return true;
+    } catch (e) {
+      LoggerService.warning(
+        'Supabase brisanje fajla nije uspelo',
+        extra: {
+          'bucket': bucket,
+          'path': path,
+          'error': e.toString(),
+        },
+      );
+      return false;
+    }
   }
 
   /// Briše fajl iz `product-images` na osnovu public URL-a.
-  Future<void> deleteFileByPublicUrl(String url) =>
+  Future<bool> deleteFileByPublicUrl(String url) =>
       deleteFileByBucket(_bucketProducts, url);
 }

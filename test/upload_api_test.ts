@@ -391,3 +391,33 @@ Deno.test("upload and delete succeed for owner with valid PNG/WebP/JPEG images",
   assertEquals(bucket.deleteCalls, [`product-images/${USER_ID}/p1.png`]);
 });
 
+Deno.test("upload uses R2_PUBLIC_BASE_URL override when provided without trailing slash", async () => {
+  const bucket = new MockBucket();
+  const env: UploadEnv = {
+    ...makeEnv(bucket),
+    R2_PUBLIC_BASE_URL: "https://cdn.domacimarket.rs/",
+  };
+
+  const res = await handleUploadRequest(
+    new Request(
+      `https://www.domacimarket.rs/api/upload?path=product-images/${USER_ID}/p2.jpg`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer valid-jwt",
+          "Content-Type": "image/jpeg",
+        },
+        body: VALID_JPEG,
+      },
+    ),
+    env,
+    { fetchImpl: makeAuthFetcher("valid") },
+  );
+  assertEquals(res.status, 200);
+  const body = await res.json();
+  assertEquals(
+    body.url,
+    `https://cdn.domacimarket.rs/product-images/${USER_ID}/p2.jpg`,
+  );
+});
+

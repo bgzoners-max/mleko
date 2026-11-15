@@ -16,6 +16,7 @@ import '../../models/classified_category_model.dart';
 import '../../providers/app_state.dart';
 import '../../providers/classifieds_provider.dart';
 import '../../services/classifieds/classifieds_service.dart';
+import '../../services/core/logger_service.dart';
 import '../../services/media/image_compression_service.dart';
 import '../../services/media/storage_service.dart';
 import '../../utils/classified_attributes_engine.dart';
@@ -525,7 +526,12 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
       for (final url in newlyUploadedUrls) {
         try {
           await _storageService.deleteFileByPublicUrl(url);
-        } catch (_) {/* cleanup je best-effort */}
+        } catch (cleanupError) {
+          LoggerService.warning(
+            'Neuspešan rollback upload-ovane slike oglasa',
+            extra: {'url': url, 'error': cleanupError.toString()},
+          );
+        }
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -49,7 +49,7 @@ jobs:
         run: flutter test --coverage
 
       - name: Check code coverage (ratchet threshold)
-        run: dart run tool/check_coverage.dart --min-coverage=32.0 --ratchet-file=tool/coverage_ratchet.json
+        run: dart run tool/check_coverage.dart --min-coverage=41.5 --ratchet-file=tool/coverage_ratchet.json
 
       - name: Verify coverage ratchet baseline is committed
         shell: bash
@@ -65,9 +65,9 @@ jobs:
         shell: bash
         run: |
           dart run tool/generate_status.dart
-          if ! git diff --quiet -- STATUS.md; then
-            echo "::error file=STATUS.md::STATUS.md is out of date. Please run 'dart run tool/generate_status.dart' and commit the changes."
-            git diff -- STATUS.md
+          if ! git diff --quiet -- STATUS.md README.md; then
+            echo "::error file=STATUS.md::STATUS.md ili README.md coverage badge su zastareli. Pokreni 'dart run tool/generate_status.dart' i commit-uj izmene."
+            git diff -- STATUS.md README.md
             exit 1
           fi
 

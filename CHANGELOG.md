@@ -3,6 +3,21 @@
 Sve značajne promene na projektu **Domaći Market** (`mleko`) dokumentuju se u ovom fajlu.
 Format prati [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.7+17] - 2026-11-15
+
+### Added
+- **Varijante i podjedinice proizvoda**: podrška za višestruke varijante pakovanja/ukusa/vrsta sa cenama po varijanti (`g`/`ml` odvojeno od `kg`/`L`) i ujednačeno formatiranje zaliha.
+- **Registracija i mapa**: istaknuti `Registruj se` pozivi kroz aplikaciju sa tabovima `Registruj se | Prijava` na `/login`, deljenje URL-ova proizvoda i profila prodavaca, `5x4` desktop mreža kategorija i zvanična GeoJSON kontura Republike Srbije (uključujući KiM) preko OSM mape.
+- **R2 custom domen priprema**: podrška za konfigurabilni `R2_PUBLIC_BASE_URL` env u `functions/api/upload.ts`, `https://cdn.domacimarket.rs` u CSP-u (`web/_headers`) i prepoznavanje custom R2 domena u `StorageService.isR2PublicUrl`.
+
+### Changed
+- **Upload otpornost**: R2 upload timeout u `StorageService` podignut sa `15s` na `60s` (`StorageService.r2UploadTimeout`) radi pouzdanijeg rada na sporijim mobilnim vezama.
+- **Kontrola brisanja medija**: `StorageService.deleteFileByBucket` i `deleteFileByPublicUrl` sada vraćaju `Future<bool>`, proveravaju HTTP status kod R2 `DELETE` poziva i loguju greške preko `LoggerService.warning` umesto tihog gutanja izuzetaka.
+- **Sinhronizacija statusa i CI-a**: `tool/generate_status.dart` automatski sinhronizuje Coverage badge u `README.md`, a prag `--min-coverage` u `ci.yml` podignut je sa `32.0` na `41.5` u skladu sa ratchet baseline-om (`42.41%`).
+
+### Security & Hardening
+- Zaključavanje `functions/api/upload.ts` (CORS allowlist, magic bytes, granica veličine i vlasništvo putanje), `router` `returnTo` zaštita, DB RLS/indeksi i SSR/SEO obogaćivanje za prodavce i proizvode.
+
 ## [Nepotpisano] - 2026-10-30 — Uklanjanje Vercel legacy stacka (hosting konsolidacija)
 
 ### Removed
