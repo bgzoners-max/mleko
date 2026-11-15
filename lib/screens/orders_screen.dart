@@ -11,6 +11,7 @@ import '../services/services.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
+import '../widgets/auth/guest_auth_buttons.dart';
 import '../widgets/orders/buyer_order_card.dart';
 import '../widgets/orders/by_seller_tab.dart';
 import '../widgets/orders/orders_desktop_sidebar.dart';
@@ -256,25 +257,21 @@ class _OrdersScreenState extends State<OrdersScreen> {
           title: const Text('Moje porudžbine'),
           actions: const [AppHomeButton()],
         ),
-        body: Center(
+        body: const Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.receipt_long_outlined, size: 64),
-                const SizedBox(height: 16),
-                const Text(
+                Icon(Icons.receipt_long_outlined, size: 64),
+                SizedBox(height: 16),
+                Text(
                   'Za pregled i praćenje porudžbina potrebno je da se prijavite na svoj nalog.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, height: 1.4),
                 ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/login'),
-                  icon: const Icon(Icons.login),
-                  label: const Text('Prijavi se'),
-                ),
+                SizedBox(height: 24),
+                GuestAuthButtons(useGoNavigation: true),
               ],
             ),
           ),

@@ -12,6 +12,7 @@ import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/auth/guest_auth_buttons.dart';
 import '../widgets/chat/conversation_list_tile.dart';
 import '../widgets/chat/conversations_desktop_sidebar.dart';
 import '../widgets/skeleton.dart';
@@ -285,13 +286,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           title: const Text('Poruke'),
           actions: const [AppHomeButton()],
         ),
-        body: AppEmptyState(
+        body: const AppEmptyState(
           icon: Icons.chat_bubble_outline,
           title: 'Vaše poruke',
           subtitle:
               'Prijavite se da biste mogli da komunicirate sa prodavcima.',
-          ctaLabel: 'Prijavi se',
-          onCtaPressed: () => context.go('/login'),
+          cta: GuestAuthButtons(useGoNavigation: true),
         ),
       );
     }

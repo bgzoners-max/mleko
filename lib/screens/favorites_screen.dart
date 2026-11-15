@@ -11,6 +11,7 @@ import 'package:mleko/services/services.dart';
 import '../utils/image_precache_utils.dart';
 import '../widgets/app_error_retry.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/auth/guest_auth_buttons.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_empty_state.dart';
 import '../widgets/rustic_illustration.dart';
@@ -103,14 +104,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           title: const Text('Omiljeni proizvodi'),
           actions: const [AppHomeButton()],
         ),
-        body: AppEmptyState(
+        body: const AppEmptyState(
           motif: RusticMotif.basket,
           icon: Icons.favorite_outline,
           title: 'Prijavi se za listu želja',
           subtitle:
               'Sačuvaj omiljene proizvode i nađi ih kasnije na jednom mestu.',
-          ctaLabel: 'Prijavi se',
-          onCtaPressed: () => context.go('/login'),
+          cta: GuestAuthButtons(useGoNavigation: true),
         ),
       );
     }

@@ -124,10 +124,15 @@ GoRouter createRouter(AppState appState) {
       ),
       GoRoute(
         path: '/login',
-        pageBuilder: (context, state) => buildPageTransition(
-          state: state,
-          child: const LoginScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final tab = state.uri.queryParameters['tab'] == 'register'
+              ? AuthTab.register
+              : AuthTab.login;
+          return buildPageTransition(
+            state: state,
+            child: LoginScreen(initialTab: tab),
+          );
+        },
       ),
       GoRoute(
         path: '/register',

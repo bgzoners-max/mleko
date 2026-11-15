@@ -93,6 +93,29 @@ class HomeMobileAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        if (isGuest)
+          Padding(
+            padding: const EdgeInsets.only(right: 2),
+            child: FilledButton(
+              onPressed: () => context.push('/login?tab=register'),
+              style: FilledButton.styleFrom(
+                backgroundColor:
+                    isDark ? AmazonColors.green : const Color(0xFF245938),
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Registruj se',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
         if (!isGuest)
           IconButton(
             padding: const EdgeInsets.symmetric(horizontal: 4),

@@ -108,7 +108,7 @@ class _GuestAuthDialog extends StatelessWidget {
                       label: const Text('Registruj se'),
                       onPressed: () {
                         Navigator.pop(context);
-                        context.push('/register');
+                        context.push('/login?tab=register');
                       },
                     ),
                   ),
@@ -218,7 +218,7 @@ class _GuestAuthSheet extends StatelessWidget {
                 label: const Text('Besplatna registracija'),
                 onPressed: () {
                   Navigator.pop(context);
-                  context.push('/register');
+                  context.push('/login?tab=register');
                 },
               ),
             ),

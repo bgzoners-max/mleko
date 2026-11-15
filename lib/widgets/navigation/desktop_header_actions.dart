@@ -36,8 +36,8 @@ class HeaderIconButton extends StatelessWidget {
       message: tooltip,
       child: IconButton(
         onPressed: onTap,
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+        padding: const EdgeInsets.all(6),
+        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
         icon: Badge(
           isLabelVisible: showBadge,
           label: Text(
@@ -126,34 +126,63 @@ class DesktopHeaderActions extends StatelessWidget {
           ),
         ],
 
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         const ThemeToggleSwitch(),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
 
-        // Profil / Prijavi se
+        // Profil / Registruj se & Prijavi se
         if (isGuest)
-          OutlinedButton.icon(
-            onPressed: () => context.push('/login'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              side: BorderSide(
-                color: isDark ? Colors.white24 : AmazonColors.green,
-                width: 1.2,
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : const Color(0xFFF1F7F2),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: isDark ? Colors.white24 : const Color(0xFFC8DEC9),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            icon: Icon(
-              Icons.person_outline,
-              size: 16,
-              color: isDark ? Colors.white : AmazonColors.green,
-            ),
-            label: Text(
-              'Prijavi se',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 12.5,
-                color: isDark ? Colors.white : AmazonColors.green,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Material(
+                  color: isDark ? AmazonColors.green : const Color(0xFF245938),
+                  borderRadius: BorderRadius.circular(7),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(7),
+                    onTap: () => context.push('/login?tab=register'),
+                    child: const Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                      child: Text(
+                        'Registruj se',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                InkWell(
+                  borderRadius: BorderRadius.circular(7),
+                  onTap: () => context.push('/login'),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                    child: Text(
+                      'Prijavi se',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11.5,
+                        color: isDark ? Colors.white : AmazonColors.green,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           )
         else
@@ -297,7 +326,7 @@ class DesktopHeaderActions extends StatelessWidget {
             ),
           ),
 
-        const SizedBox(width: 14),
+        const SizedBox(width: 6),
 
         // Hero CTA Dugme: "+ Postavi oglas" (otvara izbor između hrane i malih oglasa)
         ElevatedButton.icon(
@@ -306,13 +335,15 @@ class DesktopHeaderActions extends StatelessWidget {
             backgroundColor: const Color(0xFFFFE082),
             foregroundColor: AmazonColors.darkNavy,
             elevation: 2,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+            minimumSize: const Size(0, 36),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
-          icon: const Icon(Icons.add_circle_outline_rounded, size: 17),
+          icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
           label: const Text(
             'Postavi oglas',
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
           ),
         ),
       ],

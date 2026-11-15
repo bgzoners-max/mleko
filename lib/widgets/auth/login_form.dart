@@ -9,9 +9,13 @@ import 'package:go_router/go_router.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
 import '../error_dialog.dart';
-import 'google_icon.dart';
+import 'auth_error_formatter.dart';
+import 'google_auth_button.dart';
+
 class LoginForm extends StatefulWidget {
-  const LoginForm({super.key});
+  final VoidCallback? onSwitchToRegister;
+
+  const LoginForm({super.key, this.onSwitchToRegister});
 
   @override
   State<LoginForm> createState() => LoginFormState();
@@ -25,7 +29,6 @@ class LoginFormState extends State<LoginForm> {
   bool _isUnconfirmedEmailError = false;
   bool _resendingConfirmation = false;
   final bool _guestLoading = false;
-  bool _googleLoading = false;
 
   // Zaštita od brute-force pogađanja lozinki
   int _failedAttempts = 0;
@@ -109,7 +112,7 @@ class LoginFormState extends State<LoginForm> {
             _startLockout(30);
           }
         }
-        final errorMsg = _formatAuthError(e);
+        final errorMsg = formatAuthError(e);
         setState(() {
           _error = errorMsg;
           _isUnconfirmedEmailError = isUnconfirmed;
@@ -121,30 +124,6 @@ class LoginFormState extends State<LoginForm> {
       }
     } finally {
       if (mounted) context.read<AppState>().setLoading(false);
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    if (_isLockedOut) return;
-    setState(() {
-      _googleLoading = true;
-      _error = null;
-    });
-    try {
-      await context.read<AppState>().authService.signInWithGoogle();
-    } on Exception catch (e) {
-      if (mounted) {
-        final errorMsg = _formatAuthError(e);
-        setState(() => _error = errorMsg);
-        final error = AppError.from(e,
-            stackTrace: StackTrace.current, userMessage: errorMsg);
-        await ErrorDialog.show(context,
-            error: error, onRetry: _signInWithGoogle);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _googleLoading = false);
-      }
     }
   }
 
@@ -190,7 +169,7 @@ class LoginFormState extends State<LoginForm> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_formatAuthError(e)),
+            content: Text(formatAuthError(e)),
             backgroundColor: Colors.red,
           ),
         );
@@ -198,39 +177,6 @@ class LoginFormState extends State<LoginForm> {
     } finally {
       if (mounted) setState(() => _resendingConfirmation = false);
     }
-  }
-
-  String _formatAuthError(Object e) {
-    final msg = e.toString().toLowerCase();
-    if (msg.contains('email not confirmed') || msg.contains('not confirmed')) {
-      return 'Email adresa još nije potvrđena. Kliknite na link za aktivaciju u mejlu (proverite i Spam/Nepoželjno) ili pošaljite novi link ispod.';
-    }
-    if (msg.contains('invalid login') ||
-        msg.contains('invalid') ||
-        msg.contains('wrong') ||
-        msg.contains('credentials') ||
-        msg.contains('user not found') ||
-        msg.contains('email already') ||
-        msg.contains('already registered')) {
-      return 'Pogrešan email ili lozinka.';
-    }
-    if (msg.contains('network') ||
-        msg.contains('socketexception') ||
-        msg.contains('connection') ||
-        msg.contains('failed to fetch') ||
-        msg.contains('xmlhttprequest')) {
-      return 'Nema internet veze. Proveri konekciju i pokušaj ponovo.';
-    }
-    if (msg.contains('too many') || msg.contains('rate limit')) {
-      return 'Previše pokušaja. Sačekaj nekoliko minuta i pokušaj ponovo.';
-    }
-    if (msg.contains('cancel') ||
-        msg.contains('aborted') ||
-        msg.contains('closed') ||
-        msg.contains('interrupted')) {
-      return 'Prijava putem Google-a je prekinuta.';
-    }
-    return 'Prijava nije uspela. Pokušaj ponovo.';
   }
 
   @override
@@ -427,38 +373,10 @@ class LoginFormState extends State<LoginForm> {
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: (_isLockedOut || isAppLoading || _googleLoading)
-                ? null
-                : _signInWithGoogle,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor:
-                  isDark ? const Color(0xFF242A25) : Colors.white,
-              foregroundColor:
-                  isDark ? Colors.white : const Color(0xFF1F2937),
-              side: BorderSide(
-                color: isDark ? Colors.white24 : const Color(0xFFD1D5DB),
-                width: 1.2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            icon: _googleLoading
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const GoogleLogo(size: 20),
-            label: const Text(
-              'Nastavi putem Google-a',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14.5,
-              ),
-            ),
+          GoogleAuthButton(
+            label: 'Nastavi putem Google-a',
+            enabled: !_isLockedOut,
+            onError: (msg) => setState(() => _error = msg),
           ),
           const SizedBox(height: 20),
           Row(
@@ -534,7 +452,8 @@ class LoginFormState extends State<LoginForm> {
               Text('Nemaš nalog?',
                   style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
               TextButton(
-                onPressed: () => context.push('/register'),
+                onPressed: widget.onSwitchToRegister ??
+                    () => context.push('/login?tab=register'),
                 child: const Text('Registruj se',
                     style: TextStyle(
                         fontWeight: FontWeight.w800,

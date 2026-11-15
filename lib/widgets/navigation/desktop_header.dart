@@ -123,15 +123,15 @@ class DesktopHeader extends StatelessWidget {
           // 2. GLAVNI HEADER (Brand, Velika Centralna Pretraga, Akcije i Korpa)
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1360),
+              constraints: const BoxConstraints(maxWidth: 1440),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(
                   children: [
                     // Brand / Logo
                     _buildBrandLogo(context, isDark: isDark),
 
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 8),
 
                     // Integrisana Desktop Pretraga (Prostrana, ne sudara se sa korpom)
                     Expanded(
@@ -142,7 +142,7 @@ class DesktopHeader extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 8),
 
                     // Desni klaster akcija (Korpa, Notifikacije, Poruke, Tema, Profil, CTA)
                     DesktopHeaderActions(
@@ -198,9 +198,9 @@ class DesktopHeader extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1360),
+          constraints: const BoxConstraints(maxWidth: 1440),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
             child: Row(
               children: [
                 // Navigacioni Tabovi (Objedinjena Kapsula za Domaću Hranu & Gazdinstva + Oglasi + O nama)
@@ -281,12 +281,12 @@ class DesktopHeader extends StatelessWidget {
           children: [
             Image.asset(
               'assets/images/domaci_market_logo_v2.png',
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1B2F21) : const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(9),
@@ -294,11 +294,11 @@ class DesktopHeader extends StatelessWidget {
                 child: const Icon(
                   Icons.storefront_rounded,
                   color: AmazonColors.green,
-                  size: 24,
+                  size: 22,
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -310,21 +310,21 @@ class DesktopHeader extends StatelessWidget {
                       'Domaći Market',
                       style: AppFonts.display(
                         isDark ? Colors.white : const Color(0xFF162A1D),
-                        fontSize: 20,
+                        fontSize: 18.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.4,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     const BetaBadge(showInfoIcon: false),
                   ],
                 ),
                 Text(
                   'Pijaca hrane & Mali oglasi',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
+                    letterSpacing: 0.1,
                     color: isDark ? Colors.white60 : const Color(0xFF5A6B5F),
                   ),
                 ),

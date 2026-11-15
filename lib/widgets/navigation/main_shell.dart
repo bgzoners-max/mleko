@@ -29,6 +29,7 @@ class MainShell extends StatelessWidget {
     (icon: Icons.cottage, label: 'Početna'),
     (icon: Icons.storefront, label: 'Oglasi'),
     (icon: Icons.login_rounded, label: 'Prijavi se'),
+    (icon: Icons.person_add_alt_1_rounded, label: 'Registruj se'),
   ];
 
   static int _mapGuestBranchToDestination(int branchIndex) {
@@ -56,6 +57,9 @@ class MainShell extends StatelessWidget {
           break;
         case 2:
           context.push('/login');
+          break;
+        case 3:
+          context.push('/login?tab=register');
           break;
       }
       return;

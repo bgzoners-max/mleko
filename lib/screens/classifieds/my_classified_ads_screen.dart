@@ -10,6 +10,7 @@ import '../../services/classifieds/classifieds_service.dart';
 import '../../widgets/app_back_button.dart';
 import '../../widgets/app_empty_state.dart';
 import '../../widgets/app_error_retry.dart';
+import '../../widgets/auth/guest_auth_buttons.dart';
 import '../../widgets/app_network_image.dart';
 import '../../widgets/classifieds/featured_dialogs.dart';
 import '../../widgets/classifieds/metric_badge.dart';
@@ -168,17 +169,15 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
           title: const Text('Moji oglasi'),
           actions: const [AppHomeButton()],
         ),
-        body: Center(
+        body: const Center(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(24.0),
             child: AppEmptyState(
               icon: Icons.lock_outline,
               title: 'Prijavite se na nalog',
               subtitle:
                   'Pregled i upravljanje sopstvenim oglasima dostupni su samo prijavljenim korisnicima.',
-              ctaLabel: 'Prijavi se',
-              ctaIcon: Icons.login,
-              onCtaPressed: () => context.push('/login'),
+              cta: GuestAuthButtons(useGoNavigation: false),
             ),
           ),
         ),

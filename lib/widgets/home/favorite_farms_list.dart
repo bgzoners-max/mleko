@@ -7,6 +7,7 @@ import '../../providers/app_state.dart';
 import '../../services/services.dart';
 import '../skeleton.dart';
 import '../app_network_image.dart';
+import '../auth/guest_auth_buttons.dart';
 
 /// Lista gazdinstava koje kupac prati (isti podatak kao ekran „Pratim prodavce“).
 class FavoriteFarmsList extends StatefulWidget {
@@ -129,9 +130,8 @@ class _FavoriteFarmsListState extends State<FavoriteFarmsList> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-              TextButton(
-                  onPressed: () => context.push('/login'),
-                  child: const Text('Prijavi se')),
+              const SizedBox(height: 10),
+              const GuestAuthButtons(useGoNavigation: false, compact: true),
             ],
           ),
         ),
