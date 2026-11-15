@@ -115,6 +115,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               ),
               children: [
                 AppMapTiles.buildTileLayer(),
+                AppMapTiles.buildSerbiaBorderLayer(),
                 if (_selectedPoint != null)
                   TranslucentPointer(
                     child: MarkerLayer(

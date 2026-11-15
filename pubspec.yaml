@@ -60,6 +60,7 @@ flutter:
 
   assets:
     - assets/google_fonts/
+    - assets/geojson/
     - assets/images/
     - assets/images/categories/
     - assets/images/car_brands/

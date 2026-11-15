@@ -376,6 +376,7 @@ class _SellersMapScreenState extends State<SellersMapScreen> {
                       ),
                       children: [
                         AppMapTiles.buildTileLayer(),
+                        AppMapTiles.buildSerbiaBorderLayer(),
                         MarkerLayer(markers: markers),
                         AppMapTiles.buildAttribution(),
                       ],
