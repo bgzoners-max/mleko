@@ -84,6 +84,25 @@ void main() {
       expect(product.isDomestic, true);
     });
 
+    test('throws FormatException when id is missing or empty (fail-fast)', () {
+      final base = <String, dynamic>{
+        'seller_id': 'seller-1',
+        'name': 'Proizvod bez ID-a',
+        'price_per_kg': 100,
+        'min_order_kg': 1,
+        'available_kg': 5,
+      };
+
+      expect(() => ProductModel.fromJson({...base}), throwsFormatException);
+      expect(() => ProductModel.fromJson({...base, 'id': ''}),
+          throwsFormatException);
+      expect(() => ProductModel.fromJson({...base, 'id': '   '}),
+          throwsFormatException);
+      // Nehomogen tip id vrednosti i dalje se normalizuje u String (postojece
+      // ponasanje za integer id-eve iz legacy payload-a).
+      expect(ProductModel.fromJson({...base, 'id': 42}).id, '42');
+    });
+
     test('handles null and missing fields gracefully', () {
       final json = <String, dynamic>{
         'id': 'prod-fallback',

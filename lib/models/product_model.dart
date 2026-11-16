@@ -454,9 +454,18 @@ class ProductModel {
         : minOrder;
 
     final id = json['id'];
+    final parsedId = id is String ? id : id?.toString();
+    if (parsedId == null || parsedId.trim().isEmpty) {
+      // Fail-fast: `id` je NOT NULL primary key u bazi, pa prazan id znaci
+      // corrupted payload. Tihi prazan id bi se propagirao u deep linkove,
+      // korpu i RPC pozive i pukao tek tamo — ovde se problem vidi odmah.
+      throw FormatException(
+        'ProductModel.fromJson: nedostaje validan "id" (name: ${json['name']}).',
+      );
+    }
 
     return ProductModel(
-      id: id is String ? id : (id?.toString() ?? ''),
+      id: parsedId,
       sellerId: json['seller_id'] as String? ?? '',
       category: json['category'] as String? ?? '',
       name: json['name'] as String? ?? '',
