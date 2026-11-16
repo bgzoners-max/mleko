@@ -25,6 +25,8 @@ jobs:
 
       - name: Enforce service import rules
         run: dart run tool/check_service_imports.dart
+      - name: Enforce router & middleware route sync
+        run: dart run tool/check_routes_sync.dart
       - name: Enforce cyrillic-free code
         run: dart run tool/check_cyrillic_strings.dart
       - name: Guard against committed keystores/secrets

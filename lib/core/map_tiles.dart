@@ -12,6 +12,8 @@ class AppMapTiles {
 
   static const String _openStreetMapUrl =
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  static const String openStreetMapUserAgentPackageName = 'com.mleko.mleko';
+  static const String attributionLabel = '© OpenStreetMap contributors';
   static const String serbiaContourAssetPath =
       'assets/geojson/serbia_contour.geojson';
 
@@ -76,7 +78,7 @@ class AppMapTiles {
   static TileLayer buildTileLayer() {
     return TileLayer(
       urlTemplate: _openStreetMapUrl,
-      userAgentPackageName: 'app.mleko',
+      userAgentPackageName: openStreetMapUserAgentPackageName,
       maxZoom: 19,
     );
   }
@@ -96,7 +98,7 @@ class AppMapTiles {
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
-              'Mapa: OpenStreetMap',
+              attributionLabel,
               style: TextStyle(
                 fontSize: 11,
                 color: Color(0xFF4A4A4A),

@@ -59,4 +59,29 @@ void main() {
     expect(polygonLayer.polygons.first.points.length, greaterThan(1000));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+      'OSM TileLayer koristi com.mleko.mleko i zvanicni OpenStreetMap attribution',
+      (tester) async {
+    final tileLayer = AppMapTiles.buildTileLayer();
+    expect(
+      AppMapTiles.openStreetMapUserAgentPackageName,
+      'com.mleko.mleko',
+    );
+    expect(
+      tileLayer.urlTemplate,
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [AppMapTiles.buildAttribution()],
+          ),
+        ),
+      ),
+    );
+    expect(find.text('© OpenStreetMap contributors'), findsOneWidget);
+  });
 }

@@ -4,9 +4,14 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
 import type { Database, Json } from "../../types/database.types.ts"
 import {
+  authorizePushRequest,
   buildCorsHeaders,
+  buildFcmMessagePayload,
+  canSendPushToTarget,
+  dedupePushTokens,
   getLockscreenBody,
   isLogLevelEnabled,
+  parsePushNotificationRequest,
   redactText,
   resolveLogLevel,
   shortId,
@@ -118,84 +123,27 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: getCorsHeaders(req) })
   }
 
-  // S2 Security Fix: Zahtevaj kriptografski verifikovanu 'service_role' autorizaciju.
-  // Javni anon ključ ili obični korisnički JWT ne smeju imati pristup slanju push-a.
-  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization")
-  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
-    log("warn", "FCM: Odbijen zahtev - nedostaje Authorization header")
-    return new Response(
-      JSON.stringify({ error: "Missing or invalid authorization header" }),
-      { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-    )
-  }
-
-  const token = authHeader.slice(7).trim()
-  const expectedServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-  const jwtSecret = Deno.env.get("SUPABASE_JWT_SECRET")
-
-  let authorized = false
-  let isSystemOrAdmin = false
-  let callerUid: string | null = null
-
-  // 1. Neposredno poklapanje sa tajnim service_role_key-em (koji šalje postgres trigger preko pg_net)
-  if (expectedServiceKey && token === expectedServiceKey) {
-    authorized = true
-    isSystemOrAdmin = true
-  } else if (jwtSecret) {
-    // 2. Kriptografska provera potpisa JWT tokena pomoću SUPABASE_JWT_SECRET
-    try {
-      const secretBytes = new TextEncoder().encode(jwtSecret)
+  // S2 Security Fix: Zahtevaj kriptografski verifikovanu 'service_role', admin ili self-send JWT autorizaciju.
+  const authResult = await authorizePushRequest({
+    authHeader: req.headers.get("Authorization") ?? req.headers.get("authorization"),
+    expectedServiceKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    jwtSecret: Deno.env.get("SUPABASE_JWT_SECRET"),
+    verifyJwt: async (token, secret) => {
+      const secretBytes = new TextEncoder().encode(secret)
       const { payload } = await jose.jwtVerify(token, secretBytes)
-      if (payload.role === "service_role") {
-        authorized = true
-        isSystemOrAdmin = true
-      } else if (payload.role === "authenticated") {
-        callerUid = (payload.sub as string) || null
-        const payloadAny = payload as Record<string, any>
-        const isAdmin = payloadAny.is_admin === true ||
-          payloadAny.app_metadata?.is_admin === true
-        if (isAdmin) {
-          isSystemOrAdmin = true
-          authorized = true
-        } else if (callerUid) {
-          authorized = true
-        } else {
-          log("warn", "FCM: Odbijen zahtev - authenticated JWT bez validnog sub claim-a")
-          return new Response(
-            JSON.stringify({ error: "Unauthorized: invalid user claim" }),
-            { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-          )
-        }
-      } else {
-        log("warn", `FCM: Neovlašćen pristup sa role '${payload.role}' umesto 'service_role' ili 'authenticated'`)
-        return new Response(
-          JSON.stringify({ error: "Forbidden: insufficient permissions" }),
-          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-        )
-      }
-    } catch (verifyErr) {
-      log("warn", "FCM: Odbijen zahtev - nevalidan JWT potpis:", String(verifyErr))
-      return new Response(
-        JSON.stringify({ error: "Invalid authorization token signature" }),
-        { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-      )
-    }
-  } else {
-    // 3. Ako SUPABASE_JWT_SECRET nije ubačen u runtime environment, token se MORA poklapati
-    // sa expectedServiceKey vrednošću (odbacujemo neproverene nepotpisane tokene).
-    log("warn", "FCM: Odbijen zahtev - token se ne poklapa sa service_role_key a SUPABASE_JWT_SECRET nije konfigurisan.")
+      return payload as Record<string, unknown>
+    },
+  })
+
+  if (!authResult.ok) {
+    log("warn", authResult.logMessage)
     return new Response(
-      JSON.stringify({ error: "Unauthorized: Signature verification required" }),
-      { status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+      JSON.stringify({ error: authResult.error }),
+      { status: authResult.status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     )
   }
 
-  if (!authorized) {
-    return new Response(
-      JSON.stringify({ error: "Forbidden: insufficient permissions" }),
-      { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-    )
-  }
+  const { isSystemOrAdmin, callerUid } = authResult
 
   try {
     const requestId = crypto.randomUUID()
@@ -236,7 +184,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    let body: any
+    let body: unknown
     try {
       body = await req.json()
     } catch {
@@ -246,74 +194,23 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (!body) {
+    const parsedReq = parsePushNotificationRequest(body)
+    if (!parsedReq.ok) {
+      if (parsedReq.reason === "missing_user_id") {
+        log("error", "FCM: Nedostaje user_id")
+        await writeDeliveryLog({
+          status: "invalid_request",
+          errors: [parsedReq.error],
+          payload: { keys: parsedReq.keys ?? [] },
+        })
+      }
       return new Response(
-        JSON.stringify({ error: "Request body is required" }),
-        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        JSON.stringify({ error: parsedReq.error }),
+        { status: parsedReq.status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
 
-    let user_id: string
-    let title: string
-    let bodyText: string
-    let fcmData: Record<string, string> = {}
-    let type: string = ""
-
-    log("debug", "FCM: Primljena zahteva:", {
-      has_record: !!body.record,
-      keys: Object.keys(body).slice(0, 10),
-    })
-
-    if (body.record) {
-      const record = body.record
-      user_id = record.user_id
-      title = record.title
-      bodyText = record.body ?? ""
-      type = record.type ?? ""
-      fcmData = {
-        type,
-        notification_id: String(record.id ?? ""),
-        created_at: String(record.created_at ?? ""),
-        order_id: String(record.order_id ?? ""),
-        conversation_id: String(record.conversation_id ?? ""),
-        ticket_id: String(record.ticket_id ?? ""),
-        classified_ad_id: String(record.classified_ad_id ?? ""),
-      }
-      if (record.route) {
-        fcmData.route = String(record.route)
-      }
-    } else {
-      user_id = body.user_id
-      title = body.title
-      bodyText = body.body ?? ""
-      type = body.type ?? ""
-      fcmData = {
-        type,
-        notification_id: String(body.notification_id ?? body.id ?? ""),
-        created_at: String(body.created_at ?? ""),
-        order_id: String(body.order_id ?? ""),
-        conversation_id: String(body.conversation_id ?? ""),
-        ticket_id: String(body.ticket_id ?? ""),
-        classified_ad_id: String(body.classified_ad_id ?? ""),
-      }
-      if (body.route) {
-        fcmData.route = String(body.route)
-      }
-      if (body.data && typeof body.data === "object") {
-        for (const [k, v] of Object.entries(body.data)) {
-          if (v != null && !fcmData[k]) fcmData[k] = String(v)
-        }
-      }
-    }
-
-    // Poboljšanje personalizacije naslova na osnovu tipa
-    if (!title || title === "Obaveštenje" || title === "Notification") {
-      if (type === "new_order") title = "Nova porudžbina 🛒";
-      else if (type === "order_status" || type === "order_status_changed") title = "Status porudžbine 📦";
-      else if (type === "new_message") title = "Nova poruka 💬";
-      else if (type === "new_review" || type === "new_buyer_review") title = "Nova recenzija ⭐";
-      else title = title || "Obaveštenje";
-    }
+    const { userId: user_id, title, bodyText, fcmData, isTriggerRecord } = parsedReq
 
     log("debug", "FCM: Procesuirana notifikacija:", {
       user_id: shortId(user_id),
@@ -321,56 +218,35 @@ Deno.serve(async (req) => {
       type: fcmData.type,
     })
 
-    if (!user_id) {
-      log("error", "FCM: Nedostaje user_id")
+    // Bezbednosna provera: Običan korisnik sme slati push notifikaciju ISKLJUČIVO sebi (request.auth.uid === user_id)
+    if (!canSendPushToTarget({ isSystemOrAdmin, callerUid, targetUserId: user_id })) {
+      log("warn", "FCM: Odbijen pokušaj slanja notifikacije drugom korisniku", {
+        callerUid: shortId(callerUid),
+        targetUserId: shortId(user_id),
+      })
       await writeDeliveryLog({
+        userId: user_id,
+        title,
+        type: fcmData.type,
+        tokenCount: 0,
+        sentCount: 0,
         status: "invalid_request",
-        errors: ["user_id required"],
-        payload: { keys: Object.keys(body || {}) },
+        errors: ["Forbidden: cannot send push notifications to other users"],
       })
       return new Response(
-        JSON.stringify({ error: "user_id required" }),
-        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Forbidden: cannot send push notifications to other users" }),
+        { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       )
     }
 
-    // Bezbednosna provera: Običan korisnik sme slati push notifikaciju ISKLJUČIVO sebi (request.auth.uid === user_id)
-    if (!isSystemOrAdmin) {
-      if (!callerUid || callerUid !== user_id) {
-        log("warn", "FCM: Odbijen pokušaj slanja notifikacije drugom korisniku", {
-          callerUid: shortId(callerUid),
-          targetUserId: shortId(user_id),
-        })
-        await writeDeliveryLog({
-          userId: user_id,
-          title,
-          type: fcmData.type,
-          tokenCount: 0,
-          sentCount: 0,
-          status: "invalid_request",
-          errors: ["Forbidden: cannot send push notifications to other users"],
-        })
-        return new Response(
-          JSON.stringify({ error: "Forbidden: cannot send push notifications to other users" }),
-          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-        )
-      }
-    }
-
-    // Preuzimamo sve tokene, ali filtriramo jedinstvene u memoriji 
+    // Preuzimamo sve tokene, ali filtriramo jedinstvene u memoriji
     // kako bismo izbegli dupliranje ako korisnik ima više instalacija na istom uređaju
     const { data: allTokens, error } = await supabase
       .from("user_push_tokens")
       .select("token, platform")
       .eq("user_id", user_id)
 
-    // Jedinstveni tokeni (ako isti token postoji pod više installation_id)
-    const uniqueTokensMap = new Map<string, string>();
-    (allTokens || []).forEach(t => {
-      if (t.token) uniqueTokensMap.set(t.token, t.platform || "android");
-    });
-    
-    const tokens = Array.from(uniqueTokensMap.entries()).map(([token, platform]) => ({ token, platform }));
+    const tokens = dedupePushTokens(allTokens || [])
 
     log("debug", "FCM: Pretraga tokena:", {
       user_id: shortId(user_id),
@@ -472,44 +348,14 @@ Deno.serve(async (req) => {
       token: string
       error?: string
     }> => {
-      const platform = (row.platform ?? "android") as string
-      const baseMessage: Record<string, unknown> = {
+      const baseMessage = buildFcmMessagePayload({
         token: row.token,
-        data: { ...fcmData, title, body: bodyText },
-      }
-
-      if (platform === "ios") {
-        baseMessage.notification = { title, body: lockscreenBody }
-        baseMessage.apns = {
-          headers: { "apns-priority": "10" },
-          payload: {
-            aps: {
-              alert: { title, body: lockscreenBody },
-              sound: "default",
-              badge: 1,
-            },
-          },
-        }
-      } else {
-        const isOrder = fcmData.type === "new_order" || fcmData.type === "order_status" || fcmData.type === "order_status_changed";
-        const channelId = isOrder ? "orders_high_v2" : "mleko_urgent_v2";
-        baseMessage.android = {
-          priority: "HIGH",
-          ttl: "86400s",
-          notification: {
-            channel_id: channelId,
-            title,
-            body: lockscreenBody,
-            sound: "default",
-            default_vibrate_timings: true,
-            default_sound: true,
-            visibility: "PUBLIC",
-            notification_priority: "PRIORITY_HIGH",
-            icon: "ic_notification",
-            color: "#1B5E20",
-          },
-        }
-      }
+        platform: row.platform,
+        title,
+        lockscreenBody,
+        bodyText,
+        fcmData,
+      })
 
       try {
         const postFcm = (token: string) =>
@@ -605,7 +451,7 @@ Deno.serve(async (req) => {
       status: errors.length === 0 ? "success" : sent > 0 ? "partial" : "error",
       errors,
       payload: {
-        request_source: body.record ? "db_trigger" : "direct_call",
+        request_source: isTriggerRecord ? "db_trigger" : "direct_call",
         order_id: fcmData.order_id,
       },
     })
