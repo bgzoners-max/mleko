@@ -1,7 +1,10 @@
 // Push notifikacije – FCM HTTP v1 API (Legacy je ugašen od jula 2024)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import * as jose from "https://deno.land/x/jose@v5.2.0/index.ts"
+// jose sa npm registra (npm: specifier) umesto deno.land/x — deno.land je
+// legacy kanal sa povremenim outage-ima. Pinned eksaktna verzija na istoj v5
+// liniji (zero API rizika); Supabase Edge i Deno oba prve klase podrzavaju npm:.
+import * as jose from "npm:jose@5.10.0"
 import type { Database, Json } from "../../types/database.types.ts"
 import {
   authorizePushRequest,
