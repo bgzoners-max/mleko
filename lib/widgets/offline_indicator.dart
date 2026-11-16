@@ -10,7 +10,7 @@ class OfflineIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = context.watch<AppState>().isOffline;
+    final isOffline = context.select((AppState s) => s.isOffline);
 
     if (!isOffline) {
       return child;
@@ -92,7 +92,7 @@ class OfflineReadOnlyBadge extends StatelessWidget {
     final effectiveOffline = isOffline ??
         (() {
           try {
-            return context.watch<AppState>().isOffline;
+            return context.select((AppState s) => s.isOffline);
           } catch (_) {
             return false;
           }

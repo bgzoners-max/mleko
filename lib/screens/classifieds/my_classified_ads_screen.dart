@@ -159,7 +159,7 @@ class _MyClassifiedAdsScreenState extends State<MyClassifiedAdsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final colorScheme = Theme.of(context).colorScheme;
 
     if (user == null || user.isGuest) {

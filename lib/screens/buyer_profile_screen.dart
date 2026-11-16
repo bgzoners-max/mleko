@@ -127,7 +127,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
         final ordersCount = snap.data!['ordersCount'] as int;
         final displayName = user?.displayName ?? user?.farmName ?? 'Kupac';
 
-        final currentUser = context.watch<AppState>().user;
+        final currentUser = context.select((AppState s) => s.user);
         final isOwnProfile =
             currentUser != null && currentUser.id == widget.buyerId;
 

@@ -556,7 +556,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isTablet = Breakpoints.isTablet(context);
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
 
     if (_initializing) {
       return Scaffold(

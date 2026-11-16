@@ -208,7 +208,7 @@ class _SellerProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final canBuy =
         product.isAvailable && (user == null || user.id != product.sellerId);
     final inCart = context.select<CartProvider, bool>(

@@ -94,7 +94,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final favoritesProvider = context.watch<FavoritesProvider>();
     final isDesktop = Breakpoints.isDesktop(context);
     if (user == null || user.isGuest) {
@@ -219,7 +219,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                         return Selector<FavoritesProvider, bool>(
                           selector: (_, fav) => fav.isFavorite(p.id),
                           builder: (_, isFavorite, __) {
-                            final user = context.watch<AppState>().user;
+                            final user = context.select((AppState s) => s.user);
                             final favorites =
                                 context.read<FavoritesProvider>();
                             return ProductCard(

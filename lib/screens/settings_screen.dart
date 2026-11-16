@@ -58,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final appSettings = context.watch<AppSettingsProvider>();
     if (user == null) {
       return Scaffold(

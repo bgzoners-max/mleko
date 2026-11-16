@@ -119,7 +119,7 @@ class _SellerGallerySectionState extends State<SellerGallerySection> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = context.watch<AppState>().user ?? widget.user;
+    final currentUser = context.select((AppState s) => s.user) ?? widget.user;
     final urls = currentUser?.farmGalleryUrls ?? const <String>[];
     final displayUrls = _hasLocalChanges ? _galleryUrls : urls;
     return Card(

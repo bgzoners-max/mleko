@@ -99,7 +99,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
               ),
               const SizedBox(width: 8),
               Builder(builder: (ctx) {
-                final user = ctx.watch<AppState?>()?.user;
+                final user = ctx.select((AppState? s) => s?.user);
                 final favorites = ctx.watch<FavoritesProvider?>();
                 if (user == null || user.isGuest || favorites == null) {
                   return const SizedBox.shrink();

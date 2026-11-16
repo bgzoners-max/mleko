@@ -210,7 +210,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user == null || user.isGuest) {
       return Scaffold(
         appBar: AppBar(title: const Text('Obaveštenja')),

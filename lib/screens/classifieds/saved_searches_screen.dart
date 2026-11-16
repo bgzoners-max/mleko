@@ -100,7 +100,7 @@ class _SavedSearchesScreenState extends State<SavedSearchesScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final classifieds = context.watch<ClassifiedsProvider>();
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
 
     if (user == null || user.isGuest) {
       return Scaffold(

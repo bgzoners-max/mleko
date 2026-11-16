@@ -294,7 +294,7 @@ class _SellerSettingsScreenState extends State<SellerSettingsScreen>
 
   Widget _buildBasicTab() {
     final isDesktop = !Breakpoints.isPhone(context);
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final hasLocation = user?.lat != null && user?.lng != null;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),

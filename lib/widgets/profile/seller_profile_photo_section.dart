@@ -147,7 +147,7 @@ class SellerProfilePhotoContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = context.watch<AppState>().user ?? user;
+    final currentUser = context.select((AppState s) => s.user) ?? user;
     final theme = Theme.of(context);
     final isSeller = currentUser.isSeller;
 

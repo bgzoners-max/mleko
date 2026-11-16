@@ -150,9 +150,8 @@ class _ClassifiedsFeedScreenState extends State<ClassifiedsFeedScreen> {
   @override
   Widget build(BuildContext context) {
     final classifieds = context.watch<ClassifiedsProvider>();
-    final appState = context.watch<AppState>();
-    final user = appState.user;
-    final isAppOffline = appState.isOffline;
+    final user = context.select((AppState s) => s.user);
+    final isAppOffline = context.select((AppState s) => s.isOffline);
     final isNetworkErr = classifieds.error != null &&
         (isAppOffline ||
             classifieds.error!.toLowerCase().contains('socket') ||

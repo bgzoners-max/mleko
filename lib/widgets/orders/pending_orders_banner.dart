@@ -15,7 +15,8 @@ class PendingOrdersBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final manager = syncManager ?? context.watch<AppState>().syncManager;
+    final manager =
+        syncManager ?? context.select<AppState, SyncManager>((s) => s.syncManager);
 
     return ListenableBuilder(
       listenable: manager,

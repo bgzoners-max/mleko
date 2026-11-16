@@ -517,7 +517,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final catProvider = context.watch<CategoriesProvider>();
     final groups = catProvider.groups;
     final maxFormWidth = Breakpoints.formContentWidth(context);

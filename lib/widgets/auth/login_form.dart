@@ -183,7 +183,7 @@ class LoginFormState extends State<LoginForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isAppLoading = context.watch<AppState>().isLoading;
+    final isAppLoading = context.select((AppState s) => s.isLoading);
 
     return AutofillGroup(
       child: Column(

@@ -398,7 +398,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final topCategories = context.watch<CategoriesProvider>().topCategories;
     _scheduleCategoryCountReload(topCategories);
     final isTwoPaneLayout = Breakpoints.useTwoPaneLayout(context);

@@ -103,7 +103,7 @@ class _SellerInboxScreenState extends State<SellerInboxScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user == null || !user.isSeller) {
       _inboxStream = null;
       _inboxUserId = null;

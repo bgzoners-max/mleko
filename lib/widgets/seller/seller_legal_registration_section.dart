@@ -130,7 +130,7 @@ class _SellerLegalRegistrationSectionState
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isDesktop = !Breakpoints.isPhone(context);
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final isRpg = _legalType == ProducerLegalType.rpg;
 
     return Container(

@@ -48,7 +48,7 @@ class ClassifiedsDesktopFeedView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final canvasColor = AmazonColors.getCanvas(context);
-    final isAppOffline = context.watch<AppState>().isOffline;
+    final isAppOffline = context.select((AppState s) => s.isOffline);
     final isNetworkErr = classifieds.error != null &&
         (isAppOffline ||
             classifieds.error!.toLowerCase().contains('socket') ||

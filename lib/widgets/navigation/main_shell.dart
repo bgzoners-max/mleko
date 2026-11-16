@@ -83,7 +83,7 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final isGuest = user == null || user.isGuest;
     final destinations = isGuest ? _guestDestinations : _destinations;
     final width = MediaQuery.sizeOf(context).width;

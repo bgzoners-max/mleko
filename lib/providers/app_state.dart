@@ -14,9 +14,12 @@ import 'unread_notifications_provider.dart';
 /// - [SyncProvider]: offline status, sync manager, red čekanja porudžbina
 /// - [UnreadNotificationsProvider]: brojač, debounce i realtime kanal notifikacija
 ///
-/// Svi postojeći pozivaoci (`context.watch<AppState>().user`,
+/// Svi postojeći pozivaoci (`context.select((AppState s) => s.user)`,
 /// `appState.syncManager`, `appState.incrementUnreadCount()`...) rade bez
 /// izmena jer fasada u potpunosti delegira ka unutrašnjim instancama.
+/// Novi ili refaktorisani vidžeti obavezno koriste `context.select((AppState s) => ...)`
+/// ili specifične pod-providere kako promene jednog dela (npr. unread brojača)
+/// ne bi nepotrebno ponovo gradile nepovezane ekrane.
 class AppState extends ChangeNotifier {
   /// Izdvojeni provider za korisničku sesiju i auth.
   late final AuthSessionProvider authSession;

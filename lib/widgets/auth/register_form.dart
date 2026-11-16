@@ -286,7 +286,7 @@ class _RegisterFormState extends State<RegisterForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isAppLoading = context.watch<AppState>().isLoading;
+    final isAppLoading = context.select((AppState s) => s.isLoading);
     final isEmailTaken = _emailError == 'Ova email adresa je već registrovana.';
 
     return Column(

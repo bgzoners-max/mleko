@@ -384,7 +384,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           Builder(
             builder: (ctx) {
-              final user = context.watch<AppState>().user;
+              final user = context.select((AppState s) => s.user);
               if (user == null || user.isGuest) return const SizedBox.shrink();
               return FutureBuilder<ProductModel?>(
                 future: _productFuture,

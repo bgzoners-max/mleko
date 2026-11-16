@@ -30,7 +30,7 @@ class BuyerProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = context.watch<AppState>().user;
+    final currentUser = context.select((AppState s) => s.user);
     final canContact = currentUser != null &&
         !currentUser.isGuest &&
         currentUser.id != buyerId;

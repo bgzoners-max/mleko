@@ -94,7 +94,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user == null || !user.isSeller) {
       return Scaffold(
         appBar: AppBar(

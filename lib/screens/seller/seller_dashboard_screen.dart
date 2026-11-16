@@ -63,7 +63,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
 
     if (user == null || !user.isSeller) {
       return Scaffold(

@@ -143,7 +143,7 @@ class ChatOrderContextCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final isSeller = user?.id == order.sellerId;
 
     return Column(

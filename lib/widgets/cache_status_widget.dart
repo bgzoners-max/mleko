@@ -10,7 +10,7 @@ class CacheStatusIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = context.watch<AppState>().isOffline;
+    final isOffline = context.select((AppState s) => s.isOffline);
 
     if (!isOffline) return const SizedBox.shrink();
 
@@ -60,7 +60,7 @@ class OfflineBrowsingBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = context.watch<AppState>().isOffline;
+    final isOffline = context.select((AppState s) => s.isOffline);
 
     if (!isOffline) return const SizedBox.shrink();
 

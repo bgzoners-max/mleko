@@ -16,7 +16,7 @@ class EditProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
 
     if (user == null || user.isGuest) {
       return Scaffold(

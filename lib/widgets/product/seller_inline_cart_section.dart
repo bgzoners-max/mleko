@@ -38,7 +38,7 @@ class _SellerInlineCartSectionState extends State<SellerInlineCartSection> {
   @override
   Widget build(BuildContext context) {
     final sellerId = widget.sellerId;
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user == null || user.isGuest || user.id == sellerId) {
       return const SizedBox.shrink();
     }

@@ -257,7 +257,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
         }
 
         final ad = snap.data!;
-        final userId = context.watch<AppState>().user?.id;
+        final userId = context.select((AppState s) => s.user?.id);
         final isOwner = userId != null && userId == ad.userId;
         final currentPhone = _revealedPhone ?? ad.phone;
         final hasPhone = ad.phonePublic ||

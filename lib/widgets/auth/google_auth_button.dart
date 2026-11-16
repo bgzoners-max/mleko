@@ -57,7 +57,7 @@ class _GoogleAuthButtonState extends State<GoogleAuthButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isAppLoading = context.watch<AppState>().isLoading;
+    final isAppLoading = context.select((AppState s) => s.isLoading);
     final isDisabled = !widget.enabled || isAppLoading || _loading;
 
     return OutlinedButton(

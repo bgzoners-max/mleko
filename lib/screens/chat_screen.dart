@@ -390,7 +390,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Razgovor')),

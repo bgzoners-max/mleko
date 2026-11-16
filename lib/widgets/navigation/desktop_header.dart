@@ -73,10 +73,10 @@ class DesktopHeader extends StatelessWidget {
     final appSettings = context.watch<AppSettingsProvider?>();
     final marketMode = appSettings?.marketMode ?? MarketMode.foodMarket;
     final cartCount = context.watch<CartProvider?>()?.count ?? 0;
-    final appState = context.watch<AppState?>();
-    final user = appState?.user;
+    final user = context.select((AppState? s) => s?.user);
     final isGuest = user == null || user.isGuest;
-    final unreadCount = appState?.unreadNotificationCount ?? 0;
+    final unreadCount =
+        context.select((AppState? s) => s?.unreadNotificationCount ?? 0);
     final selectedRegion = context.watch<LocationProvider?>()?.selectedRegion;
 
     String currentPath = '';

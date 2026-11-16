@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:mleko/models/user_model.dart';
@@ -164,6 +166,60 @@ void main() {
       expect(activeListeners, equals(0));
       expect(() => provider.setLoading(true), returnsNormally);
       await controller.close();
+    });
+
+    testWidgets('context.select za user se ne rebuilda pri promeni unread brojaca',
+        (tester) async {
+      final appState = AppState(
+        ordersService: OrdersService(),
+        authService: _FakeAuthService(),
+      );
+
+      var userBuilds = 0;
+      var unreadBuilds = 0;
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: MaterialApp(
+            home: Column(
+              children: [
+                Builder(builder: (context) {
+                  userBuilds++;
+                  final user = context.select((AppState s) => s.user);
+                  return Text('user:${user?.id ?? "guest"}');
+                }),
+                Builder(builder: (context) {
+                  unreadBuilds++;
+                  final count = context.select(
+                    (AppState s) => s.unreadNotificationCount,
+                  );
+                  return Text('unread:$count');
+                }),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(userBuilds, 1);
+      expect(unreadBuilds, 1);
+
+      // Promena unread brojaca ne sme da rebuilda widget koji slusa samo user
+      appState.incrementUnreadCount();
+      await tester.pump();
+      expect(userBuilds, 1);
+      expect(unreadBuilds, 2);
+      expect(find.text('unread:1'), findsOneWidget);
+
+      // Promena korisnika rebuilda samo user widget
+      appState.setUserForTesting(
+        const UserModel(id: 'u-42', email: 'a@b.rs', isGuest: false),
+      );
+      await tester.pump();
+      expect(userBuilds, 2);
+      expect(unreadBuilds, 2);
+      expect(find.text('user:u-42'), findsOneWidget);
     });
   });
 }

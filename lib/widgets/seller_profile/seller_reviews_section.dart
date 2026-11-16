@@ -28,7 +28,7 @@ class _SellerReviewsSectionState extends State<SellerReviewsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     final canReview =
         user != null && !user.isGuest && user.id != widget.sellerId;
     final isSeller =

@@ -28,7 +28,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user == null || user.isGuest || !user.isSeller || user.id != widget.sellerId) {
       return Scaffold(
         appBar: AppBar(

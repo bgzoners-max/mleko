@@ -404,7 +404,7 @@ class _SellerChatPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().user;
+    final user = context.select((AppState s) => s.user);
     if (user != null && !user.isGuest && user.id == sellerId) {
       return const SizedBox.shrink();
     }
