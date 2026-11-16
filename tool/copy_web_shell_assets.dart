@@ -19,6 +19,7 @@ Future<void> main() async {
 
   final filesToCopy = <String>[
     'favicon.png',
+    'firebase-messaging-sw.js',
     'manifest.json',
     'robots.txt',
     'sitemap.xml',

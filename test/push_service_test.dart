@@ -305,5 +305,36 @@ void main() {
       expect(PushService.isWebPushConfigured, isA<bool>());
       expect(PushService.pushSupportStatusMessage, isNotEmpty);
     });
+
+    test('PushTokenRegistrar.shouldAttemptTokenRegistration preskace Web bez VAPID kljuca', () {
+      expect(
+        PushTokenRegistrar.shouldAttemptTokenRegistration(
+          isWeb: true,
+          webVapidKey: '',
+        ),
+        isFalse,
+      );
+      expect(
+        PushTokenRegistrar.shouldAttemptTokenRegistration(
+          isWeb: true,
+          webVapidKey: '   ',
+        ),
+        isFalse,
+      );
+      expect(
+        PushTokenRegistrar.shouldAttemptTokenRegistration(
+          isWeb: true,
+          webVapidKey: 'BEl62iUYg...',
+        ),
+        isTrue,
+      );
+      expect(
+        PushTokenRegistrar.shouldAttemptTokenRegistration(
+          isWeb: false,
+          webVapidKey: '',
+        ),
+        isTrue,
+      );
+    });
   });
 }

@@ -153,9 +153,30 @@ class PushTokenRegistrar {
   ) =>
       _repository.removeOtherUsersForInstallation(installationId, userId);
 
+  /// Proverava da li treba pokušati registraciju FCM tokena na trenutnoj platformi.
+  /// Na Web-u registracija zahteva podešen `FCM_VAPID_KEY` — u suprotnom bi
+  /// pozivi samo ponavljali neuspešnu registraciju Web Service Workera.
+  @visibleForTesting
+  static bool shouldAttemptTokenRegistration({
+    required bool isWeb,
+    required String webVapidKey,
+  }) =>
+      !isWeb || webVapidKey.trim().isNotEmpty;
+
   /// Registruje FCM token za korisnika u bazi podataka uz verifikaciju generacije.
   Future<void> registerToken(String userId) async {
     try {
+      const webVapidKey = String.fromEnvironment('FCM_VAPID_KEY');
+      if (!shouldAttemptTokenRegistration(
+        isWeb: kIsWeb,
+        webVapidKey: webVapidKey,
+      )) {
+        LoggerService.info(
+          'PushTokenRegistrar: Web Push preskočen (FCM_VAPID_KEY nije konfigurisan; aktivna su in-app obaveštenja).',
+        );
+        return;
+      }
+
       final generation = ++_registrationGeneration;
       _registeredUserId = userId;
       await _onTokenRefreshSub?.cancel();
