@@ -190,5 +190,41 @@ void main() {
       expect(find.text('NOVO'), findsNWidgets(2));
       expect(AppConstants.newProductHours, 48);
     });
+
+    testWidgets('pagination controls render at 40x40 without overflow on narrow mobile',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final now = DateTime.now();
+      final products = List.generate(
+        8,
+        (i) => _createProduct('m_$i', 'Proizvod $i', now.subtract(Duration(hours: i))),
+      );
+
+      await tester.pumpWidget(
+        _wrapWithProviders(
+          child: HomePaginatedProductsShelf(
+            products: products,
+            salesCounts: const {},
+            ratings: const {},
+            canFavorite: false,
+            userId: null,
+            productGridExtent: 290.0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 2'), findsOneWidget);
+      final nextTooltip = find.byTooltip('Sledeća stranica');
+      expect(nextTooltip, findsOneWidget);
+      expect(tester.getSize(nextTooltip), const Size(40, 40));
+      expect(tester.takeException(), isNull);
+    });
   });
 }

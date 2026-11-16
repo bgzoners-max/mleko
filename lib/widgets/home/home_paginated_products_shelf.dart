@@ -156,38 +156,40 @@ class _HomePaginatedProductsShelfState
                     const SizedBox(width: 10),
                   ],
                   if (totalPages > 1) ...[
-                    // Brojač stranica (npr. "1 / 3")
+                    // Brojač stranica (npr. "1 / 3") — istaknut radi lakšeg uočavanja paginacije
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? AmazonColors.darkCard
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(6),
+                            ? AmazonColors.darkAmberCta.withValues(alpha: 0.14)
+                            : AmazonColors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark
-                              ? AmazonColors.darkBorder
-                              : AmazonColors.borderSubtle,
+                              ? AmazonColors.darkAmberCta.withValues(alpha: 0.45)
+                              : AmazonColors.amber.withValues(alpha: 0.55),
+                          width: 1.5,
                         ),
                       ),
                       child: Text(
                         '${_currentPage + 1} / $totalPages',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                           color: isDark
-                              ? AmazonColors.darkTextSecondary
-                              : AmazonColors.textSecondary,
+                              ? AmazonColors.darkAmberCta
+                              : AmazonColors.amberDark,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     // Leva strelica (prethodna stranica)
                     _buildNavArrow(
-                      context: context,
                       icon: Icons.chevron_left_rounded,
                       tooltip: 'Prethodna stranica',
                       onPressed: _currentPage > 0
@@ -195,10 +197,9 @@ class _HomePaginatedProductsShelfState
                           : null,
                       isDark: isDark,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     // Desna strelica (sledeća stranica)
                     _buildNavArrow(
-                      context: context,
                       icon: Icons.chevron_right_rounded,
                       tooltip: 'Sledeća stranica',
                       onPressed: _currentPage < totalPages - 1
@@ -261,43 +262,61 @@ class _HomePaginatedProductsShelfState
   }
 
   Widget _buildNavArrow({
-    required BuildContext context,
     required IconData icon,
     required String tooltip,
     required VoidCallback? onPressed,
     required bool isDark,
   }) {
     final isEnabled = onPressed != null;
+    final enabledFill = isDark ? AmazonColors.darkAmberCta : AmazonColors.amber;
+    final enabledBorder =
+        isDark ? AmazonColors.lightYellow : AmazonColors.amberHover;
+    final enabledIconColor = isDark ? AmazonColors.darkNavy : Colors.white;
+
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isEnabled
-                ? (isDark ? AmazonColors.darkCard : Colors.white)
-                : (isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
               color: isEnabled
-                  ? (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray)
-                  : (isDark ? Colors.transparent : const Color(0xFFE2E8F0)),
-              width: 1.0,
+                  ? enabledFill
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : const Color(0xFFF1EFEA)),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isEnabled
+                    ? enabledBorder
+                    : (isDark
+                        ? AmazonColors.darkBorder
+                        : AmazonColors.borderGray),
+                width: isEnabled ? 1.5 : 1.2,
+              ),
+              boxShadow: isEnabled
+                  ? [
+                      BoxShadow(
+                        color: (isDark ? Colors.black : AmazonColors.amberDark)
+                            .withValues(alpha: 0.24),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
-            boxShadow: isEnabled ? AmazonColors.getCardShadow(context) : null,
-          ),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 20,
-              color: isEnabled
-                  ? (isDark
-                      ? AmazonColors.darkTextPrimary
-                      : AmazonColors.textPrimary)
-                  : (isDark ? Colors.white24 : Colors.black26),
+            child: Center(
+              child: Icon(
+                icon,
+                size: 26,
+                color: isEnabled
+                    ? enabledIconColor
+                    : (isDark ? Colors.white30 : Colors.black26),
+              ),
             ),
           ),
         ),
