@@ -119,7 +119,10 @@ class _SyncFeedbackListenerState extends State<_SyncFeedbackListener> {
                 Text('Slanje offline porudžbina...'),
               ],
             ),
-            duration: Duration(minutes: 2),
+            // 20s umesto 2 min: indikator ne sme da ostane "zaglavljen" ako se
+            // izvrsavanje sinhronizacije prekine bez promene `isSyncing` stanja.
+            // Sam zavrsetak sync-a i dalje potvrdjuje/uklanja SnackBar.
+            duration: Duration(seconds: 20),
           ),
         );
       } else if (wasSyncing && !manager.isSyncing) {
@@ -204,6 +207,23 @@ void main() async {
     return true;
   };
 
+  await bootstrapApp();
+}
+
+/// Guard protiv dvostrukog `Supabase.initialize` pri „Pokušaj ponovo" sa
+/// bootstrap error ekrana — supabase_flutter SDK baca ako je klijent vec
+/// inicijalizovan.
+bool _supabaseInitialized = false;
+
+/// Podize Firebase, Supabase, servise i providere, pa pokrece [runApp].
+///
+/// Izdvojena iz [main] kako bi bootstrap error ekran mogao da je bezbedno
+/// ponovo pozove („Pokušaj ponovo"):
+/// - `Firebase.initializeApp` je idempotentna (vraca postojecu aplikaciju),
+/// - `Supabase.initialize` je zasticena [_supabaseInitialized] guard-om,
+/// - `PushRouter` vec ima `!= null` guard-e protiv dupliranja FCM pretplata,
+/// - ponovni `runApp` po Flutter dokumentaciji menja prethodni widget tree.
+Future<void> bootstrapApp() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -223,25 +243,31 @@ void main() async {
   await initializeDateFormatting('sr', null);
 
   Object? supabaseInitError;
-  try {
-    SupabaseConfig.validateConfig();
+  if (!_supabaseInitialized) {
+    try {
+      SupabaseConfig.validateConfig();
 
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      publishableKey: SupabaseConfig.publishableKey,
-      // Čuva sesiju (access + refresh token) u flutter_secure_storage
-      // (Keystore/Keychain) umesto plaintext SharedPreferences / localStorage.
-      authOptions: FlutterAuthClientOptions(
-        localStorage: SecureLocalStorage(),
-      ),
-    );
-  } catch (e, st) {
-    supabaseInitError = e;
-    LoggerService.error('Supabase initialization failed', e, stackTrace: st);
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        publishableKey: SupabaseConfig.publishableKey,
+        // Čuva sesiju (access + refresh token) u flutter_secure_storage
+        // (Keystore/Keychain) umesto plaintext SharedPreferences / localStorage.
+        authOptions: FlutterAuthClientOptions(
+          localStorage: SecureLocalStorage(),
+        ),
+      );
+      _supabaseInitialized = true;
+    } catch (e, st) {
+      supabaseInitError = e;
+      LoggerService.error('Supabase initialization failed', e, stackTrace: st);
+    }
   }
 
   if (supabaseInitError != null) {
-    runApp(_BootstrapErrorApp(error: supabaseInitError));
+    runApp(_BootstrapErrorApp(
+      error: supabaseInitError,
+      onRetry: () => unawaited(bootstrapApp()),
+    ));
     return;
   }
 
@@ -398,10 +424,30 @@ void main() async {
   );
 }
 
-class _BootstrapErrorApp extends StatelessWidget {
+class _BootstrapErrorApp extends StatefulWidget {
   final Object error;
+  final VoidCallback onRetry;
 
-  const _BootstrapErrorApp({required this.error});
+  const _BootstrapErrorApp({required this.error, required this.onRetry});
+
+  @override
+  State<_BootstrapErrorApp> createState() => _BootstrapErrorAppState();
+}
+
+class _BootstrapErrorAppState extends State<_BootstrapErrorApp> {
+  bool _retrying = false;
+
+  void _handleRetry() {
+    if (_retrying) return;
+    setState(() => _retrying = true);
+    widget.onRetry();
+    // Uspesan bootstrap menja ceo ekran novim `runApp` stablom. Ako opet
+    // ne uspe, bootstrap postavlja novu _BootstrapErrorApp instancu (flag je
+    // resetovan); 30s fallback pokriva samo izgubljeni odgovor.
+    Future<void>.delayed(const Duration(seconds: 30), () {
+      if (mounted) setState(() => _retrying = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -437,6 +483,31 @@ class _BootstrapErrorApp extends StatelessWidget {
                     'Proverite internet konekciju ili konfiguraciju i pokušajte ponovo.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: _retrying ? null : _handleRetry,
+                    icon: _retrying
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh_rounded),
+                    label: Text(
+                      _retrying ? 'Povezivanje u toku...' : 'Pokušaj ponovo',
+                    ),
                   ),
                 ],
               ),
