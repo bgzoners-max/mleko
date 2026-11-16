@@ -1,14 +1,12 @@
-// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
-
 import 'dart:convert';
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 String resolveBaseUrl([String? origin]) {
   if (origin != null && origin.isNotEmpty) {
     if (origin == 'https://domacimarket.rs') return 'https://www.domacimarket.rs';
     return origin;
   }
-  final windowOrigin = html.window.location.origin;
+  final windowOrigin = web.window.location.origin;
   if (windowOrigin.isNotEmpty) {
     if (windowOrigin == 'https://domacimarket.rs') return 'https://www.domacimarket.rs';
     return windowOrigin;
@@ -18,7 +16,7 @@ String resolveBaseUrl([String? origin]) {
 
 bool isWebOnline() {
   try {
-    return html.window.navigator.onLine ?? true;
+    return web.window.navigator.onLine;
   } catch (_) {
     return true;
   }
@@ -37,7 +35,7 @@ void setPageMetadata({
   final origin = resolveBaseUrl();
 
   // 1. Title
-  html.document.title = title;
+  web.document.title = title;
   _upsertMetaByName('title', title);
   _upsertMetaByProperty('og:title', title);
   _upsertMetaByName('twitter:title', title);
@@ -103,49 +101,55 @@ String _normalizeUrl(String value, String origin) {
 }
 
 void _upsertMetaByName(String name, String content) {
-  final existing = html.document.head?.querySelector('meta[name="$name"]')
-      as html.MetaElement?;
+  final head = web.document.head;
+  if (head == null) return;
+  final existing =
+      head.querySelector('meta[name="$name"]') as web.HTMLMetaElement?;
   if (existing != null) {
     existing.content = content;
     return;
   }
 
-  final meta = html.MetaElement()
+  final meta = web.document.createElement('meta') as web.HTMLMetaElement
     ..name = name
     ..content = content;
-  html.document.head?.append(meta);
+  head.append(meta);
 }
 
 void _upsertMetaByProperty(String property, String content) {
-  final existing = html.document.head
-      ?.querySelector('meta[property="$property"]') as html.MetaElement?;
+  final head = web.document.head;
+  if (head == null) return;
+  final existing =
+      head.querySelector('meta[property="$property"]') as web.HTMLMetaElement?;
   if (existing != null) {
     existing.content = content;
     return;
   }
 
-  final meta = html.MetaElement()
+  final meta = web.document.createElement('meta') as web.HTMLMetaElement
     ..setAttribute('property', property)
     ..content = content;
-  html.document.head?.append(meta);
+  head.append(meta);
 }
 
 void _upsertCanonical(String href) {
-  final existing = html.document.head?.querySelector('link[rel="canonical"]')
-      as html.LinkElement?;
+  final head = web.document.head;
+  if (head == null) return;
+  final existing =
+      head.querySelector('link[rel="canonical"]') as web.HTMLLinkElement?;
   if (existing != null) {
     existing.href = href;
     return;
   }
 
-  final link = html.LinkElement()
+  final link = web.document.createElement('link') as web.HTMLLinkElement
     ..rel = 'canonical'
     ..href = href;
-  html.document.head?.append(link);
+  head.append(link);
 }
 
 void _syncHreflangLinks(String href) {
-  final head = html.document.head;
+  final head = web.document.head;
   if (head == null) return;
 
   final legacySr = head.querySelector('link[rel="alternate"][hreflang="sr"]');
@@ -154,12 +158,12 @@ void _syncHreflangLinks(String href) {
   for (final hreflang in const ['sr-RS', 'x-default']) {
     final existing =
         head.querySelector('link[rel="alternate"][hreflang="$hreflang"]')
-            as html.LinkElement?;
+            as web.HTMLLinkElement?;
     if (existing != null) {
       existing.href = href;
       continue;
     }
-    final link = html.LinkElement()
+    final link = web.document.createElement('link') as web.HTMLLinkElement
       ..rel = 'alternate'
       ..hreflang = hreflang
       ..href = href;
@@ -168,19 +172,21 @@ void _syncHreflangLinks(String href) {
 }
 
 void _upsertJsonLd(Map<String, dynamic> jsonMap) {
+  final head = web.document.head;
+  if (head == null) return;
   const scriptId = 'seo-dynamic-jsonld';
-  var script = html.document.head?.querySelector('#$scriptId') as html.ScriptElement?;
+  var script = head.querySelector('#$scriptId') as web.HTMLScriptElement?;
   if (script == null) {
-    script = html.ScriptElement()
+    script = (web.document.createElement('script') as web.HTMLScriptElement)
       ..id = scriptId
       ..type = 'application/ld+json';
-    html.document.head?.append(script);
+    head.append(script);
   }
   script.text = jsonEncode(jsonMap);
 }
 
 void _removeDynamicJsonLd() {
   const scriptId = 'seo-dynamic-jsonld';
-  final script = html.document.head?.querySelector('#$scriptId');
+  final script = web.document.head?.querySelector('#$scriptId');
   script?.remove();
 }

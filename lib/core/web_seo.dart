@@ -1,7 +1,8 @@
 import '../models/classified_ad_model.dart';
 import '../models/classified_category_model.dart';
 import '../models/product_model.dart';
-import 'web_seo_stub.dart' if (dart.library.html) 'web_seo_web.dart' as impl;
+import 'web_seo_stub.dart' if (dart.library.js_interop) 'web_seo_web.dart'
+    as impl;
 
 import 'route_seo_resolver.dart';
 

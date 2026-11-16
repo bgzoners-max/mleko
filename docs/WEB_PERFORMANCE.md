@@ -44,9 +44,29 @@ Dominantni trošak na mobile throttling (4x CPU) je parsiranje i izvršavanje
 nije regresija shell-a. FCP/LCP su brzi zahvaljujući statičkom HTML sadržaju
 shell-a (loading ekran + SEO fallback), koji se prikazuje pre pokretanja engine-a.
 
-### Buduće opcije za istraživanje (nisu primenjene)
+### WASM build istraživanje (2026-11-16)
 
-- **WASM build** (`flutter build web --wasm`, skwasm) —indikativno značajno
-  smanjuje JS parse/exec troškove; zahteva proveru browser podrške
-  (Chrome/Edge odavno, Safari 18.2+) i CSP `application/wasm` pravila.
-- PageSpeed API ključ u CI tajnama ukoliko se poželi automatsko praćenje.
+- **Priprema koda završena**: `lib/core/web_seo_web.dart` i `lib/core/web_seo.dart`
+  migrirani su sa `dart:html` na `package:web` (`dart.library.js_interop`). Bez
+  ove izmene bi WASM build tiho koristio `web_seo_stub.dart` (no-op).
+- **Probni build prošao bez grešaka** (`flutter build web --release --wasm`,
+  Flutter 3.47.2, sve zavisnosti kompatibilne sa WasmGC):
+  - `main.dart.wasm`: **6.091,5 KB** (~5,95 MB)
+  - `main.dart.mjs`: **42,4 KB**
+  - `main.dart.js` (automatski JS fallback za starije pregledače): **6.427,5 KB** (~6,28 MB)
+  - Svi izlazi su ispod Cloudflare Pages limita od 25 MiB po fajlu; `skwasm` se
+    i dalje učitava sa Google CDN-a.
+- **CSP i headers**: u `web/_headers` dodati `'wasm-unsafe-eval'` u `script-src`
+  i `Content-Type`/`Cache-Control` pravila za `/main.dart.wasm` i `/main.dart.mjs`.
+- **Napomene pre produkcionog uključivanja `--wasm` flaga**:
+  1. **Single-threaded vs multi-threaded `skwasm`**: multi-threaded zahteva
+     `COOP: same-origin` i `COEP: require-corp`, što bi moglo da blokira eksterne
+     slike/tajlove (`tile.openstreetmap.org`, Google Fonts, itd.) bez
+     `Cross-Origin-Resource-Policy: cross-origin`; bez `COOP`/`COEP` `skwasm`
+     bezbedno radi u single-threaded režimu.
+  2. **Hash-ovanje za keš**: `web/flutter_bootstrap.js` i
+     `tool/prepare_cloudflare_deploy.dart` trenutno dodaju `?v=<buildHash>` samo
+     na `mainJsPath` — za produkcioni WASM trebalo bi na isti način verzionisati i
+     `mainWasmPath` i `jsSupportRuntimePath` (`main.dart.wasm?v=...`,
+     `main.dart.mjs?v=...`).
+- **Ostala preporuka**: PageSpeed API ključ u CI tajnama ukoliko se poželi automatsko praćenje.
