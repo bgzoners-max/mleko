@@ -51,7 +51,7 @@ jobs:
         run: flutter test --coverage
 
       - name: Check code coverage (ratchet threshold)
-        run: dart run tool/check_coverage.dart --min-coverage=41.5 --ratchet-file=tool/coverage_ratchet.json
+        run: dart run tool/check_coverage.dart --min-coverage=42.5 --ratchet-file=tool/coverage_ratchet.json
 
       - name: Verify coverage ratchet baseline is committed
         shell: bash
