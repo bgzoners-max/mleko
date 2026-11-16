@@ -9,6 +9,7 @@ export type Database = {
                   Row: {
                     "endpoint": string,"id": number,"identifier": string,"request_count": number,"window_start": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "endpoint": string,"id"?: number,"identifier": string,"request_count"?: number,"window_start"?: string
                   }
@@ -22,6 +23,7 @@ export type Database = {
                   Row: {
                     "buyer_id": string,"buyer_reply": string | null,"buyer_reply_at": string | null,"comment": string | null,"created_at": string,"id": string,"order_id": string,"rating": number,"seller_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "buyer_id": string,"buyer_reply"?: string | null,"buyer_reply_at"?: string | null,"comment"?: string | null,"created_at"?: string,"id"?: string,"order_id": string,"rating": number,"seller_id": string
                   }
@@ -41,6 +43,7 @@ isOneToOne: false
                   Row: {
                     "icon": string | null,"id": string,"name": string,"order": number | null,"parent_id": string | null,"section": string | null,"slug": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "icon"?: string | null,"id"?: string,"name": string,"order"?: number | null,"parent_id"?: string | null,"section"?: string | null,"slug"?: string | null
                   }
@@ -60,6 +63,7 @@ isOneToOne: false
                   Row: {
                     "ad_id": string,"created_at": string,"details": string | null,"id": string,"reason": string,"reporter_id": string,"resolved_at": string | null,"resolved_by": string | null,"status": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "ad_id": string,"created_at"?: string,"details"?: string | null,"id"?: string,"reason": string,"reporter_id": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string
                   }
@@ -85,6 +89,7 @@ isOneToOne: false
                   Row: {
                     "ad_id": string,"last_viewed_at": string,"viewer_hash": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "ad_id": string,"last_viewed_at"?: string,"viewer_hash": string
                   }
@@ -110,6 +115,7 @@ isOneToOne: false
                   Row: {
                     "attributes": NonNullable<Json>,"call_clicks_count": number,"category_id": string,"city": string,"condition": string,"created_at": string,"currency": string,"description": string,"featured_until": string | null,"id": string,"images": (string)[],"is_featured": boolean,"is_urgent": boolean,"last_view_at": string | null,"phone": string | null,"phone_public": boolean,"price": number,"price_type": string,"reports_count": number,"seller_type": string,"shares_count": number,"status": string,"title": string,"updated_at": string,"user_id": string,"views_count": number
                   }
+                  ComputedFields: never
                   Insert: {
                     "attributes"?: NonNullable<Json>,"call_clicks_count"?: number,"category_id": string,"city": string,"condition"?: string,"created_at"?: string,"currency"?: string,"description"?: string,"featured_until"?: string | null,"id"?: string,"images"?: (string)[],"is_featured"?: boolean,"is_urgent"?: boolean,"last_view_at"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"price"?: number,"price_type"?: string,"reports_count"?: number,"seller_type"?: string,"shares_count"?: number,"status"?: string,"title": string,"updated_at"?: string,"user_id": string,"views_count"?: number
                   }
@@ -141,6 +147,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"icon_name": string,"id": string,"is_condition_applicable": boolean,"is_obsolete": boolean,"name": string,"parent_id": string | null,"sort_order": number
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"icon_name": string,"id": string,"is_condition_applicable"?: boolean,"is_obsolete"?: boolean,"name": string,"parent_id"?: string | null,"sort_order"?: number
                   }
@@ -160,6 +167,7 @@ isOneToOne: false
                   Row: {
                     "category_id": string,"created_at": string,"currency": string | null,"id": string,"max_price": number | null,"search_query": string | null,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "category_id": string,"created_at"?: string,"currency"?: string | null,"id"?: string,"max_price"?: number | null,"search_query"?: string | null,"user_id": string
                   }
@@ -179,6 +187,7 @@ isOneToOne: false
                   Row: {
                     "conversation_id": string,"is_typing": boolean,"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "conversation_id": string,"is_typing"?: boolean,"updated_at"?: string,"user_id": string
                   }
@@ -198,6 +207,7 @@ isOneToOne: false
                   Row: {
                     "conversation_id": string,"hidden": boolean,"is_favorite": boolean,"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "conversation_id": string,"hidden"?: boolean,"is_favorite"?: boolean,"updated_at"?: string,"user_id": string
                   }
@@ -217,6 +227,7 @@ isOneToOne: false
                   Row: {
                     "ad_id": string | null,"buyer_id": string,"created_at": string | null,"id": string,"order_id": string | null,"product_id": string | null,"seller_id": string,"updated_at": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "ad_id"?: string | null,"buyer_id": string,"created_at"?: string | null,"id"?: string,"order_id"?: string | null,"product_id"?: string | null,"seller_id": string,"updated_at"?: string | null
                   }
@@ -266,6 +277,7 @@ isOneToOne: false
                   Row: {
                     "key": string,"value": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "key": string,"value": string
                   }
@@ -279,6 +291,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string | null,"id": string,"seller_id": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string | null,"id"?: string,"seller_id": string,"user_id": string
                   }
@@ -292,6 +305,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"id": string,"product_id": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"id"?: string,"product_id": string,"user_id": string
                   }
@@ -323,6 +337,7 @@ isOneToOne: false
                   Row: {
                     "conversation_id": string,"created_at": string,"id": string,"message_id": string,"reaction": string,"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "conversation_id": string,"created_at"?: string,"id"?: string,"message_id": string,"reaction": string,"updated_at"?: string,"user_id": string
                   }
@@ -348,6 +363,7 @@ isOneToOne: false
                   Row: {
                     "body": string,"conversation_id": string,"created_at": string | null,"id": string,"read_at": string | null,"sender_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "body": string,"conversation_id": string,"created_at"?: string | null,"id"?: string,"read_at"?: string | null,"sender_id": string
                   }
@@ -367,6 +383,7 @@ isOneToOne: false
                   Row: {
                     "body": string | null,"classified_ad_id": string | null,"conversation_id": string | null,"created_at": string | null,"id": string,"metadata": NonNullable<Json>,"order_id": string | null,"read_at": string | null,"ticket_id": string | null,"title": string,"type": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "body"?: string | null,"classified_ad_id"?: string | null,"conversation_id"?: string | null,"created_at"?: string | null,"id"?: string,"metadata"?: NonNullable<Json>,"order_id"?: string | null,"read_at"?: string | null,"ticket_id"?: string | null,"title": string,"type": string,"user_id": string
                   }
@@ -410,6 +427,7 @@ isOneToOne: false
                   Row: {
                     "id": string,"order_id": string,"product_id": string | null,"product_name": string,"quantity_kg": number,"total_price": number | null,"unit_price": number | null,"unit_type": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "id"?: string,"order_id": string,"product_id"?: string | null,"product_name": string,"quantity_kg": number,"total_price"?: number | null,"unit_price"?: number | null,"unit_type"?: string
                   }
@@ -447,6 +465,7 @@ isOneToOne: false
                   Row: {
                     "changed_at": string,"changed_by_role": string,"changed_by_user_id": string | null,"id": string,"new_status": string,"old_status": string,"order_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "changed_at"?: string,"changed_by_role": string,"changed_by_user_id"?: string | null,"id"?: string,"new_status": string,"old_status": string,"order_id": string
                   }
@@ -466,6 +485,7 @@ isOneToOne: false
                   Row: {
                     "archived_at": string | null,"buyer_address": string | null,"buyer_city": string | null,"buyer_id": string,"buyer_phone": string,"buyer_postal_code": string | null,"cancellation_reason": string | null,"created_at": string | null,"delivery_address": string | null,"delivery_city": string | null,"delivery_fee_rsd": number | null,"delivery_method": string | null,"delivery_point_id": string | null,"delivery_point_label": string | null,"delivery_time_from": string | null,"delivery_time_to": string | null,"delivery_weekday": number | null,"expires_at": string,"id": string,"note": string | null,"prefer_call": boolean | null,"product_id": string | null,"product_name": string | null,"quantity_kg": number | null,"seller_id": string,"status": string | null,"status_changed_at": string | null,"total_amount": number | null,"unit_type": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "archived_at"?: string | null,"buyer_address"?: string | null,"buyer_city"?: string | null,"buyer_id": string,"buyer_phone": string,"buyer_postal_code"?: string | null,"cancellation_reason"?: string | null,"created_at"?: string | null,"delivery_address"?: string | null,"delivery_city"?: string | null,"delivery_fee_rsd"?: number | null,"delivery_method"?: string | null,"delivery_point_id"?: string | null,"delivery_point_label"?: string | null,"delivery_time_from"?: string | null,"delivery_time_to"?: string | null,"delivery_weekday"?: number | null,"expires_at"?: string,"id"?: string,"note"?: string | null,"prefer_call"?: boolean | null,"product_id"?: string | null,"product_name"?: string | null,"quantity_kg"?: number | null,"seller_id": string,"status"?: string | null,"status_changed_at"?: string | null,"total_amount"?: number | null,"unit_type"?: string
                   }
@@ -485,6 +505,7 @@ isOneToOne: false
                   Row: {
                     "city": string,"created_at": string,"is_primary": boolean,"normalized_city": string,"postal_code": string,"settlement": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "city": string,"created_at"?: string,"is_primary"?: boolean,"normalized_city": string,"postal_code": string,"settlement"?: string
                   }
@@ -498,6 +519,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"delivery_point_id": string,"product_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"delivery_point_id": string,"product_id": string
                   }
@@ -535,6 +557,7 @@ isOneToOne: false
                   Row: {
                     "order_count": number,"product_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "order_count"?: number,"product_id": string
                   }
@@ -566,6 +589,7 @@ isOneToOne: true
                   Row: {
                     "avg_rating": number,"product_id": string,"review_count": number
                   }
+                  ComputedFields: never
                   Insert: {
                     "avg_rating"?: number,"product_id": string,"review_count"?: number
                   }
@@ -597,6 +621,7 @@ isOneToOne: true
                   Row: {
                     "available_kg": number | null,"available_now": boolean | null,"category": string,"created_at": string | null,"delivery_mode": string,"description": string | null,"id": string,"image_urls": (string)[] | null,"is_domestic": boolean | null,"location": string,"min_order_kg": number | null,"name": string,"order_step": number,"origin": string,"pickup_options": (string)[] | null,"price_per_kg": number,"search_vector": unknown,"seller_id": string,"shelf_life_days": number,"unit_type": string,"variants": NonNullable<Json>
                   }
+                  ComputedFields: never
                   Insert: {
                     "available_kg"?: number | null,"available_now"?: boolean | null,"category": string,"created_at"?: string | null,"delivery_mode"?: string,"description"?: string | null,"id"?: string,"image_urls"?: (string)[] | null,"is_domestic"?: boolean | null,"location": string,"min_order_kg"?: number | null,"name": string,"order_step"?: number,"origin"?: string,"pickup_options"?: (string)[] | null,"price_per_kg": number,"search_vector"?: unknown,"seller_id": string,"shelf_life_days"?: number,"unit_type"?: string,"variants"?: NonNullable<Json>
                   }
@@ -610,6 +635,7 @@ isOneToOne: true
                   Row: {
                     "address": string | null,"bpg": string | null,"city": string | null,"created_at": string | null,"display_name": string | null,"email": string | null,"farm_gallery_urls": (string)[] | null,"farm_name": string | null,"id": string,"is_admin": boolean,"is_guest": boolean | null,"is_verified": boolean | null,"lat": number | null,"legal_liability_accepted_at": string | null,"legal_type": string | null,"lng": number | null,"location": string | null,"phone": string | null,"phone_public": boolean,"pib": string | null,"postal_code": string | null,"profile_image_url": string | null,"role": string | null,"seller_quick_replies": (string)[] | null,"seller_story": string | null,"seller_tags": (string)[] | null,"updated_at": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "address"?: string | null,"bpg"?: string | null,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: string | null,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"id": string,"is_admin"?: boolean,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"legal_liability_accepted_at"?: string | null,"legal_type"?: string | null,"lng"?: number | null,"location"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"pib"?: string | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null,"updated_at"?: string | null
                   }
@@ -623,6 +649,7 @@ isOneToOne: true
                   Row: {
                     "created_at": string,"errors": NonNullable<Json>,"failed_count": number,"id": number,"payload": NonNullable<Json>,"request_id": string,"sent_count": number,"source": string,"status": string,"title": string | null,"token_count": number,"type": string | null,"user_id": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"errors"?: NonNullable<Json>,"failed_count"?: number,"id"?: never,"payload"?: NonNullable<Json>,"request_id": string,"sent_count"?: number,"source"?: string,"status": string,"title"?: string | null,"token_count"?: number,"type"?: string | null,"user_id"?: string | null
                   }
@@ -636,6 +663,7 @@ isOneToOne: true
                   Row: {
                     "buyer_id": string,"comment": string | null,"created_at": string | null,"id": string,"order_id": string | null,"product_id": string | null,"rating": number,"seller_id": string,"seller_reply": string | null,"seller_reply_at": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "buyer_id": string,"comment"?: string | null,"created_at"?: string | null,"id"?: string,"order_id"?: string | null,"product_id"?: string | null,"rating": number,"seller_id": string,"seller_reply"?: string | null,"seller_reply_at"?: string | null
                   }
@@ -673,6 +701,7 @@ isOneToOne: false
                   Row: {
                     "address": string,"city": string,"created_at": string,"id": string,"is_active": boolean,"label": string,"lat": number | null,"lng": number | null,"notes": string | null,"seller_id": string,"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "address": string,"city": string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"label": string,"lat"?: number | null,"lng"?: number | null,"notes"?: string | null,"seller_id": string,"updated_at"?: string
                   }
@@ -686,6 +715,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"delivery_fee_rsd": number | null,"delivery_point_id": string,"id": string,"is_active": boolean,"max_orders": number | null,"min_order_amount_rsd": number | null,"time_from": string,"time_to": string,"updated_at": string,"weekday": number
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"delivery_fee_rsd"?: number | null,"delivery_point_id": string,"id"?: string,"is_active"?: boolean,"max_orders"?: number | null,"min_order_amount_rsd"?: number | null,"time_from": string,"time_to": string,"updated_at"?: string,"weekday": number
                   }
@@ -705,6 +735,7 @@ isOneToOne: false
                   Row: {
                     "body": string,"created_at": string,"id": string,"sender_id": string,"sender_role": string,"ticket_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "body": string,"created_at"?: string,"id"?: string,"sender_id": string,"sender_role": string,"ticket_id": string
                   }
@@ -724,6 +755,7 @@ isOneToOne: false
                   Row: {
                     "admin_note": string | null,"body": string,"category": string,"created_at": string,"id": string,"status": string,"subject": string,"ticket_number": string,"updated_at": string,"user_email": string | null,"user_id": string | null,"user_name": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "admin_note"?: string | null,"body": string,"category"?: string,"created_at"?: string,"id"?: string,"status"?: string,"subject": string,"ticket_number"?: string,"updated_at"?: string,"user_email"?: string | null,"user_id"?: string | null,"user_name"?: string | null
                   }
@@ -737,6 +769,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string | null,"id": string,"installation_id": string,"platform": string | null,"token": string,"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string | null,"id"?: string,"installation_id": string,"platform"?: string | null,"token": string,"updated_at"?: string,"user_id": string
                   }
@@ -750,6 +783,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string | null,"email": string,"id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string | null,"email": string,"id"?: string
                   }
@@ -766,6 +800,7 @@ isOneToOne: false
                   Row: {
                     "clean_products": number | null,"generated_at": string | null,"problem_products": number | null,"problem_rate_percent": number | null,"total_products": number | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     
                   ]
@@ -773,6 +808,7 @@ isOneToOne: false
                   Row: {
                     "category": string | null,"cross_category_duplicates": number | null,"has_issues": boolean | null,"issues": (string)[] | null,"missing_image": boolean | null,"missing_origin": boolean | null,"missing_pickup": boolean | null,"missing_shelf_life": boolean | null,"name": string | null,"normalized_category": string | null,"normalized_name": string | null,"product_id": string | null,"same_category_duplicates": number | null,"seller_id": string | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     
                   ]
@@ -780,6 +816,7 @@ isOneToOne: false
                   Row: {
                     "available_kg": number | null,"available_now": boolean | null,"avg_rating": number | null,"category": string | null,"created_at": string | null,"delivery_mode": string | null,"description": string | null,"id": string | null,"image_urls": (string)[] | null,"is_domestic": boolean | null,"location": string | null,"min_order_kg": number | null,"name": string | null,"order_count": number | null,"order_step": number | null,"pickup_options": (string)[] | null,"price_per_kg": number | null,"review_count": number | null,"seller_id": string | null,"seller_is_verified": boolean | null,"unit_type": string | null,"variants": Json | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     
                   ]
@@ -787,6 +824,7 @@ isOneToOne: false
                   Row: {
                     "attributes": Json | null,"call_clicks_count": number | null,"category_id": string | null,"city": string | null,"condition": string | null,"created_at": string | null,"currency": string | null,"description": string | null,"featured_until": string | null,"id": string | null,"images": (string)[] | null,"is_featured": boolean | null,"is_urgent": boolean | null,"last_view_at": string | null,"phone": string | null,"phone_public": boolean | null,"price": number | null,"price_type": string | null,"reports_count": number | null,"seller_type": string | null,"shares_count": number | null,"status": string | null,"title": string | null,"updated_at": string | null,"user_id": string | null,"views_count": number | null
                   }
+                  ComputedFields: never
                   Insert: {
                            "attributes"?: Json | null,"call_clicks_count"?: number | null,"category_id"?: string | null,"city"?: string | null,"condition"?: string | null,"created_at"?: string | null,"currency"?: string | null,"description"?: string | null,"featured_until"?: string | null,"id"?: string | null,"images"?: (string)[] | null,"is_featured"?: boolean | null,"is_urgent"?: boolean | null,"last_view_at"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"price"?: number | null,"price_type"?: string | null,"reports_count"?: number | null,"seller_type"?: string | null,"shares_count"?: number | null,"status"?: string | null,"title"?: string | null,"updated_at"?: string | null,"user_id"?: string | null,"views_count"?: number | null
                          }
@@ -818,6 +856,7 @@ isOneToOne: false
                   Row: {
                     "address": string | null,"bpg": string | null,"bpg_masked": string | null,"city": string | null,"created_at": string | null,"display_name": string | null,"email": string | null,"farm_gallery_urls": (string)[] | null,"farm_name": string | null,"has_registered_entity": boolean | null,"id": string | null,"is_admin": boolean | null,"is_guest": boolean | null,"is_verified": boolean | null,"lat": number | null,"legal_liability_accepted_at": string | null,"legal_type": string | null,"lng": number | null,"location": string | null,"phone": string | null,"phone_public": boolean | null,"pib": string | null,"postal_code": string | null,"profile_image_url": string | null,"role": string | null,"seller_quick_replies": (string)[] | null,"seller_story": string | null,"seller_tags": (string)[] | null
                   }
+                  ComputedFields: never
                   Insert: {
                            "address"?: never,"bpg"?: never,"bpg_masked"?: never,"city"?: string | null,"created_at"?: string | null,"display_name"?: string | null,"email"?: never,"farm_gallery_urls"?: (string)[] | null,"farm_name"?: string | null,"has_registered_entity"?: never,"id"?: string | null,"is_admin"?: boolean | null,"is_guest"?: boolean | null,"is_verified"?: boolean | null,"lat"?: number | null,"legal_liability_accepted_at"?: string | null,"legal_type"?: string | null,"lng"?: number | null,"location"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"pib"?: string | null,"postal_code"?: string | null,"profile_image_url"?: string | null,"role"?: string | null,"seller_quick_replies"?: (string)[] | null,"seller_story"?: string | null,"seller_tags"?: (string)[] | null
                          }
@@ -831,6 +870,7 @@ isOneToOne: false
                   Row: {
                     "anon_key_present": boolean | null,"checked_at": string | null,"deliveries_24h": number | null,"delivery_backlog_minutes": number | null,"edge_config_ok": boolean | null,"failed_deliveries_24h": number | null,"functions_base_url": string | null,"health": string | null,"last_delivery_at": string | null,"last_notification_at": string | null,"notifications_24h": number | null,"success_rate_pct": number | null,"successful_deliveries_24h": number | null,"tokens_created_24h": number | null,"total_tokens": number | null,"users_with_tokens": number | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     
                   ]
@@ -838,6 +878,7 @@ isOneToOne: false
                   Row: {
                     "checked_at": string | null,"health": string | null,"latest_delivery_at": string | null,"latest_delivery_error_count": number | null,"latest_delivery_status": string | null,"latest_notification_at": string | null,"latest_token_at": string | null,"notifications_7d": number | null,"token_count": number | null,"user_id": string | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     
                   ]
@@ -845,6 +886,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string | null,"icon_name": string | null,"id": string | null,"is_condition_applicable": boolean | null,"is_obsolete": boolean | null,"name": string | null,"parent_id": string | null,"sort_order": number | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     
                   ]
