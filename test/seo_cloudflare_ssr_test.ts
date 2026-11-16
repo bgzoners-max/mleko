@@ -6,6 +6,11 @@ import {
   getFoodCategoryEntries,
   resolveStaticPageSeo,
 } from "../functions/api/_shared/static-seo-pages.ts";
+import { enrichDirectorySeoPayload } from "../functions/api/_shared/directory-ssr.ts";
+import {
+  buildPopulatedClassifiedCategoryEntries,
+  buildPopulatedFoodCategoryEntries,
+} from "../functions/api/sitemap.ts";
 
 const ORIGIN = "https://www.domacimarket.rs";
 
@@ -157,4 +162,132 @@ Deno.test("buildHtml escapes breadcrumbs, sections, navLinks, and renders JSON-L
   assert(!html.includes("</script><script>alert(1)"));
   assertStringIncludes(html, "\\u003c/script\\u003e");
   assert(!html.includes("Ako se ništa ne dešava"));
+});
+
+function makeMockDirectorySupabase(
+  responses: Record<string, { data: unknown; error?: unknown }>,
+) {
+  const buildChain = (table: string) => {
+    const chain: Record<string, unknown> = {
+      select: () => chain,
+      eq: () => chain,
+      in: () => chain,
+      order: () => chain,
+      limit: () => chain,
+      then: (
+        onFulfilled: (value: { data: unknown; error?: unknown }) => unknown,
+      ) =>
+        Promise.resolve(
+          responses[table] ?? { data: [], error: null },
+        ).then(onFulfilled),
+    };
+    return chain;
+  };
+  return {
+    from: (table: string) => buildChain(table),
+  };
+}
+
+Deno.test("enrichDirectorySeoPayload emits noindex,follow for empty category pages and index,follow for populated ones", async () => {
+  const emptyParams = new URLSearchParams("category=deca_bebe");
+  const emptyBase = resolveStaticPageSeo("/classifieds", emptyParams, ORIGIN)!;
+  const emptyResult = await enrichDirectorySeoPayload({
+    pathname: "/classifieds",
+    searchParams: emptyParams,
+    origin: ORIGIN,
+    basePayload: emptyBase,
+    supabaseClient: makeMockDirectorySupabase({
+      classified_categories: {
+        data: [{ id: "deca_bebe", name: "Sve za decu i bebe", parent_id: null }],
+        error: null,
+      },
+      public_classified_ads: { data: [], error: null },
+    }) as any,
+  });
+  assertEquals(emptyResult.robots, "noindex,follow");
+
+  const popParams = new URLSearchParams("category=poljoprivreda");
+  const popBase = resolveStaticPageSeo("/classifieds", popParams, ORIGIN)!;
+  const popResult = await enrichDirectorySeoPayload({
+    pathname: "/classifieds",
+    searchParams: popParams,
+    origin: ORIGIN,
+    basePayload: popBase,
+    supabaseClient: makeMockDirectorySupabase({
+      classified_categories: {
+        data: [{ id: "poljoprivreda", name: "Poljoprivreda", parent_id: null }],
+        error: null,
+      },
+      public_classified_ads: {
+        data: [
+          {
+            id: "ad-1",
+            title: "Traktor IMT 539",
+            price: 4500,
+            currency: "EUR",
+            price_type: "fixed",
+            city: "Šabac",
+            images: null,
+          },
+        ],
+        error: null,
+      },
+    }) as any,
+  });
+  assertEquals(popResult.robots, "index,follow,max-image-preview:large");
+
+  // Transient DB error must NOT falsely emit noindex
+  const errorResult = await enrichDirectorySeoPayload({
+    pathname: "/classifieds",
+    searchParams: emptyParams,
+    origin: ORIGIN,
+    basePayload: emptyBase,
+    supabaseClient: makeMockDirectorySupabase({
+      classified_categories: { data: [], error: null },
+      public_classified_ads: { data: null, error: { message: "timeout" } },
+    }) as any,
+  });
+  assertEquals(errorResult.robots, "index,follow,max-image-preview:large");
+});
+
+Deno.test("sitemap category helpers exclude empty categories and use real latest lastmod", () => {
+  const classifiedEntries = buildPopulatedClassifiedCategoryEntries({
+    baseUrl: ORIGIN,
+    categories: [
+      { id: "poljoprivreda", parent_id: null, is_obsolete: false },
+      { id: "traktori", parent_id: "poljoprivreda", is_obsolete: false },
+      { id: "deca_bebe", parent_id: null, is_obsolete: false },
+    ],
+    ads: [
+      {
+        id: "ad-1",
+        category_id: "traktori",
+        updated_at: "2026-11-12T10:00:00Z",
+        created_at: "2026-11-10T10:00:00Z",
+      },
+    ],
+  });
+  assertEquals(classifiedEntries.length, 1);
+  assertEquals(classifiedEntries[0].loc, `${ORIGIN}/classifieds?category=poljoprivreda`);
+  assertEquals(classifiedEntries[0].lastmod, "2026-11-12");
+
+  const foodEntries = buildPopulatedFoodCategoryEntries({
+    baseUrl: ORIGIN,
+    categories: [
+      { id: "c1", name: "Mlečni proizvodi", slug: "mlecni-proizvodi", parent_id: null },
+      { id: "c2", name: "Sirevi", slug: "sirevi", parent_id: "c1" },
+      { id: "c3", name: "Meso", slug: "meso", parent_id: null },
+    ],
+    products: [
+      {
+        id: "p1",
+        category: "Sirevi",
+        created_at: "2026-11-09T08:30:00Z",
+        available_now: true,
+      },
+    ],
+  });
+  assertEquals(foodEntries.length, 1);
+  assertEquals(foodEntries[0].loc, `${ORIGIN}/categories?category=mlecni-proizvodi`);
+  assertEquals(foodEntries[0].lastmod, "2026-11-09");
 });

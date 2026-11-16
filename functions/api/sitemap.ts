@@ -1,17 +1,36 @@
 import { createClient } from "@supabase/supabase-js";
 import { normalizeBaseUrl, resolvePublicBaseUrl } from "./_shared/preview-utils.js";
 import { buildHreflangXmlLinks } from "./_shared/locales.js";
+import {
+  collectDescendantIds,
+  type ClassifiedCategoryRow,
+  type FoodCategoryRow,
+} from "./_shared/directory-ssr.js";
 
 declare const process: any;
 
-type SitemapEntry = {
+export type SitemapEntry = {
   loc: string;
   lastmod?: string;
   changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
   priority?: string;
 };
 
-const CLASSIFIED_CATEGORIES = [
+type SitemapAdRow = {
+  id: string;
+  category_id?: string | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+};
+
+type SitemapProductRow = {
+  id: string;
+  category?: string | null;
+  created_at?: string | null;
+  available_now?: boolean | null;
+};
+
+export const CLASSIFIED_CATEGORIES = [
   "poljoprivreda",
   "vozila",
   "masine_alati",
@@ -30,7 +49,7 @@ const CLASSIFIED_CATEGORIES = [
   "umetnost_rukotvorine",
 ];
 
-const FOOD_CATEGORIES = [
+export const FOOD_CATEGORIES = [
   "mlecni-proizvodi",
   "meso",
   "voce-i-povrce",
@@ -62,12 +81,139 @@ function formatDate(dateValue?: string | null): string {
   }
 }
 
+function maxIsoDate(dates: Array<string | null | undefined>): string | undefined {
+  let latest: string | undefined;
+  for (const raw of dates) {
+    if (!raw) continue;
+    const formatted = formatDate(raw);
+    if (!latest || formatted > latest) {
+      latest = formatted;
+    }
+  }
+  return latest;
+}
+
+export function buildPopulatedClassifiedCategoryEntries(params: {
+  baseUrl: string;
+  slugs?: string[];
+  categories: ClassifiedCategoryRow[];
+  ads: SitemapAdRow[];
+}): SitemapEntry[] {
+  const {
+    baseUrl,
+    slugs = CLASSIFIED_CATEGORIES,
+    categories,
+    ads,
+  } = params;
+  const activeCategories = categories.filter((c) => c.is_obsolete !== true);
+  const entries: SitemapEntry[] = [];
+
+  for (const slug of slugs) {
+    const descendants = new Set(collectDescendantIds(slug, activeCategories));
+    const matchingAds = ads.filter(
+      (ad) => ad.category_id != null && descendants.has(ad.category_id),
+    );
+    if (matchingAds.length === 0) continue;
+
+    entries.push({
+      loc: `${baseUrl}/classifieds?category=${slug}`,
+      lastmod: maxIsoDate(
+        matchingAds.map((ad) => ad.updated_at || ad.created_at),
+      ),
+      changefreq: "daily",
+      priority: "0.85",
+    });
+  }
+
+  return entries;
+}
+
+export function buildPopulatedFoodCategoryEntries(params: {
+  baseUrl: string;
+  slugs?: string[];
+  categories: FoodCategoryRow[];
+  products: SitemapProductRow[];
+}): SitemapEntry[] {
+  const {
+    baseUrl,
+    slugs = FOOD_CATEGORIES,
+    categories,
+    products,
+  } = params;
+  const entries: SitemapEntry[] = [];
+
+  for (const slug of slugs) {
+    const parentCat =
+      categories.find((c) => c.slug === slug && !c.parent_id) ||
+      categories.find((c) => c.slug === slug);
+    if (!parentCat) continue;
+
+    const childNames = categories
+      .filter((c) => c.parent_id === parentCat.id)
+      .map((c) => c.name);
+    const targetNames = new Set([parentCat.name, ...childNames]);
+
+    const matchingProducts = products.filter(
+      (p) => p.category != null && targetNames.has(p.category),
+    );
+    if (matchingProducts.length === 0) continue;
+
+    entries.push({
+      loc: `${baseUrl}/categories?category=${slug}`,
+      lastmod: maxIsoDate(matchingProducts.map((p) => p.created_at)),
+      changefreq: "daily",
+      priority: "0.85",
+    });
+  }
+
+  return entries;
+}
+
+function buildCoreEntries(
+  baseUrl: string,
+  dates?: {
+    home?: string;
+    classifieds?: string;
+    categories?: string;
+    search?: string;
+    sellersMap?: string;
+  },
+): SitemapEntry[] {
+  return [
+    { loc: `${baseUrl}/`, lastmod: dates?.home, changefreq: "daily", priority: "1.0" },
+    { loc: `${baseUrl}/classifieds`, lastmod: dates?.classifieds, changefreq: "daily", priority: "0.95" },
+    { loc: `${baseUrl}/categories`, lastmod: dates?.categories, changefreq: "daily", priority: "0.90" },
+    { loc: `${baseUrl}/search`, lastmod: dates?.search, changefreq: "daily", priority: "0.80" },
+    { loc: `${baseUrl}/sellers-map`, lastmod: dates?.sellersMap, changefreq: "weekly", priority: "0.80" },
+    { loc: `${baseUrl}/vodic-za-proizvodjace`, changefreq: "monthly", priority: "0.70" },
+    { loc: `${baseUrl}/about`, changefreq: "monthly", priority: "0.60" },
+    { loc: `${baseUrl}/support`, changefreq: "monthly", priority: "0.50" },
+    { loc: `${baseUrl}/uslovi-koriscenja`, changefreq: "yearly", priority: "0.40" },
+    { loc: `${baseUrl}/politika-privatnosti`, changefreq: "yearly", priority: "0.40" },
+  ];
+}
+
+function buildAllCategoryFallbackEntries(baseUrl: string, today: string): SitemapEntry[] {
+  return [
+    ...CLASSIFIED_CATEGORIES.map((cat): SitemapEntry => ({
+      loc: `${baseUrl}/classifieds?category=${cat}`,
+      lastmod: today,
+      changefreq: "daily",
+      priority: "0.85",
+    })),
+    ...FOOD_CATEGORIES.map((cat): SitemapEntry => ({
+      loc: `${baseUrl}/categories?category=${cat}`,
+      lastmod: today,
+      changefreq: "daily",
+      priority: "0.85",
+    })),
+  ];
+}
+
 function buildXml(entries: SitemapEntry[], baseUrl: string): string {
   const urlsXml = entries
     .map((e) => {
       const parts = [`    <loc>${e.loc}</loc>`];
-      // hreflang anotacije (SEO na svetskom nivou, Faza 1) — videti
-      // `./_shared/locales.ts` za listu aktivnih jezičkih verzija.
       const hreflangXml = buildHreflangXmlLinks(e.loc, baseUrl);
       if (hreflangXml) parts.push(hreflangXml);
       if (e.lastmod) parts.push(`    <lastmod>${e.lastmod}</lastmod>`);
@@ -90,31 +236,15 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
   const baseUrl = resolvePublicBaseUrl(origin);
   const today = formatDate();
 
-  const staticEntries: SitemapEntry[] = [
-    { loc: `${baseUrl}/`, lastmod: today, changefreq: "daily", priority: "1.0" },
-    { loc: `${baseUrl}/classifieds`, lastmod: today, changefreq: "daily", priority: "0.95" },
-    { loc: `${baseUrl}/categories`, lastmod: today, changefreq: "daily", priority: "0.90" },
-    { loc: `${baseUrl}/search`, lastmod: today, changefreq: "daily", priority: "0.80" },
-    { loc: `${baseUrl}/sellers-map`, lastmod: today, changefreq: "weekly", priority: "0.80" },
-    { loc: `${baseUrl}/vodic-za-proizvodjace`, lastmod: today, changefreq: "monthly", priority: "0.70" },
-    { loc: `${baseUrl}/about`, lastmod: today, changefreq: "monthly", priority: "0.60" },
-    { loc: `${baseUrl}/support`, lastmod: today, changefreq: "monthly", priority: "0.50" },
-    { loc: `${baseUrl}/uslovi-koriscenja`, lastmod: today, changefreq: "yearly", priority: "0.40" },
-    { loc: `${baseUrl}/politika-privatnosti`, lastmod: today, changefreq: "yearly", priority: "0.40" },
-
-    ...CLASSIFIED_CATEGORIES.map((cat): SitemapEntry => ({
-      loc: `${baseUrl}/classifieds?category=${cat}`,
-      lastmod: today,
-      changefreq: "daily",
-      priority: "0.85",
-    })),
-
-    ...FOOD_CATEGORIES.map((cat): SitemapEntry => ({
-      loc: `${baseUrl}/categories?category=${cat}`,
-      lastmod: today,
-      changefreq: "daily",
-      priority: "0.85",
-    })),
+  const fallbackEntries: SitemapEntry[] = [
+    ...buildCoreEntries(baseUrl, {
+      home: today,
+      classifieds: today,
+      categories: today,
+      search: today,
+      sellersMap: today,
+    }),
+    ...buildAllCategoryFallbackEntries(baseUrl, today),
   ];
 
   try {
@@ -130,7 +260,7 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
         : undefined);
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      return new Response(buildXml(staticEntries, baseUrl), {
+      return new Response(buildXml(fallbackEntries, baseUrl), {
         status: 200,
         headers: {
           "Content-Type": "application/xml; charset=utf-8",
@@ -143,26 +273,32 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const [adsRes, productsRes, sellersRes] = await Promise.all([
-      supabase
-        .from("classified_ads")
-        .select("id, updated_at, created_at")
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(3000),
-      supabase
-        .from("products")
-        .select("id, created_at")
-        .eq("available_now", true)
-        .order("created_at", { ascending: false })
-        .limit(3000),
-      supabase
-        .from("public_profiles")
-        .select("id, created_at")
-        .eq("role", "seller")
-        .order("created_at", { ascending: false })
-        .limit(1000),
-    ]);
+    const [adsRes, productsRes, sellersRes, classifiedCatsRes, foodCatsRes] =
+      await Promise.all([
+        supabase
+          .from("classified_ads")
+          .select("id, category_id, updated_at, created_at")
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(3000),
+        supabase
+          .from("products")
+          .select("id, category, created_at, available_now")
+          .order("created_at", { ascending: false })
+          .limit(3000),
+        supabase
+          .from("public_profiles")
+          .select("id, created_at")
+          .eq("role", "seller")
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        supabase
+          .from("classified_categories")
+          .select("id, parent_id, is_obsolete"),
+        supabase
+          .from("categories")
+          .select("id, name, slug, parent_id"),
+      ]);
 
     if (adsRes.error) {
       console.error("Sitemap ads query error:", adsRes.error);
@@ -173,49 +309,102 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
     if (sellersRes.error) {
       console.error("Sitemap sellers query error:", sellersRes.error);
     }
+    if (classifiedCatsRes.error) {
+      console.error("Sitemap classified categories query error:", classifiedCatsRes.error);
+    }
+    if (foodCatsRes.error) {
+      console.error("Sitemap food categories query error:", foodCatsRes.error);
+    }
+
+    const ads = ((adsRes.data ?? []) as SitemapAdRow[]);
+    const products = ((productsRes.data ?? []) as SitemapProductRow[]);
+    const sellers = ((sellersRes.data ?? []) as Array<{ id: string; created_at?: string | null }>);
+    const classifiedCats = ((classifiedCatsRes.data ?? []) as ClassifiedCategoryRow[]);
+    const foodCats = ((foodCatsRes.data ?? []) as FoodCategoryRow[]);
+
+    const latestAdDate = maxIsoDate(ads.map((a) => a.updated_at || a.created_at));
+    const latestProductDate = maxIsoDate(products.map((p) => p.created_at));
+    const latestSellerDate = maxIsoDate(sellers.map((s) => s.created_at));
+    const latestHomeDate = maxIsoDate([
+      latestAdDate,
+      latestProductDate,
+      latestSellerDate,
+    ]);
+
+    const coreEntries = buildCoreEntries(baseUrl, {
+      home: latestHomeDate || today,
+      classifieds: latestAdDate,
+      categories: latestProductDate,
+      search: latestProductDate,
+      sellersMap: latestSellerDate,
+    });
+
+    const classifiedCategoryEntries =
+      !adsRes.error && !classifiedCatsRes.error
+        ? buildPopulatedClassifiedCategoryEntries({
+            baseUrl,
+            categories: classifiedCats,
+            ads,
+          })
+        : CLASSIFIED_CATEGORIES.map((cat): SitemapEntry => ({
+            loc: `${baseUrl}/classifieds?category=${cat}`,
+            lastmod: today,
+            changefreq: "daily",
+            priority: "0.85",
+          }));
+
+    const foodCategoryEntries =
+      !productsRes.error && !foodCatsRes.error
+        ? buildPopulatedFoodCategoryEntries({
+            baseUrl,
+            categories: foodCats,
+            products,
+          })
+        : FOOD_CATEGORIES.map((cat): SitemapEntry => ({
+            loc: `${baseUrl}/categories?category=${cat}`,
+            lastmod: today,
+            changefreq: "daily",
+            priority: "0.85",
+          }));
 
     const dynamicEntries: SitemapEntry[] = [];
 
-    if (adsRes.data && Array.isArray(adsRes.data)) {
-      for (const ad of adsRes.data) {
-        if (!ad.id) continue;
-        const modDate = formatDate(ad.updated_at || ad.created_at);
-        dynamicEntries.push({
-          loc: `${baseUrl}/classifieds/ad/${encodeURIComponent(ad.id)}`,
-          lastmod: modDate,
-          changefreq: "weekly",
-          priority: "0.80",
-        });
-      }
+    for (const ad of ads) {
+      if (!ad.id) continue;
+      dynamicEntries.push({
+        loc: `${baseUrl}/classifieds/ad/${encodeURIComponent(ad.id)}`,
+        lastmod: formatDate(ad.updated_at || ad.created_at),
+        changefreq: "weekly",
+        priority: "0.80",
+      });
     }
 
-    if (productsRes.data && Array.isArray(productsRes.data)) {
-      for (const prod of productsRes.data) {
-        if (!prod.id) continue;
-        const modDate = formatDate((prod as any).updated_at || prod.created_at);
-        dynamicEntries.push({
-          loc: `${baseUrl}/product/${encodeURIComponent(prod.id)}`,
-          lastmod: modDate,
-          changefreq: "weekly",
-          priority: "0.80",
-        });
-      }
+    for (const prod of products) {
+      if (!prod.id || !prod.available_now) continue;
+      dynamicEntries.push({
+        loc: `${baseUrl}/product/${encodeURIComponent(prod.id)}`,
+        lastmod: formatDate(prod.created_at),
+        changefreq: "weekly",
+        priority: "0.80",
+      });
     }
 
-    if (sellersRes.data && Array.isArray(sellersRes.data)) {
-      for (const seller of sellersRes.data) {
-        if (!seller.id) continue;
-        const modDate = formatDate(seller.created_at);
-        dynamicEntries.push({
-          loc: `${baseUrl}/seller/${encodeURIComponent(seller.id)}`,
-          lastmod: modDate,
-          changefreq: "weekly",
-          priority: "0.75",
-        });
-      }
+    for (const seller of sellers) {
+      if (!seller.id) continue;
+      dynamicEntries.push({
+        loc: `${baseUrl}/seller/${encodeURIComponent(seller.id)}`,
+        lastmod: formatDate(seller.created_at),
+        changefreq: "weekly",
+        priority: "0.75",
+      });
     }
 
-    const allEntries = [...staticEntries, ...dynamicEntries];
+    const allEntries = [
+      ...coreEntries,
+      ...classifiedCategoryEntries,
+      ...foodCategoryEntries,
+      ...dynamicEntries,
+    ];
     const xml = buildXml(allEntries, baseUrl);
 
     return new Response(xml, {
@@ -227,7 +416,7 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
     });
   } catch (err) {
     console.error("Dynamic sitemap generation error:", err);
-    return new Response(buildXml(staticEntries, baseUrl), {
+    return new Response(buildXml(fallbackEntries, baseUrl), {
       status: 200,
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
@@ -237,9 +426,12 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
   }
 }
 
-export const onRequestGet: PagesFunction = async (context) => {
+export async function onRequestGet(context: {
+  request: Request;
+  env?: any;
+}): Promise<Response> {
   return handleSitemap(context.request, context.env);
-};
+}
 
 export async function GET(request: Request): Promise<Response> {
   return handleSitemap(request);

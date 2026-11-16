@@ -18,9 +18,9 @@ export type PublicSupabaseEnv = {
   SUPABASE_ANON_KEY?: string;
 };
 
-type ClassifiedCategoryRow = {
+export type ClassifiedCategoryRow = {
   id: string;
-  name: string;
+  name?: string;
   parent_id: string | null;
   sort_order?: number | null;
   is_obsolete?: boolean | null;
@@ -36,7 +36,7 @@ type ClassifiedAdSummaryRow = {
   images: string[] | null;
 };
 
-type FoodCategoryRow = {
+export type FoodCategoryRow = {
   id: string;
   name: string;
   slug: string | null;
@@ -99,7 +99,7 @@ function formatClassifiedPrice(
   return priceType === "negotiable" ? `${num} ${curr} (Dogovor)` : `${num} ${curr}`;
 }
 
-function collectDescendantIds(
+export function collectDescendantIds(
   rootId: string,
   rows: ClassifiedCategoryRow[],
 ): string[] {
@@ -166,7 +166,7 @@ async function enrichClassifiedsPayload(
   categorySlug: string,
   payload: HtmlPayload,
 ): Promise<HtmlPayload> {
-  const { data: catRowsRaw } = await supabase
+  const { data: catRowsRaw, error: catError } = await supabase
     .from("classified_categories")
     .select("id, name, parent_id, sort_order, is_obsolete")
     .order("sort_order", { ascending: true });
@@ -187,11 +187,11 @@ async function enrichClassifiedsPayload(
     const targetIds = collectDescendantIds(categorySlug, activeCategories);
     adsQuery = adsQuery.in("category_id", targetIds);
     subcategoryNames = activeCategories
-      .filter((c) => c.parent_id === categorySlug)
-      .map((c) => c.name);
+      .filter((c) => c.parent_id === categorySlug && Boolean(c.name))
+      .map((c) => c.name!);
   }
 
-  const { data: adRowsRaw } = await adsQuery;
+  const { data: adRowsRaw, error: adError } = await adsQuery;
   const ads = (adRowsRaw || []) as ClassifiedAdSummaryRow[];
 
   const adLinks: HtmlLinkItem[] = ads.map((ad) => {
@@ -255,8 +255,12 @@ async function enrichClassifiedsPayload(
     (ad) => Array.isArray(ad.images) && ad.images.length > 0,
   )?.images?.[0];
 
+  const isEmptyCategory =
+    Boolean(categorySlug) && adLinks.length === 0 && !catError && !adError;
+
   return {
     ...payload,
+    robots: isEmptyCategory ? "noindex,follow" : payload.robots,
     imageUrl: firstImage
       ? normalizeImageUrl(firstImage, baseUrl)
       : payload.imageUrl,
@@ -277,7 +281,7 @@ async function enrichProductsPayload(
   categorySlug: string,
   payload: HtmlPayload,
 ): Promise<HtmlPayload> {
-  const { data: foodCatsRaw } = await supabase
+  const { data: foodCatsRaw, error: foodCatsError } = await supabase
     .from("categories")
     .select("id, name, slug, parent_id")
     .order("order", { ascending: true });
@@ -305,7 +309,7 @@ async function enrichProductsPayload(
     productsQuery = productsQuery.eq("available_now", true);
   }
 
-  const { data: productsRaw } = await productsQuery;
+  const { data: productsRaw, error: productsError } = await productsQuery;
   const products = (productsRaw || []) as ProductSummaryRow[];
 
   const productLinks: HtmlLinkItem[] = products.map((p) => {
@@ -347,8 +351,16 @@ async function enrichProductsPayload(
     (p) => Array.isArray(p.image_urls) && p.image_urls.length > 0,
   )?.image_urls?.[0];
 
+  const isEmptyFoodCategory =
+    path === PATH_CATEGORIES &&
+    Boolean(categorySlug) &&
+    productLinks.length === 0 &&
+    !foodCatsError &&
+    !productsError;
+
   return {
     ...payload,
+    robots: isEmptyFoodCategory ? "noindex,follow" : payload.robots,
     imageUrl: firstImage
       ? normalizeImageUrl(firstImage, baseUrl)
       : payload.imageUrl,
@@ -411,8 +423,10 @@ export async function enrichDirectorySeoPayload(options: {
   origin?: string;
   env?: PublicSupabaseEnv;
   basePayload: HtmlPayload;
+  supabaseClient?: SupabaseClient;
 }): Promise<HtmlPayload> {
-  const { pathname, searchParams, origin, env, basePayload } = options;
+  const { pathname, searchParams, origin, env, basePayload, supabaseClient } =
+    options;
   const normalizedPath = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
 
   // Ne obogaćuj stranice pretrage sa ?q= niti nepoznate parametre
@@ -420,7 +434,7 @@ export async function enrichDirectorySeoPayload(options: {
     return basePayload;
   }
 
-  const supabase = createAnonSupabaseClient(env);
+  const supabase = supabaseClient ?? createAnonSupabaseClient(env);
   if (!supabase) {
     return basePayload;
   }
