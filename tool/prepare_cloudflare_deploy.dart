@@ -128,6 +128,17 @@ void main() {
     stdout.writeln('Injected build hash into flutter_bootstrap.js and stripped source map references');
   }
 
+  // 5a. Ubrizgavanje determinističkog build heša u js/app-shell.js
+  //     (PWA baner + SW/keš cleanup logika izdvojena iz index.html).
+  final targetAppShell = File('${deployDir.path}/js/app-shell.js');
+  if (targetAppShell.existsSync()) {
+    var content = targetAppShell.readAsStringSync();
+    content = content.replaceAll('__BUILD_HASH__', buildHash);
+    content = content.replaceAll('{{BUILD_HASH}}', buildHash);
+    targetAppShell.writeAsStringSync(content);
+    stdout.writeln('Injected build hash into js/app-shell.js');
+  }
+
   // 5b. Ukloni sourceMappingURL iz svih preostalih .js fajlova
   for (final entity in deployDir.listSync(recursive: true)) {
     if (entity is File && entity.path.endsWith('.js')) {
@@ -166,6 +177,10 @@ void main() {
     content = content.replaceAll(
       '<script src="flutter_bootstrap.js" defer></script>',
       '<script src="flutter_bootstrap.js?v=$buildHash" defer></script>',
+    );
+    content = content.replaceAll(
+      '<script src="js/app-shell.js" defer></script>',
+      '<script src="js/app-shell.js?v=$buildHash" defer></script>',
     );
     content = content.replaceAll('__BUILD_HASH__', buildHash);
     content = content.replaceAll('{{BUILD_HASH}}', buildHash);
