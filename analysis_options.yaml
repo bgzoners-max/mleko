@@ -43,5 +43,4 @@ analyzer:
     - linux/**
     # Alati izvan `lib/` — ručne skripte, `print` je nameran CLI izlaz.
     - tool/**
-    - "lib/l10n/**"
     - ".dart_tool/**"
