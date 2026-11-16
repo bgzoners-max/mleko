@@ -66,11 +66,8 @@ export 'router_transitions.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Pomoćna funkcija za premium tranzicije između ekrana i ažuriranje SEO metapodataka.
-///
-/// Poštuje sistemsko smanjenje animacija (pristupačnost): kada je na uređaju
-/// uključeno "Remove animations" / "Reduce motion", vraća običnu stranicu
-/// bez Fade+Slide+Scale tranzicije.
+/// Određuje početnu rutu na Web platformi iz URL hash-a ili path/query parametara.
+/// Na mobilnim platformama uvek vraća `'/splash'`.
 String _resolveWebInitialLocation() {
   if (!kIsWeb) return '/splash';
   final uri = Uri.base;

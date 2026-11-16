@@ -4,7 +4,7 @@ import '../core/responsive.dart';
 
 import 'package:mleko/models/order_status_audit_log_model.dart';
 import '../core/ui_strings.dart';
-import 'package:mleko/domain/usecases/get_order_status_audit_logs.dart';
+import 'package:mleko/services/services.dart';
 import 'app_error_retry.dart';
 
 class OrderStatusAuditLogSection extends StatefulWidget {
@@ -34,7 +34,7 @@ class _OrderStatusAuditLogSectionState
     if (loader != null) {
       return loader(widget.orderId);
     }
-    return GetOrderStatusAuditLogsUseCase().call(widget.orderId);
+    return OrdersService().getOrderStatusAuditLogs(widget.orderId);
   }
 
   @override

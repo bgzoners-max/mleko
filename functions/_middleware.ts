@@ -43,7 +43,7 @@ export const onRequest: PagesFunction = async (context) => {
     return handleSitemap(request, env);
   }
 
-  // 0a. Cloudflare interni i email-protection linkovi: vratiti 410 Gone kako bi
+  // 0c. Cloudflare interni i email-protection linkovi: vratiti 410 Gone kako bi
   //     pretraživači (Google Search Console) odmah uklonili ove nepostojeće rute iz indeksa.
   if (pathname.startsWith("/cdn-cgi/")) {
     return new Response(null, {

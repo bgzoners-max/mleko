@@ -88,7 +88,9 @@ U `lib/main.dart` već postoji:
 try {
   await Firebase.initializeApp();
   await PushService.initialize();
-} catch (_) { }
+} catch (e, st) {
+  LoggerService.error('Firebase inicijalizacija nije uspela', e, stackTrace: st);
+}
 ```
 
 Za produkciju zameni sa:
@@ -104,7 +106,7 @@ await Firebase.initializeApp(
 await PushService.initialize();
 ```
 
-(ukloni `try/catch` ako želiš da vidiš greške)
+(uvek prosledi grešku i stack trace u `LoggerService.error` umesto praznog `catch`, ili pusti grešku da iskoči tokom razvoja)
 
 **Napomena:** `Firebase.initializeApp()` bez opcija može raditi u debug modu. Ako dobijеš grešku, dodaj `firebase_options.dart` kao gore.
 
