@@ -67,12 +67,8 @@ class StorageService {
   /// Timeout za R2 brisanje fajla
   static const Duration r2DeleteTimeout = Duration(seconds: 15);
 
-  /// Javni R2 domen za serviranje medija sa Cloudflare Anycast CDN-a
-  static const r2PublicBaseUrl =
-      'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev';
-
-  /// Pripremljen custom R2 CDN domen za budući prelazak sa `r2.dev`
-  static const r2CustomBaseUrl = 'https://cdn.domacimarket.rs';
+  /// Javni R2 custom domen za serviranje medija sa Cloudflare Anycast CDN-a
+  static const r2PublicBaseUrl = 'https://cdn.domacimarket.rs';
 
   /// Proverava da li javni URL pripada Cloudflare R2 skladištu.
   static bool isR2PublicUrl(String url) {

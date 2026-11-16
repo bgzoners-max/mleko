@@ -42,7 +42,7 @@ interface VerifiedUser {
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
-const R2_PUBLIC_BASE_URL = 'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev';
+const R2_PUBLIC_BASE_URL = 'https://cdn.domacimarket.rs';
 
 const ALLOWED_BUCKETS = new Set([
   'profiles',

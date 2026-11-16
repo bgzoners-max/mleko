@@ -82,6 +82,10 @@ void main() {
   });
 
   group('StorageService R2 konfiguracija i URL detekcija', () {
+    test('podrazumevani javni R2 domen je produkcioni custom CDN', () {
+      expect(StorageService.r2PublicBaseUrl, 'https://cdn.domacimarket.rs');
+    });
+
     test('upload timeout je prilagodjen sporijim vezama (60s)', () {
       expect(StorageService.r2UploadTimeout, const Duration(seconds: 60));
     });
@@ -128,7 +132,7 @@ void main() {
             jsonEncode({
               'success': true,
               'url':
-                  'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev/product-images/u1/test.jpg',
+                  'https://cdn.domacimarket.rs/product-images/u1/test.jpg',
             }),
             200,
             headers: {'content-type': 'application/json'},
@@ -145,7 +149,7 @@ void main() {
 
       expect(
         url,
-        'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev/product-images/u1/test.jpg',
+        'https://cdn.domacimarket.rs/product-images/u1/test.jpg',
       );
       expect(captured?.method, 'POST');
       expect(captured?.headers['Authorization'], 'Bearer jwt-token-123');

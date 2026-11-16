@@ -357,6 +357,10 @@ Deno.test("upload and delete succeed for owner with valid PNG/WebP/JPEG images",
   const pngBody = await pngRes.json();
   assertEquals(pngBody.success, true);
   assertEquals(pngBody.path, `product-images/${USER_ID}/p1.png`);
+  assertEquals(
+    pngBody.url,
+    `https://cdn.domacimarket.rs/product-images/${USER_ID}/p1.png`,
+  );
 
   const webpRes = await handleUploadRequest(
     new Request(
@@ -395,7 +399,7 @@ Deno.test("upload uses R2_PUBLIC_BASE_URL override when provided without trailin
   const bucket = new MockBucket();
   const env: UploadEnv = {
     ...makeEnv(bucket),
-    R2_PUBLIC_BASE_URL: "https://cdn.domacimarket.rs/",
+    R2_PUBLIC_BASE_URL: "https://media.domacimarket.rs/",
   };
 
   const res = await handleUploadRequest(
@@ -417,7 +421,7 @@ Deno.test("upload uses R2_PUBLIC_BASE_URL override when provided without trailin
   const body = await res.json();
   assertEquals(
     body.url,
-    `https://cdn.domacimarket.rs/product-images/${USER_ID}/p2.jpg`,
+    `https://media.domacimarket.rs/product-images/${USER_ID}/p2.jpg`,
   );
 });
 

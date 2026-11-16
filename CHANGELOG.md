@@ -8,7 +8,7 @@ Format prati [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - **Varijante i podjedinice proizvoda**: podrška za višestruke varijante pakovanja/ukusa/vrsta sa cenama po varijanti (`g`/`ml` odvojeno od `kg`/`L`) i ujednačeno formatiranje zaliha.
 - **Registracija i mapa**: istaknuti `Registruj se` pozivi kroz aplikaciju sa tabovima `Registruj se | Prijava` na `/login`, deljenje URL-ova proizvoda i profila prodavaca, `5x4` desktop mreža kategorija i zvanična GeoJSON kontura Republike Srbije (uključujući KiM) preko OSM mape.
-- **R2 custom domen priprema**: podrška za konfigurabilni `R2_PUBLIC_BASE_URL` env u `functions/api/upload.ts`, `https://cdn.domacimarket.rs` u CSP-u (`web/_headers`) i prepoznavanje custom R2 domena u `StorageService.isR2PublicUrl`.
+- **R2 custom CDN domen (`cdn.domacimarket.rs`)**: primarni javni domen za R2 slike u `functions/api/upload.ts` i `StorageService.r2PublicBaseUrl` prebačen sa testnog `r2.dev` na `https://cdn.domacimarket.rs` (sa podrškom za `R2_PUBLIC_BASE_URL` env override), uz očuvanu podršku za postojeće `r2.dev` URL-ove u CSP-u (`web/_headers`) i `StorageService.isR2PublicUrl`.
 
 ### Changed
 - **Upload otpornost**: R2 upload timeout u `StorageService` podignut sa `15s` na `60s` (`StorageService.r2UploadTimeout`) radi pouzdanijeg rada na sporijim mobilnim vezama.

@@ -70,13 +70,20 @@ void main() {
       );
     });
 
-    test('radi za Cloudflare R2 javne URL-ove', () {
+    test('radi za Cloudflare R2 javne i custom CDN URL-ove', () {
       expect(
         StorageService.extractPathFromPublicUrl(
           'product-images',
           'https://pub-2969918b7c1b48209c4865c154b4e51d.r2.dev/product-images/uid/slika.webp?t=999',
         ),
         'uid/slika.webp',
+      );
+      expect(
+        StorageService.extractPathFromPublicUrl(
+          'product-images',
+          'https://cdn.domacimarket.rs/product-images/uid/nova.jpg',
+        ),
+        'uid/nova.jpg',
       );
     });
 
