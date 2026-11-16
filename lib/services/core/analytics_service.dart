@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import '../../models/classified_ad_model.dart';
 import '../../models/product_model.dart';
+import 'logger_service.dart';
 
 class AnalyticsService {
   static final AnalyticsService _instance = AnalyticsService._internal();
@@ -17,13 +19,27 @@ class AnalyticsService {
 
   final FirebaseAnalytics? _customAnalytics;
 
+  /// Na Web platformi `firebase_analytics` učitava `gtag/js?id=<measurementId>`.
+  /// Ako `measurementId` nije podešen, preskačemo inicijalizaciju da ne šalje `id=undefined`.
+  @visibleForTesting
+  static bool isWebMeasurementConfigured(String? measurementId) =>
+      measurementId != null && measurementId.trim().isNotEmpty;
+
   FirebaseAnalytics? get _analytics {
     if (_customAnalytics != null) return _customAnalytics;
     try {
-      if (Firebase.apps.isNotEmpty) {
-        return FirebaseAnalytics.instance;
+      if (Firebase.apps.isEmpty) return null;
+      if (kIsWeb &&
+          !isWebMeasurementConfigured(Firebase.app().options.measurementId)) {
+        return null;
       }
-    } catch (_) {}
+      return FirebaseAnalytics.instance;
+    } catch (e) {
+      LoggerService.warning(
+        'FirebaseAnalytics nije dostupan',
+        extra: {'error': e.toString()},
+      );
+    }
     return null;
   }
 

@@ -56,5 +56,15 @@ void main() {
         completes,
       );
     });
+
+    test('isWebMeasurementConfigured odbija null/prazan ID a prihvata GA4 G- ID',
+        () {
+      expect(AnalyticsService.isWebMeasurementConfigured(null), isFalse);
+      expect(AnalyticsService.isWebMeasurementConfigured('   '), isFalse);
+      expect(
+        AnalyticsService.isWebMeasurementConfigured('G-ABC123DEF4'),
+        isTrue,
+      );
+    });
   });
 }
