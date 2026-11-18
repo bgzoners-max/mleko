@@ -4,17 +4,25 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mleko/models/product_model.dart';
+import 'package:mleko/models/product_reviews_data.dart';
 import 'package:mleko/models/user_model.dart';
 import 'package:mleko/providers/app_settings_provider.dart';
 import 'package:mleko/providers/app_state.dart';
 import 'package:mleko/providers/cart_provider.dart';
-import 'package:mleko/services/catalog/products_service.dart';
+import 'package:mleko/services/services.dart';
 import 'package:mleko/widgets/product/product_cart_block.dart';
+import 'package:mleko/widgets/product/product_info_section.dart';
+import 'package:mleko/widgets/product/seller_chat_button.dart';
 
 class _FakeProductsService extends Fake implements ProductsService {
   @override
   Future<Map<String, ProductModel>> getProductsByIds(List<String> ids) async =>
       {};
+}
+
+class _FakeUsersService extends Fake implements UsersService {
+  @override
+  Future<UserModel?> getUser(String id) async => null;
 }
 
 class _FakeAppState extends ChangeNotifier implements AppState {
@@ -43,11 +51,11 @@ ProductModel _sampleProduct({String sellerId = 'seller-1'}) => ProductModel(
       createdAt: DateTime(2026, 1, 2),
     );
 
-Widget _wrapBlock({
+Widget _wrapWithProviders({
   required AppState appState,
   required CartProvider cartProvider,
-  required ProductModel product,
-  bool desktopMode = false,
+  required Widget child,
+  double width = 360,
 }) {
   return MultiProvider(
     providers: [
@@ -56,15 +64,12 @@ Widget _wrapBlock({
         create: (_) => AppSettingsProvider(),
       ),
       ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
+      Provider<UsersService>(create: (_) => _FakeUsersService()),
     ],
     child: MaterialApp(
       home: Scaffold(
-        body: SizedBox(
-          width: desktopMode ? 600 : 360,
-          child: ProductCartBlock(
-            product: product,
-            desktopMode: desktopMode,
-          ),
+        body: SingleChildScrollView(
+          child: SizedBox(width: width, child: child),
         ),
       ),
     ),
@@ -76,7 +81,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('renders Pošalji poruku OutlinedButton on mobile for buyer',
+  testWidgets('renders Pošalji poruku OutlinedButton on mobile inside ProductCartBlock',
       (tester) async {
     final appState = _FakeAppState(
       user: const UserModel(
@@ -90,10 +95,11 @@ void main() {
     final cartProvider = CartProvider(productsService: _FakeProductsService());
 
     await tester.pumpWidget(
-      _wrapBlock(
+      _wrapWithProviders(
         appState: appState,
         cartProvider: cartProvider,
-        product: _sampleProduct(sellerId: 'seller-1'),
+        width: 360,
+        child: ProductCartBlock(product: _sampleProduct(sellerId: 'seller-1')),
       ),
     );
     await tester.pumpAndSettle();
@@ -107,7 +113,7 @@ void main() {
     expect(size.width, 360);
   });
 
-  testWidgets('renders Pošalji poruku OutlinedButton with minWidth on desktop',
+  testWidgets('omits Pošalji poruku inside ProductCartBlock in desktopMode',
       (tester) async {
     final appState = _FakeAppState(
       user: const UserModel(
@@ -121,24 +127,68 @@ void main() {
     final cartProvider = CartProvider(productsService: _FakeProductsService());
 
     await tester.pumpWidget(
-      _wrapBlock(
+      _wrapWithProviders(
         appState: appState,
         cartProvider: cartProvider,
-        product: _sampleProduct(sellerId: 'seller-1'),
-        desktopMode: true,
+        width: 600,
+        child: ProductCartBlock(
+          product: _sampleProduct(sellerId: 'seller-1'),
+          desktopMode: true,
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
-    final buttonFinder = find.widgetWithText(OutlinedButton, 'Pošalji poruku');
-    expect(buttonFinder, findsOneWidget);
-
-    final size = tester.getSize(buttonFinder);
-    expect(size.height, 46);
-    expect(size.width, greaterThanOrEqualTo(220));
+    expect(find.widgetWithText(OutlinedButton, 'Pošalji poruku'), findsNothing);
   });
 
-  testWidgets('hides Pošalji poruku button when user owns the product',
+  testWidgets(
+      'renders Pošalji poruku next to Podeli on desktop ProductInfoSection',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final appState = _FakeAppState(
+      user: const UserModel(
+        id: 'buyer-1',
+        role: UserRole.buyer,
+        displayName: 'Kupac',
+        phone: '+38160111222',
+        city: 'Beograd',
+      ),
+    );
+    final cartProvider = CartProvider(productsService: _FakeProductsService());
+
+    await tester.pumpWidget(
+      _wrapWithProviders(
+        appState: appState,
+        cartProvider: cartProvider,
+        width: 620,
+        child: ProductInfoSection(
+          product: _sampleProduct(sellerId: 'seller-1'),
+          reviewsFuture: Future.value(
+            const ProductReviewsData(averageRating: null, reviews: []),
+          ),
+          onScrollToReviews: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final shareFinder = find.widgetWithText(OutlinedButton, 'Podeli');
+    final chatFinder = find.widgetWithText(OutlinedButton, 'Pošalji poruku');
+    expect(shareFinder, findsOneWidget);
+    expect(chatFinder, findsOneWidget);
+
+    final shareRect = tester.getRect(shareFinder);
+    final chatRect = tester.getRect(chatFinder);
+    expect(chatRect.left, greaterThan(shareRect.right));
+    expect((chatRect.center.dy - shareRect.center.dy).abs(), lessThan(4));
+  });
+
+  testWidgets('hides SellerChatButton when user owns the product',
       (tester) async {
     final appState = _FakeAppState(
       user: const UserModel(
@@ -152,10 +202,14 @@ void main() {
     final cartProvider = CartProvider(productsService: _FakeProductsService());
 
     await tester.pumpWidget(
-      _wrapBlock(
+      _wrapWithProviders(
         appState: appState,
         cartProvider: cartProvider,
-        product: _sampleProduct(sellerId: 'seller-1'),
+        child: const SellerChatButton(
+          productId: 'prod-1',
+          sellerId: 'seller-1',
+          isDesktop: true,
+        ),
       ),
     );
     await tester.pumpAndSettle();

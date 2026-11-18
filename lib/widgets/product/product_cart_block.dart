@@ -12,6 +12,7 @@ import '../../providers/cart_provider.dart';
 import '../../services/services.dart';
 import '../../utils/quantity_engine.dart';
 import '../bounce_tap_button.dart';
+import 'seller_chat_button.dart';
 import 'seller_inline_cart_section.dart';
 
 class ProductCartBlock extends StatefulWidget {
@@ -57,7 +58,8 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
       if (user == null || user.isGuest) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registruj se ili se prijavi da bi poslao porudžbinu.'),
+            content:
+                Text('Registruj se ili se prijavi da bi poslao porudžbinu.'),
           ),
         );
         context.go('/login');
@@ -93,8 +95,9 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
               onPressed: () =>
                   context.push('/checkout-seller/${widget.product.sellerId}'),
             ),
-            behavior:
-                isWideLayout ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
+            behavior: isWideLayout
+                ? SnackBarBehavior.floating
+                : SnackBarBehavior.fixed,
             width: isWideLayout ? 420 : null,
           ),
         );
@@ -111,36 +114,6 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
     } finally {
       if (mounted) {
         setState(() => _isAdding = false);
-      }
-    }
-  }
-
-  Future<void> _openChat() async {
-    final user = context.read<AppState>().user;
-    if (user == null || user.isGuest) {
-      unawaited(context.push('/login'));
-      return;
-    }
-    if (user.id == widget.product.sellerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ovo je vaš proizvod.')),
-      );
-      return;
-    }
-    try {
-      final convId = await context
-          .read<ChatService>()
-          .getOrCreateConversation(
-            user.id,
-            widget.product.sellerId,
-            productId: widget.product.id,
-          );
-      if (mounted) unawaited(context.push('/chat/$convId'));
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nije moguće otvoriti ćaskanje.')),
-        );
       }
     }
   }
@@ -290,12 +263,13 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
               ),
             ),
           ),
-        const SizedBox(height: 10),
-        _SellerChatPrompt(
-          sellerId: product.sellerId,
-          onTap: _openChat,
-          isDesktop: isDesktop,
-        ),
+        if (!isDesktop) ...[
+          const SizedBox(height: 10),
+          SellerChatButton(
+            productId: product.id,
+            sellerId: product.sellerId,
+          ),
+        ],
         const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
@@ -388,61 +362,5 @@ class _ProductQuantityStepper extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _SellerChatPrompt extends StatelessWidget {
-  final String sellerId;
-  final VoidCallback onTap;
-  final bool isDesktop;
-
-  const _SellerChatPrompt({
-    required this.sellerId,
-    required this.onTap,
-    this.isDesktop = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final user = context.select((AppState s) => s.user);
-    if (user != null && !user.isGuest && user.id == sellerId) {
-      return const SizedBox.shrink();
-    }
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = isDark ? AmazonColors.lightGreen : AmazonColors.green;
-
-    final button = SizedBox(
-      height: 46,
-      width: isDesktop ? null : double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => withHaptic(onTap),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: accentColor,
-          backgroundColor: accentColor.withValues(alpha: isDark ? 0.14 : 0.08),
-          side: BorderSide(color: accentColor, width: 1.4),
-          minimumSize: isDesktop ? const Size(220, 46) : null,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 19),
-        label: const Text(
-          'Pošalji poruku',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-
-    return isDesktop
-        ? Align(
-            alignment: Alignment.centerLeft,
-            child: button,
-          )
-        : button;
   }
 }

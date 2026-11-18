@@ -14,7 +14,9 @@ import '../../services/services.dart';
 import '../app_share_sheet.dart';
 import '../common/verified_badge.dart';
 import 'product_cart_block.dart';
+import 'product_description.dart';
 import 'rating_summary_badge.dart';
+import 'seller_chat_button.dart';
 
 class ProductInfoSection extends StatefulWidget {
   final ProductModel product;
@@ -145,6 +147,13 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
                       style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                 ),
               ),
+              if (isDesktop)
+                SellerChatButton(
+                  productId: product.id,
+                  sellerId: product.sellerId,
+                  isDesktop: true,
+                  compact: true,
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -190,7 +199,7 @@ class _ProductInfoSectionState extends State<ProductInfoSection> {
           ),
           if (product.description.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
-            _ProductDescription(description: product.description.trim()),
+            ProductDescription(description: product.description.trim()),
           ],
         ],
       ),
@@ -654,44 +663,6 @@ class _SpecTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProductDescription extends StatelessWidget {
-  final String description;
-  const _ProductDescription({required this.description});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Opis proizvoda',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          description,
-          style: TextStyle(
-            fontSize: 13,
-            height: 1.45,
-            color: isDark ? Colors.grey.shade300 : const Color(0xFF333333),
           ),
         ),
       ],
