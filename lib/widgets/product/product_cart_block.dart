@@ -290,13 +290,13 @@ class _ProductCartBlockState extends State<ProductCartBlock> {
               ),
             ),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         _SellerChatPrompt(
           sellerId: product.sellerId,
           onTap: _openChat,
           isDesktop: isDesktop,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
           child: SellerInlineCartSection(sellerId: product.sellerId),
@@ -410,35 +410,39 @@ class _SellerChatPrompt extends StatelessWidget {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final linkColor = isDark ? AmazonColors.lightGreen : AmazonColors.link;
+    final accentColor = isDark ? AmazonColors.lightGreen : AmazonColors.green;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          mainAxisSize: isDesktop ? MainAxisSize.min : MainAxisSize.max,
-          mainAxisAlignment:
-              isDesktop ? MainAxisAlignment.start : MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline_rounded,
-              size: 15,
-              color: linkColor,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Imaš pitanje? Pošalji poruku prodavcu',
-              style: TextStyle(
-                color: linkColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 12.5,
-              ),
-            ),
-          ],
+    final button = SizedBox(
+      height: 46,
+      width: isDesktop ? null : double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => withHaptic(onTap),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accentColor,
+          backgroundColor: accentColor.withValues(alpha: isDark ? 0.14 : 0.08),
+          side: BorderSide(color: accentColor, width: 1.4),
+          minimumSize: isDesktop ? const Size(220, 46) : null,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 19),
+        label: const Text(
+          'Pošalji poruku',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 14,
+          ),
         ),
       ),
     );
+
+    return isDesktop
+        ? Align(
+            alignment: Alignment.centerLeft,
+            child: button,
+          )
+        : button;
   }
 }
