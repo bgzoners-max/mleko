@@ -140,20 +140,20 @@ class _RegisterFormState extends State<RegisterForm> {
       return;
     }
 
-    context.read<AppState>().setLoading(true);
+    final appState = context.read<AppState>()..setLoading(true);
     try {
-      await context.read<AppState>().authService.registerWithEmail(
-            email,
-            password,
-            displayName:
-                _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
-            phone:
-                _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
-            city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-            isSeller: false,
-          );
+      await appState.authService.registerWithEmail(
+        email,
+        password,
+        displayName:
+            _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+        city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
+        isSeller: false,
+      );
+      appState.setLoading(false);
       if (mounted) {
-        context.read<AppState>().markPendingEmailVerification();
+        appState.markPendingEmailVerification();
         context.go('/verify-email', extra: email);
       }
     } on Exception catch (e) {
@@ -163,7 +163,9 @@ class _RegisterFormState extends State<RegisterForm> {
         if (raw.contains('already registered') ||
             raw.contains('user already registered') ||
             (raw.contains('23505') && raw.contains('email'))) {
-          context.read<AppState>().markPendingEmailVerification();
+          appState
+            ..setLoading(false)
+            ..markPendingEmailVerification();
           context.go('/verify-email', extra: email);
           return;
         } else if (raw.contains('phone') &&
@@ -182,7 +184,7 @@ class _RegisterFormState extends State<RegisterForm> {
         await ErrorDialog.show(context, error: error, onRetry: _submit);
       }
     } finally {
-      if (mounted) context.read<AppState>().setLoading(false);
+      appState.setLoading(false);
     }
   }
 

@@ -276,7 +276,7 @@ export async function handleSitemap(request: Request, env?: any): Promise<Respon
     const [adsRes, productsRes, sellersRes, classifiedCatsRes, foodCatsRes] =
       await Promise.all([
         supabase
-          .from("classified_ads")
+          .from("public_classified_ads")
           .select("id, category_id, updated_at, created_at")
           .eq("status", "active")
           .order("created_at", { ascending: false })

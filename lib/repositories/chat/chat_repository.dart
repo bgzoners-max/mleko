@@ -82,6 +82,8 @@ class SupabaseChatRepository implements ChatRepository {
             .from('conversations')
             .select('id')
             .eq('order_id', orderId)
+            .eq('buyer_id', buyerId)
+            .eq('seller_id', sellerId)
             .maybeSingle();
         if (existingByOrder != null) {
           return existingByOrder['id'] as String?;
@@ -140,11 +142,8 @@ class SupabaseChatRepository implements ChatRepository {
           return rpcRes.toString();
         }
       } on PostgrestException catch (e) {
-        if (e.code != '42883' && e.message != 'Not Found') {
-          LoggerService.warning(
-            'get_or_create_conversation RPC failed, falling back to direct upsert',
-            extra: {'error': e.toString(), 'code': e.code},
-          );
+        if (e.code != '42883' && e.code != 'PGRST202') {
+          rethrow;
         }
       }
 

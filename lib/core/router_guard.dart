@@ -3,37 +3,48 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/app_state.dart';
 
-String? _sanitizeReturnTo(String? rawReturnTo) {
-  if (rawReturnTo == null || rawReturnTo.isEmpty) return null;
-  final String decoded;
-  try {
-    decoded = Uri.decodeComponent(rawReturnTo);
-  } on ArgumentError {
-    return null;
+final RegExp _invalidPercentEncodingRe = RegExp(r'%(?![0-9a-fA-F]{2})');
+
+String _normalizePath(String path) {
+  if (path.length > 1 && path.endsWith('/')) {
+    return path.replaceAll(RegExp(r'/+$'), '');
   }
-  final trimmed = decoded.trim();
+  return path.isEmpty ? '/' : path;
+}
+
+/// Validira i sanitizuje internu `returnTo` putanju (sprečava open-redirect,
+/// dvostruko dekodiranje dijakritika i petlje ka `/splash`, `/login`, `/register`).
+String? sanitizeReturnTo(String? rawReturnTo) {
+  if (rawReturnTo == null || rawReturnTo.isEmpty) return null;
+  final trimmed = rawReturnTo.trim();
   if (!trimmed.startsWith('/') ||
       trimmed.startsWith('//') ||
-      trimmed.startsWith('/\\')) {
+      trimmed.startsWith('/\\') ||
+      _invalidPercentEncodingRe.hasMatch(trimmed)) {
     return null;
   }
   final parsed = Uri.tryParse(trimmed);
   if (parsed == null ||
       parsed.hasScheme ||
       parsed.hasAuthority ||
-      parsed.host.isNotEmpty ||
-      parsed.path == '/splash') {
+      parsed.host.isNotEmpty) {
+    return null;
+  }
+  final normalized = _normalizePath(parsed.path);
+  if (normalized == '/splash' ||
+      normalized == '/login' ||
+      normalized == '/register') {
     return null;
   }
   return trimmed;
 }
 
-/// Centralna zaštita i preusmeravanje ruta (Guest flow, Auth guards, Admin, Email potvrda).
+/// Centralna zaštita i preusmeravanje ruta (Guest flow, Auth guards, Seller, Admin, Email potvrda).
 String? routerRedirect(BuildContext context, GoRouterState state, AppState appState) {
-  final loc = state.uri.path;
+  final loc = _normalizePath(state.uri.path);
   if (loc == '/splash') {
     if (!appState.authChecked || appState.isLoading) return null;
-    return _sanitizeReturnTo(state.uri.queryParameters['returnTo']);
+    return sanitizeReturnTo(state.uri.queryParameters['returnTo']);
   }
   if (loc.startsWith('/onboarding')) return null;
   if (loc == '/verify-email') return null;
@@ -59,9 +70,14 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
       !loc.startsWith('/classifieds/my') &&
       !loc.startsWith('/classifieds/saved-searches');
 
+  final isPublicProductRoute =
+      loc.startsWith('/product/') &&
+      loc != '/product/edit' &&
+      !loc.startsWith('/product/edit/');
+
   final isPublicRoute = loc == '/' ||
       loc.startsWith('/search') ||
-      loc.startsWith('/product/') ||
+      isPublicProductRoute ||
       loc.startsWith('/p/') ||
       loc.startsWith('/ad/') ||
       loc.startsWith('/categories') ||
@@ -77,7 +93,9 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
   }
 
   if (loc.startsWith('/login') || loc.startsWith('/register')) {
-    if (appState.user != null && !appState.user!.isGuest) return '/';
+    if (appState.user != null && !appState.user!.isGuest) {
+      return sanitizeReturnTo(state.uri.queryParameters['returnTo']) ?? '/';
+    }
     return null;
   }
 
@@ -96,9 +114,20 @@ String? routerRedirect(BuildContext context, GoRouterState state, AppState appSt
   }
 
   // Admin stranice — samo korisnici sa is_admin = true
-  if (loc.startsWith('/admin/')) {
+  if (loc == '/admin' || loc.startsWith('/admin/')) {
     final u = appState.user;
     if (u == null || !u.isAdmin) return '/';
+  }
+
+  // Prodavačke rute — samo registrovani prodavci
+  final isSellerOnlyRoute = loc == '/add-product' ||
+      loc == '/product/edit' ||
+      loc.startsWith('/product/edit/') ||
+      loc == '/seller-dashboard' ||
+      loc == '/seller-settings';
+  if (isSellerOnlyRoute) {
+    final u = appState.user;
+    if (u == null || u.isGuest || !u.isSeller) return '/';
   }
 
   // Stranica recenzija — samo vlasnik prodavnice (kupci i gosti na javni profil).

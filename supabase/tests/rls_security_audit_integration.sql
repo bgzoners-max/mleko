@@ -149,4 +149,41 @@ BEGIN
   END IF;
 END $$;
 
+-- 8. Provera Paket 1 (P0 bezbednosno očvršćavanje):
+--    - zabrana direktnog INSERT-a na orders i order_items za authenticated/anon
+--    - zabrana klijentskog DELETE na conversations
+--    - buyer_reviews trigger i RLS provera porudžbine
+--    - is_admin() izvršiv za anon i authenticated
+--    - audit_product_ordering nije dostupan anon/authenticated ulozi
+DO $$
+BEGIN
+  IF has_table_privilege('authenticated', 'public.orders', 'INSERT') THEN
+    RAISE EXCEPTION 'authenticated ne sme imati direktan INSERT na public.orders!';
+  END IF;
+
+  IF has_table_privilege('authenticated', 'public.order_items', 'INSERT') THEN
+    RAISE EXCEPTION 'authenticated ne sme imati direktan INSERT na public.order_items!';
+  END IF;
+
+  IF has_table_privilege('authenticated', 'public.conversations', 'DELETE') THEN
+    RAISE EXCEPTION 'authenticated ne sme imati DELETE na public.conversations!';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_validate_seller_buyer_review_submission'
+      AND tgrelid = 'public.buyer_reviews'::regclass
+  ) THEN
+    RAISE EXCEPTION 'Trigger trg_validate_seller_buyer_review_submission nedostaje na public.buyer_reviews!';
+  END IF;
+
+  IF NOT has_function_privilege('anon', 'public.is_admin()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'anon mora imati EXECUTE na public.is_admin() zbog anon RLS politika!';
+  END IF;
+
+  IF has_function_privilege('anon', 'public.audit_product_ordering(int)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'anon ne sme imati EXECUTE na public.audit_product_ordering(int)!';
+  END IF;
+END $$;
+
 ROLLBACK;

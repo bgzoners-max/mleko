@@ -260,6 +260,103 @@ void main() {
         appState,
       );
       expect(safe, '/search?q=sir&city=Nis');
+
+      // Encoded Serbian diacritics must not be double-decoded or dropped
+      const encodedDiacritics = '/search?q=%C5%A1ljiva';
+      final safeDiacritics = routerRedirect(
+        context,
+        _FakeGoRouterState('/splash?returnTo=${Uri.encodeComponent(encodedDiacritics)}'),
+        appState,
+      );
+      expect(safeDiacritics, encodedDiacritics);
+    });
+
+    test('protects /product/edit/:id and seller-only routes from guests and buyers', () {
+      final sellerRoutes = [
+        '/product/edit/prod-123',
+        '/product/edit',
+        '/add-product',
+        '/seller-dashboard',
+        '/seller-settings',
+      ];
+
+      // Guest -> /login?returnTo=...
+      appState
+        ..authChecked = true
+        ..isLoading = false
+        ..user = null;
+      for (final route in sellerRoutes) {
+        final res = routerRedirect(context, _FakeGoRouterState(route), appState);
+        expect(res, '/login?returnTo=${Uri.encodeComponent(route)}',
+            reason: 'Guest must be redirected to login for $route');
+      }
+
+      // Buyer -> /
+      appState.user = const UserModel(
+        id: 'buyer-1',
+        email: 'buyer@test.rs',
+        role: UserRole.buyer,
+        isGuest: false,
+      );
+      for (final route in sellerRoutes) {
+        final res = routerRedirect(context, _FakeGoRouterState(route), appState);
+        expect(res, '/', reason: 'Buyer must be blocked from seller route $route');
+      }
+
+      // Seller -> allowed
+      appState.user = const UserModel(
+        id: 'seller-1',
+        email: 'seller@test.rs',
+        role: UserRole.seller,
+        isGuest: false,
+      );
+      for (final route in sellerRoutes) {
+        final res = routerRedirect(context, _FakeGoRouterState(route), appState);
+        expect(res, isNull, reason: 'Seller should access $route');
+      }
+    });
+
+    test('trailing slash on /seller/:id/reviews/ cannot bypass owner guard', () {
+      appState.user = const UserModel(
+        id: 'buyer-1',
+        role: UserRole.buyer,
+      );
+      final res = routerRedirect(
+        context,
+        _FakeGoRouterState('/seller/seller-other/reviews/'),
+        appState,
+      );
+      expect(res, '/seller/seller-other');
+    });
+
+    test('logged-in user on /login or /register honors safe returnTo and rejects loops', () {
+      appState.user = const UserModel(
+        id: 'user-1',
+        email: 'user@test.rs',
+        role: UserRole.buyer,
+        isGuest: false,
+      );
+
+      final toOrders = routerRedirect(
+        context,
+        _FakeGoRouterState('/login?returnTo=${Uri.encodeComponent('/orders')}'),
+        appState,
+      );
+      expect(toOrders, '/orders');
+
+      final loopLogin = routerRedirect(
+        context,
+        _FakeGoRouterState('/login?returnTo=${Uri.encodeComponent('/login')}'),
+        appState,
+      );
+      expect(loopLogin, '/');
+
+      final openRedirect = routerRedirect(
+        context,
+        _FakeGoRouterState('/register?returnTo=${Uri.encodeComponent('https://evil.example')}'),
+        appState,
+      );
+      expect(openRedirect, '/');
     });
   });
 }

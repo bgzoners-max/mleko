@@ -6,6 +6,7 @@ import 'guest_quick_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router_guard.dart';
 import '../../models/app_error.dart';
 import '../../providers/app_state.dart';
 import '../error_dialog.dart';
@@ -88,18 +89,20 @@ class LoginFormState extends State<LoginForm> {
       setState(() => _error = 'Unesite email i lozinku.');
       return;
     }
-    context.read<AppState>().setLoading(true);
+    final appState = context.read<AppState>()..setLoading(true);
     try {
-      await context.read<AppState>().authService.signInWithEmail(
-            _email.text.trim(),
-            _password.text,
-          );
+      await appState.authService.signInWithEmail(
+        _email.text.trim(),
+        _password.text,
+      );
       _failedAttempts = 0;
       _lockoutTimer?.cancel();
       _lockoutSeconds = 0;
+      appState.setLoading(false);
       if (mounted) {
-        final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
-        context.go(returnTo ?? '/');
+        final rawReturnTo =
+            GoRouterState.of(context).uri.queryParameters['returnTo'];
+        context.go(sanitizeReturnTo(rawReturnTo) ?? '/');
       }
     } catch (e) {
       if (mounted) {
@@ -123,7 +126,7 @@ class LoginFormState extends State<LoginForm> {
             error: error, onRetry: _isLockedOut ? null : _submit);
       }
     } finally {
-      if (mounted) context.read<AppState>().setLoading(false);
+      appState.setLoading(false);
     }
   }
 
@@ -138,14 +141,16 @@ class LoginFormState extends State<LoginForm> {
       try {
         await appState.authService.signOut();
       } catch (e) {
-        LoggerService.warning('signOut guest failed in _guest', extra: {'error': e.toString()});
+        LoggerService.warning('signOut guest failed in _guest',
+            extra: {'error': e.toString()});
       }
     }
     if (mounted) {
       try {
         context.go('/');
       } catch (e) {
-        LoggerService.warning('Navigation to / failed in _guest', extra: {'error': e.toString()});
+        LoggerService.warning('Navigation to / failed in _guest',
+            extra: {'error': e.toString()});
       }
     }
   }
@@ -300,8 +305,7 @@ class LoginFormState extends State<LoginForm> {
                               )
                             : const Icon(Icons.mark_email_read_outlined,
                                 size: 16),
-                        label: const Text(
-                            'Pošalji ponovo aktivacioni email'),
+                        label: const Text('Pošalji ponovo aktivacioni email'),
                       ),
                     ),
                   ],
@@ -456,8 +460,7 @@ class LoginFormState extends State<LoginForm> {
                     () => context.push('/login?tab=register'),
                 child: const Text('Registruj se',
                     style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF245938))),
+                        fontWeight: FontWeight.w800, color: Color(0xFF245938))),
               ),
             ],
           ),
@@ -503,4 +506,3 @@ class LoginFormState extends State<LoginForm> {
     );
   }
 }
-

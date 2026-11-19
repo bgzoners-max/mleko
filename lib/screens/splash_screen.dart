@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
+import '../core/router_guard.dart';
 import '../providers/app_state.dart';
 import '../services/auth/auth_service.dart';
 
@@ -30,9 +31,9 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.wait([
       cleanSessionFuture,
       appState.connectivity.checkReachability().timeout(
-        const Duration(milliseconds: 1500),
-        onTimeout: () => appState.connectivity.isOnline,
-      ),
+            const Duration(milliseconds: 1500),
+            onTimeout: () => appState.connectivity.isOnline,
+          ),
     ]);
 
     if (!mounted) return;
@@ -50,14 +51,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    final rawReturnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
-    if (rawReturnTo != null && rawReturnTo.isNotEmpty) {
-      final decoded = Uri.decodeComponent(rawReturnTo);
-      final decodedUri = Uri.tryParse(decoded);
-      if (decodedUri != null && decodedUri.path != '/splash') {
-        context.go(decoded);
-        return;
-      }
+    final rawReturnTo =
+        GoRouterState.of(context).uri.queryParameters['returnTo'];
+    final safeReturnTo = sanitizeReturnTo(rawReturnTo);
+    if (safeReturnTo != null) {
+      context.go(safeReturnTo);
+      return;
     }
     context.go('/');
   }
