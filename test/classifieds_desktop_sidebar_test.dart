@@ -58,6 +58,8 @@ class MockClassifiedsService implements ClassifiedsService {
     int limit = 24,
     int offset = 0,
     DateTime? lastCreatedAt,
+    bool? lastIsFeatured,
+    String? lastId,
   }) async =>
       [];
 

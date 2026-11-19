@@ -187,13 +187,17 @@ class _CheckoutFormState extends State<_CheckoutForm> {
       setState(() => _error = 'Proizvod je trenutno nedostupan.');
       return;
     }
-    final qty = NumberInputUtils.parseDecimal(_quantityController.text);
+    final qty = NumberInputUtils.parseDecimal(
+      _quantityController.text,
+      allowThousands: false,
+      maxDecimals: 3,
+    );
     if (qty == null || qty < widget.product.minOrderKg) {
       setState(() =>
           _error = 'Minimalna porudžbina: ${widget.product.minOrderFormatted}');
       return;
     }
-    if (widget.product.availableKg > 0 && qty > widget.product.availableKg) {
+    if (widget.product.exceedsAvailableStock(qty)) {
       setState(() => _error =
           'Maksimalna dostupna količina: ${widget.product.availableFormatted}');
       return;

@@ -349,7 +349,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
             '${item.product.name}: minimalno ${item.product.minOrderFormatted}');
         return;
       }
-      if (item.product.hasStockInfo && item.quantity > item.product.availableKg) {
+      if (item.product.exceedsAvailableStock(item.quantity)) {
         setState(() => _error =
             '${item.product.name}: maksimalno dostupno ${item.product.availableFormatted}.');
         return;
@@ -400,6 +400,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
                     quantityKg: e.quantity,
                     unitType: e.product.unitType,
                     unitPrice: e.product.pricePerKg,
+                    totalPrice: e.product.totalPriceForQuantity(e.quantity),
                     variantId: e.product.selectedVariant?.id,
                     variantLabel: e.product.selectedVariant?.label,
                   ))

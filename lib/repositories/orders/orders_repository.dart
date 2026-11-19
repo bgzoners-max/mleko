@@ -74,6 +74,7 @@ abstract interface class OrdersRepository {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   });
 
   Future<String> createOrderWithItems({
@@ -87,6 +88,7 @@ abstract interface class OrdersRepository {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   });
 
   Future<void> updateOrderStatus(String orderId, OrderStatus status);

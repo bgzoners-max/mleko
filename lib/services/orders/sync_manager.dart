@@ -14,6 +14,8 @@ class SyncManager extends ChangeNotifier {
 
   bool _isSyncing = false;
   bool _isDisposed = false;
+  bool _hasUserScope = false;
+  String? _activeUserId;
   String? _syncError;
   int _syncedCount = 0;
   List<PendingOrder> _pendingOrders = [];
@@ -22,6 +24,20 @@ class SyncManager extends ChangeNotifier {
     if (!_isDisposed) {
       notifyListeners();
     }
+  }
+
+  /// Izoluje prikaz pending porudžbina po aktivnom korisniku (sprečava curenje PII posle odjave).
+  Future<void> setActiveUser(String? userId) async {
+    if (_isDisposed) return;
+    _hasUserScope = true;
+    _activeUserId = (userId != null && userId.isNotEmpty) ? userId : null;
+    if (_activeUserId == null) {
+      _pendingOrders = [];
+      _syncError = null;
+      _safeNotifyListeners();
+      return;
+    }
+    await refreshPendingOrders();
   }
 
   /// Future lanac (mutex) koji garantuje da se sinhronizacije izvršavaju striktno serijski
@@ -63,9 +79,16 @@ class SyncManager extends ChangeNotifier {
   /// Osvežava lokalnu listu pending porudžbina
   Future<void> refreshPendingOrders() async {
     if (_isDisposed) return;
+    if (_hasUserScope && _activeUserId == null) {
+      _pendingOrders = [];
+      _safeNotifyListeners();
+      return;
+    }
     try {
-      final orders =
-          await _queueService.getPendingOrders(onlyUnsynced: true);
+      final orders = await _queueService.getPendingOrders(
+        onlyUnsynced: true,
+        buyerId: _hasUserScope ? _activeUserId : null,
+      );
       if (_isDisposed) return;
       _pendingOrders = orders;
       _safeNotifyListeners();

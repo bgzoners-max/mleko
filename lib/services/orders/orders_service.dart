@@ -148,6 +148,7 @@ class OrdersService {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) =>
       _repository.createSingleProductOrder(
         buyerId: buyerId,
@@ -163,6 +164,7 @@ class OrdersService {
         buyerPostalCode: buyerPostalCode,
         deliveryMethod: deliveryMethod,
         deliverySelection: deliverySelection,
+        clientOrderId: clientOrderId,
       );
 
   Future<String> createOrderWithItems({
@@ -176,6 +178,7 @@ class OrdersService {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) =>
       _repository.createOrderWithItems(
         buyerId: buyerId,
@@ -188,6 +191,7 @@ class OrdersService {
         buyerPostalCode: buyerPostalCode,
         deliveryMethod: deliveryMethod,
         deliverySelection: deliverySelection,
+        clientOrderId: clientOrderId,
       );
 
   Future<List<OrderStatusAuditLogModel>> getOrderStatusAuditLogs(

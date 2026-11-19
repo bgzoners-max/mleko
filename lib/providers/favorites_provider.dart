@@ -6,6 +6,7 @@ class FavoritesProvider extends ChangeNotifier {
   final FavoritesService _service;
   Set<String> _ids = {};
   bool _loaded = false;
+  bool _isDisposed = false;
   String? _loadedUserId;
 
   FavoritesProvider({
@@ -20,46 +21,55 @@ class FavoritesProvider extends ChangeNotifier {
 
   int _loadSession = 0;
 
+  void _safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
   Future<void> load(String? userId) async {
+    if (_isDisposed) return;
     final session = ++_loadSession;
     if (userId == null) {
       _ids = {};
       _loaded = true;
       _loadedUserId = null;
-      notifyListeners();
+      _safeNotifyListeners();
       return;
     }
     if (_loaded && _loadedUserId == userId) return;
     try {
       final fetched = await _service.getFavoriteProductIds(userId);
-      if (session != _loadSession) return;
+      if (_isDisposed || session != _loadSession) return;
       _ids = fetched.toSet();
       _loadedUserId = userId;
+      _loaded = true;
+      _safeNotifyListeners();
     } catch (e, st) {
-      if (session != _loadSession) return;
+      if (_isDisposed || session != _loadSession) return;
       LoggerService.error('Failed to load favorites', e, stackTrace: st);
       _ids = {};
-    } finally {
-      if (session == _loadSession) {
-        _loaded = true;
-        notifyListeners();
-      }
+      _loaded = false;
+      _loadedUserId = null;
+      _safeNotifyListeners();
     }
   }
 
   void clear() {
     _loadSession++;
+    _togglingIds.clear();
     _ids = {};
     _loaded = false;
     _loadedUserId = null;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   final Set<String> _togglingIds = {};
 
   Future<void> toggle(String? userId, String productId) async {
-    if (userId == null) return;
+    if (_isDisposed || userId == null) return;
     if (_togglingIds.contains(productId)) return;
+    final session = _loadSession;
     _togglingIds.add(productId);
     final wasFavorite = _ids.contains(productId);
     if (wasFavorite) {
@@ -67,7 +77,7 @@ class FavoritesProvider extends ChangeNotifier {
     } else {
       _ids.add(productId);
     }
-    notifyListeners();
+    _safeNotifyListeners();
     try {
       if (wasFavorite) {
         await _service.removeFavorite(userId, productId);
@@ -75,13 +85,15 @@ class FavoritesProvider extends ChangeNotifier {
         await _service.addFavorite(userId, productId);
       }
     } catch (e, st) {
-      // Revert state na prethodnu vrednost
-      if (wasFavorite) {
-        _ids.add(productId);
-      } else {
-        _ids.remove(productId);
+      // Revert state samo ako korisnička sesija i dalje odgovara (sprečava curenje između naloga)
+      if (!_isDisposed && session == _loadSession) {
+        if (wasFavorite) {
+          _ids.add(productId);
+        } else {
+          _ids.remove(productId);
+        }
+        _safeNotifyListeners();
       }
-      notifyListeners();
 
       LoggerService.error('Failed to toggle favorite', e, stackTrace: st);
     } finally {
@@ -93,8 +105,9 @@ class FavoritesProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+    _loadSession++;
     _togglingIds.clear();
     super.dispose();
   }
 }
-

@@ -35,6 +35,8 @@ class _MockClassifiedsService extends ClassifiedsService {
     int limit = 24,
     int offset = 0,
     DateTime? lastCreatedAt,
+    bool? lastIsFeatured,
+    String? lastId,
   }) async {
     lastSellerType = sellerType;
     getAdsCallsCount++;

@@ -88,6 +88,7 @@ class _MockOrdersService implements OrdersService {
     DeliveryMethod deliveryMethod = DeliveryMethod.courier,
     DeliverySelectionModel? deliverySelection,
     bool preferCall = false,
+    String? clientOrderId,
   }) async {
     calls.add(_CreateOrderCall(
       buyerId: buyerId,
@@ -118,6 +119,7 @@ class _MockOrdersService implements OrdersService {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.courier,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     final first = items.first;
     calls.add(_CreateOrderCall(

@@ -44,7 +44,7 @@ class AuthSessionProvider extends ChangeNotifier {
 
   void clearJustConfirmedEmail() {
     _justConfirmedEmail = false;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void setUserForTesting(UserModel? user) {
@@ -56,7 +56,7 @@ class AuthSessionProvider extends ChangeNotifier {
     // `_user` na null, zbog čega bi padali svi e2e testovi koji računaju na
     // user-a (prefill checkout forme, offline red porudžbina, seller lokacija).
     _authChecked = true;
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   int get authEventVersion => _authEventVersion;
@@ -128,7 +128,17 @@ class AuthSessionProvider extends ChangeNotifier {
           return;
         }
         _user = null;
+        _justConfirmedEmail = false;
+        _pendingEmailVerification = false;
         _unreadNotifications?.unbind();
+        try {
+          await ChatService().cleanUp();
+        } catch (e) {
+          LoggerService.warning(
+            'ChatService cleanUp failed on logout',
+            extra: {'error': e.toString()},
+          );
+        }
         // Očisti image cache na logout (privatnost + memorija)
         await ImageCacheService().clearAllCaches();
         if (_isDisposed || !_isCurrentAuthEvent(authVersion, expectedUserId: null)) {
@@ -215,8 +225,13 @@ class AuthSessionProvider extends ChangeNotifier {
   }
 
   Future<void> refreshUser() async {
+    final version = _authEventVersion;
+    final expectedUserId = _auth.currentSupabaseUser?.id;
     final user = await _auth.getCurrentUser();
-    if (_isDisposed) return;
+    if (_isDisposed ||
+        !_isCurrentAuthEvent(version, expectedUserId: expectedUserId)) {
+      return;
+    }
     _user = user;
     _safeNotifyListeners();
   }

@@ -12,7 +12,10 @@ class _TestQueueService extends OrderQueueService {
   int getPendingCalls = 0;
 
   @override
-  Future<List<PendingOrder>> getPendingOrders({bool onlyUnsynced = true}) async {
+  Future<List<PendingOrder>> getPendingOrders({
+    bool onlyUnsynced = true,
+    String? buyerId,
+  }) async {
     getPendingCalls++;
     return [];
   }

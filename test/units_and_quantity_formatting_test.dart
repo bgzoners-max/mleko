@@ -322,10 +322,11 @@ void main() {
       expect(ProductModel.parseQuantityL('0,75'), 0.75);
     });
 
-    test('parses values >= 100 as milliliters and converts to liters', () {
-      expect(ProductModel.parseQuantityL('750'), 0.75);
-      expect(ProductModel.parseQuantityL('250'), 0.25);
-      expect(ProductModel.parseQuantityL('1000'), 1.0);
+    test('parses large numbers without ml suffix as liters (no silent /1000)', () {
+      expect(ProductModel.parseQuantityL('500'), 500.0);
+      expect(ProductModel.parseQuantityL('100 L'), 100.0);
+      expect(ProductModel.parseQuantityL('750'), 750.0);
+      expect(ProductModel.parseQuantityL('1000'), 1000.0);
     });
 
     test('parses inputs with ml suffix', () {

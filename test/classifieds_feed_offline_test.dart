@@ -40,6 +40,8 @@ class _OfflineMockClassifiedsService implements ClassifiedsService {
     int limit = 24,
     int offset = 0,
     DateTime? lastCreatedAt,
+    bool? lastIsFeatured,
+    String? lastId,
   }) async {
     throw Exception('SocketException: Failed host lookup: api.supabase.co');
   }

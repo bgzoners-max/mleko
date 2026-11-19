@@ -75,6 +75,7 @@ class _MockOrdersService implements OrdersService {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     calls.add(_MultiOrderCall(
       buyerId: buyerId,

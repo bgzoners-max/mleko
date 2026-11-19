@@ -793,6 +793,8 @@ class FakeCarClassifiedsService extends ClassifiedsService {
     int limit = 24,
     int offset = 0,
     DateTime? lastCreatedAt,
+    bool? lastIsFeatured,
+    String? lastId,
     bool? onlyFeatured,
     bool? onlyUrgent,
   }) async => [];
@@ -830,6 +832,8 @@ class FakeClassifiedsService extends ClassifiedsService {
     int limit = 24,
     int offset = 0,
     DateTime? lastCreatedAt,
+    bool? lastIsFeatured,
+    String? lastId,
     bool? onlyFeatured,
     bool? onlyUrgent,
   }) async => [];

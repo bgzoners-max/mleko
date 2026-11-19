@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 
-/// Prikazuje banner kada je app offline
+/// Prikazuje banner kada je app offline bez ponovnog montiranja [child] stabla.
 class OfflineIndicator extends StatelessWidget {
   final Widget child;
 
@@ -12,42 +12,43 @@ class OfflineIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final isOffline = context.select((AppState s) => s.isOffline);
 
-    if (!isOffline) {
-      return child;
-    }
-
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Stack(
-        children: [
-          child,
+    return Stack(
+      children: [
+        child,
+        if (isOffline)
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: Material(
               color: Colors.orange[700],
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.wifi_off, color: Colors.white, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Nemaš internet – Porudžbine će biti poslane kada se povežeš',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500),
-                    ),
-                  ],
+              child: const SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Nemaš internet – Porudžbine će biti poslate kada se povežeš',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

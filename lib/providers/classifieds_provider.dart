@@ -279,6 +279,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     }
     _error = null;
     _hasMore = true;
+    _loadingMore = false;
     _safeNotifyListeners();
 
     try {
@@ -326,7 +327,9 @@ class ClassifiedsProvider extends ChangeNotifier {
   }
 
   Future<void> loadMore() async {
-    if (_isDisposed || _loading || _loadingMore || !_hasMore) return;
+    if (_isDisposed || _loading || _refreshing || _loadingMore || !_hasMore) {
+      return;
+    }
     final generation = _loadGeneration; // čitamo tekući; loadInitialAds povećava brojač
     _loadingMore = true;
     _safeNotifyListeners();
@@ -341,8 +344,8 @@ class ClassifiedsProvider extends ChangeNotifier {
         }
       }
 
-      final lastCreatedAt = (_sort == ClassifiedSort.newest && _ads.isNotEmpty)
-          ? _ads.last.createdAt
+      final lastAd = (_sort == ClassifiedSort.newest && _ads.isNotEmpty)
+          ? _ads.last
           : null;
       final nextItems = await _service.getAds(
         categoryIds: catIds,
@@ -360,19 +363,23 @@ class ClassifiedsProvider extends ChangeNotifier {
         sort: _sort,
         limit: _pageSize,
         offset: _ads.length,
-        lastCreatedAt: lastCreatedAt,
+        lastCreatedAt: lastAd?.createdAt,
+        lastIsFeatured: lastAd?.isFeatured,
+        lastId: lastAd?.id,
       );
 
       if (generation != _loadGeneration) return; // filter se promenio – odbaci
-      _ads = [..._ads, ...nextItems];
+      final existingIds = _ads.map((a) => a.id).toSet();
+      final deduped = nextItems.where((a) => !existingIds.contains(a.id));
+      _ads = [..._ads, ...deduped];
       _hasMore = nextItems.length >= _pageSize;
     } catch (e, st) {
       // Ne rušimo postojeću listu, ali beležimo grešku
       LoggerService.warning('loadMoreAds error',
           extra: {'error': e.toString(), 'stackTrace': st.toString()});
     } finally {
-      _loadingMore = false;
       if (!_isDisposed && generation == _loadGeneration) {
+        _loadingMore = false;
         _safeNotifyListeners();
       }
     }
@@ -565,67 +572,84 @@ class ClassifiedsProvider extends ChangeNotifier {
     }
   }
 
+  final Set<String> _inFlightSubscriptionKeys = {};
+
   Future<bool> toggleCategorySubscription({
     required String categoryId,
     String? searchQuery,
     double? maxPrice,
     String currency = 'EUR',
   }) async {
-    final existingIndex =
-        _subscriptions.indexWhere((s) => s.categoryId == categoryId);
-    if (existingIndex >= 0) {
-      final sub = _subscriptions[existingIndex];
-      _subscriptions = List.from(_subscriptions)..removeAt(existingIndex);
-      _safeNotifyListeners();
-      try {
-        await _subService.unsubscribe(sub.id);
-        return false; // unsubscribed
-      } catch (e) {
-        if (!_isDisposed) {
-          _subscriptions = List.from(_subscriptions)..insert(existingIndex, sub);
-          _safeNotifyListeners();
+    if (_isDisposed || _inFlightSubscriptionKeys.contains(categoryId)) {
+      return _subscriptions.any((s) => s.categoryId == categoryId);
+    }
+    _inFlightSubscriptionKeys.add(categoryId);
+    final session = _subscriptionsSession;
+    try {
+      final existingIndex =
+          _subscriptions.indexWhere((s) => s.categoryId == categoryId);
+      if (existingIndex >= 0) {
+        final sub = _subscriptions[existingIndex];
+        _subscriptions = List.from(_subscriptions)..removeAt(existingIndex);
+        _safeNotifyListeners();
+        try {
+          await _subService.unsubscribe(sub.id);
+          return false; // unsubscribed
+        } catch (e) {
+          if (!_isDisposed && session == _subscriptionsSession) {
+            final safeIndex = existingIndex.clamp(0, _subscriptions.length);
+            _subscriptions = List.from(_subscriptions)..insert(safeIndex, sub);
+            _safeNotifyListeners();
+          }
+          rethrow;
         }
-        rethrow;
-      }
-    } else {
-      try {
+      } else {
         final newSub = await _subService.subscribe(
           categoryId: categoryId,
           searchQuery: searchQuery,
           maxPrice: maxPrice,
           currency: currency,
         );
-        if (!_isDisposed) {
+        if (!_isDisposed && session == _subscriptionsSession) {
           _subscriptions = [newSub, ..._subscriptions];
           _safeNotifyListeners();
         }
         return true; // subscribed
-      } catch (e) {
-        rethrow;
       }
+    } finally {
+      _inFlightSubscriptionKeys.remove(categoryId);
     }
   }
 
   Future<void> removeSubscription(String subscriptionId) async {
+    if (_isDisposed || _inFlightSubscriptionKeys.contains(subscriptionId)) {
+      return;
+    }
     final existingIndex =
         _subscriptions.indexWhere((s) => s.id == subscriptionId);
     if (existingIndex < 0) return;
+    _inFlightSubscriptionKeys.add(subscriptionId);
+    final session = _subscriptionsSession;
     final sub = _subscriptions[existingIndex];
     _subscriptions = List.from(_subscriptions)..removeAt(existingIndex);
     _safeNotifyListeners();
     try {
       await _subService.unsubscribe(subscriptionId);
     } catch (e) {
-      if (!_isDisposed) {
-        _subscriptions = List.from(_subscriptions)..insert(existingIndex, sub);
+      if (!_isDisposed && session == _subscriptionsSession) {
+        final safeIndex = existingIndex.clamp(0, _subscriptions.length);
+        _subscriptions = List.from(_subscriptions)..insert(safeIndex, sub);
         _safeNotifyListeners();
       }
       rethrow;
+    } finally {
+      _inFlightSubscriptionKeys.remove(subscriptionId);
     }
   }
 
   void clearSubscriptions() {
     _subscriptionsSession++;
+    _inFlightSubscriptionKeys.clear();
     _subscriptions = [];
     _subscriptionsLoaded = false;
     _safeNotifyListeners();

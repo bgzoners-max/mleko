@@ -141,6 +141,7 @@ class OrderSyncService {
             buyerPostalCode: pending.buyerPostalCode,
             deliveryMethod: pending.deliveryMethod,
             deliverySelection: deliverySelection,
+            clientOrderId: pending.id,
           );
           await _queueService.markAsSynced(pending.id);
           await _queueService.cleanSyncedOrders();
@@ -295,8 +296,23 @@ class OrderSyncService {
 
   Future<String?> _findDuplicateOrderId(PendingOrder pending) async {
     try {
+      // 1. Primarna idempotency provera preko client_order_id (važi i za multi-item RPC porudžbine)
+      try {
+        final existingByClientId = await _client
+            .from('orders')
+            .select('id')
+            .eq('buyer_id', pending.buyerId)
+            .eq('client_order_id', pending.id)
+            .maybeSingle();
+        if (existingByClientId != null) {
+          return existingByClientId['id'] as String?;
+        }
+      } on PostgrestException catch (e) {
+        if (e.code != '42703') rethrow;
+      }
+
       final lookbackSince =
-          DateTime.now().subtract(_duplicateLookback).toIso8601String();
+          DateTime.now().toUtc().subtract(_duplicateLookback).toIso8601String();
       final rows = await _client
           .from('orders')
           .select(

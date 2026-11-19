@@ -344,14 +344,24 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         ProductModel.unitMl => ProductModel.parseQuantityMl(text),
         ProductModel.unitKg => ProductModel.parseQuantityKg(text),
         ProductModel.unitG => ProductModel.parseQuantityG(text),
-        _ => NumberInputUtils.parseDecimal(text) ?? fallback,
+        _ => NumberInputUtils.parseDecimal(
+              text,
+              allowThousands: false,
+              maxDecimals: 3,
+            ) ??
+            fallback,
       };
     }
 
     final minOrder = parseByCurrentUnit(_minOrderController.text, fallback: 1.0);
     final available =
         (_unitType == ProductModel.unitG || _unitType == ProductModel.unitMl)
-            ? (NumberInputUtils.parseDecimal(_availableController.text) ?? 0.0)
+            ? (NumberInputUtils.parseDecimal(
+                  _availableController.text,
+                  allowThousands: false,
+                  maxDecimals: 3,
+                ) ??
+                0.0)
             : parseByCurrentUnit(_availableController.text, fallback: 0.0);
     final parsedOrderStep = _orderStepController.text.trim().isNotEmpty
         ? parseByCurrentUnit(_orderStepController.text)

@@ -334,6 +334,7 @@ Future<void> bootstrapApp() async {
       if (userId != null) {
         await CrashReportingService.setUserIdentifier(userId);
         await cartProvider.setUser(userId);
+        await appState.syncManager.setActiveUser(userId);
         if (appState.authEventVersion != currentAuthVersion) return;
 
         await Future.wait([
@@ -343,6 +344,7 @@ Future<void> bootstrapApp() async {
       } else {
         await CrashReportingService.setUserIdentifier(null);
         await cartProvider.clearForLogout();
+        await appState.syncManager.setActiveUser(null);
         favoritesProvider.clear();
         classifiedsProvider.clearSubscriptions();
       }
@@ -376,36 +378,36 @@ Future<void> bootstrapApp() async {
       usersService: usersService,
       classifiedsService: classifiedsService,
       classifiedReportsService: classifiedReportsService,
-      child: OfflineIndicator(
-        child: p_provider.Consumer<AppSettingsProvider>(
-          builder: (_, settings, __) => MaterialApp.router(
-            title: 'Domaći market',
-            theme: buildAppTheme(
-              compact: settings.compactMode,
-              fontScale: settings.fontScale,
-            ),
-            darkTheme: buildAppDarkTheme(
-              compact: settings.compactMode,
-              fontScale: settings.fontScale,
-            ),
-            themeMode: settings.themeMode,
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('sr', 'RS'),
-            ],
-            locale: const Locale('sr', 'RS'),
-            routerConfig: router,
-            scrollBehavior: GlobalScrollBehavior(),
-            builder: (context, child) {
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(settings.fontScale),
-                ),
-                child: GlobalKeyboardScroll(
+      child: p_provider.Consumer<AppSettingsProvider>(
+        builder: (_, settings, __) => MaterialApp.router(
+          title: 'Domaći market',
+          theme: buildAppTheme(
+            compact: settings.compactMode,
+            fontScale: settings.fontScale,
+          ),
+          darkTheme: buildAppDarkTheme(
+            compact: settings.compactMode,
+            fontScale: settings.fontScale,
+          ),
+          themeMode: settings.themeMode,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('sr', 'RS'),
+          ],
+          locale: const Locale('sr', 'RS'),
+          routerConfig: router,
+          scrollBehavior: GlobalScrollBehavior(),
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(settings.fontScale),
+              ),
+              child: GlobalKeyboardScroll(
+                child: OfflineIndicator(
                   child: _SyncFeedbackListener(
                     child: child ??
                         const Scaffold(
@@ -415,9 +417,9 @@ Future<void> bootstrapApp() async {
                         ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     ),

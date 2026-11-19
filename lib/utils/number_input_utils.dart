@@ -53,9 +53,9 @@ class NumberInputUtils {
         }
         str = str.replaceAll('.', '');
       } else if (allowThousands) {
-        // Jedna tačka: ako iza nje ima tačno 3 cifre i to je kraj stringa
-        // (npr. 1.500 ili 185.000), u našem kontekstu (cene, kilometraža) to je separator hiljada.
-        final match = RegExp(r'^(\d+)\.(\d{3})$').firstMatch(str);
+        // Jedna tačka: 1–3 vodeće cifre bez vodeće nule praćene sa tačno 3 cifre
+        // (npr. "1.500", "185.000") su separator hiljada; "0.500" i "1000.500" ostaju decimale.
+        final match = RegExp(r'^([1-9]\d{0,2})\.(\d{3})$').firstMatch(str);
         if (match != null) {
           str = match.group(1)! + match.group(2)!;
         }

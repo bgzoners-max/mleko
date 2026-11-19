@@ -468,6 +468,9 @@ class _TestSyncManager extends ChangeNotifier implements SyncManager {
   String? get syncError => null;
 
   @override
+  Future<void> setActiveUser(String? userId) async {}
+
+  @override
   int get syncedCount => 0;
 
   @override

@@ -50,8 +50,11 @@ class ProductModel {
   final int orderCount;
   final List<ProductVariant> variants;
   final ProductVariant? selectedVariant;
+  final double? basePricePerKg;
 
   static const String cartKeySeparator = '::';
+
+  double get effectiveBasePrice => basePricePerKg ?? pricePerKg;
 
   bool get hasVariants => variants.isNotEmpty;
 
@@ -139,12 +142,15 @@ class ProductModel {
     if (variant == null) {
       return copyWith(
         name: baseName,
+        pricePerKg: effectiveBasePrice,
+        basePricePerKg: null,
         selectedVariant: null,
       );
     }
     return copyWith(
       name: '$baseName (${variant.label})',
       pricePerKg: variant.price,
+      basePricePerKg: effectiveBasePrice,
       selectedVariant: variant,
     );
   }
@@ -206,6 +212,7 @@ class ProductModel {
     this.orderCount = 0,
     this.variants = const [],
     this.selectedVariant,
+    this.basePricePerKg,
   });
 
 
@@ -240,6 +247,7 @@ class ProductModel {
     ProductStats? stats,
     List<ProductVariant>? variants,
     Object? selectedVariant = _undefined,
+    Object? basePricePerKg = _undefined,
   }) {
     final effectiveDeliveryScope = deliveryScope ??
         ((deliveryMode != null || selectedDeliveryPointIds != null)
@@ -293,6 +301,9 @@ class ProductModel {
       selectedVariant: identical(selectedVariant, _undefined)
           ? this.selectedVariant
           : selectedVariant as ProductVariant?,
+      basePricePerKg: identical(basePricePerKg, _undefined)
+          ? this.basePricePerKg
+          : basePricePerKg as double?,
     );
   }
 
@@ -316,8 +327,17 @@ class ProductModel {
   bool get isSubUnitProduct =>
       (unitType == unitKg || unitType == unitL) &&
       minOrderKg > 0 &&
-      minOrderKg < 1 &&
-      selectedVariant == null;
+      minOrderKg < 1;
+
+  /// Maksimalna dostupna količina izražena u istoj jedinici kao korisnička količina.
+  /// Za podjedinice (`g`/`ml`), `availableKg` čuva broj pakovanja (`kom`).
+  double get maxOrderableQuantity =>
+      isSubUnitProduct ? availableKg * minOrderKg : availableKg;
+
+  bool exceedsAvailableStock(double quantity) {
+    if (availableKg <= 0) return false;
+    return quantity > maxOrderableQuantity + 1e-6;
+  }
 
   /// Brojčani deo cene, bez valute i jedinice (npr. "800" ili "199,99").
   String get priceNumber => _formatDecimal(pricePerKg);
@@ -375,6 +395,8 @@ class ProductModel {
     switch (unitType) {
       case unitL:
         return 'L';
+      case unitMl:
+        return 'ml';
       case unitG:
         return 'g';
       case unitPiece:
@@ -525,7 +547,7 @@ class ProductModel {
       'seller_id': sellerId,
       'category': category,
       'name': baseName,
-      'price_per_kg': pricePerKg,
+      'price_per_kg': effectiveBasePrice,
       'min_order_kg': minOrderKg,
       'order_step': (orderStep != null && orderStep! > 0)
           ? orderStep
@@ -567,6 +589,7 @@ class ProductModel {
       'seller_is_verified': sellerIsVerified,
       if (avgRating != null) 'avg_rating': avgRating,
       'review_count': reviewCount,
+      'order_count': orderCount,
       'variants': variants.map((v) => v.toJson()).toList(),
     };
   }

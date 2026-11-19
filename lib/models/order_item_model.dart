@@ -5,8 +5,11 @@ class OrderItemModel {
   final String productName;
   final double quantityKg;
   final String unitType;
-  /// Cena po jedinici (kg/L) pri slanju porudžbine; za upis u order_items.unit_price
+  /// Cena po jedinici ili pakovanju pri slanju porudžbine; za upis u order_items.unit_price
   final double unitPrice;
+  /// Sačuvana ukupna cena stavke iz baze (`order_items.total_price`) ili izračunata preko
+  /// `ProductModel.totalPriceForQuantity` (ključno za g/ml podjedinice gde `unitPrice` je cena pakovanja).
+  final double? _storedTotalPrice;
   final String? variantId;
   final String? variantLabel;
 
@@ -16,19 +19,30 @@ class OrderItemModel {
     required this.quantityKg,
     this.unitType = ProductModel.unitKg,
     this.unitPrice = 0,
+    double? totalPrice,
     this.variantId,
     this.variantLabel,
-  });
+  }) : _storedTotalPrice = totalPrice;
 
-  double get totalPrice => unitPrice * quantityKg;
+  double get totalPrice =>
+      _storedTotalPrice ?? ((unitPrice * quantityKg) * 100).round() / 100.0;
 
   /// Ukupna količina po jedinicama za prikaz (npr. "7.5 kg + 3 L + 650 g + 30 kom + 2 veza + 1 pak").
   static String totalQuantityLabel(List<OrderItemModel> items) {
-    double totalKg = 0, totalL = 0, totalGkg = 0, totalPieces = 0, totalVeza = 0, totalPak = 0;
+    double totalKg = 0,
+        totalL = 0,
+        totalMlL = 0,
+        totalGkg = 0,
+        totalPieces = 0,
+        totalVeza = 0,
+        totalPak = 0;
     for (final item in items) {
       switch (item.unitType) {
         case ProductModel.unitL:
           totalL += item.quantityKg;
+          break;
+        case ProductModel.unitMl:
+          totalMlL += item.quantityKg;
           break;
         case ProductModel.unitG:
           totalGkg += item.quantityKg;
@@ -47,12 +61,27 @@ class OrderItemModel {
       }
     }
     final parts = <String>[];
-    if (totalKg > 0) parts.add(ProductModel.formatQuantityWithUnit(totalKg, ProductModel.unitKg));
-    if (totalL > 0) parts.add(ProductModel.formatQuantityWithUnit(totalL, ProductModel.unitL));
-    if (totalGkg > 0) parts.add(ProductModel.formatQuantityWithUnit(totalGkg, ProductModel.unitG));
-    if (totalPieces > 0) parts.add(ProductModel.formatQuantityWithUnit(totalPieces, ProductModel.unitPiece));
-    if (totalVeza > 0) parts.add(ProductModel.formatQuantityWithUnit(totalVeza, ProductModel.unitVeza));
-    if (totalPak > 0) parts.add(ProductModel.formatQuantityWithUnit(totalPak, ProductModel.unitPak));
+    if (totalKg > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalKg, ProductModel.unitKg));
+    }
+    if (totalL > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalL, ProductModel.unitL));
+    }
+    if (totalMlL > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalMlL, ProductModel.unitMl));
+    }
+    if (totalGkg > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalGkg, ProductModel.unitG));
+    }
+    if (totalPieces > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalPieces, ProductModel.unitPiece));
+    }
+    if (totalVeza > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalVeza, ProductModel.unitVeza));
+    }
+    if (totalPak > 0) {
+      parts.add(ProductModel.formatQuantityWithUnit(totalPak, ProductModel.unitPak));
+    }
     if (parts.isEmpty) return '';
     return 'Ukupno količina: ${parts.join(' + ')}';
   }
@@ -75,6 +104,7 @@ class OrderItemModel {
         quantityKg: (json['quantity_kg'] as num?)?.toDouble() ?? 0,
         unitType: json['unit_type'] as String? ?? ProductModel.unitKg,
         unitPrice: (json['unit_price'] as num?)?.toDouble() ?? 0,
+        totalPrice: (json['total_price'] as num?)?.toDouble(),
         variantId: json['variant_id'] as String?,
         variantLabel: json['variant_label'] as String?,
       );

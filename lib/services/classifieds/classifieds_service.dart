@@ -221,6 +221,8 @@ class ClassifiedsService {
     int limit = 24,
     int offset = 0,
     DateTime? lastCreatedAt,
+    bool? lastIsFeatured,
+    String? lastId,
   }) async {
     try {
       var query = _client.from('classified_ads').select('''
@@ -299,11 +301,40 @@ class ClassifiedsService {
         }
       }
 
-      // Keyset paginacija za sortiranje po najnovijem (eliminiše O(N) skeniranje)
-      final isKeysetApplicable =
-          sort == ClassifiedSort.newest && lastCreatedAt != null;
+      // Kompozitna keyset paginacija po (is_featured DESC, created_at DESC, id DESC)
+      // Kada je aktivna tekstualna pretraga (koja već koristi `.or(...)`), koristimo range
+      // da ne bismo prepisali PostgREST `or` query parametar.
+      final hasSearchFilter =
+          searchQuery != null && searchQuery.trim().isNotEmpty;
+      final isKeysetApplicable = sort == ClassifiedSort.newest &&
+          !hasSearchFilter &&
+          lastCreatedAt != null &&
+          lastIsFeatured != null;
       if (isKeysetApplicable) {
-        query = query.lt('created_at', lastCreatedAt.toIso8601String());
+        final ts = lastCreatedAt.toUtc().toIso8601String();
+        final safeLastId = (lastId != null &&
+                RegExp(r'^[a-zA-Z0-9\-]+$').hasMatch(lastId))
+            ? lastId
+            : null;
+        if (lastIsFeatured) {
+          query = safeLastId != null
+              ? query.or(
+                  'and(is_featured.eq.true,created_at.lt.$ts),'
+                  'and(is_featured.eq.true,created_at.eq.$ts,id.lt.$safeLastId),'
+                  'is_featured.eq.false',
+                )
+              : query.or(
+                  'and(is_featured.eq.true,created_at.lt.$ts),'
+                  'is_featured.eq.false',
+                );
+        } else {
+          query = query.eq('is_featured', false);
+          query = safeLastId != null
+              ? query.or(
+                  'created_at.lt.$ts,and(created_at.eq.$ts,id.lt.$safeLastId)',
+                )
+              : query.lt('created_at', ts);
+        }
       }
 
       PostgrestTransformBuilder<PostgrestList> transformQuery;
@@ -311,7 +342,8 @@ class ClassifiedsService {
         case ClassifiedSort.newest:
           transformQuery = query
               .order('is_featured', ascending: false)
-              .order('created_at', ascending: false);
+              .order('created_at', ascending: false)
+              .order('id', ascending: false);
           break;
         case ClassifiedSort.priceAsc:
           transformQuery = query.order('price', ascending: true);

@@ -30,6 +30,7 @@ mixin OrderManagementMixin {
     DeliverySelectionModel? deliverySelection,
     String? variantId,
     String? variantLabel,
+    String? clientOrderId,
   }) {
     return createOrderWithItems(
       buyerId: buyerId,
@@ -51,6 +52,7 @@ mixin OrderManagementMixin {
       buyerPostalCode: buyerPostalCode,
       deliveryMethod: deliveryMethod,
       deliverySelection: deliverySelection,
+      clientOrderId: clientOrderId,
     );
   }
 
@@ -65,6 +67,7 @@ mixin OrderManagementMixin {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     if (buyerId.trim().isEmpty || sellerId.trim().isEmpty) {
       throw AppError(
@@ -204,6 +207,8 @@ mixin OrderManagementMixin {
           'p_delivery_point_id': deliverySelection?.pointId,
           'p_delivery_slot_id': deliverySelection?.slotId,
           'p_delivery_fee_rsd': deliverySelection?.deliveryFeeRsd,
+          if (clientOrderId != null && clientOrderId.trim().isNotEmpty)
+            'p_client_order_id': clientOrderId.trim(),
         },
       );
       return result as String;

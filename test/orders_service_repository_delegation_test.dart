@@ -438,6 +438,7 @@ class _RecordingOrdersRepository implements OrdersRepository {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     calls['createSingleProductOrder'] = {
       'buyerId': buyerId,
@@ -469,6 +470,7 @@ class _RecordingOrdersRepository implements OrdersRepository {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     calls['createOrderWithItems'] = {
       'buyerId': buyerId,

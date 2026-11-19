@@ -121,16 +121,18 @@ class ProductFormattingUtils {
         .trim();
     final v = double.tryParse(raw);
     if (v == null || v <= 0) return 0;
-    if (v >= 100) return v / 1000.0;
 
     return v;
   }
 
   /// Parsira unos količine za grame (npr. "100", "250", "250g", ili "0.25").
   static double parseQuantityG(String text) {
-    final raw = text
-        .trim()
-        .toLowerCase()
+    final trimmed = text.trim().toLowerCase();
+    final hasExplicitG = trimmed.endsWith('grama') ||
+        trimmed.endsWith('gram') ||
+        trimmed.endsWith('gr') ||
+        trimmed.endsWith('g');
+    final raw = trimmed
         .replaceAll('grama', '')
         .replaceAll('gram', '')
         .replaceAll('gr', '')
@@ -139,15 +141,18 @@ class ProductFormattingUtils {
         .trim();
     final v = double.tryParse(raw);
     if (v == null || v <= 0) return 0;
-    if (v < 1) return v;
+    if (!hasExplicitG && v < 1) return v;
     return v / 1000.0;
   }
 
   /// Parsira unos količine za mililitre (npr. "250", "330", "330ml", ili "0.33").
   static double parseQuantityMl(String text) {
-    final raw = text
-        .trim()
-        .toLowerCase()
+    final trimmed = text.trim().toLowerCase();
+    final hasExplicitMl = trimmed.endsWith('mililitara') ||
+        trimmed.endsWith('mililitra') ||
+        trimmed.endsWith('mili') ||
+        trimmed.endsWith('ml');
+    final raw = trimmed
         .replaceAll('mililitara', '')
         .replaceAll('mililitra', '')
         .replaceAll('mili', '')
@@ -156,7 +161,7 @@ class ProductFormattingUtils {
         .trim();
     final v = double.tryParse(raw);
     if (v == null || v <= 0) return 0;
-    if (v < 1) return v;
+    if (!hasExplicitMl && v < 1) return v;
     return v / 1000.0;
   }
 }

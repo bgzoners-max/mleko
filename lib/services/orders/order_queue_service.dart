@@ -249,12 +249,19 @@ class OrderQueueService {
     return result;
   }
 
-  /// Preuzmi sve pending porudžbine (serijalizovano sa upisima)
-  Future<List<PendingOrder>> getPendingOrders({bool onlyUnsynced = false}) {
+  /// Preuzmi sve pending porudžbine (serijalizovano sa upisima).
+  /// Kada je [buyerId] prosleđen, vraća isključivo porudžbine tog kupca (izolacija naloga).
+  Future<List<PendingOrder>> getPendingOrders({
+    bool onlyUnsynced = false,
+    String? buyerId,
+  }) {
     return _serialized(() async {
       try {
         final prefs = await SharedPreferences.getInstance();
-        final orders = await _loadOrders(prefs, reloadLegacyPrefs: !kIsWeb);
+        var orders = await _loadOrders(prefs, reloadLegacyPrefs: !kIsWeb);
+        if (buyerId != null) {
+          orders = orders.where((o) => o.buyerId == buyerId).toList();
+        }
         if (onlyUnsynced) {
           return orders.where((o) => o.isPending).toList();
         }

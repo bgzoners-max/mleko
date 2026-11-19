@@ -109,6 +109,7 @@ class _FakeOrdersRepository implements OrdersRepository {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     createOrderCalled++;
     return 'fake-order-id';
@@ -126,6 +127,7 @@ class _FakeOrdersRepository implements OrdersRepository {
     String? buyerPostalCode,
     DeliveryMethod deliveryMethod = DeliveryMethod.agreement,
     DeliverySelectionModel? deliverySelection,
+    String? clientOrderId,
   }) async {
     createOrderCalled++;
     return 'fake-order-id';
