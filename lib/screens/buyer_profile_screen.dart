@@ -142,7 +142,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                   tooltip: 'Uredi profil',
                   onPressed: () async {
                     await context.push('/profile/edit');
-                    _retry();
+                    if (mounted) _retry();
                   },
                 ),
               const AppHomeButton(),

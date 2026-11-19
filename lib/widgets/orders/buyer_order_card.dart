@@ -397,48 +397,67 @@ class _BuyerOrderCardState extends State<BuyerOrderCard> {
                 if (o.status == OrderStatus.cancelledBySeller)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.cancel,
-                              color: Colors.orange.shade700, size: 18),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Prodavac je otkazao porudžbinu',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                    color: Colors.orange.shade800,
-                                  ),
-                                ),
-                                if (o.cancellationReason != null &&
-                                    o.cancellationReason!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    o.cancellationReason!,
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.orange.shade900),
-                                  ),
-                                ],
-                              ],
-                            ),
+                    child: Builder(builder: (ctx) {
+                      final isDark = Theme.of(ctx).brightness == Brightness.dark;
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.orange.withValues(alpha: 0.16)
+                              : Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.orange.shade700
+                                : Colors.orange.shade200,
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.cancel,
+                              color: isDark
+                                  ? Colors.orange.shade300
+                                  : Colors.orange.shade700,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Prodavac je otkazao porudžbinu',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? Colors.orange.shade200
+                                          : Colors.orange.shade800,
+                                    ),
+                                  ),
+                                  if (o.cancellationReason != null &&
+                                      o.cancellationReason!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      o.cancellationReason!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark
+                                            ? Colors.orange.shade100
+                                            : Colors.orange.shade900,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ),
                 const SizedBox(height: 6),
                 if (o.hasMultipleItems)

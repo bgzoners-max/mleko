@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/product_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/app_state.dart';
 import 'package:mleko/services/services.dart';
 
@@ -29,10 +30,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   Stream<List<ProductModel>>? _productsStream;
   String? _lastUserId;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final user = context.read<AppState>().user;
+  void _ensureUserStreams(UserModel? user) {
     if (user != null && user.isSeller && user.id != _lastUserId) {
       _lastUserId = user.id;
       _statsFuture = context.read<OrdersService>().getSellerStats(user.id);
@@ -41,6 +39,12 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
             refreshTrigger: _refreshController.stream,
           );
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureUserStreams(context.read<AppState>().user);
   }
 
   @override
@@ -64,6 +68,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.select((AppState s) => s.user);
+    _ensureUserStreams(user);
 
     if (user == null || !user.isSeller) {
       return Scaffold(

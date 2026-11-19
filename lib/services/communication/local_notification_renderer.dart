@@ -123,6 +123,21 @@ class LocalNotificationRenderer {
     }
   }
 
+  /// Deterministički 31-bitni FNV-1a heš preko UTF-8 bajtova.
+  ///
+  /// Za razliku od `Object.hash(...)`, identičan je u svim Dart izolatima
+  /// (foreground i FCM background handler), pa deduplikacija radi pouzdano.
+  static int _fnv1a31(String input) {
+    const int fnvOffsetBasis = 0x811C9DC5;
+    const int fnvPrime = 0x01000193;
+    var hash = fnvOffsetBasis;
+    for (final byte in utf8.encode(input)) {
+      hash ^= byte;
+      hash = (hash * fnvPrime) & 0xFFFFFFFF;
+    }
+    return (hash & 0x7FFFFFFF) % 2147483647;
+  }
+
   /// Deterministički ID za lokalna obaveštenja:
   /// - Ako postoji [notificationId] (iz DB zapisa), garantuje dedup za isti retry event,
   ///   dok različite poruke dobijaju različite ID-eve.
@@ -139,16 +154,11 @@ class LocalNotificationRenderer {
     String? createdAt,
   }) {
     if (notificationId != null && notificationId.isNotEmpty) {
-      return Object.hash('db_notif', notificationId).remainder(2147483647).abs();
+      return _fnv1a31('db_notif\x00$notificationId');
     }
-    return Object.hash(
-      type,
-      orderId,
-      conversationId ?? '',
-      createdAt ?? '',
-      title,
-      body,
-    ).remainder(2147483647).abs();
+    return _fnv1a31(
+      '$type\x00$orderId\x00${conversationId ?? ''}\x00${createdAt ?? ''}\x00$title\x00$body',
+    );
   }
 
   /// Prikazuje lokalno obaveštenje u sistemskom tray-u.
@@ -213,7 +223,7 @@ class LocalNotificationRenderer {
             visibility: NotificationVisibility.public,
             category: AndroidNotificationCategory.message,
             ticker: 'Nova obaveštenja',
-            styleInformation: const BigTextStyleInformation(''),
+            styleInformation: BigTextStyleInformation(body),
             icon: 'ic_notification',
             color: const Color(0xFF245938),
           ),

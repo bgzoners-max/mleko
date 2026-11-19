@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../models/app_error.dart';
 import '../core/logger_service.dart';
 import 'image_compression_service.dart';
 
@@ -61,6 +62,9 @@ class StorageService {
   static const _bucketProfiles = 'profiles';
   static const _bucketFarmGallery = 'farm-gallery';
 
+  /// Maksimalna dozvoljena veličina slike za upload (10 MB)
+  static const int maxUploadBytes = 10 * 1024 * 1024;
+
   /// Timeout za R2 upload (prilagođen ruralnim mobilnim vezama i fajlovima do 10 MB)
   static const Duration r2UploadTimeout = Duration(seconds: 60);
 
@@ -77,6 +81,16 @@ class StorageService {
     return host == 'cdn.domacimarket.rs' ||
         host.endsWith('.r2.dev') ||
         host.endsWith('.r2.cloudflarestorage.com');
+  }
+
+  /// Proverava da li javni URL pripada dozvoljenom skladištu aplikacije (R2 ili Supabase Storage).
+  static bool isAllowedStorageUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme.toLowerCase() != 'https') return false;
+    if (isR2PublicUrl(url)) return true;
+    final host = uri.host.toLowerCase();
+    return host.endsWith('.supabase.co') &&
+        uri.path.contains('/storage/v1/object/');
   }
 
   /// Autoritativni bazni URL za pozivanje Cloudflare Pages funkcija
@@ -101,8 +115,9 @@ class StorageService {
     return _effectiveSupabaseClient.auth.currentSession?.accessToken;
   }
 
-  /// Detektuje ekstenziju i MIME tip na osnovu „magic bytes“ u zaglavlju fajla.
-  static ({String ext, String mimeType}) detectMimeAndExt(List<int> bytes) {
+  /// Stroga detekcija ekstenzije i MIME tipa po „magic bytes“ zaglavlju.
+  /// Vraća `null` za sve fajlove koji nisu validan JPEG, PNG ili WebP.
+  static ({String ext, String mimeType})? tryDetectMimeAndExt(List<int> bytes) {
     if (bytes.length >= 3 &&
         bytes[0] == 0xFF &&
         bytes[1] == 0xD8 &&
@@ -131,7 +146,40 @@ class StorageService {
         bytes[11] == 0x50) {
       return (ext: 'webp', mimeType: 'image/webp');
     }
-    return (ext: 'jpg', mimeType: 'image/jpeg');
+    return null;
+  }
+
+  /// Detektuje ekstenziju i MIME tip na osnovu „magic bytes“ u zaglavlju fajla.
+  static ({String ext, String mimeType}) detectMimeAndExt(List<int> bytes) {
+    return tryDetectMimeAndExt(bytes) ?? (ext: 'jpg', mimeType: 'image/jpeg');
+  }
+
+  /// Validira veličinu i stvarni binarni format slike (JPEG/PNG/WebP, <= 10 MB).
+  static ({String ext, String mimeType}) validateImageBytes(List<int> bytes) {
+    if (bytes.isEmpty) {
+      throw AppError(
+        message: 'Empty image payload',
+        userMessage: 'Fajl slike je prazan.',
+        type: ErrorType.validation,
+      );
+    }
+    if (bytes.length > maxUploadBytes) {
+      throw AppError(
+        message: 'Image exceeds maxUploadBytes (${bytes.length} > $maxUploadBytes)',
+        userMessage: 'Slika je prevelika (maksimalno 10 MB).',
+        type: ErrorType.validation,
+      );
+    }
+    final detected = tryDetectMimeAndExt(bytes);
+    if (detected == null) {
+      throw AppError(
+        message: 'Unsupported image magic bytes',
+        userMessage:
+            'Nepodržan format slike. Dozvoljeni su samo JPEG, PNG i WebP fajlovi.',
+        type: ErrorType.validation,
+      );
+    }
+    return detected;
   }
 
   /// Pomoćni metod za upload: pokušava Cloudflare R2, sa fallbackom na Supabase
@@ -209,10 +257,11 @@ class StorageService {
     bool compress = true,
   }) async {
     final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    validateImageBytes(rawData);
     final data = compress
         ? await ImageCompressionService().compressProfileImage(rawData)
         : rawData;
-    final mimeInfo = detectMimeAndExt(data);
+    final mimeInfo = validateImageBytes(data);
     final subPath = '$userId.${mimeInfo.ext}';
     return _uploadFile(
       bucket: _bucketProfiles,
@@ -230,10 +279,11 @@ class StorageService {
     bool compress = true,
   }) async {
     final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    validateImageBytes(rawData);
     final data = compress
         ? await ImageCompressionService().compressImage(rawData)
         : rawData;
-    final mimeInfo = detectMimeAndExt(data);
+    final mimeInfo = validateImageBytes(data);
     final name = '${_uuid.v4()}.${mimeInfo.ext}';
     final subPath = '$userId/$name';
     return _uploadFile(
@@ -252,10 +302,11 @@ class StorageService {
     bool compress = true,
   }) async {
     final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    validateImageBytes(rawData);
     final data = compress
         ? await ImageCompressionService().compressImage(rawData)
         : rawData;
-    final mimeInfo = detectMimeAndExt(data);
+    final mimeInfo = validateImageBytes(data);
     final name = '${_uuid.v4()}.${mimeInfo.ext}';
     final subPath = '$sellerId/$name';
     return _uploadFile(
@@ -268,7 +319,7 @@ class StorageService {
   }
 
   /// Izdvaja storage putanju iz public URL-a (čista funkcija, testabilna).
-  /// Vraća `null` ako URL ne pripada zadatom bucketu.
+  /// Vraća `null` ako URL ne pripada zadatom bucketu ili sadrži nedozvoljene segmente.
   /// Odbacuje query parametre (npr. `?t=...` cache-buster).
   static String? extractPathFromPublicUrl(String bucket, String url) {
     final marker = '/$bucket/';
@@ -277,13 +328,26 @@ class StorageService {
     var path = url.substring(idx + marker.length);
     final qIdx = path.indexOf('?');
     if (qIdx >= 0) path = path.substring(0, qIdx);
-    return path.isEmpty ? null : path;
+    if (path.isEmpty || path.startsWith('/') || path.contains('..')) {
+      return null;
+    }
+    return path;
   }
 
   /// Briše fajl iz zadatog bucketa na osnovu public URL-a.
   /// Podržava i Cloudflare R2 (uključujući custom domen) i legacy Supabase Storage URL-ove.
   /// Vraća `true` ako je fajl uspešno obrisan, `false` ako brisanje nije uspelo ili putanja nije validna.
   Future<bool> deleteFileByBucket(String bucket, String url) async {
+    if (!isAllowedStorageUrl(url)) {
+      if (url.trim().isNotEmpty) {
+        LoggerService.warning(
+          'Preskočeno brisanje fajla: URL ne pripada dozvoljenom skladištu',
+          extra: {'bucket': bucket, 'url': url},
+        );
+      }
+      return false;
+    }
+
     final path = extractPathFromPublicUrl(bucket, url);
     if (path == null) {
       if (url.trim().isNotEmpty) {

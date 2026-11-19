@@ -288,7 +288,7 @@ class _ChatScreenState extends State<ChatScreen> {
         imageQuality: 75,
         maxWidth: 1200,
       );
-      if (file == null) return;
+      if (file == null || !mounted) return;
 
       setState(() => _uploadingImage = true);
       final bytes = await file.readAsBytes();
@@ -355,7 +355,6 @@ class _ChatScreenState extends State<ChatScreen> {
     final user = context.read<AppState>().user;
     if (user == null) return;
 
-    if (textOverride == null) _messageController.clear();
     _typingTimer?.cancel();
     if (_isTyping) {
       _isTyping = false;
@@ -367,8 +366,10 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _sending = true);
     try {
       await _chatService.sendMessage(widget.conversationId, user.id, text);
+      if (textOverride == null && mounted) _messageController.clear();
       _refreshController.add(null);
       await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,

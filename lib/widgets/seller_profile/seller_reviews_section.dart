@@ -23,8 +23,33 @@ class SellerReviewsSection extends StatefulWidget {
 class _SellerReviewsSectionState extends State<SellerReviewsSection> {
   int _refreshKey = 0;
   bool _expanded = true;
+  Future<Map<String, dynamic>>? _dataFuture;
+  String? _loadedKey;
 
-  void _refresh() => setState(() => _refreshKey++);
+  Future<Map<String, dynamic>> _createFuture(String? reviewBuyerId) {
+    final reviewsService = context.read<ReviewsService>();
+    return Future.wait([
+      reviewsService.getSellerStats(widget.sellerId),
+      reviewsService.getReviewsForSeller(widget.sellerId),
+      if (reviewBuyerId != null)
+        reviewsService.getReviewableOrder(reviewBuyerId, widget.sellerId),
+    ]).then((r) async {
+      final reviews = r[1] as List<ReviewModel>;
+      final buyerNames =
+          await fetchProfileDisplayNames(reviews.map((e) => e.buyerId));
+      return {
+        'stats': r[0],
+        'reviews': reviews,
+        'reviewable': r.length > 2 ? r[2] : null,
+        'buyerNames': buyerNames,
+      };
+    });
+  }
+
+  void _refresh() => setState(() {
+        _refreshKey++;
+        _loadedKey = null;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +58,12 @@ class _SellerReviewsSectionState extends State<SellerReviewsSection> {
         user != null && !user.isGuest && user.id != widget.sellerId;
     final isSeller =
         user != null && !user.isGuest && user.id == widget.sellerId;
+    final reviewBuyerId = canReview ? user.id : null;
+    final cacheKey = '${widget.sellerId}|${reviewBuyerId ?? ''}|$_refreshKey';
+    if (_dataFuture == null || _loadedKey != cacheKey) {
+      _loadedKey = cacheKey;
+      _dataFuture = _createFuture(reviewBuyerId);
+    }
     final isWide = Breakpoints.useTwoPaneLayout(context);
     final cardPadding = Breakpoints.adaptiveDouble(
       context,
@@ -43,22 +74,7 @@ class _SellerReviewsSectionState extends State<SellerReviewsSection> {
 
     return FutureBuilder<Map<String, dynamic>>(
       key: ValueKey(_refreshKey),
-      future: Future.wait([
-        context.read<ReviewsService>().getSellerStats(widget.sellerId),
-        context.read<ReviewsService>().getReviewsForSeller(widget.sellerId),
-        if (canReview)
-          context.read<ReviewsService>().getReviewableOrder(user.id, widget.sellerId),
-      ]).then((r) async {
-        final reviews = r[1] as List<ReviewModel>;
-        final buyerNames =
-            await fetchProfileDisplayNames(reviews.map((e) => e.buyerId));
-        return {
-          'stats': r[0],
-          'reviews': reviews,
-          'reviewable': r.length > 2 ? r[2] : null,
-          'buyerNames': buyerNames,
-        };
-      }),
+      future: _dataFuture,
       builder: (context, snap) {
         if (snap.hasError) {
           return Card(

@@ -63,7 +63,7 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
         _db.from('public_profiles').count(CountOption.exact).eq('role', 'buyer').eq('is_guest', false),
         _db.from('waitlist').count(CountOption.exact),
         _db.from('orders').count(CountOption.exact),
-        _db.from('orders').count(CountOption.exact).eq('status', 'pending'),
+        _db.from('orders').count(CountOption.exact).eq('status', 'sent'),
       ]);
       if (mounted) {
         setState(() {

@@ -28,10 +28,51 @@ class MockHttpHandlerClient extends http.BaseClient {
   }
 }
 
+http.Response _rpcMissingResponse() => http.Response(
+      jsonEncode({
+        'code': 'PGRST202',
+        'message': 'Could not find the function public.get_or_create_conversation',
+      }),
+      404,
+      headers: {'content-type': 'application/json'},
+    );
+
 void main() {
   group('ChatService.getOrCreateConversation', () {
+    test('primary RPC path returns conversation id directly', () async {
+      Map<String, dynamic>? rpcBody;
+      final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation') &&
+            req.method == 'POST') {
+          rpcBody = jsonDecode(body) as Map<String, dynamic>;
+          return http.Response(jsonEncode('conv-rpc-001'), 200);
+        }
+        return http.Response('Not Found', 404);
+      });
+
+      final supabase = SupabaseClient(
+        'https://fake-project.supabase.co',
+        'fake-key',
+        httpClient: mockClient,
+      );
+
+      final service = ChatService(client: supabase);
+      final id = await service.getOrCreateConversation(
+        'buyer1',
+        'seller1',
+        productId: 'prod-1',
+      );
+      expect(id, equals('conv-rpc-001'));
+      expect(rpcBody?['p_buyer_id'], equals('buyer1'));
+      expect(rpcBody?['p_seller_id'], equals('seller1'));
+      expect(rpcBody?['p_product_id'], equals('prod-1'));
+    });
+
     test('successful upsert returns conversation id', () async {
       final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation')) {
+          return _rpcMissingResponse();
+        }
         if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
           return http.Response(
             jsonEncode({'id': 'conv-success-123'}),
@@ -56,6 +97,9 @@ void main() {
     test('upsert with orderId includes order_id in request payload', () async {
       String? sentPayload;
       final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation')) {
+          return _rpcMissingResponse();
+        }
         if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
           sentPayload = body;
           return http.Response(
@@ -196,6 +240,9 @@ void main() {
       String? sentPayload;
       String? onConflictHeader;
       final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation')) {
+          return _rpcMissingResponse();
+        }
         if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
           sentPayload = body;
           onConflictHeader = req.url.queryParameters['on_conflict'];
@@ -229,6 +276,9 @@ void main() {
       String? sentPayload;
       String? onConflictHeader;
       final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation')) {
+          return _rpcMissingResponse();
+        }
         if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
           sentPayload = body;
           onConflictHeader = req.url.queryParameters['on_conflict'];
@@ -345,6 +395,9 @@ void main() {
       String? sentPayload;
 
       final mockClient = MockHttpHandlerClient((req, body) async {
+        if (req.url.path.contains('/rest/v1/rpc/get_or_create_conversation')) {
+          return _rpcMissingResponse();
+        }
         if (req.url.path.contains('/rest/v1/conversations') && req.method == 'POST') {
           sentPayload = body;
           onConflict = req.url.queryParameters['on_conflict'];

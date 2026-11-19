@@ -107,7 +107,9 @@ void main() {
 
     expect(find.text('Filteri'), findsOneWidget);
     expect(find.text('KATEGORIJE'), findsOneWidget);
-    expect(find.text('CENA (€)'), findsOneWidget);
+    expect(find.text('CENA (EUR / RSD)'), findsOneWidget);
+    expect(find.text('EUR (€)'), findsOneWidget);
+    expect(find.text('RSD'), findsOneWidget);
     expect(find.text('LOKACIJA'), findsOneWidget);
     expect(find.text('STANJE PREDMETA'), findsOneWidget);
     expect(find.text('OGLAŠIVAČ'), findsOneWidget);

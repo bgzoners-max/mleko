@@ -75,6 +75,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
   bool _loading = false;
   bool _initializing = false;
   DateTime? _existingCreatedAt;
+  String? _existingStatus;
 
   bool get isEdit => widget.adId != null;
 
@@ -188,6 +189,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         _sellerType = ad.sellerType;
         _existingImages.addAll(ad.images);
         _existingCreatedAt = ad.createdAt;
+        _existingStatus = ad.status;
         _attributes = Map<String, dynamic>.from(ad.attributes);
         _isFeatured = ad.isFeatured;
         _featuredUntil = ad.featuredUntil;
@@ -383,7 +385,8 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
     if (!context.mounted) return;
     final categories = provider.categories;
     final result = await CategorySelectionModal.show(context, categories);
-    
+    if (!mounted) return;
+
     if (result != null) {
       _selectCategory(
         result.id,
@@ -492,7 +495,7 @@ class _AddEditClassifiedAdScreenState extends State<AddEditClassifiedAdScreen> {
         city: SerbianCities.normalize(_cityController.text),
         phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         phonePublic: _phonePublic,
-        status: 'active',
+        status: _existingStatus ?? 'active',
         attributes: _attributes,
         isFeatured: _isFeatured,
         featuredUntil: _featuredUntil,

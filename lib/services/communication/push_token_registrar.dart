@@ -232,19 +232,27 @@ class PushTokenRegistrar {
 
       final platform = kIsWeb ? 'web' : (Platform.isIOS ? 'ios' : 'android');
 
-      // Prvo očisti stare zapise drugih naloga za ovu instalaciju
-      await removeOtherUsersForInstallation(installationId, userId);
+      // Atomična registracija (čisti stare zapise drugih naloga i radi upsert)
+      await _registerTokenToDatabase(
+        generation: generation,
+        userId: userId,
+        installationId: installationId,
+        token: token,
+        platform: platform,
+      );
       if (!isCurrentRegistration(generation, userId)) return;
-
-      // Inicijalni upsert
-      await _upsertTokenToDatabase(userId, installationId, token, platform);
 
       // Slušalac za automatsko osvežavanje tokena
       _onTokenRefreshSub =
           FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
         if (!isCurrentRegistration(generation, userId)) return;
-        await _upsertTokenToDatabase(
-            userId, installationId, newToken, platform);
+        await _registerTokenToDatabase(
+          generation: generation,
+          userId: userId,
+          installationId: installationId,
+          token: newToken,
+          platform: platform,
+        );
       });
     } catch (e, st) {
       LoggerService.error('PushTokenRegistrar: Failed to register push token', e,
@@ -273,12 +281,18 @@ class PushTokenRegistrar {
     }
   }
 
-  Future<void> _upsertTokenToDatabase(String userId, String installationId,
-      String token, String platform) async {
+  Future<void> _registerTokenToDatabase({
+    required int generation,
+    required String userId,
+    required String installationId,
+    required String token,
+    required String platform,
+  }) async {
     const maxRetries = 3;
     for (int i = 0; i < maxRetries; i++) {
+      if (!isCurrentRegistration(generation, userId)) return;
       try {
-        await _repository.upsertToken(
+        await _repository.registerToken(
           userId: userId,
           installationId: installationId,
           token: token,
@@ -287,7 +301,7 @@ class PushTokenRegistrar {
         return;
       } catch (e, st) {
         LoggerService.error(
-          'PushTokenRegistrar: Failed to upsert token (attempt ${i + 1}/$maxRetries)',
+          'PushTokenRegistrar: Failed to register token (attempt ${i + 1}/$maxRetries)',
           e,
           stackTrace: st,
           extra: {

@@ -357,7 +357,7 @@ class _ProductVariantSelector extends StatelessWidget {
   }
 }
 
-class _SellerBadgeHeader extends StatelessWidget {
+class _SellerBadgeHeader extends StatefulWidget {
   final String sellerId;
   final bool isVerified;
 
@@ -367,9 +367,30 @@ class _SellerBadgeHeader extends StatelessWidget {
   });
 
   @override
+  State<_SellerBadgeHeader> createState() => _SellerBadgeHeaderState();
+}
+
+class _SellerBadgeHeaderState extends State<_SellerBadgeHeader> {
+  Future<UserModel?>? _sellerFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sellerFuture ??= context.read<UsersService>().getUser(widget.sellerId);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SellerBadgeHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sellerId != widget.sellerId) {
+      _sellerFuture = context.read<UsersService>().getUser(widget.sellerId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<UserModel?>(
-      future: context.read<UsersService>().getUser(sellerId),
+      future: _sellerFuture,
       builder: (context, snapshot) {
         final seller = snapshot.data;
         final farmDisplayName =
@@ -379,7 +400,7 @@ class _SellerBadgeHeader extends StatelessWidget {
         final linkColor = isDark ? AmazonColors.lightGreen : AmazonColors.link;
 
         return InkWell(
-          onTap: () => context.push('/seller/$sellerId'),
+          onTap: () => context.push('/seller/${widget.sellerId}'),
           borderRadius: BorderRadius.circular(6),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
@@ -404,7 +425,7 @@ class _SellerBadgeHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (isVerified) ...[
+                if (widget.isVerified) ...[
                   const SizedBox(width: 4),
                   const Icon(Icons.verified, size: 14, color: Colors.blue),
                 ],

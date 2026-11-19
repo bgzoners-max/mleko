@@ -200,7 +200,8 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
       _selectedDeliveryCity = nextCity;
       _selectedDeliveryPoint = nextPoint;
       _selectedDeliverySlot = nextSlot;
-      if (filteredPoints.isEmpty) {
+      if (filteredPoints.isEmpty &&
+          _deliveryMethod == DeliveryMethod.sellerDelivery) {
         _deliveryMethod = DeliveryMethod.agreement;
       }
       if (_deliveryMethod == DeliveryMethod.sellerDelivery &&
@@ -423,9 +424,7 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
             user.id,
             widget.sellerId,
             orderId: orderId,
-            productId: widget.items.isNotEmpty
-                ? widget.items.first.product.id
-                : null,
+            productId: _items.isNotEmpty ? _items.first.product.id : null,
           );
 
           if (_savePhoneToProfile) {
@@ -628,26 +627,41 @@ class _CheckoutMultiFormState extends State<CheckoutMultiForm> {
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(_error!,
-                              style: TextStyle(color: Colors.red.shade800)),
-                          const SizedBox(height: 12),
-                          FilledButton.tonal(
-                            onPressed: _sending ? null : _submit,
-                            child: const Text('Pokušaj ponovo'),
+                    Builder(builder: (ctx) {
+                      final isDark = Theme.of(ctx).brightness == Brightness.dark;
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.red.withValues(alpha: 0.16)
+                              : Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.red.shade700
+                                : Colors.red.shade200,
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              _error!,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.red.shade200
+                                    : Colors.red.shade800,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.tonal(
+                              onPressed: _sending ? null : _submit,
+                              child: const Text('Pokušaj ponovo'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                   const SizedBox(height: 80),
                 ],

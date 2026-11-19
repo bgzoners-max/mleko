@@ -6,7 +6,7 @@ import '../../services/services.dart';
 import '../skeleton.dart';
 
 /// Sekcija „Prodavci u tvom okruženju“ – prikazuje prodavce u izabranom regionu.
-class SellersNearYouSection extends StatelessWidget {
+class SellersNearYouSection extends StatefulWidget {
   final String region;
   final EdgeInsetsGeometry padding;
 
@@ -17,9 +17,39 @@ class SellersNearYouSection extends StatelessWidget {
   });
 
   @override
+  State<SellersNearYouSection> createState() => _SellersNearYouSectionState();
+}
+
+class _SellersNearYouSectionState extends State<SellersNearYouSection> {
+  Future<List<UserModel>>? _sellersFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sellersFuture ??=
+        context.read<ProductsService>().getSellersInRegion(widget.region);
+  }
+
+  @override
+  void didUpdateWidget(covariant SellersNearYouSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.region != widget.region) {
+      _sellersFuture =
+          context.read<ProductsService>().getSellersInRegion(widget.region);
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _sellersFuture =
+          context.read<ProductsService>().getSellersInRegion(widget.region);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: padding,
+      padding: widget.padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -32,15 +62,32 @@ class SellersNearYouSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           FutureBuilder<List<UserModel>>(
-            future: context.read<ProductsService>().getSellersInRegion(region),
+            future: _sellersFuture,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const SellerAvatarRowSkeleton();
               }
+              if (snap.hasError) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Nije moguće učitati prodavce u okruženju.',
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _retry,
+                      child: const Text('Pokušaj ponovo'),
+                    ),
+                  ],
+                );
+              }
               final sellers = snap.data ?? <UserModel>[];
               if (sellers.isEmpty) {
                 return Text(
-                  'Nema prodavaca sa proizvodima u $region.',
+                  'Nema prodavaca sa proizvodima u ${widget.region}.',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 );
               }
@@ -54,7 +101,9 @@ class SellersNearYouSection extends StatelessWidget {
                     final seller = sellers[i];
                     final name =
                         seller.farmName ?? seller.displayName ?? 'Prodavac';
-                    final subtitle = seller.location ?? seller.city ?? region;
+                    final subtitle =
+                        seller.location ?? seller.city ?? widget.region;
+                    final avatarUrl = seller.profileImageUrl;
                     return SizedBox(
                       width: 160,
                       child: Card(
@@ -63,10 +112,15 @@ class SellersNearYouSection extends StatelessWidget {
                               horizontal: 12, vertical: 4),
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey.shade300,
-                            backgroundImage: seller.profileImageUrl != null
-                                ? NetworkImage(seller.profileImageUrl!)
+                            backgroundImage: avatarUrl != null &&
+                                    avatarUrl.isNotEmpty
+                                ? NetworkImage(avatarUrl)
                                 : null,
-                            child: seller.profileImageUrl == null
+                            onBackgroundImageError: avatarUrl != null &&
+                                    avatarUrl.isNotEmpty
+                                ? (_, __) {}
+                                : null,
+                            child: avatarUrl == null || avatarUrl.isEmpty
                                 ? Icon(Icons.store, color: Colors.grey.shade700)
                                 : null,
                           ),

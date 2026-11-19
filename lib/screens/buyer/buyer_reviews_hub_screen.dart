@@ -25,8 +25,26 @@ class BuyerReviewsHubScreen extends StatefulWidget {
 
 class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
   int _refreshKey = 0;
+  Future<Map<String, dynamic>>? _dataFuture;
 
-  void _refresh() => setState(() => _refreshKey++);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _dataFuture ??= _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant BuyerReviewsHubScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.buyerId != widget.buyerId) {
+      _dataFuture = _load();
+    }
+  }
+
+  void _refresh() => setState(() {
+        _refreshKey++;
+        _dataFuture = _load();
+      });
 
   Future<Map<String, dynamic>> _load() async {
     final reviewsService = context.read<ReviewsService>();
@@ -102,7 +120,7 @@ class _BuyerReviewsHubScreenState extends State<BuyerReviewsHubScreen> {
           constraints: const BoxConstraints(maxWidth: 800),
           child: FutureBuilder<Map<String, dynamic>>(
         key: ValueKey(_refreshKey),
-        future: _load(),
+        future: _dataFuture,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const OrderListSkeleton();

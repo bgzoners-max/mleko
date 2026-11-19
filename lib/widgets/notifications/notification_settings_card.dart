@@ -54,17 +54,25 @@ class NotificationPermissionBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fgColor = isDark ? Colors.amber.shade100 : Colors.amber.shade900;
     return Card(
-      color: Colors.amber.shade100,
-      child: const ListTile(
-        leading: Icon(Icons.notifications_off),
-        title: Text('Obaveštenja su isključena'),
+      color: isDark
+          ? Colors.amber.withValues(alpha: 0.18)
+          : Colors.amber.shade100,
+      child: ListTile(
+        leading: Icon(Icons.notifications_off, color: fgColor),
+        title: Text(
+          'Obaveštenja su isključena',
+          style: TextStyle(color: fgColor, fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
           'Dozvolite obaveštenja u podešavanjima da primate push obaveštenja.',
+          style: TextStyle(color: fgColor.withValues(alpha: 0.9)),
         ),
         trailing: TextButton(
           onPressed: openAppSettings,
-          child: Text('Podešavanja'),
+          child: Text('Podešavanja', style: TextStyle(color: fgColor)),
         ),
       ),
     );

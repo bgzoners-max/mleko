@@ -430,7 +430,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onRetry: _retry,
                   );
                 }
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState != ConnectionState.done) {
                   return const ProductDetailSkeleton();
                 }
                 final product = snapshot.data;

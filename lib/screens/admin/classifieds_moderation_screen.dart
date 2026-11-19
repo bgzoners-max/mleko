@@ -221,11 +221,12 @@ class _ClassifiedsModerationScreenState extends State<ClassifiedsModerationScree
               backgroundColor: Colors.red.shade700,
             ),
             onPressed: () {
+              final note = noteController.text.trim();
               Navigator.pop(ctx);
               _handleModerateAction(
                 report: report,
                 action: 'deactivate_ad',
-                note: noteController.text.trim(),
+                note: note,
               );
             },
             icon: const Icon(Icons.block_rounded, size: 18),
@@ -233,7 +234,7 @@ class _ClassifiedsModerationScreenState extends State<ClassifiedsModerationScree
           ),
         ],
       ),
-    );
+    ).whenComplete(noteController.dispose);
   }
 
   @override

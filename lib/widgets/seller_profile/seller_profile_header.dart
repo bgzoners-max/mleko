@@ -30,6 +30,23 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
   bool _checked = false;
   late final Future<int> _followersFuture =
       FavoriteSellersService().getFollowersCount(widget.seller.id);
+  Future<SellerStatsModel>? _statsFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _statsFuture ??=
+        context.read<ReviewsService>().getSellerStats(widget.seller.id);
+  }
+
+  @override
+  void didUpdateWidget(covariant SellerProfileHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.seller.id != widget.seller.id) {
+      _statsFuture =
+          context.read<ReviewsService>().getSellerStats(widget.seller.id);
+    }
+  }
 
   @override
   void initState() {
@@ -282,9 +299,7 @@ class _SellerProfileHeaderState extends State<SellerProfileHeader> {
                             },
                           ),
                           FutureBuilder<SellerStatsModel>(
-                            future: context
-                                .read<ReviewsService>()
-                                .getSellerStats(seller.id),
+                            future: _statsFuture,
                             builder: (context, snap) {
                               final stats = snap.data;
                               if (stats == null) return const SizedBox.shrink();

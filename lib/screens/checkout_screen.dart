@@ -69,7 +69,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           );
         }
-        if (!snap.hasData) {
+        if (snap.connectionState != ConnectionState.done) {
           return Scaffold(
             appBar: AppBar(
               leading: AppBackButton(fallbackRoute: '/product/${widget.productId}'),

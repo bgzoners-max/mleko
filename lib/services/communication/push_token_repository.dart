@@ -9,6 +9,13 @@ abstract interface class PushTokenRepository {
   factory PushTokenRepository({SupabaseClient? client}) =
       SupabasePushTokenRepository;
 
+  Future<void> registerToken({
+    required String userId,
+    required String installationId,
+    required String token,
+    required String platform,
+  });
+
   Future<void> removeOtherUsersForInstallation(
     String installationId,
     String userId,
@@ -36,6 +43,37 @@ class SupabasePushTokenRepository implements PushTokenRepository {
   SupabaseClient get _client => _customClient ?? Supabase.instance.client;
 
   @override
+  Future<void> registerToken({
+    required String userId,
+    required String installationId,
+    required String token,
+    required String platform,
+  }) async {
+    try {
+      await _client.rpc(
+        'register_push_token',
+        params: {
+          'p_installation_id': installationId,
+          'p_token': token,
+          'p_platform': platform,
+        },
+      );
+      return;
+    } on PostgrestException catch (e) {
+      // Fallback za starije baze dok migracija nije primenjena
+      if (e.code != '42883' && e.code != 'PGRST202') rethrow;
+    }
+
+    await removeOtherUsersForInstallation(installationId, userId);
+    await upsertToken(
+      userId: userId,
+      installationId: installationId,
+      token: token,
+      platform: platform,
+    );
+  }
+
+  @override
   Future<void> removeOtherUsersForInstallation(
     String installationId,
     String userId,
@@ -60,7 +98,7 @@ class SupabasePushTokenRepository implements PushTokenRepository {
         'installation_id': installationId,
         'token': token,
         'platform': platform,
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
       },
       onConflict: 'user_id,installation_id',
     );

@@ -102,8 +102,36 @@ class NotificationHandlerService {
     return false;
   }
 
+  /// Dozvoljeni format ID segmenta za bezbednu interpolaciju u rute (sprečava path traversal).
+  static final RegExp _safeIdPattern = RegExp(r'^[a-zA-Z0-9_\-]+$');
+
+  static String? _sanitizeSegmentId(dynamic raw) {
+    if (raw is! String) return null;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty || !_safeIdPattern.hasMatch(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  void _safePushOrFallback(
+    String target,
+    String fallback, {
+    required bool isAdmin,
+  }) {
+    if (isAllowedRoute(target, isAdmin: isAdmin)) {
+      router.push(target);
+      return;
+    }
+    LoggerService.warning(
+      'NotificationHandler: Rejected unsafe interpolated push route',
+      extra: {'target': target, 'fallback': fallback},
+    );
+    router.go(fallback);
+  }
+
   /// Glavna metoda za obradu podataka iz notifikacije (FCM data payload).
-  /// 
+  ///
   /// Koristi `go` za glavne ekrane (zamenjuje ceo stack) i `push` za detaljne
   /// ekrane gde korisnik želi da se vrati nazad (chat, detalji oglasa).
   void handleNotification(Map<String, dynamic> data) {
@@ -128,8 +156,8 @@ class NotificationHandlerService {
 
     // 2. Logika bazirana na tipu notifikacije (legacy/strukturno)
     final type = data['type'] as String?;
-    final uid = appState.user?.id;
-    final conversationId = data['conversation_id'] as String?;
+    final uid = _sanitizeSegmentId(appState.user?.id);
+    final conversationId = _sanitizeSegmentId(data['conversation_id']);
 
     if (notificationTypeIsOrderRelated(type)) {
       // Glavni ekran - koristi go
@@ -147,7 +175,11 @@ class NotificationHandlerService {
     } else if (type == 'new_message') {
       if (conversationId != null) {
         // Detaljni ekran (chat) - koristi push da bi korisnik mogao da se vrati
-        router.push('/chat/$conversationId');
+        _safePushOrFallback(
+          '/chat/$conversationId',
+          '/conversations',
+          isAdmin: isAdmin,
+        );
       } else {
         // Glavni ekran - koristi go
         router.go('/conversations');
@@ -162,10 +194,14 @@ class NotificationHandlerService {
       // Glavni ekran - koristi go
       router.go('/notifications');
     } else if (type == 'admin_reply') {
-      final ticketId = data['ticket_id'] as String?;
+      final ticketId = _sanitizeSegmentId(data['ticket_id']);
       if (ticketId != null) {
         // Detaljni ekran (chat tiket) - koristi push da bi korisnik mogao da se vrati
-        router.push('/support/ticket/$ticketId');
+        _safePushOrFallback(
+          '/support/ticket/$ticketId',
+          '/support',
+          isAdmin: isAdmin,
+        );
       } else {
         // Glavni ekran - koristi go
         router.go('/support');
@@ -174,10 +210,14 @@ class NotificationHandlerService {
       // Glavni ekran - koristi go
       router.go('/classifieds/my');
     } else if (notificationTypeIsClassifiedRelated(type)) {
-      final adId = data['classified_ad_id'] as String?;
-      if (adId != null && adId.isNotEmpty) {
+      final adId = _sanitizeSegmentId(data['classified_ad_id']);
+      if (adId != null) {
         // Detaljni ekran (oglas) - koristi push da bi korisnik mogao da se vrati
-        router.push('/classifieds/ad/$adId');
+        _safePushOrFallback(
+          '/classifieds/ad/$adId',
+          '/classifieds',
+          isAdmin: isAdmin,
+        );
       } else {
         // Glavni ekran - koristi go
         router.go('/classifieds');

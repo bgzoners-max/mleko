@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/design_system.dart';
 import '../../../providers/classifieds_provider.dart';
 
-/// Sekcija raspona cena u EUR sa TextField poljima i brzim čipovima.
+/// Sekcija raspona cena (EUR / RSD) sa izborom valute, TextField poljima i brzim čipovima.
 class ClassifiedsSidebarPriceSection extends StatelessWidget {
   final ClassifiedsProvider classifieds;
   final TextEditingController minPriceController;
@@ -23,16 +23,68 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
     required this.isDark,
   });
 
-  Widget _buildQuickPricePill(String label, double? min, double? max) {
-    final isSelected = classifieds.minPrice == min && classifieds.maxPrice == max;
+  Widget _buildCurrencyChip(String label, String? currencyValue) {
+    final isSelected = classifieds.selectedCurrency == currencyValue;
     return InkWell(
-      onTap: () => onQuickPrice(min, max),
+      onTap: () => classifieds.selectCurrency(currencyValue),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? AmazonColors.green.withValues(alpha: 0.25)
+                  : AmazonColors.green.withValues(alpha: 0.12))
+              : (isDark ? AmazonColors.darkCanvas : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
+                : (isDark ? AmazonColors.darkBorder : AmazonColors.borderGray),
+            width: isSelected ? 1.2 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? (isDark ? AmazonColors.lightGreen : AmazonColors.green)
+                : (isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickPricePill(
+    String label,
+    double? min,
+    double? max, {
+    required String targetCurrency,
+  }) {
+    final isSelected = classifieds.minPrice == min &&
+        classifieds.maxPrice == max &&
+        (classifieds.selectedCurrency == null ||
+            classifieds.selectedCurrency == targetCurrency);
+    return InkWell(
+      onTap: () {
+        if (classifieds.selectedCurrency == null) {
+          classifieds.selectCurrency(targetCurrency);
+        }
+        onQuickPrice(min, max);
+      },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AmazonColors.amber.withValues(alpha: 0.25) : AmazonColors.amberLight)
+              ? (isDark
+                  ? AmazonColors.amber.withValues(alpha: 0.25)
+                  : AmazonColors.amberLight)
               : (isDark ? AmazonColors.darkCanvas : Colors.grey.shade100),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -49,7 +101,9 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
             color: isSelected
                 ? (isDark ? AmazonColors.amberLight : AmazonColors.amberDark)
-                : (isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary),
+                : (isDark
+                    ? AmazonColors.darkTextPrimary
+                    : AmazonColors.textPrimary),
           ),
         ),
       ),
@@ -58,21 +112,39 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currency = classifieds.selectedCurrency;
+    final isRsd = currency == 'RSD';
+    final headerLabel = currency == null
+        ? 'CENA (EUR / RSD)'
+        : (isRsd ? 'CENA (RSD)' : 'CENA (€)');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.only(bottom: 6),
           child: Text(
-            'CENA (€)',
+            headerLabel,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,
-              color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+              color: isDark
+                  ? AmazonColors.darkTextSecondary
+                  : AmazonColors.textSecondary,
             ),
           ),
         ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _buildCurrencyChip('Sve', null),
+            _buildCurrencyChip('EUR (€)', 'EUR'),
+            _buildCurrencyChip('RSD', 'RSD'),
+          ],
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -85,25 +157,34 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
                   onSubmitted: (_) => onApplyPrice(),
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                    color: isDark
+                        ? AmazonColors.darkTextPrimary
+                        : AmazonColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Od',
                     hintStyle: TextStyle(
                       fontSize: 11,
-                      color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                      color: isDark
+                          ? AmazonColors.darkTextSecondary
+                          : AmazonColors.textSecondary,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
                       borderSide: BorderSide(
-                        color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                        color: isDark
+                            ? AmazonColors.darkBorder
+                            : AmazonColors.borderGray,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
                       borderSide: BorderSide(
-                        color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                        color: isDark
+                            ? AmazonColors.darkBorder
+                            : AmazonColors.borderGray,
                       ),
                     ),
                   ),
@@ -124,25 +205,34 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
                   onSubmitted: (_) => onApplyPrice(),
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? AmazonColors.darkTextPrimary : AmazonColors.textPrimary,
+                    color: isDark
+                        ? AmazonColors.darkTextPrimary
+                        : AmazonColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Do',
                     hintStyle: TextStyle(
                       fontSize: 11,
-                      color: isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary,
+                      color: isDark
+                          ? AmazonColors.darkTextSecondary
+                          : AmazonColors.textSecondary,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
                       borderSide: BorderSide(
-                        color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                        color: isDark
+                            ? AmazonColors.darkBorder
+                            : AmazonColors.borderGray,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
                       borderSide: BorderSide(
-                        color: isDark ? AmazonColors.darkBorder : AmazonColors.borderGray,
+                        color: isDark
+                            ? AmazonColors.darkBorder
+                            : AmazonColors.borderGray,
                       ),
                     ),
                   ),
@@ -155,10 +245,12 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
               child: FilledButton(
                 onPressed: onApplyPrice,
                 style: FilledButton.styleFrom(
-                  backgroundColor: isDark ? AmazonColors.darkAmberCta : AmazonColors.amber,
+                  backgroundColor:
+                      isDark ? AmazonColors.darkAmberCta : AmazonColors.amber,
                   foregroundColor: AmazonColors.darkNavy,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6)),
                   elevation: 0,
                 ),
                 child: const Icon(Icons.arrow_forward_rounded, size: 14),
@@ -168,16 +260,31 @@ class ClassifiedsSidebarPriceSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // Quick price chips
+        // Quick price chips prilagođeni valuti
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: [
-            _buildQuickPricePill('< 50 €', null, 50),
-            _buildQuickPricePill('50–200 €', 50, 200),
-            _buildQuickPricePill('200–500 €', 200, 500),
-            _buildQuickPricePill('500 € +', 500, null),
-          ],
+          children: isRsd
+              ? [
+                  _buildQuickPricePill('< 5.000', null, 5000,
+                      targetCurrency: 'RSD'),
+                  _buildQuickPricePill('5–20k', 5000, 20000,
+                      targetCurrency: 'RSD'),
+                  _buildQuickPricePill('20–50k', 20000, 50000,
+                      targetCurrency: 'RSD'),
+                  _buildQuickPricePill('50k+ RSD', 50000, null,
+                      targetCurrency: 'RSD'),
+                ]
+              : [
+                  _buildQuickPricePill('< 50 €', null, 50,
+                      targetCurrency: 'EUR'),
+                  _buildQuickPricePill('50–200 €', 50, 200,
+                      targetCurrency: 'EUR'),
+                  _buildQuickPricePill('200–500 €', 200, 500,
+                      targetCurrency: 'EUR'),
+                  _buildQuickPricePill('500 € +', 500, null,
+                      targetCurrency: 'EUR'),
+                ],
         ),
       ],
     );

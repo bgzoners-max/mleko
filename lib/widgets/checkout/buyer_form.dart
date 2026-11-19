@@ -87,26 +87,40 @@ class BuyerForm extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ] else if (deliveryMethod == DeliveryMethod.pickup) ...[
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 18),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Dogovori se sa prodavcem o mestu i vremenu preuzimanja.',
-                    style: TextStyle(fontSize: 13),
-                  ),
+          Builder(builder: (ctx) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.blue.withValues(alpha: 0.16)
+                    : Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark ? Colors.blue.shade700 : Colors.blue.shade200,
                 ),
-              ],
-            ),
-          ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: isDark ? Colors.blue.shade200 : Colors.blue.shade700,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Dogovori se sa prodavcem o mestu i vremenu preuzimanja.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.blue.shade100 : Colors.blue.shade900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
           const SizedBox(height: 12),
         ] else if (deliveryMethod == DeliveryMethod.sellerDelivery) ...[
           TextField(

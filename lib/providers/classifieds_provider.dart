@@ -56,6 +56,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   String? _searchQuery;
   double? _minPrice;
   double? _maxPrice;
+  String? _selectedCurrency;
   ClassifiedSort _sort = ClassifiedSort.newest;
   Map<String, dynamic> _selectedAttributes = {};
   bool _onlyFeatured = false;
@@ -79,6 +80,7 @@ class ClassifiedsProvider extends ChangeNotifier {
   String? get searchQuery => _searchQuery;
   double? get minPrice => _minPrice;
   double? get maxPrice => _maxPrice;
+  String? get selectedCurrency => _selectedCurrency;
   ClassifiedSort get sort => _sort;
   Map<String, dynamic> get selectedAttributes =>
       Map.unmodifiable(_selectedAttributes);
@@ -298,6 +300,7 @@ class ClassifiedsProvider extends ChangeNotifier {
         cities: districtCities,
         minPrice: _minPrice,
         maxPrice: _maxPrice,
+        currency: _selectedCurrency,
         condition: _selectedCondition,
         sellerType: _selectedSellerType,
         searchQuery: _searchQuery,
@@ -353,6 +356,7 @@ class ClassifiedsProvider extends ChangeNotifier {
         cities: districtCities,
         minPrice: _minPrice,
         maxPrice: _maxPrice,
+        currency: _selectedCurrency,
         condition: _selectedCondition,
         sellerType: _selectedSellerType,
         searchQuery: _searchQuery,
@@ -509,10 +513,27 @@ class ClassifiedsProvider extends ChangeNotifier {
     loadInitialAds();
   }
 
-  void setPriceRange({double? minPrice, double? maxPrice}) {
-    if (_minPrice == minPrice && _maxPrice == maxPrice) return;
+  void selectCurrency(String? currency) {
+    if (_selectedCurrency == currency) return;
+    _selectedCurrency = currency;
+    loadInitialAds();
+  }
+
+  void setPriceRange({
+    double? minPrice,
+    double? maxPrice,
+    String? currency,
+    bool updateCurrency = false,
+  }) {
+    final nextCurrency = updateCurrency ? currency : _selectedCurrency;
+    if (_minPrice == minPrice &&
+        _maxPrice == maxPrice &&
+        _selectedCurrency == nextCurrency) {
+      return;
+    }
     _minPrice = minPrice;
     _maxPrice = maxPrice;
+    _selectedCurrency = nextCurrency;
     loadInitialAds();
   }
 
@@ -525,6 +546,7 @@ class ClassifiedsProvider extends ChangeNotifier {
     _searchQuery = null;
     _minPrice = null;
     _maxPrice = null;
+    _selectedCurrency = null;
     _selectedAttributes = {};
     _onlyFeatured = false;
     _onlyUrgent = false;

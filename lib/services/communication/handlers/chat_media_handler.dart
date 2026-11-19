@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../models/app_error.dart';
 import '../../core/logger_service.dart';
 import '../../media/image_compression_service.dart';
+import '../../media/storage_service.dart';
 
 /// Handler za chat medije (slike, signed URLs) izdvojen radi čiste kompozicije.
 class ChatMediaHandler {
   final SupabaseClient? _customClient;
+  static const _uuid = Uuid();
 
   ChatMediaHandler({SupabaseClient? client}) : _customClient = client;
 
@@ -71,15 +74,17 @@ class ChatMediaHandler {
   ) async {
     try {
       final rawData = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+      StorageService.validateImageBytes(rawData);
       final data = await ImageCompressionService().compressChatImage(rawData);
-      final name = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final mimeInfo = StorageService.validateImageBytes(data);
+      final name = '${_uuid.v4()}.${mimeInfo.ext}';
       final path = '$userId/$conversationId/$name';
 
       await _client.storage.from('chat-images').uploadBinary(
             path,
             data,
             fileOptions:
-                const FileOptions(contentType: 'image/jpeg', upsert: true),
+                FileOptions(contentType: mimeInfo.mimeType, upsert: true),
           );
 
       final signedUrl =
@@ -90,6 +95,7 @@ class ChatMediaHandler {
       _signedUrlCache[path] = signedUrl;
       return signedUrl;
     } catch (e, st) {
+      if (e is AppError) rethrow;
       throw AppError.from(e, stackTrace: st);
     }
   }

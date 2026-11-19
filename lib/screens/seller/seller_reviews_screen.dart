@@ -23,8 +23,39 @@ class SellerReviewsScreen extends StatefulWidget {
 
 class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
   int _refreshKey = 0;
+  Future<Map<String, dynamic>>? _dataFuture;
 
-  void _refresh() => setState(() => _refreshKey++);
+  Future<Map<String, dynamic>> _createFuture() {
+    final reviewsService = context.read<ReviewsService>();
+    return Future.wait([
+      reviewsService.getSellerStats(widget.sellerId),
+      reviewsService.getReviewsForSeller(widget.sellerId),
+    ]).then((r) async {
+      final reviews = r[1] as List<ReviewModel>;
+      final buyerIds = reviews.map((x) => x.buyerId).toSet();
+      final buyerNames = await fetchProfileDisplayNames(buyerIds);
+      return {'stats': r[0], 'reviews': reviews, 'buyerNames': buyerNames};
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _dataFuture ??= _createFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant SellerReviewsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sellerId != widget.sellerId) {
+      _dataFuture = _createFuture();
+    }
+  }
+
+  void _refresh() => setState(() {
+        _refreshKey++;
+        _dataFuture = _createFuture();
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -79,15 +110,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
           constraints: const BoxConstraints(maxWidth: 800),
           child: FutureBuilder<Map<String, dynamic>>(
         key: ValueKey(_refreshKey),
-        future: Future.wait([
-          context.read<ReviewsService>().getSellerStats(widget.sellerId),
-          context.read<ReviewsService>().getReviewsForSeller(widget.sellerId),
-        ]).then((r) async {
-          final reviews = r[1] as List<ReviewModel>;
-          final buyerIds = reviews.map((x) => x.buyerId).toSet();
-          final buyerNames = await fetchProfileDisplayNames(buyerIds);
-          return {'stats': r[0], 'reviews': reviews, 'buyerNames': buyerNames};
-        }),
+        future: _dataFuture,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const OrderListSkeleton();

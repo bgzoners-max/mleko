@@ -178,12 +178,19 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
     text: provider.selectedAttributes['max_area_m2']?.toString() ?? '',
   );
 
+  var selectedCurrency = provider.selectedCurrency;
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) {
-      return Center(
+      return StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final currencyLabel = selectedCurrency == null
+              ? 'EUR / RSD'
+              : (selectedCurrency == 'RSD' ? 'RSD' : '€');
+          return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: Breakpoints.modalMaxWidth),
           child: Padding(
@@ -229,9 +236,31 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
                 ),
                 const SizedBox(height: 16),
 
-                // CENA
-                const Text('Cena (€)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                // VALUTA I CENA
+                Text('Cena ($currencyLabel)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Sve valute'),
+                      selected: selectedCurrency == null,
+                      onSelected: (_) => setSheetState(() => selectedCurrency = null),
+                    ),
+                    ChoiceChip(
+                      label: const Text('EUR (€)'),
+                      selected: selectedCurrency == 'EUR',
+                      onSelected: (_) => setSheetState(() => selectedCurrency = 'EUR'),
+                    ),
+                    ChoiceChip(
+                      label: const Text('RSD'),
+                      selected: selectedCurrency == 'RSD',
+                      onSelected: (_) => setSheetState(() => selectedCurrency = 'RSD'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
@@ -239,7 +268,7 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
                         controller: minPriceController,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Od (€)',
+                          labelText: 'Od ($currencyLabel)',
                           isDense: true,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
@@ -251,7 +280,7 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
                         controller: maxPriceController,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Do (€)',
+                          labelText: 'Do ($currencyLabel)',
                           isDense: true,
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
@@ -302,7 +331,12 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
                       child: OutlinedButton(
                         onPressed: () {
                           provider
-                            ..setPriceRange(minPrice: null, maxPrice: null)
+                            ..setPriceRange(
+                              minPrice: null,
+                              maxPrice: null,
+                              currency: null,
+                              updateCurrency: true,
+                            )
                             ..removeAttributeFilter('min_area_m2')
                             ..removeAttributeFilter('max_area_m2');
                           Navigator.pop(ctx);
@@ -320,7 +354,12 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
                         onPressed: () {
                           final minP = parseDecimal(minPriceController.text);
                           final maxP = parseDecimal(maxPriceController.text);
-                          provider.setPriceRange(minPrice: minP, maxPrice: maxP);
+                          provider.setPriceRange(
+                            minPrice: minP,
+                            maxPrice: maxP,
+                            currency: selectedCurrency,
+                            updateCurrency: true,
+                          );
 
                           if (isRealEstate) {
                             final minM2 = parseDecimal(minAreaController.text);
@@ -355,6 +394,8 @@ void showClassifiedPriceAndAreaFilterSheet(BuildContext context, {required bool 
       ),
     ),
   );
+        },
+      );
     },
   ).whenComplete(() {
     minPriceController.dispose();

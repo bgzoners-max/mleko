@@ -136,29 +136,47 @@ class CheckoutDeliveryOptions extends StatelessWidget {
             ),
             if (deliverySelection != null) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      deliverySelection!.scheduleLabel,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+              Builder(builder: (ctx) {
+                final isDark = Theme.of(ctx).brightness == Brightness.dark;
+                final textColor =
+                    isDark ? Colors.green.shade100 : Colors.green.shade900;
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.green.withValues(alpha: 0.16)
+                        : Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.green.shade700
+                          : Colors.green.shade200,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${deliverySelection!.pointLabel}, ${deliverySelection!.address}',
-                    ),
-                    if (deliverySelection!.feeLabel != null)
-                      Text('Dostava: ${deliverySelection!.feeLabel}'),
-                  ],
-                ),
-              ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        deliverySelection!.scheduleLabel,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${deliverySelection!.pointLabel}, ${deliverySelection!.address}',
+                        style: TextStyle(color: textColor),
+                      ),
+                      if (deliverySelection!.feeLabel != null)
+                        Text(
+                          'Dostava: ${deliverySelection!.feeLabel}',
+                          style: TextStyle(color: textColor),
+                        ),
+                    ],
+                  ),
+                );
+              }),
             ],
           ],
         ],

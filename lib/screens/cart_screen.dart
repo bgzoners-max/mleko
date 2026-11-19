@@ -12,6 +12,7 @@ import '../models/user_model.dart';
 import '../providers/cart_provider.dart';
 import 'package:mleko/services/services.dart';
 import '../widgets/app_empty_state.dart';
+import '../widgets/app_error_retry.dart';
 import '../widgets/rustic_illustration.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/cart/cart_guest_banner.dart';
@@ -28,6 +29,8 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   bool _loading = true;
+  String? _error;
+  CartProvider? _cartProvider;
   Map<String, List<({ProductModel product, double quantity})>> _groupedItems =
       {};
   Map<String, UserModel> _sellerProfiles = {};
@@ -38,14 +41,54 @@ class _CartScreenState extends State<CartScreen> {
     _loadData();
   }
 
-  Future<void> _loadData() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     final cart = context.read<CartProvider>();
-    final grouped = await cart.getProductsGroupedBySeller();
+    if (!identical(_cartProvider, cart)) {
+      _cartProvider?.removeListener(_onCartChanged);
+      _cartProvider = cart;
+      _cartProvider!.addListener(_onCartChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _cartProvider?.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (!mounted) return;
+    unawaited(_loadData());
+  }
+
+  Future<void> _loadData({bool showSpinner = false}) async {
+    if (showSpinner && mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    final cart = context.read<CartProvider>();
+
+    Map<String, List<({ProductModel product, double quantity})>> grouped;
+    try {
+      grouped = await cart.getProductsGroupedBySeller();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+      return;
+    }
     if (!mounted) return;
 
     if (grouped.isEmpty) {
       setState(() {
         _groupedItems = {};
+        _error = null;
         _loading = false;
       });
       return;
@@ -53,21 +96,22 @@ class _CartScreenState extends State<CartScreen> {
 
     final sellerIds = grouped.keys.toList();
     final usersService = context.read<UsersService>();
-
+    var profilesMap = _sellerProfiles;
     try {
       final profiles = await usersService.getUsers(sellerIds);
-      final profilesMap = {for (var p in profiles) p.id: p};
-
-      if (!mounted) return;
-      setState(() {
-        _groupedItems = grouped;
-        _sellerProfiles = profilesMap;
-        _loading = false;
-      });
+      profilesMap = {for (var p in profiles) p.id: p};
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      LoggerService.warning('CartScreen: failed to load seller profiles',
+          extra: {'error': e.toString()});
     }
+
+    if (!mounted) return;
+    setState(() {
+      _groupedItems = grouped;
+      _sellerProfiles = profilesMap;
+      _error = null;
+      _loading = false;
+    });
   }
 
   Future<void> _confirmClearCart(CartProvider cart) async {
@@ -125,9 +169,15 @@ class _CartScreenState extends State<CartScreen> {
                       child: const OrderListSkeleton(itemCount: 3),
                     ),
                   )
-                : _groupedItems.isEmpty
-                    ? _buildEmptyState()
-                    : _buildCartList(),
+                : _error != null
+                    ? AppErrorRetry(
+                        message: 'Greška pri učitavanju korpe.',
+                        detail: _error,
+                        onRetry: () => _loadData(showSpinner: true),
+                      )
+                    : _groupedItems.isEmpty
+                        ? _buildEmptyState()
+                        : _buildCartList(),
           ),
         ],
       ),

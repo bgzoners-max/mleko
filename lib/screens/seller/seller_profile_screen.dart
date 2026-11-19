@@ -74,7 +74,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
             ),
           );
         }
-        if (!userSnap.hasData) {
+        if (userSnap.connectionState != ConnectionState.done) {
           return Scaffold(
             appBar: AppBar(
               leading: const AppBackButton(fallbackRoute: '/'),

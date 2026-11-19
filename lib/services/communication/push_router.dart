@@ -44,14 +44,32 @@ class PushRouter {
     _ensureForegroundSubscription();
   }
 
+  /// Određuje da li lokalni prikaz foreground push notifikacije treba preskočiti.
+  ///
+  /// - Web koristi sopstveni in-app badge / service worker.
+  /// - iOS sa `setForegroundNotificationPresentationOptions` već prikazuje
+  ///   sistemski baner kada poruka nosi `notification` payload.
+  /// - Android NE prikazuje sistemski baner u foreground-u za FCM poruke
+  ///   (čak ni kad sadrže `notification` blok), pa lokalna notifikacija MORA
+  ///   da se prikaže.
+  @visibleForTesting
+  static bool shouldSkipLocalNotification({
+    required bool isWeb,
+    required bool isIOS,
+    required bool hasNotificationPayload,
+  }) {
+    return isWeb || (isIOS && hasNotificationPayload);
+  }
+
   void _ensureForegroundSubscription() {
     if (_onMessageSub != null) return;
 
     _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
-      final shouldSkipLocalNotification =
-          kIsWeb ||
-          ((Platform.isIOS || Platform.isAndroid) &&
-              message.notification != null);
+      final skipLocalNotification = shouldSkipLocalNotification(
+        isWeb: kIsWeb,
+        isIOS: !kIsWeb && Platform.isIOS,
+        hasNotificationPayload: message.notification != null,
+      );
 
       if (message.notification == null && message.data.isEmpty) return;
 
@@ -66,7 +84,7 @@ class PushRouter {
       final orderId = data['order_id'] as String? ?? '';
       final conversationId = data['conversation_id'] as String? ?? '';
 
-      if (!shouldSkipLocalNotification) {
+      if (!skipLocalNotification) {
         _renderer.showNotification(
           title: title,
           body: body,
