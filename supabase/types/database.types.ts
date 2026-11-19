@@ -483,14 +483,14 @@ isOneToOne: false
                   ]
                 },"orders": {
                   Row: {
-                    "archived_at": string | null,"buyer_address": string | null,"buyer_city": string | null,"buyer_id": string,"buyer_phone": string,"buyer_postal_code": string | null,"cancellation_reason": string | null,"created_at": string | null,"delivery_address": string | null,"delivery_city": string | null,"delivery_fee_rsd": number | null,"delivery_method": string | null,"delivery_point_id": string | null,"delivery_point_label": string | null,"delivery_time_from": string | null,"delivery_time_to": string | null,"delivery_weekday": number | null,"expires_at": string,"id": string,"note": string | null,"prefer_call": boolean | null,"product_id": string | null,"product_name": string | null,"quantity_kg": number | null,"seller_id": string,"status": string | null,"status_changed_at": string | null,"total_amount": number | null,"unit_type": string
+                    "archived_at": string | null,"buyer_address": string | null,"buyer_city": string | null,"buyer_id": string,"buyer_phone": string,"buyer_postal_code": string | null,"cancellation_reason": string | null,"client_order_id": string | null,"created_at": string | null,"delivery_address": string | null,"delivery_city": string | null,"delivery_fee_rsd": number | null,"delivery_method": string | null,"delivery_point_id": string | null,"delivery_point_label": string | null,"delivery_time_from": string | null,"delivery_time_to": string | null,"delivery_weekday": number | null,"expires_at": string,"id": string,"note": string | null,"prefer_call": boolean | null,"product_id": string | null,"product_name": string | null,"quantity_kg": number | null,"seller_id": string,"status": string | null,"status_changed_at": string | null,"total_amount": number | null,"unit_type": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"buyer_address"?: string | null,"buyer_city"?: string | null,"buyer_id": string,"buyer_phone": string,"buyer_postal_code"?: string | null,"cancellation_reason"?: string | null,"created_at"?: string | null,"delivery_address"?: string | null,"delivery_city"?: string | null,"delivery_fee_rsd"?: number | null,"delivery_method"?: string | null,"delivery_point_id"?: string | null,"delivery_point_label"?: string | null,"delivery_time_from"?: string | null,"delivery_time_to"?: string | null,"delivery_weekday"?: number | null,"expires_at"?: string,"id"?: string,"note"?: string | null,"prefer_call"?: boolean | null,"product_id"?: string | null,"product_name"?: string | null,"quantity_kg"?: number | null,"seller_id": string,"status"?: string | null,"status_changed_at"?: string | null,"total_amount"?: number | null,"unit_type"?: string
+                    "archived_at"?: string | null,"buyer_address"?: string | null,"buyer_city"?: string | null,"buyer_id": string,"buyer_phone": string,"buyer_postal_code"?: string | null,"cancellation_reason"?: string | null,"client_order_id"?: string | null,"created_at"?: string | null,"delivery_address"?: string | null,"delivery_city"?: string | null,"delivery_fee_rsd"?: number | null,"delivery_method"?: string | null,"delivery_point_id"?: string | null,"delivery_point_label"?: string | null,"delivery_time_from"?: string | null,"delivery_time_to"?: string | null,"delivery_weekday"?: number | null,"expires_at"?: string,"id"?: string,"note"?: string | null,"prefer_call"?: boolean | null,"product_id"?: string | null,"product_name"?: string | null,"quantity_kg"?: number | null,"seller_id": string,"status"?: string | null,"status_changed_at"?: string | null,"total_amount"?: number | null,"unit_type"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"buyer_address"?: string | null,"buyer_city"?: string | null,"buyer_id"?: string,"buyer_phone"?: string,"buyer_postal_code"?: string | null,"cancellation_reason"?: string | null,"created_at"?: string | null,"delivery_address"?: string | null,"delivery_city"?: string | null,"delivery_fee_rsd"?: number | null,"delivery_method"?: string | null,"delivery_point_id"?: string | null,"delivery_point_label"?: string | null,"delivery_time_from"?: string | null,"delivery_time_to"?: string | null,"delivery_weekday"?: number | null,"expires_at"?: string,"id"?: string,"note"?: string | null,"prefer_call"?: boolean | null,"product_id"?: string | null,"product_name"?: string | null,"quantity_kg"?: number | null,"seller_id"?: string,"status"?: string | null,"status_changed_at"?: string | null,"total_amount"?: number | null,"unit_type"?: string
+                    "archived_at"?: string | null,"buyer_address"?: string | null,"buyer_city"?: string | null,"buyer_id"?: string,"buyer_phone"?: string,"buyer_postal_code"?: string | null,"cancellation_reason"?: string | null,"client_order_id"?: string | null,"created_at"?: string | null,"delivery_address"?: string | null,"delivery_city"?: string | null,"delivery_fee_rsd"?: number | null,"delivery_method"?: string | null,"delivery_point_id"?: string | null,"delivery_point_label"?: string | null,"delivery_time_from"?: string | null,"delivery_time_to"?: string | null,"delivery_weekday"?: number | null,"expires_at"?: string,"id"?: string,"note"?: string | null,"prefer_call"?: boolean | null,"product_id"?: string | null,"product_name"?: string | null,"quantity_kg"?: number | null,"seller_id"?: string,"status"?: string | null,"status_changed_at"?: string | null,"total_amount"?: number | null,"unit_type"?: string
                   }
                   Relationships: [
                     {
@@ -986,6 +986,9 @@ isOneToOne: false
 "cleanup_expired_auth_rate_limits":
 { Args: { "p_retention_interval"?: string }; Returns: number
                            },
+"cleanup_push_delivery_logs":
+{ Args: { "p_error_retention"?: string,"p_success_retention"?: string }; Returns: number
+                           },
 "cleanup_push_tokens":
 { Args: { "p_keep_per_user"?: number,"p_max_age"?: string }; Returns: number
                            },
@@ -993,7 +996,7 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "create_order_with_items":
-{ Args: { "p_buyer_address"?: string,"p_buyer_city"?: string,"p_buyer_id": string,"p_buyer_phone": string,"p_buyer_postal_code"?: string,"p_delivery_fee_rsd"?: number,"p_delivery_method"?: string,"p_delivery_point_id"?: string,"p_delivery_slot_id"?: string,"p_items": Json,"p_note"?: string,"p_seller_id": string }; Returns: string
+{ Args: { "p_buyer_address"?: string,"p_buyer_city"?: string,"p_buyer_id": string,"p_buyer_phone": string,"p_buyer_postal_code"?: string,"p_client_order_id"?: string,"p_delivery_fee_rsd"?: number,"p_delivery_method"?: string,"p_delivery_point_id"?: string,"p_delivery_slot_id"?: string,"p_items": Json,"p_note"?: string,"p_seller_id": string }; Returns: string
                            },
 "get_buyer_stats_dashboard":
 { Args: { "p_buyer_id": string }; Returns: Json
@@ -1226,6 +1229,9 @@ isOneToOne: false
                            },
 "recompute_product_review_summary":
 { Args: { "p_product_id": string }; Returns: undefined
+                           },
+"register_push_token":
+{ Args: { "p_installation_id": string,"p_platform": string,"p_token": string }; Returns: undefined
                            },
 "search_products_fts":
 { Args: { "p_available_now"?: boolean,"p_category"?: string,"p_exclude_seller_id"?: string,"p_limit"?: number,"p_offset"?: number,"p_query": string,"p_region"?: string }; Returns: {

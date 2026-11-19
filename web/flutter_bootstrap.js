@@ -9,8 +9,14 @@ try {
   }
   if (window._flutter && window._flutter.buildConfig && window._flutter.buildConfig.builds) {
     window._flutter.buildConfig.builds.forEach(function (build) {
-      if (build.mainJsPath) {
+      if (build.mainJsPath && build.mainJsPath.indexOf('?') === -1) {
         build.mainJsPath = build.mainJsPath + '?v=' + buildHash;
+      }
+      if (build.mainWasmPath && build.mainWasmPath.indexOf('?') === -1) {
+        build.mainWasmPath = build.mainWasmPath + '?v=' + buildHash;
+      }
+      if (build.jsSupportRuntimePath && build.jsSupportRuntimePath.indexOf('?') === -1) {
+        build.jsSupportRuntimePath = build.jsSupportRuntimePath + '?v=' + buildHash;
       }
     });
   }

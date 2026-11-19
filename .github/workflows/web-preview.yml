@@ -19,7 +19,10 @@ jobs:
 
       - name: Build Web
         run: |
-          flutter build web --release --base-href / --no-wasm-dry-run
+          flutter build web --release --base-href / --no-wasm-dry-run \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=FCM_VAPID_KEY=${{ secrets.FCM_VAPID_KEY }}
           dart run tool/copy_web_shell_assets.dart
 
       - name: Archive Production Artifact

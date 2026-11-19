@@ -214,7 +214,7 @@ mixin ProductListingMixin {
               'id, seller_id, category, name, price_per_kg, min_order_kg, '
               'order_step, available_kg, unit_type, description, image_urls, '
               'pickup_options, location, is_domestic, available_now, '
-              'delivery_mode, created_at, seller_is_verified',
+              'delivery_mode, created_at, variants',
             )
             .eq('seller_id', sellerId)
             .neq('id', excludeProductId)

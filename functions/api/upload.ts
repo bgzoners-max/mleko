@@ -67,6 +67,7 @@ const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAFE_SEGMENT_REGEX = /^[A-Za-z0-9._-]+$/;
 const SAFE_PROFILE_FILE_REGEX = /^[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
+const SAFE_IMAGE_FILE_REGEX = /^[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)$/i;
 
 export function isAllowedOrigin(origin: string): boolean {
   const clean = origin.trim().replace(/\/+$/, '');
@@ -130,14 +131,13 @@ function normalizeMimeType(rawHeader: string | null): string {
   return rawHeader.split(';')[0].trim().toLowerCase();
 }
 
-export function matchesAllowedImageMagicBytes(bytes: Uint8Array): boolean {
-  if (bytes.length < 12) {
-    // Minimalna provera za izuzetno male validne slike nije problem; odbaci sve < 4 bajta
-    if (bytes.length < 4) return false;
-  }
+export function detectImageMimeFromMagicBytes(
+  bytes: Uint8Array,
+): 'image/jpeg' | 'image/png' | 'image/webp' | null {
+  if (bytes.length < 4) return null;
   // JPEG: FF D8 FF
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return true;
+    return 'image/jpeg';
   }
   // PNG: 89 50 4E 47 0D 0A 1A 0A
   if (
@@ -151,7 +151,7 @@ export function matchesAllowedImageMagicBytes(bytes: Uint8Array): boolean {
     bytes[6] === 0x1a &&
     bytes[7] === 0x0a
   ) {
-    return true;
+    return 'image/png';
   }
   // WebP: RIFF....WEBP
   if (
@@ -165,9 +165,13 @@ export function matchesAllowedImageMagicBytes(bytes: Uint8Array): boolean {
     bytes[10] === 0x42 &&
     bytes[11] === 0x50
   ) {
-    return true;
+    return 'image/webp';
   }
-  return false;
+  return null;
+}
+
+export function matchesAllowedImageMagicBytes(bytes: Uint8Array): boolean {
+  return detectImageMimeFromMagicBytes(bytes) !== null;
 }
 
 export function validateAndSanitizeMediaPath(
@@ -205,6 +209,15 @@ export function validateAndSanitizeMediaPath(
   const bucket = segments[0];
   if (!ALLOWED_BUCKETS.has(bucket)) {
     return { ok: false, status: 400, error: 'Nedozvoljen storage bucket.' };
+  }
+
+  const lastSegment = segments[segments.length - 1];
+  if (!SAFE_IMAGE_FILE_REGEX.test(lastSegment)) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'Naziv fajla mora imati dozvoljenu ekstenziju slike (.jpg, .jpeg, .png, .webp).',
+    };
   }
 
   const normalizedUserId = userId.toLowerCase();
@@ -525,7 +538,8 @@ export async function handleUploadRequest(
       );
     }
 
-    if (!matchesAllowedImageMagicBytes(bodyResult.bytes)) {
+    const detectedMime = detectImageMimeFromMagicBytes(bodyResult.bytes);
+    if (!detectedMime) {
       return jsonResponse(
         { error: 'Sadržaj fajla ne odgovara validnoj JPEG, PNG ili WebP slici.' },
         415,
@@ -533,9 +547,20 @@ export async function handleUploadRequest(
       );
     }
 
+    if (detectedMime !== contentType) {
+      return jsonResponse(
+        {
+          error:
+              'Zaglavlje Content-Type ne odgovara stvarnom formatu slike (magic bytes).',
+        },
+        415,
+        cors.headers,
+      );
+    }
+
     await env.MEDIA_BUCKET.put(cleanPath, bodyResult.bytes.buffer as ArrayBuffer, {
       httpMetadata: {
-        contentType,
+        contentType: detectedMime,
         cacheControl: 'public, max-age=31536000, immutable',
       },
     });

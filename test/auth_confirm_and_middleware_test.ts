@@ -103,6 +103,10 @@ Deno.test("matchMiddlewarePreviewRoute podržava opcioni trailing slash za kratk
     id: "ogl-1",
   });
   assertEquals(matchMiddlewarePreviewRoute("/product/pro-2/", false), null);
+  // Neispravno percent-encoding u URL-u ne sme baciti URIError (500), već vraća null
+  assertEquals(matchMiddlewarePreviewRoute("/ad/%E0%A4%A", false), null);
+  assertEquals(matchMiddlewarePreviewRoute("/p/%ZZ", false), null);
+  assertEquals(matchMiddlewarePreviewRoute("/product/%ZZ", true), null);
 });
 
 Deno.test("isBot prepoznaje Instagram i društvene/pretraživačke botove", () => {

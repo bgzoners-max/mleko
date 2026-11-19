@@ -4,6 +4,7 @@ import {
   matchMiddlewarePreviewRoute,
   resolveApexCanonicalRedirectUrl,
   resolveLegacyRouteRedirect,
+  safeDecodePathSegment,
 } from "./api/_shared/preview-utils.js";
 import { handleClassifiedPreview } from "./api/classified-preview.js";
 import { handleProductPreview } from "./api/product-preview.js";
@@ -84,11 +85,14 @@ export const onRequest: PagesFunction = async (context) => {
   //    <loc> vrednostima iz sitemape. Obični korisnici i dalje dobijaju SPA.
   const sellerMatch = pathname.match(/^\/seller\/([^/]+)\/?$/);
   if (sellerMatch) {
-    return onSellerPreviewRequest({
-      ...context,
-      env: (context.env ?? {}) as Record<string, string | undefined>,
-      params: { ...context.params, id: sellerMatch[1] },
-    });
+    const sellerId = safeDecodePathSegment(sellerMatch[1]);
+    if (sellerId) {
+      return onSellerPreviewRequest({
+        ...context,
+        env: (context.env ?? {}) as Record<string, string | undefined>,
+        params: { ...context.params, id: sellerId },
+      });
+    }
   }
 
   if (isBot(userAgent)) {

@@ -265,13 +265,18 @@ export async function handleProductPreview(
         previewUrl: request.url,
         canonicalUrl: request.url,
         imageUrl: `${fallbackBaseUrl}/icons/Icon-512.png`,
+        robots: "noindex,nofollow",
         ogType: "product",
         redirectNote: "Preusmeravanje na proizvod...",
         linkLabel: "klikni ovde",
       }),
       {
-        status: 200,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        status: 503,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "no-store, max-age=0",
+          "x-robots-tag": "noindex, nofollow",
+        },
       },
     );
   }

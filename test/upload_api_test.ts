@@ -192,6 +192,8 @@ Deno.test("upload and delete enforce path traversal, bucket allowlist, and owner
     `unknown-bucket/${USER_ID}/pic.jpg`,
     `product-images/${USER_ID}`,
     `product-images/${USER_ID}//pic.jpg`,
+    `product-images/${USER_ID}/exploit.html`,
+    `farm-gallery/${USER_ID}/vector.svg`,
   ];
 
   for (const path of badPaths) {
@@ -289,6 +291,22 @@ Deno.test("upload rejects disallowed MIME, spoofed content, and oversized payloa
     fetchImpl: makeAuthFetcher("valid"),
   });
   assertEquals(spoofedRes.status, 415);
+
+  const mismatchedMimeReq = new Request(
+    `https://www.domacimarket.rs/api/upload?path=product-images/${USER_ID}/a.png`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer valid-jwt",
+        "Content-Type": "image/png",
+      },
+      body: VALID_JPEG,
+    },
+  );
+  const mismatchedMimeRes = await handleUploadRequest(mismatchedMimeReq, env, {
+    fetchImpl: makeAuthFetcher("valid"),
+  });
+  assertEquals(mismatchedMimeRes.status, 415);
 
   const largeHeaderReq = new Request(
     `https://www.domacimarket.rs/api/upload?path=product-images/${USER_ID}/big.jpg`,

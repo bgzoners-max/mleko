@@ -58,11 +58,12 @@ export async function handleAuthConfirm(request: Request, env?: any): Promise<Re
     });
 
     if (error) {
+      console.error("Auth confirm verifyOtp failed:", error.message);
       return new Response(null, {
         status: 302,
         headers: {
           Location: `${publicBaseUrl}/#/login?error=${encodeURIComponent(
-            error.message || "Link za verifikaciju je istekao ili je već iskorišćen."
+            "Link za verifikaciju je istekao ili je već iskorišćen."
           )}`,
           "Cache-Control": "no-store, max-age=0",
         },
@@ -84,11 +85,12 @@ export async function handleAuthConfirm(request: Request, env?: any): Promise<Re
       },
     });
   } catch (err: any) {
+    console.error("Auth confirm unexpected error:", err);
     return new Response(null, {
       status: 302,
       headers: {
         Location: `${publicBaseUrl}/#/login?error=${encodeURIComponent(
-          err?.message || "Greška pri obradi zahteva za verifikaciju."
+          "Greška pri obradi zahteva za verifikaciju."
         )}`,
         "Cache-Control": "no-store, max-age=0",
       },

@@ -287,26 +287,49 @@ class AuthService {
           type: ErrorType.unauthorized,
         );
       }
+      final metaName = (u.userMetadata?['display_name'] ??
+              u.userMetadata?['full_name'] ??
+              u.userMetadata?['name'])
+          ?.toString()
+          .trim();
+      final resolvedDisplayName =
+          (displayName != null && displayName.trim().isNotEmpty)
+              ? displayName.trim()
+              : ((metaName != null && metaName.isNotEmpty) ? metaName : null);
+
       if (legalType != null ||
           displayName != null ||
           bpg != null ||
           pib != null ||
           legalLiabilityAcceptedAt != null) {
-        await _users.upsertProfile(
-          u.id,
-          role: 'seller',
-          farmName: farmName,
-          location: location,
-          phone: phone,
-          displayName: (displayName != null && displayName.trim().isNotEmpty)
-              ? displayName.trim()
-              : u.userMetadata?['display_name'],
-          legalType: legalType,
-          bpg: (bpg != null && bpg.trim().isNotEmpty) ? bpg.trim() : null,
-          pib: (pib != null && pib.trim().isNotEmpty) ? pib.trim() : null,
-          legalLiabilityAcceptedAt: legalLiabilityAcceptedAt,
-          isGuest: false,
-        );
+        if (resolvedDisplayName != null) {
+          await _users.upsertProfile(
+            u.id,
+            role: 'seller',
+            farmName: farmName,
+            location: location,
+            phone: phone,
+            displayName: resolvedDisplayName,
+            legalType: legalType,
+            bpg: (bpg != null && bpg.trim().isNotEmpty) ? bpg.trim() : null,
+            pib: (pib != null && pib.trim().isNotEmpty) ? pib.trim() : null,
+            legalLiabilityAcceptedAt: legalLiabilityAcceptedAt,
+            isGuest: false,
+          );
+        } else {
+          await _users.upsertProfile(
+            u.id,
+            role: 'seller',
+            farmName: farmName,
+            location: location,
+            phone: phone,
+            legalType: legalType,
+            bpg: (bpg != null && bpg.trim().isNotEmpty) ? bpg.trim() : null,
+            pib: (pib != null && pib.trim().isNotEmpty) ? pib.trim() : null,
+            legalLiabilityAcceptedAt: legalLiabilityAcceptedAt,
+            isGuest: false,
+          );
+        }
       } else {
         await _users.upsertProfile(
           u.id,

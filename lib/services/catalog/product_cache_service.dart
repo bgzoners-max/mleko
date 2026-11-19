@@ -200,18 +200,27 @@ class ProductCacheService {
   static bool _isHomeCacheKey(String key) =>
       key == homeProductsKey || key.startsWith('${homeProductsKey}_');
 
-  /// Invalidira određeni proizvod i sve pripadajuće seller/home/regionalne keševe.
+  static bool _isCategoryOrSearchCacheKey(String key) =>
+      key.startsWith('${_prefix}category_') ||
+      key.startsWith('${_prefix}search_');
+
+  /// Invalidira određeni proizvod i sve pripadajuće seller/home/kategorija/pretraga keševe.
   Future<void> invalidateProduct(String productId, [String? sellerId]) async {
     _memoryCache.remove(productKey(productId));
-    _memoryCache.removeWhere((key, _) => _isHomeCacheKey(key));
+    _memoryCache.removeWhere(
+      (key, _) => _isHomeCacheKey(key) || _isCategoryOrSearchCacheKey(key),
+    );
     if (sellerId != null && sellerId.isNotEmpty) {
       _memoryCache.remove(sellerKey(sellerId));
     }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(productKey(productId));
-      final homeKeys = prefs.getKeys().where(_isHomeCacheKey).toList();
-      for (final key in homeKeys) {
+      final staleKeys = prefs
+          .getKeys()
+          .where((k) => _isHomeCacheKey(k) || _isCategoryOrSearchCacheKey(k))
+          .toList();
+      for (final key in staleKeys) {
         await prefs.remove(key);
       }
       if (sellerId != null && sellerId.isNotEmpty) {
@@ -220,7 +229,7 @@ class ProductCacheService {
       LoggerService.debug('Invalidated product cache', extra: {
         'productId': productId,
         'sellerId': sellerId,
-        'clearedHomeKeys': homeKeys.length,
+        'clearedHomeKeys': staleKeys.length,
       });
     } catch (e, st) {
       LoggerService.error('Failed to invalidate product cache', e, stackTrace: st);

@@ -376,6 +376,18 @@ export type MiddlewarePreviewMatch =
   | { kind: "classified" | "product"; id: string };
 
 /**
+ * Bezbedno dekodira URL segment bez bacanja URIError na neispravnom `%` zapisu.
+ */
+export function safeDecodePathSegment(raw: string): string | null {
+  try {
+    const decoded = decodeURIComponent(raw).trim();
+    return decoded.length > 0 ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Mapira kratke linkove i bot zahteve na odgovarajući preview endpoint,
  * uz podršku za opcioni trailing slash (`/.../`).
  */
@@ -385,23 +397,27 @@ export function matchMiddlewarePreviewRoute(
 ): MiddlewarePreviewMatch | null {
   const adShortMatch = pathname.match(/^\/ad\/([^/]+)\/?$/);
   if (adShortMatch) {
-    return { kind: "classified", id: decodeURIComponent(adShortMatch[1]) };
+    const id = safeDecodePathSegment(adShortMatch[1]);
+    return id ? { kind: "classified", id } : null;
   }
 
   const prodShortMatch = pathname.match(/^\/p\/([^/]+)\/?$/);
   if (prodShortMatch) {
-    return { kind: "product", id: decodeURIComponent(prodShortMatch[1]) };
+    const id = safeDecodePathSegment(prodShortMatch[1]);
+    return id ? { kind: "product", id } : null;
   }
 
   if (botRequest) {
     const classifiedMatch = pathname.match(/^\/classifieds\/ad\/([^/]+)\/?$/);
     if (classifiedMatch) {
-      return { kind: "classified", id: decodeURIComponent(classifiedMatch[1]) };
+      const id = safeDecodePathSegment(classifiedMatch[1]);
+      return id ? { kind: "classified", id } : null;
     }
 
     const productMatch = pathname.match(/^\/product\/([^/]+)\/?$/);
     if (productMatch) {
-      return { kind: "product", id: decodeURIComponent(productMatch[1]) };
+      const id = safeDecodePathSegment(productMatch[1]);
+      return id ? { kind: "product", id } : null;
     }
   }
 

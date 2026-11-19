@@ -111,7 +111,9 @@
         var origFetch = window.fetch;
         window.fetch = function (input, init) {
           if (typeof input === 'string' &&
-              (input.indexOf('assets/fonts/') !== -1 ||
+              input.indexOf('://') === -1 &&
+              (input.indexOf('assets/') !== -1 ||
+               input.indexOf('icons/') !== -1 ||
                input.indexOf('FontManifest.json') !== -1 ||
                input.indexOf('AssetManifest') !== -1) &&
               input.indexOf('?') === -1) {

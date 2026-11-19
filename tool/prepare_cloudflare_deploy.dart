@@ -3,7 +3,6 @@ import 'dart:io';
 
 void main() {
   final buildWebDir = Directory('build/web');
-  final functionsDir = Directory('functions');
   final deployDir = Directory('build/cloudflare-deploy');
 
   if (!buildWebDir.existsSync()) {
@@ -60,15 +59,9 @@ void main() {
     },
   );
 
-  // 4. Kopiranje Cloudflare Pages Functions ako postoje
-  if (functionsDir.existsSync()) {
-    _copyDirectoryWithFilter(
-      source: functionsDir,
-      target: Directory('${deployDir.path}/functions'),
-      shouldInclude: (_) => true,
-    );
-    stdout.writeln('Synchronized Cloudflare Pages Functions into deploy bundle');
-  }
+  // 4. Cloudflare Pages Functions se NE kopiraju u statički deploy direktorijum:
+  //    Wrangler ih automatski čita iz root `./functions` foldera, a kopiranje u
+  //    `build/cloudflare-deploy/functions/` bi izložilo `.ts` fajlove kao javne statičke resurse.
 
   // 4b. Validacija i osiguranje .well-known direktorijuma (npr. Digital Asset Links)
   final wellKnownSource = Directory('web/.well-known');

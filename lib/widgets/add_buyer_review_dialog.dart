@@ -106,7 +106,7 @@ class _AddBuyerReviewDialogState extends State<AddBuyerReviewDialog> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Posalji'),
+              : const Text('Pošalji'),
         ),
       ],
     );

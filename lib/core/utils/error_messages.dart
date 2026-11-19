@@ -41,20 +41,24 @@ String friendlyError(Object e) {
 
   if (e is PostgrestException) {
     final pmsg = e.message.toLowerCase();
+    if (e.code == '42501' ||
+        e.code == '401' ||
+        e.code == '403' ||
+        pmsg.contains('row-level security') ||
+        pmsg.contains('permission denied') ||
+        pmsg.contains('unauthorized') ||
+        pmsg.contains('not authenticated')) {
+      return 'Nemaš dozvolu za ovu akciju. Prijavi se ponovo.';
+    }
     if (pmsg.contains('duplicate') || pmsg.contains('unique')) {
       return 'Unos već postoji.';
     }
-    if (pmsg.contains('foreign key') || pmsg.contains('violates')) {
+    if (pmsg.contains('foreign key') ||
+        pmsg.contains('violates foreign key')) {
       return 'Podatak je vezan za drugi zapis i ne može se obrisati.';
     }
     if (pmsg.contains('not found') || e.code == '404') {
       return 'Traženi podatak nije pronađen.';
-    }
-    if (pmsg.contains('unauthorized') ||
-        pmsg.contains('not authenticated') ||
-        e.code == '401' ||
-        e.code == '403') {
-      return 'Nemaš dozvolu za ovu akciju. Prijavi se ponovo.';
     }
     if (pmsg.contains('aggregate')) {
       return 'Greška pri učitavanju podataka. Pokušaj ponovo.';

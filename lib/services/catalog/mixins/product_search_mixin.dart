@@ -101,9 +101,20 @@ mixin ProductSearchMixin {
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
 
-    final products = rows
+    var products = rows
         .map((e) => ProductModel.fromJson(e))
         .toList();
+    if (safeSearch != null) {
+      if (minPrice != null) {
+        products = products.where((p) => p.pricePerKg >= minPrice).toList();
+      }
+      if (maxPrice != null) {
+        products = products.where((p) => p.pricePerKg <= maxPrice).toList();
+      }
+      if (sort != ProductSort.dateDesc) {
+        products.sort((a, b) => compareProducts(a, b, sort));
+      }
+    }
     final salesCounts = <String, int>{};
     final ratings = <String, ({double avg, int count})>{};
     for (final row in rows) {
@@ -248,10 +259,19 @@ mixin ProductSearchMixin {
     var isFetching = false;
     var hasQueuedRefetch = false;
 
+    String buildHomeCacheKey(String? reg) {
+      var key = ProductCacheService.homeProductsKey;
+      if (reg != null && reg.isNotEmpty) {
+        key = '${key}_$reg';
+      }
+      if (category != null && category.isNotEmpty) {
+        key = '${key}_cat_${category.replaceAll(' ', '_')}';
+      }
+      return key;
+    }
+
     final initialRegion = regionNotifier?.value ?? region;
-    final initialCacheKey = initialRegion != null
-        ? '${ProductCacheService.homeProductsKey}_$initialRegion'
-        : ProductCacheService.homeProductsKey;
+    final initialCacheKey = buildHomeCacheKey(initialRegion);
     final syncCached = cache.getCachedProductsSync(initialCacheKey);
     ({
       List<ProductModel> products,
@@ -267,9 +287,7 @@ mixin ProductSearchMixin {
 
     Future<void> runSingleFetch() async {
       final currentRegion = regionNotifier?.value ?? region;
-      final cacheKey = currentRegion != null
-          ? '${ProductCacheService.homeProductsKey}_$currentRegion'
-          : ProductCacheService.homeProductsKey;
+      final cacheKey = buildHomeCacheKey(currentRegion);
       try {
         final res = await client.rpc(
           'get_home_products',

@@ -230,7 +230,17 @@ class UsersService {
   }
 
   Future<void> updateBuyerProfile(BuyerProfile profile) async {
-    await updateProfile(profile.toUserModel());
+    await upsertProfile(
+      profile.id,
+      email: profile.email,
+      phone: profile.phone,
+      displayName: profile.displayName,
+      city: profile.city,
+      address: profile.address,
+      postalCode: profile.postalCode,
+      isGuest: profile.isGuest,
+      profileImageUrl: profile.profileImageUrl,
+    );
   }
 
   Future<void> updateSellerProfile(SellerProfile profile) async {

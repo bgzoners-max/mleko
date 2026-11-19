@@ -277,10 +277,9 @@ class SellerProfile {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
       if (sellerStory != null) 'seller_story': sellerStory,
-      if (farmGalleryUrls.isNotEmpty) 'farm_gallery_urls': farmGalleryUrls,
-      if (sellerTags.isNotEmpty) 'seller_tags': sellerTags,
-      if (sellerQuickReplies.isNotEmpty)
-        'seller_quick_replies': sellerQuickReplies,
+      'farm_gallery_urls': farmGalleryUrls,
+      'seller_tags': sellerTags,
+      'seller_quick_replies': sellerQuickReplies,
       if (legalType != null) 'legal_type': legalType,
       if (bpg != null) 'bpg': bpg,
       if (pib != null) 'pib': pib,
@@ -471,9 +470,10 @@ class UserModel {
       if (lat != null) 'lat': lat,
       if (lng != null) 'lng': lng,
       if (sellerStory != null) 'seller_story': sellerStory,
-      if (farmGalleryUrls.isNotEmpty) 'farm_gallery_urls': farmGalleryUrls,
-      if (sellerTags.isNotEmpty) 'seller_tags': sellerTags,
-      if (sellerQuickReplies.isNotEmpty)
+      if (isSellerMode || farmGalleryUrls.isNotEmpty)
+        'farm_gallery_urls': farmGalleryUrls,
+      if (isSellerMode || sellerTags.isNotEmpty) 'seller_tags': sellerTags,
+      if (isSellerMode || sellerQuickReplies.isNotEmpty)
         'seller_quick_replies': sellerQuickReplies,
       if (legalType != null) 'legal_type': legalType,
       if (bpg != null) 'bpg': bpg,

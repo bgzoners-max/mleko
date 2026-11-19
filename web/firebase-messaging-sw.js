@@ -36,6 +36,11 @@ self.addEventListener('notificationclick', function (event) {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
       for (const client of clientList) {
         if ('focus' in client) {
+          if (targetRoute && targetRoute !== '/' && 'navigate' in client) {
+            return client.navigate(targetRoute).catch(function () {}).then(function () {
+              return client.focus();
+            });
+          }
           return client.focus();
         }
       }

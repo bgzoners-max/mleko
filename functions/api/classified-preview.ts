@@ -155,7 +155,7 @@ export async function handleClassifiedPreview(
     });
 
     const { data, error } = await supabase
-      .from("classified_ads")
+      .from("public_classified_ads")
       .select(
         "id, title, description, price, currency, price_type, city, condition, status, images, category_id, classified_categories:category_id(name)",
       )
@@ -287,6 +287,7 @@ export async function handleClassifiedPreview(
         previewUrl: request.url,
         canonicalUrl: request.url,
         imageUrl: `${fallbackBaseUrl}/icons/Icon-512.png`,
+        robots: "noindex,nofollow",
         ogType: "website",
         ogSiteName: "Domaći Market — Mali Oglasi",
         bodyHeading: FALLBACK_TITLE,
@@ -294,8 +295,12 @@ export async function handleClassifiedPreview(
         linkLabel: "kliknite ovde za pregled oglasa",
       }),
       {
-        status: 200,
-        headers: { "content-type": "text/html; charset=utf-8" },
+        status: 503,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "no-store, max-age=0",
+          "x-robots-tag": "noindex, nofollow",
+        },
       },
     );
   }

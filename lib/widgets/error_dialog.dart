@@ -102,7 +102,7 @@ class ErrorDialog extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Možeš pokušati ponovno.',
+                        'Možeš pokušati ponovo.',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color:
                                   isDark ? Colors.blue[200] : Colors.blue[700],

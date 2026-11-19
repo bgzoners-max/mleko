@@ -137,13 +137,16 @@ class PushTokenRegistrar {
     return true;
   }
 
-  /// Zahtev za ignorisanje optimizacije baterije (Xiaomi, Huawei, Samsung itd.).
+  /// Otvara sistemska podešavanja aplikacije radi podešavanja baterije i obaveštenja
+  /// (Xiaomi, Huawei, Samsung itd.) u skladu sa Google Play polisama (bez
+  /// zabranjene REQUEST_IGNORE_BATTERY_OPTIMIZATIONS dozvole).
   static Future<bool> requestIgnoreBatteryOptimizations() async {
     if (kIsWeb || !Platform.isAndroid) return true;
-    final status = await Permission.ignoreBatteryOptimizations.status;
-    if (status.isGranted) return true;
-    await Permission.ignoreBatteryOptimizations.request();
-    return (await Permission.ignoreBatteryOptimizations.status).isGranted;
+    try {
+      return await openAppSettings();
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Briše tokene drugih korisnika za istu fizičku instalaciju uređaja.

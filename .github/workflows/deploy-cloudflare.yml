@@ -5,6 +5,10 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-cloudflare-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,11 +30,21 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Pre-deploy safety & static checks
+        run: |
+          dart run tool/check_no_committed_secrets.dart
+          dart run tool/check_cyrillic_strings.dart
+          dart run tool/check_file_size.dart
+          flutter analyze --fatal-infos
+          npm run type-check
+
       - name: Build web
         run: |
           flutter build web --release \
+            --dart-define=APP_ENV=prod \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=FCM_VAPID_KEY=${{ secrets.FCM_VAPID_KEY }}
 
       - name: Copy web shell assets
         run: dart run tool/copy_web_shell_assets.dart
@@ -39,7 +53,7 @@ jobs:
         run: dart run tool/prepare_cloudflare_deploy.dart
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy build/cloudflare-deploy --project-name=domacimarket --branch=main
+        run: npx --yes wrangler@3 pages deploy build/cloudflare-deploy --project-name=domacimarket --branch=main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           # Account ID nije tajna (javni identifikator naloga, vidi
