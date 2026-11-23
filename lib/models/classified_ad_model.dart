@@ -116,7 +116,10 @@ class ClassifiedAdModel {
     if (curr == 'EUR') return '~${fmt((price * eurRate).round())} RSD';
     if (curr == 'RSD') {
       final eur = price / eurRate;
-      return eur < 1 ? null : '~${fmt(eur.round())} €';
+      if (eur < 0.1) return null;
+      return eur < 100
+          ? '~${eur.toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '')} €'
+          : '~${fmt(eur.round())} €';
     }
     return null;
   }

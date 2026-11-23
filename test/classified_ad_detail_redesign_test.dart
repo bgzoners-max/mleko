@@ -74,6 +74,9 @@ void main() {
       final eurAd = _sampleAd(price: 100, currency: 'EUR');
       expect(eurAd.secondaryCurrencyEstimateForRate(117.6491), '~11.765 RSD');
 
+      final rsdSmallAd = _sampleAd(price: 400, currency: 'RSD');
+      expect(rsdSmallAd.secondaryCurrencyEstimateForRate(117.6491), '~3.4 €');
+
       final rsdAd = _sampleAd(price: 11765, currency: 'RSD');
       expect(rsdAd.secondaryCurrencyEstimateForRate(117.6491), '~100 €');
 
