@@ -295,7 +295,9 @@ GoRouter createRouter(AppState appState) {
         path: '/favorites',
         pageBuilder: (context, state) => buildPageTransition(
           state: state,
-          child: const FavoritesScreen(),
+          child: FavoritesScreen(
+            initialTab: state.uri.queryParameters['tab'],
+          ),
         ),
       ),
       GoRoute(

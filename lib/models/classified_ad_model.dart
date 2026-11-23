@@ -16,6 +16,7 @@ class ClassifiedAdModel {
   final String status; // 'active' | 'sold' | 'archived'
   final String sellerType; // 'individual' | 'business' (Zakon o zaštiti potrošača)
   final int viewsCount;
+  final int favoritesCount;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? sellerName;
@@ -47,6 +48,7 @@ class ClassifiedAdModel {
     this.status = 'active',
     this.sellerType = 'individual',
     this.viewsCount = 0,
+    this.favoritesCount = 0,
     required this.createdAt,
     required this.updatedAt,
     this.sellerName,
@@ -98,6 +100,23 @@ class ClassifiedAdModel {
       return '$formattedNum $currency (dogovor)';
     }
     return '$formattedNum $currency';
+  }
+
+  static const double eurToRsdRate = 117.2;
+
+  String? get secondaryCurrencyEstimate {
+    if (priceType == 'free' || priceType == 'call' || price <= 0) return null;
+    final curr = currency.toUpperCase();
+    String fmt(int n) => n.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
+    if (curr == 'EUR') return '~${fmt((price * eurToRsdRate).round())} RSD';
+    if (curr == 'RSD') {
+      final eur = price / eurToRsdRate;
+      return eur < 1 ? null : '~${fmt(eur.round())} €';
+    }
+    return null;
   }
 
   // --- Real Estate (Nekretnine) specifična svojstva ---
@@ -519,6 +538,7 @@ class ClassifiedAdModel {
       status: json['status'] as String? ?? 'active',
       sellerType: json['seller_type'] as String? ?? 'individual',
       viewsCount: (json['views_count'] as num?)?.toInt() ?? 0,
+      favoritesCount: (json['favorites_count'] as num?)?.toInt() ?? 0,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
@@ -620,6 +640,7 @@ class ClassifiedAdModel {
     String? status,
     String? sellerType,
     int? viewsCount,
+    int? favoritesCount,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? sellerName,
@@ -651,6 +672,7 @@ class ClassifiedAdModel {
       status: status ?? this.status,
       sellerType: sellerType ?? this.sellerType,
       viewsCount: viewsCount ?? this.viewsCount,
+      favoritesCount: favoritesCount ?? this.favoritesCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       sellerName: sellerName ?? this.sellerName,

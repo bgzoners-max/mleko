@@ -188,6 +188,7 @@ class ClassifiedsService {
     status,
     seller_type,
     views_count,
+    favorites_count,
     attributes,
     is_featured,
     featured_until,

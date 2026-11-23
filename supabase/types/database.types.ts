@@ -59,6 +59,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"classified_ad_favorites": {
+                  Row: {
+                    "ad_id": string,"created_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "ad_id": string,"created_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "ad_id"?: string,"created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "classified_ad_favorites_ad_id_fkey"
+      columns: ["ad_id"]
+isOneToOne: false
+      referencedRelation: "classified_ads"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "classified_ad_favorites_ad_id_fkey"
+      columns: ["ad_id"]
+isOneToOne: false
+      referencedRelation: "public_classified_ads"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"classified_ad_reports": {
                   Row: {
                     "ad_id": string,"created_at": string,"details": string | null,"id": string,"reason": string,"reporter_id": string,"resolved_at": string | null,"resolved_by": string | null,"status": string
@@ -113,14 +139,14 @@ isOneToOne: false
                   ]
                 },"classified_ads": {
                   Row: {
-                    "attributes": NonNullable<Json>,"call_clicks_count": number,"category_id": string,"city": string,"condition": string,"created_at": string,"currency": string,"description": string,"featured_until": string | null,"id": string,"images": (string)[],"is_featured": boolean,"is_urgent": boolean,"last_view_at": string | null,"phone": string | null,"phone_public": boolean,"price": number,"price_type": string,"reports_count": number,"seller_type": string,"shares_count": number,"status": string,"title": string,"updated_at": string,"user_id": string,"views_count": number
+                    "attributes": NonNullable<Json>,"call_clicks_count": number,"category_id": string,"city": string,"condition": string,"created_at": string,"currency": string,"description": string,"favorites_count": number,"featured_until": string | null,"id": string,"images": (string)[],"is_featured": boolean,"is_urgent": boolean,"last_view_at": string | null,"phone": string | null,"phone_public": boolean,"price": number,"price_type": string,"reports_count": number,"seller_type": string,"shares_count": number,"status": string,"title": string,"updated_at": string,"user_id": string,"views_count": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "attributes"?: NonNullable<Json>,"call_clicks_count"?: number,"category_id": string,"city": string,"condition"?: string,"created_at"?: string,"currency"?: string,"description"?: string,"featured_until"?: string | null,"id"?: string,"images"?: (string)[],"is_featured"?: boolean,"is_urgent"?: boolean,"last_view_at"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"price"?: number,"price_type"?: string,"reports_count"?: number,"seller_type"?: string,"shares_count"?: number,"status"?: string,"title": string,"updated_at"?: string,"user_id": string,"views_count"?: number
+                    "attributes"?: NonNullable<Json>,"call_clicks_count"?: number,"category_id": string,"city": string,"condition"?: string,"created_at"?: string,"currency"?: string,"description"?: string,"favorites_count"?: number,"featured_until"?: string | null,"id"?: string,"images"?: (string)[],"is_featured"?: boolean,"is_urgent"?: boolean,"last_view_at"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"price"?: number,"price_type"?: string,"reports_count"?: number,"seller_type"?: string,"shares_count"?: number,"status"?: string,"title": string,"updated_at"?: string,"user_id": string,"views_count"?: number
                   }
                   Update: {
-                    "attributes"?: NonNullable<Json>,"call_clicks_count"?: number,"category_id"?: string,"city"?: string,"condition"?: string,"created_at"?: string,"currency"?: string,"description"?: string,"featured_until"?: string | null,"id"?: string,"images"?: (string)[],"is_featured"?: boolean,"is_urgent"?: boolean,"last_view_at"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"price"?: number,"price_type"?: string,"reports_count"?: number,"seller_type"?: string,"shares_count"?: number,"status"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"views_count"?: number
+                    "attributes"?: NonNullable<Json>,"call_clicks_count"?: number,"category_id"?: string,"city"?: string,"condition"?: string,"created_at"?: string,"currency"?: string,"description"?: string,"favorites_count"?: number,"featured_until"?: string | null,"id"?: string,"images"?: (string)[],"is_featured"?: boolean,"is_urgent"?: boolean,"last_view_at"?: string | null,"phone"?: string | null,"phone_public"?: boolean,"price"?: number,"price_type"?: string,"reports_count"?: number,"seller_type"?: string,"shares_count"?: number,"status"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"views_count"?: number
                   }
                   Relationships: [
                     {
@@ -822,14 +848,14 @@ isOneToOne: false
                   ]
                 },"public_classified_ads": {
                   Row: {
-                    "attributes": Json | null,"call_clicks_count": number | null,"category_id": string | null,"city": string | null,"condition": string | null,"created_at": string | null,"currency": string | null,"description": string | null,"featured_until": string | null,"id": string | null,"images": (string)[] | null,"is_featured": boolean | null,"is_urgent": boolean | null,"last_view_at": string | null,"phone": string | null,"phone_public": boolean | null,"price": number | null,"price_type": string | null,"reports_count": number | null,"seller_type": string | null,"shares_count": number | null,"status": string | null,"title": string | null,"updated_at": string | null,"user_id": string | null,"views_count": number | null
+                    "attributes": Json | null,"call_clicks_count": number | null,"category_id": string | null,"city": string | null,"condition": string | null,"created_at": string | null,"currency": string | null,"description": string | null,"favorites_count": number | null,"featured_until": string | null,"id": string | null,"images": (string)[] | null,"is_featured": boolean | null,"is_urgent": boolean | null,"last_view_at": string | null,"phone": string | null,"phone_public": boolean | null,"price": number | null,"price_type": string | null,"reports_count": number | null,"seller_type": string | null,"shares_count": number | null,"status": string | null,"title": string | null,"updated_at": string | null,"user_id": string | null,"views_count": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                           "attributes"?: Json | null,"call_clicks_count"?: number | null,"category_id"?: string | null,"city"?: string | null,"condition"?: string | null,"created_at"?: string | null,"currency"?: string | null,"description"?: string | null,"featured_until"?: string | null,"id"?: string | null,"images"?: (string)[] | null,"is_featured"?: boolean | null,"is_urgent"?: boolean | null,"last_view_at"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"price"?: number | null,"price_type"?: string | null,"reports_count"?: number | null,"seller_type"?: string | null,"shares_count"?: number | null,"status"?: string | null,"title"?: string | null,"updated_at"?: string | null,"user_id"?: string | null,"views_count"?: number | null
+                           "attributes"?: Json | null,"call_clicks_count"?: number | null,"category_id"?: string | null,"city"?: string | null,"condition"?: string | null,"created_at"?: string | null,"currency"?: string | null,"description"?: string | null,"favorites_count"?: number | null,"featured_until"?: string | null,"id"?: string | null,"images"?: (string)[] | null,"is_featured"?: boolean | null,"is_urgent"?: boolean | null,"last_view_at"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"price"?: number | null,"price_type"?: string | null,"reports_count"?: number | null,"seller_type"?: string | null,"shares_count"?: number | null,"status"?: string | null,"title"?: string | null,"updated_at"?: string | null,"user_id"?: string | null,"views_count"?: number | null
                          }
                         Update: {
-                           "attributes"?: Json | null,"call_clicks_count"?: number | null,"category_id"?: string | null,"city"?: string | null,"condition"?: string | null,"created_at"?: string | null,"currency"?: string | null,"description"?: string | null,"featured_until"?: string | null,"id"?: string | null,"images"?: (string)[] | null,"is_featured"?: boolean | null,"is_urgent"?: boolean | null,"last_view_at"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"price"?: number | null,"price_type"?: string | null,"reports_count"?: number | null,"seller_type"?: string | null,"shares_count"?: number | null,"status"?: string | null,"title"?: string | null,"updated_at"?: string | null,"user_id"?: string | null,"views_count"?: number | null
+                           "attributes"?: Json | null,"call_clicks_count"?: number | null,"category_id"?: string | null,"city"?: string | null,"condition"?: string | null,"created_at"?: string | null,"currency"?: string | null,"description"?: string | null,"favorites_count"?: number | null,"featured_until"?: string | null,"id"?: string | null,"images"?: (string)[] | null,"is_featured"?: boolean | null,"is_urgent"?: boolean | null,"last_view_at"?: string | null,"phone"?: never,"phone_public"?: boolean | null,"price"?: number | null,"price_type"?: string | null,"reports_count"?: number | null,"seller_type"?: string | null,"shares_count"?: number | null,"status"?: string | null,"title"?: string | null,"updated_at"?: string | null,"user_id"?: string | null,"views_count"?: number | null
                          }
                         Relationships: [
                     {
