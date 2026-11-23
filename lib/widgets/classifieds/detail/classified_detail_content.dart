@@ -10,12 +10,11 @@ import '../../app_back_button.dart';
 import '../../app_footer.dart';
 import '../../navigation/desktop_header.dart';
 import '../report_classified_ad_dialog.dart';
-import 'classified_breadcrumbs.dart';
 import 'classified_description_card.dart';
-import 'classified_detail_left_sidebar.dart';
 import 'classified_image_gallery.dart';
 import 'classified_main_info_card.dart';
 import 'classified_more_from_seller_strip.dart';
+import 'classified_quick_utility_bar.dart';
 import 'classified_report_button.dart';
 import 'classified_safety_tips_card.dart';
 import 'classified_seller_sidebar.dart';
@@ -201,6 +200,12 @@ class ClassifiedPhoneActionSheet {
   }
 }
 
+/// Originalan Domaći Market 2-kolonski raspored detalja malog oglasa:
+/// - Gore: kompaktna utility traka (`Breadcrumbs` + brze prečice i kurs evra na desktopu)
+/// - Desktop (`>= 960 px`): 60% levo (kompaktna galerija sa thumbnail-ima ispod + specifikacije +
+///   opis + još oglasa od prodavca) | 40% desno (kartica cene i akcija + kartica oglašivača sa
+///   pravnom napomenom + bezbednosni saveti) — sve bitno odmah vidljivo iznad "fold"-a!
+/// - Mobilni (`< 960 px`): čist jednostubni tok sa donjom fiksnom trakom za kontakt.
 class ClassifiedDetailContent extends StatelessWidget {
   const ClassifiedDetailContent({
     super.key,
@@ -268,8 +273,7 @@ class ClassifiedDetailContent extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isThreeColumn = screenWidth >= 1200;
-    final useSidebarLayout = isWide || screenWidth >= 900;
+    final useTwoColumns = isWide || screenWidth >= 960;
     final sellerDisplayName = ad.sellerName ??
         sellerProfile?.farmName ??
         sellerProfile?.displayName ??
@@ -281,52 +285,102 @@ class ClassifiedDetailContent extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
-              horizontal: useSidebarLayout ? 20 : 14,
+              horizontal: useTwoColumns ? 24 : 14,
               vertical: 16,
             ),
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: isThreeColumn
-                      ? 1320
-                      : (useSidebarLayout ? 1080 : 840),
+                  maxWidth: useTwoColumns ? 1180 : 820,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (useSidebarLayout)
+                    ClassifiedQuickUtilityBar(
+                      ad: ad,
+                      colorScheme: colorScheme,
+                      isDark: isDark,
+                      showShortcuts: useTwoColumns,
+                    ),
+                    const SizedBox(height: 14),
+                    if (useTwoColumns)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (isThreeColumn) ...[
-                            SizedBox(
-                              width: 210,
-                              child: ClassifiedDetailLeftSidebar(
-                                isDark: isDark,
-                              ),
-                            ),
-                            const SizedBox(width: 18),
-                          ],
+                          // Leva kolona (60%): Kompaktna galerija + detalji + opis + ostali oglasi
                           Expanded(
-                            child: _buildDesktopCentralColumn(
-                              context,
-                              theme: theme,
-                              colorScheme: colorScheme,
-                              isDark: isDark,
-                              sellerDisplayName: sellerDisplayName,
-                            ),
-                          ),
-                          const SizedBox(width: 18),
-                          SizedBox(
-                            width: isThreeColumn ? 300 : 285,
+                            flex: 60,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                _buildSellerSidebar(
-                                  isDark: isDark,
-                                  showPrimaryCta: true,
+                                ClassifiedImageGallery(
+                                  ad: ad,
+                                  colorScheme: colorScheme,
+                                  isDesktop: true,
+                                  onImageTap: onImageTap,
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
+                                ClassifiedSpecificationsTable(
+                                  ad: ad,
+                                  theme: theme,
+                                  colorScheme: colorScheme,
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 16),
+                                ClassifiedDescriptionCard(
+                                  ad: ad,
+                                  theme: theme,
+                                  colorScheme: colorScheme,
+                                  isDark: isDark,
+                                ),
+                                if (sellerOtherAds.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  ClassifiedMoreFromSellerStrip(
+                                    sellerName: sellerDisplayName,
+                                    otherAds: sellerOtherAds,
+                                    isDark: isDark,
+                                    onViewAll: onViewAllSellerAds ?? () {},
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                          // Desna kolona (40%): Cena i akcije + profil oglašivača + bezbednost
+                          Expanded(
+                            flex: 40,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ClassifiedMainInfoCard(
+                                  ad: ad,
+                                  theme: theme,
+                                  colorScheme: colorScheme,
+                                  isDark: isDark,
+                                  isOwner: isOwner,
+                                  hasPhone: hasPhone,
+                                  isWide: true,
+                                  onShare: onShare,
+                                  isFavorited: isFavorited,
+                                  isTogglingFavorite: isTogglingFavorite,
+                                  favoritesCount: favoritesCount,
+                                  onToggleFavorite: onToggleFavorite,
+                                  isLoadingPhone: isLoadingPhone,
+                                  currentPhone: currentPhone,
+                                  onChatTap: onChatTap,
+                                  onPhoneReveal: onPhoneReveal,
+                                  onPhoneTap: onPhoneTap,
+                                  onEdit: onEdit,
+                                  onMarkAsSold: onMarkAsSold,
+                                  onReport: () =>
+                                      ReportClassifiedAdDialog.show(
+                                    context,
+                                    ad: ad,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildSellerCard(isDark: isDark),
+                                const SizedBox(height: 14),
                                 ClassifiedSafetyTipsCard(
                                   colorScheme: colorScheme,
                                   isDark: isDark,
@@ -338,6 +392,7 @@ class ClassifiedDetailContent extends StatelessWidget {
                       )
                     else
                       _buildMobileSingleColumn(
+                        context,
                         theme: theme,
                         colorScheme: colorScheme,
                         isDark: isDark,
@@ -356,192 +411,16 @@ class ClassifiedDetailContent extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktopCentralColumn(
+  Widget _buildMobileSingleColumn(
     BuildContext context, {
     required ThemeData theme,
     required ColorScheme colorScheme,
     required bool isDark,
     required String sellerDisplayName,
   }) {
-    final cardBg = isDark ? AmazonColors.darkCard : AmazonColors.cardWhite;
-    final borderColor =
-        isDark ? AmazonColors.darkBorder : AmazonColors.borderGray;
-    final secondaryText =
-        isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Centralna kartica oglasa: breadcrumbs + Podeli + ⋮ / kompaktna galerija / naslov, Prati, cena, statistika
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-            boxShadow: AmazonColors.getCardShadow(context),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ClassifiedBreadcrumbs(
-                      ad: ad,
-                      colorScheme: colorScheme,
-                    ),
-                  ),
-                  if (onShare != null) ...[
-                    const SizedBox(width: 8),
-                    TextButton.icon(
-                      onPressed: () {
-                        AppHaptics.light();
-                        onShare!();
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: secondaryText,
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                      ),
-                      icon: const Icon(Icons.reply_rounded, size: 17),
-                      label: const Text(
-                        'Podeli',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                  _buildOverflowMenu(context, secondaryText),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ClassifiedImageGallery(
-                ad: ad,
-                colorScheme: colorScheme,
-                isDesktop: true,
-                onImageTap: onImageTap,
-              ),
-              const SizedBox(height: 16),
-              ClassifiedMainInfoCard(
-                ad: ad,
-                theme: theme,
-                colorScheme: colorScheme,
-                isDark: isDark,
-                isOwner: isOwner,
-                hasPhone: hasPhone,
-                isWide: true,
-                embedded: true,
-                isFavorited: isFavorited,
-                isTogglingFavorite: isTogglingFavorite,
-                favoritesCount: favoritesCount,
-                onToggleFavorite: onToggleFavorite,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        ClassifiedSpecificationsTable(
-          ad: ad,
-          theme: theme,
-          colorScheme: colorScheme,
-          isDark: isDark,
-        ),
-        const SizedBox(height: 16),
-        ClassifiedDescriptionCard(
-          ad: ad,
-          theme: theme,
-          colorScheme: colorScheme,
-          isDark: isDark,
-        ),
-        if (sellerOtherAds.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          ClassifiedMoreFromSellerStrip(
-            sellerName: sellerDisplayName,
-            otherAds: sellerOtherAds,
-            isDark: isDark,
-            onViewAll: onViewAllSellerAds ?? () {},
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildOverflowMenu(BuildContext context, Color iconColor) {
-    return PopupMenuButton<String>(
-      tooltip: 'Više opcija',
-      icon: Icon(Icons.more_vert_rounded, size: 19, color: iconColor),
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 160),
-      onSelected: (value) {
-        AppHaptics.light();
-        if (value == 'report') {
-          ReportClassifiedAdDialog.show(context, ad: ad);
-        } else if (value == 'edit') {
-          onEdit();
-        } else if (value == 'sold') {
-          onMarkAsSold();
-        }
-      },
-      itemBuilder: (_) {
-        if (isOwner) {
-          return [
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 17),
-                  SizedBox(width: 8),
-                  Text('Izmeni oglas'),
-                ],
-              ),
-            ),
-            if (!ad.isSold)
-              const PopupMenuItem(
-                value: 'sold',
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle_outline, size: 17),
-                    SizedBox(width: 8),
-                    Text('Označi kao prodato'),
-                  ],
-                ),
-              ),
-          ];
-        }
-        return [
-          const PopupMenuItem(
-            value: 'report',
-            child: Row(
-              children: [
-                Icon(Icons.flag_outlined, size: 17),
-                SizedBox(width: 8),
-                Text('Prijavi oglas'),
-              ],
-            ),
-          ),
-        ];
-      },
-    );
-  }
-
-  Widget _buildMobileSingleColumn({
-    required ThemeData theme,
-    required ColorScheme colorScheme,
-    required bool isDark,
-    required String sellerDisplayName,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ClassifiedBreadcrumbs(ad: ad, colorScheme: colorScheme),
-        const SizedBox(height: 10),
         ClassifiedImageGallery(
           ad: ad,
           colorScheme: colorScheme,
@@ -578,10 +457,7 @@ class ClassifiedDetailContent extends StatelessWidget {
           isDark: isDark,
         ),
         const SizedBox(height: 14),
-        _buildSellerSidebar(
-          isDark: isDark,
-          showPrimaryCta: false,
-        ),
+        _buildSellerCard(isDark: isDark),
         if (sellerOtherAds.isNotEmpty) ...[
           const SizedBox(height: 14),
           ClassifiedMoreFromSellerStrip(
@@ -607,23 +483,11 @@ class ClassifiedDetailContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSellerSidebar({
-    required bool isDark,
-    required bool showPrimaryCta,
-  }) {
+  Widget _buildSellerCard({required bool isDark}) {
     return ClassifiedSellerSidebar(
       ad: ad,
       isDark: isDark,
       isOwner: isOwner,
-      hasPhone: hasPhone,
-      isLoadingPhone: isLoadingPhone,
-      currentPhone: currentPhone,
-      showPrimaryCta: showPrimaryCta,
-      onChatTap: onChatTap,
-      onPhoneReveal: onPhoneReveal,
-      onPhoneTap: onPhoneTap,
-      onEdit: onEdit,
-      onMarkAsSold: onMarkAsSold,
       sellerProfile: sellerProfile,
       sellerAvgRating: sellerAvgRating,
       sellerReviewCount: sellerReviewCount,

@@ -21,8 +21,8 @@ ClassifiedAdModel _sampleAd({
     userId: 'seller-1',
     categoryId: 'traktori',
     categoryName: 'Traktori i priključci',
-    title: '5x120 20 felne',
-    description: 'Odlično očuvane felne, moguće lično preuzimanje.',
+    title: 'Torbe od jute i polipropilena',
+    description: 'Kvalitetne vreće za poljoprivredu, lično preuzimanje.',
     price: price,
     currency: currency,
     priceType: priceType,
@@ -82,7 +82,7 @@ void main() {
 
   group('ClassifiedMainInfoCard', () {
     testWidgets(
-      'renders Prati toggle, EUR→RSD estimate, stats row and fires callback',
+      'renders Sačuvaj toggle, EUR→RSD estimate, stats row and desktop CTAs',
       (tester) async {
         final ad = _sampleAd(
           price: 999,
@@ -95,34 +95,42 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  final theme = Theme.of(context);
-                  return ClassifiedMainInfoCard(
-                    ad: ad,
-                    theme: theme,
-                    colorScheme: theme.colorScheme,
-                    isDark: false,
-                    isOwner: false,
-                    hasPhone: true,
-                    isWide: true,
-                    isFavorited: false,
-                    favoritesCount: 4,
-                    onToggleFavorite: () => toggled = true,
-                  );
-                },
+              body: SingleChildScrollView(
+                child: Builder(
+                  builder: (context) {
+                    final theme = Theme.of(context);
+                    return ClassifiedMainInfoCard(
+                      ad: ad,
+                      theme: theme,
+                      colorScheme: theme.colorScheme,
+                      isDark: false,
+                      isOwner: false,
+                      hasPhone: true,
+                      isWide: true,
+                      isFavorited: false,
+                      favoritesCount: 4,
+                      onToggleFavorite: () => toggled = true,
+                      onChatTap: () {},
+                      onPhoneReveal: () {},
+                      onShare: () {},
+                    );
+                  },
+                ),
               ),
             ),
           ),
         );
 
-        expect(find.text('5x120 20 felne'), findsOneWidget);
-        expect(find.text('Prati'), findsOneWidget);
+        expect(find.text('Torbe od jute i polipropilena'), findsOneWidget);
         expect(find.text('~117.083 RSD'), findsOneWidget);
         expect(find.text('19'), findsOneWidget);
         expect(find.text('4'), findsOneWidget);
+        expect(find.text('Pošalji poruku'), findsOneWidget);
+        expect(find.text('Prikaži broj telefona'), findsOneWidget);
+        expect(find.text('Sačuvaj'), findsOneWidget);
+        expect(find.text('Podeli'), findsOneWidget);
 
-        await tester.tap(find.text('Prati'));
+        await tester.tap(find.text('Sačuvaj'));
         await tester.pump();
         expect(toggled, isTrue);
       },
@@ -131,16 +139,13 @@ void main() {
 
   group('ClassifiedImageGallery', () {
     testWidgets(
-      'renders desktop left vertical thumbnail rail and 1 od N pill',
+      'renders compact desktop gallery with horizontal thumbs and 1 / N pill',
       (tester) async {
         final ad = _sampleAd(
           images: const [
             'https://example.com/1.jpg',
             'https://example.com/2.jpg',
             'https://example.com/3.jpg',
-            'https://example.com/4.jpg',
-            'https://example.com/5.jpg',
-            'https://example.com/6.jpg',
           ],
         );
 
@@ -148,7 +153,7 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: SizedBox(
-                width: 720,
+                width: 680,
                 child: Builder(
                   builder: (context) => ClassifiedImageGallery(
                     ad: ad,
@@ -162,18 +167,17 @@ void main() {
           ),
         );
 
-        expect(find.text('1 od 6'), findsOneWidget);
-        expect(find.byIcon(Icons.keyboard_arrow_up_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+        expect(find.text('1 / 3'), findsOneWidget);
+        expect(find.byIcon(Icons.fullscreen_rounded), findsOneWidget);
       },
     );
   });
 
-  group('ClassifiedDetailContent responsive 3-column & mobile layouts', () {
+  group('ClassifiedDetailContent original 2-column & mobile layouts', () {
     testWidgets(
-      'renders 3-column layout with left sidebar, central card, and right seller sidebar at 1366×900',
+      'renders 2-column Domaći Market layout with top quick-bar and integrated seller card at 1280×900',
       (tester) async {
-        tester.view.physicalSize = const Size(1366, 900);
+        tester.view.physicalSize = const Size(1280, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
@@ -222,32 +226,31 @@ void main() {
           ),
         );
 
-        // Levi sidebar (>= 1200 px)
+        // Gornja Domaći Market traka brzog pristupa
         expect(find.text('Sačuvani oglasi'), findsOneWidget);
-        expect(find.textContaining('Kurs evra'), findsOneWidget);
+        expect(find.textContaining('1 € ≈'), findsOneWidget);
 
-        // Centralna kartica
-        expect(find.text('5x120 20 felne'), findsAtLeastNWidgets(1));
-        expect(find.text('Prati'), findsOneWidget);
+        // Desna kartica oglasa i akcija
+        expect(find.text('Pošalji poruku'), findsOneWidget);
+        expect(find.text('Prikaži broj telefona'), findsOneWidget);
+        expect(find.text('Sačuvaj'), findsOneWidget);
         expect(find.text('Podeli'), findsOneWidget);
 
-        // Desni seller sidebar
-        expect(find.text('Pošalji poruku'), findsOneWidget);
-        expect(find.text('Član od 03.09.2015.'), findsOneWidget);
+        // Kartica oglašivača sa integrisanom zakonskom napomenom
+        expect(find.text('Oglašivač'), findsOneWidget);
+        expect(find.textContaining('Član od 03.09.2015.'), findsOneWidget);
         expect(find.text('(3 ocene)'), findsOneWidget);
         expect(find.text('Svi oglasi (2)'), findsOneWidget);
-        expect(find.text('Sačuvaj prodavca'), findsOneWidget);
-        expect(find.text('Klik za broj telefona'), findsOneWidget);
-        expect(find.text('Verifikovan'), findsOneWidget);
+        expect(find.text('Prati prodavca'), findsOneWidget);
         expect(
-          find.text('Korisnik je izjavio da nije trgovac.'),
+          find.textContaining('Uslovi korišćenja platforme'),
           findsOneWidget,
         );
       },
     );
 
     testWidgets(
-      'renders clean single-column mobile layout without left sidebar at 390×844',
+      'renders clean single-column mobile layout without desktop quick-bar at 390×844',
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1.0;
@@ -280,13 +283,11 @@ void main() {
           ),
         );
 
-        // Levi sidebar se ne prikazuje na mobilnom
-        expect(find.textContaining('Kurs evra'), findsNothing);
-        // Primarno CTA dugme u seller kartici je sakriveno na mobilnom (jer je u donjoj traci)
+        // Na mobilnom nema desktop gornjih prečica ni duplih CTA dugmadi (jer je donja fiksna traka)
+        expect(find.textContaining('1 € ≈'), findsNothing);
         expect(find.text('Pošalji poruku'), findsNothing);
-        // Naslov i Prati su prisutni
-        expect(find.text('5x120 20 felne'), findsOneWidget);
-        expect(find.text('Prati'), findsOneWidget);
+        expect(find.text('Torbe od jute i polipropilena'), findsOneWidget);
+        expect(find.text('Sačuvaj'), findsOneWidget);
       },
     );
   });
