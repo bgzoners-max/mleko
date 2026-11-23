@@ -5,3 +5,4 @@ export 'notification_handler_service.dart';
 export 'retry_utils.dart';
 export 'support_service.dart';
 export 'analytics_service.dart';
+export 'exchange_rate_service.dart';

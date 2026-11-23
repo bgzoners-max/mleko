@@ -18,6 +18,7 @@ import '../../services/classifieds/classified_ad_favorites_service.dart';
 import '../../services/classifieds/classifieds_service.dart';
 import '../../services/communication/chat_service.dart';
 import '../../services/core/analytics_service.dart';
+import '../../services/core/exchange_rate_service.dart';
 import '../../services/social/favorite_sellers_service.dart';
 import '../../services/social/reviews_service.dart';
 import '../../widgets/app_error_retry.dart';
@@ -66,6 +67,7 @@ class _ClassifiedAdDetailScreenState extends State<ClassifiedAdDetailScreen> {
   void initState() {
     super.initState();
     _service = context.read<ClassifiedsService>();
+    unawaited(ExchangeRateService.instance.ensureLoaded());
     _load();
   }
 

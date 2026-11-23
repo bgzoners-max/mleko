@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mleko/models/classified_ad_model.dart';
 import 'package:mleko/models/user_model.dart';
+import 'package:mleko/services/core/exchange_rate_service.dart';
 import 'package:mleko/widgets/classifieds/detail/classified_detail_content.dart';
 import 'package:mleko/widgets/classifieds/detail/classified_image_gallery.dart';
 import 'package:mleko/widgets/classifieds/detail/classified_main_info_card.dart';
@@ -41,7 +42,11 @@ ClassifiedAdModel _sampleAd({
 }
 
 void main() {
-  group('ClassifiedAdModel favorites & currency conversion', () {
+  tearDown(() {
+    ExchangeRateService.instance.resetForTesting();
+  });
+
+  group('ClassifiedAdModel favorites & NBS currency conversion', () {
     test('parses favorites_count from JSON and preserves it in copyWith', () {
       final ad = ClassifiedAdModel.fromJson({
         'id': 'ad-json',
@@ -67,10 +72,10 @@ void main() {
 
     test('computes EUR ↔ RSD secondary currency estimate accurately', () {
       final eurAd = _sampleAd(price: 100, currency: 'EUR');
-      expect(eurAd.secondaryCurrencyEstimate, '~11.720 RSD');
+      expect(eurAd.secondaryCurrencyEstimateForRate(117.6491), '~11.765 RSD');
 
-      final rsdAd = _sampleAd(price: 11720, currency: 'RSD');
-      expect(rsdAd.secondaryCurrencyEstimate, '~100 €');
+      final rsdAd = _sampleAd(price: 11765, currency: 'RSD');
+      expect(rsdAd.secondaryCurrencyEstimateForRate(117.6491), '~100 €');
 
       final freeAd = _sampleAd(price: 0, priceType: 'free');
       expect(freeAd.secondaryCurrencyEstimate, isNull);
@@ -78,12 +83,39 @@ void main() {
       final callAd = _sampleAd(price: 0, priceType: 'call');
       expect(callAd.secondaryCurrencyEstimate, isNull);
     });
+
+    test('parses live NBS EurRateInfo with source attribution and date', () {
+      final info = EurRateInfo.fromJson({
+        'middle': 117.6491,
+        'date': '2026-11-23',
+        'listNumber': 223,
+        'source': 'Narodna banka Srbije (NBS)',
+        'provider': 'kurs.resenje.org',
+        'isFallback': false,
+      });
+
+      expect(info.isFallback, isFalse);
+      expect(info.formattedDate, '23.11.2026.');
+      expect(info.shortLabel, 'NBS: 1 € = 117,65 RSD');
+      expect(info.sourceTooltip, contains('lista br. 223'));
+      expect(info.sourceTooltip, contains('23.11.2026.'));
+      expect(info.sourceTooltip, contains('Narodna banka Srbije (NBS)'));
+    });
   });
 
   group('ClassifiedMainInfoCard', () {
     testWidgets(
-      'renders Sačuvaj toggle, EUR→RSD estimate, stats row and desktop CTAs',
+      'renders Sačuvaj toggle, live NBS EUR→RSD estimate, stats row and desktop CTAs',
       (tester) async {
+        ExchangeRateService.instance.setRateForTesting(
+          const EurRateInfo(
+            middle: 117.6491,
+            date: '2026-11-23',
+            listNumber: 223,
+            isFallback: false,
+          ),
+        );
+
         final ad = _sampleAd(
           price: 999,
           currency: 'EUR',
@@ -122,7 +154,7 @@ void main() {
         );
 
         expect(find.text('Torbe od jute i polipropilena'), findsOneWidget);
-        expect(find.text('~117.083 RSD'), findsOneWidget);
+        expect(find.text('~117.531 RSD · NBS'), findsOneWidget);
         expect(find.text('19'), findsOneWidget);
         expect(find.text('4'), findsOneWidget);
         expect(find.text('Pošalji poruku'), findsOneWidget);
@@ -175,12 +207,21 @@ void main() {
 
   group('ClassifiedDetailContent original 2-column & mobile layouts', () {
     testWidgets(
-      'renders 2-column Domaći Market layout with top quick-bar and integrated seller card at 1280×900',
+      'renders 2-column Domaći Market layout with top NBS rate bar and integrated seller card at 1280×900',
       (tester) async {
         tester.view.physicalSize = const Size(1280, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
+
+        ExchangeRateService.instance.setRateForTesting(
+          const EurRateInfo(
+            middle: 117.6491,
+            date: '2026-11-23',
+            listNumber: 223,
+            isFallback: false,
+          ),
+        );
 
         final ad = _sampleAd(price: 999, currency: 'EUR');
         final otherAd = _sampleAd(id: 'ad-2', price: 250, currency: 'EUR');
@@ -226,9 +267,9 @@ void main() {
           ),
         );
 
-        // Gornja Domaći Market traka brzog pristupa
+        // Gornja Domaći Market traka brzog pristupa sa NBS kursom
         expect(find.text('Sačuvani oglasi'), findsOneWidget);
-        expect(find.textContaining('1 € ≈'), findsOneWidget);
+        expect(find.text('NBS: 1 € = 117,65 RSD'), findsOneWidget);
 
         // Desna kartica oglasa i akcija
         expect(find.text('Pošalji poruku'), findsOneWidget);
@@ -284,7 +325,7 @@ void main() {
         );
 
         // Na mobilnom nema desktop gornjih prečica ni duplih CTA dugmadi (jer je donja fiksna traka)
-        expect(find.textContaining('1 € ≈'), findsNothing);
+        expect(find.textContaining('NBS: 1 €'), findsNothing);
         expect(find.text('Pošalji poruku'), findsNothing);
         expect(find.text('Torbe od jute i polipropilena'), findsOneWidget);
         expect(find.text('Sačuvaj'), findsOneWidget);

@@ -6,6 +6,7 @@ import '../../../core/design_system.dart' show AmazonColors;
 import '../../../models/classified_ad_model.dart';
 import '../../../providers/app_state.dart';
 import '../../../providers/classifieds_provider.dart';
+import '../../../services/core/exchange_rate_service.dart';
 import 'classified_breadcrumbs.dart';
 
 /// Gornja traka za brzi pristup na detaljima malog oglasa (Domaći Market stil):
@@ -86,21 +87,41 @@ class ClassifiedQuickUtilityBar extends StatelessWidget {
                 onTap: () => context.push('/classifieds/my'),
               ),
             ],
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-              decoration: BoxDecoration(
-                color: chipBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: chipBorder),
-              ),
-              child: Text(
-                '1 € ≈ ${ClassifiedAdModel.eurToRsdRate.toStringAsFixed(1)} RSD',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: secondaryText,
-                ),
-              ),
+            ValueListenableBuilder<EurRateInfo>(
+              valueListenable: ExchangeRateService.instance.rateNotifier,
+              builder: (_, rateInfo, __) {
+                return Tooltip(
+                  message: rateInfo.sourceTooltip,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: chipBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: chipBorder),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.account_balance_outlined,
+                          size: 13,
+                          color: secondaryText,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          rateInfo.shortLabel,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

@@ -102,22 +102,27 @@ class ClassifiedAdModel {
     return '$formattedNum $currency';
   }
 
-  static const double eurToRsdRate = 117.2;
+  static const double eurToRsdRate = 117.65;
 
-  String? get secondaryCurrencyEstimate {
-    if (priceType == 'free' || priceType == 'call' || price <= 0) return null;
+  String? secondaryCurrencyEstimateForRate(double eurRate) {
+    if (priceType == 'free' || priceType == 'call' || price <= 0 || eurRate <= 0) {
+      return null;
+    }
     final curr = currency.toUpperCase();
     String fmt(int n) => n.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (m) => '${m[1]}.',
         );
-    if (curr == 'EUR') return '~${fmt((price * eurToRsdRate).round())} RSD';
+    if (curr == 'EUR') return '~${fmt((price * eurRate).round())} RSD';
     if (curr == 'RSD') {
-      final eur = price / eurToRsdRate;
+      final eur = price / eurRate;
       return eur < 1 ? null : '~${fmt(eur.round())} €';
     }
     return null;
   }
+
+  String? get secondaryCurrencyEstimate =>
+      secondaryCurrencyEstimateForRate(eurToRsdRate);
 
   // --- Real Estate (Nekretnine) specifična svojstva ---
   static const Set<String> _realEstateCategoryIds = {

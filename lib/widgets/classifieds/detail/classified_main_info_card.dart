@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/design_system.dart' show AmazonColors;
 import '../../../core/haptic.dart';
 import '../../../models/classified_ad_model.dart';
+import '../../../services/core/exchange_rate_service.dart';
 import '../../../theme/app_design.dart';
 import 'classified_main_info_badges.dart';
 
@@ -67,7 +68,6 @@ class ClassifiedMainInfoCard extends StatelessWidget {
     final secondaryText =
         isDark ? AmazonColors.darkTextSecondary : AmazonColors.textSecondary;
     final effectiveFavorites = favoritesCount ?? ad.favoritesCount;
-    final secondaryEstimate = ad.secondaryCurrencyEstimate;
     final hasBuiltInDesktopActions =
         isWide && actionButtons == null && (onChatTap != null || onEdit != null);
 
@@ -140,43 +140,53 @@ class ClassifiedMainInfoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 10,
-                  runSpacing: 4,
-                  children: [
-                    Text(
-                      ad.priceFormatted,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: isDark
-                            ? const Color(0xFFFF6B6B)
-                            : AmazonColors.dealRed,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    if (secondaryEstimate != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.045),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          secondaryEstimate,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: secondaryText,
+                ValueListenableBuilder<EurRateInfo>(
+                  valueListenable: ExchangeRateService.instance.rateNotifier,
+                  builder: (_, rateInfo, __) {
+                    final secondaryEstimate =
+                        ad.secondaryCurrencyEstimateForRate(rateInfo.middle);
+                    return Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 10,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          ad.priceFormatted,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: isDark
+                                ? const Color(0xFFFF6B6B)
+                                : AmazonColors.dealRed,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                      ),
-                  ],
+                        if (secondaryEstimate != null)
+                          Tooltip(
+                            message: rateInfo.sourceTooltip,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.black.withValues(alpha: 0.045),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '$secondaryEstimate · NBS',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: secondaryText,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 Wrap(
